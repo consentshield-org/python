@@ -74,7 +74,7 @@ This unblocks ADR-0002 (consent banner builder + dashboard) and ADR-0003 (Worker
 - [ ] `npx supabase db push` succeeds
 - [ ] All tables exist with correct columns (query information_schema)
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete`
 
 #### Sprint 1.3: Supabase Schema — Buffer Tables + Enforcement Tables
 **Estimated effort:** 2–3 hours
@@ -229,9 +229,38 @@ Result: PASS
 - typescript 5.9.3, tailwindcss 4.2.2, eslint 9.39.4
 - vitest 4.1.4, prettier 3.8.2
 
-### Sprint 1.2 — [Date]
+### Sprint 1.2 — 2026-04-13
 
-_Pending_
+```
+Test: supabase db push succeeds
+Method: supabase db push (3 migrations)
+Expected: all migrations applied
+Actual: Migration 001 (extensions) — PASS (pgcrypto, uuid-ossp already exist)
+        Migration 002 (helper functions) — PASS (6 functions created)
+        Migration 003 (operational tables) — initial FAIL: gen_random_bytes not in search path
+        Fix: qualified as extensions.gen_random_bytes()
+        Migration 003 (retry) — PASS (14 tables created)
+Result: PASS (with fix)
+
+Test: All tables exist with correct columns
+Method: psql query against pg_tables
+Expected: 14 operational tables
+Actual: 14 tables confirmed — organisations, organisation_members, web_properties,
+        consent_banners, data_inventory, breach_notifications, rights_requests,
+        export_configurations, tracker_signatures, tracker_overrides,
+        integration_connectors, retention_rules, notification_channels,
+        consent_artefact_index
+Result: PASS
+
+Test: Helper functions exist
+Method: psql query against pg_proc
+Expected: 6 functions
+Actual: current_org_id, is_org_admin, set_updated_at, set_rights_request_sla,
+        set_breach_deadline, custom_access_token_hook
+Result: PASS
+```
+
+**Bug encountered:** `gen_random_bytes()` is in the `extensions` schema on hosted Supabase, not `public`. Must qualify as `extensions.gen_random_bytes()` in all migrations.
 
 ### Sprint 1.3 — [Date]
 

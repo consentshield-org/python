@@ -39,6 +39,7 @@ Read these before making structural changes:
 - @docs/architecture/consentshield-definitive-architecture.md — source of truth for all architecture
 - @docs/architecture/consentshield-complete-schema-design.md — source of truth for all database objects
 - @docs/architecture/consentshield-testing-strategy.md — what to test and when
+- @docs/architecture/nextjs-16-reference.md — Next.js 16 specifics (proxy.ts, caching, breaking changes)
 
 ## Non-negotiable rules
 
