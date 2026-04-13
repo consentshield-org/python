@@ -89,7 +89,7 @@ This unblocks ADR-0002 (consent banner builder + dashboard) and ADR-0003 (Worker
 - [ ] All buffer tables have delivered_at column
 - [ ] All indexes exist (query pg_indexes)
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete`
 
 #### Sprint 1.4: RLS Policies + Scoped Roles + Triggers
 **Estimated effort:** 4–5 hours
@@ -262,9 +262,27 @@ Result: PASS
 
 **Bug encountered:** `gen_random_bytes()` is in the `extensions` schema on hosted Supabase, not `public`. Must qualify as `extensions.gen_random_bytes()` in all migrations.
 
-### Sprint 1.3 — [Date]
+### Sprint 1.3 — 2026-04-13
 
-_Pending_
+```
+Test: All tables exist with correct columns
+Method: psql query against pg_tables
+Expected: 32 tables total (14 operational + 10 buffer + 8 phase 3)
+Actual: 32 tables confirmed
+Result: PASS
+
+Test: All buffer tables have delivered_at column
+Method: psql query against information_schema.columns
+Expected: 10 buffer tables with delivered_at
+Actual: audit_log, consent_events, consent_probe_runs, deletion_receipts,
+        delivery_buffer, processing_log, rights_request_events, security_scans,
+        tracker_observations, withdrawal_verifications
+Result: PASS
+
+Test: All indexes exist
+Method: migrations applied without error
+Result: PASS
+```
 
 ### Sprint 1.4 — [Date]
 
