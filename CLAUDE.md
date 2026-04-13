@@ -17,7 +17,7 @@ All documents, code, and other artefacts in this project are authored by and cop
 
 ## Stack
 
-- Next.js 14 + TypeScript + Tailwind + shadcn/ui
+- Next.js 16 + TypeScript + Tailwind + shadcn/ui
 - Supabase Auth + Postgres (RLS on every table)
 - Cloudflare Workers + KV + R2
 - Vercel hosting + cron
