@@ -140,7 +140,7 @@ This unblocks ADR-0002 (consent banner builder + dashboard) and ADR-0003 (Worker
 - [ ] JWT contains org_id and org_role claims after token refresh
 - [ ] Unauthenticated request to dashboard route → redirect to login
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete`
 
 #### Sprint 2.2: RLS Isolation Test Suite
 **Estimated effort:** 4–5 hours
@@ -313,9 +313,30 @@ Verify 10: Encryption salts — PASS (0 missing)
 **Bug encountered:** `consent_probe_runs` uses `run_at` not `created_at`. Fixed in migration 015.
 **Deferred:** pg_cron migration (014) pending dashboard extension enablement. Renamed to .pending.
 
-### Sprint 2.1 — [Date]
+### Sprint 2.1 — 2026-04-13
 
-_Pending_
+```
+Test: Build succeeds
+Method: bun run build
+Actual: ✓ Compiled, TypeScript passed, all pages generated
+        Routes: / (static), /login (static), /signup (static),
+        /dashboard (dynamic), /api/auth/signup (dynamic)
+        Proxy detected and active
+Result: PASS
+
+Test: Lint passes
+Method: bun run lint
+Actual: clean exit, zero warnings
+Result: PASS
+
+Note: proxy.ts uses Next.js 16 pattern (not middleware.ts)
+Note: Custom access token hook requires dashboard registration
+  → Authentication → Hooks → Custom Access Token → public.custom_access_token_hook
+```
+
+**Fixes during sprint:**
+- Dashboard page: separated org query to avoid Supabase join type mismatch
+- Login page: wrapped useSearchParams in Suspense boundary (Next.js 16 requirement)
 
 ### Sprint 2.2 — [Date]
 
