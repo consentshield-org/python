@@ -76,7 +76,7 @@ After this ADR:
 - [ ] Missing signature → 403
 - [ ] Same tests for /v1/observations endpoint
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete`
 
 #### Sprint 1.3: Secret Rotation on Banner Publish
 **Estimated effort:** 2–3 hours
@@ -132,6 +132,40 @@ Result: PASS
 ```
 
 **Key discovery:** Supabase REST API requires service_role key for the Worker (anon key returns empty due to RLS with no org claim). Scoped Postgres roles only work with direct connections.
+
+### Sprint 1.2 — 2026-04-13
+
+```
+Test: Valid signature + valid timestamp → 202
+Method: openssl HMAC-SHA256(org_id+property_id+timestamp, secret), POST /v1/events
+Expected: 202
+Actual: 202
+Result: PASS
+
+Test: Valid signature + expired timestamp (10 min ago) → 403
+Method: same HMAC but timestamp 600s old
+Expected: 403 "Timestamp expired"
+Actual: 403 "Timestamp expired (±5 minutes)"
+Result: PASS
+
+Test: Invalid signature → 403
+Method: POST with signature "deadbeef..."
+Expected: 403
+Actual: 403 "Invalid signature"
+Result: PASS
+
+Test: Missing signature → 403
+Method: POST without signature/timestamp fields
+Expected: 403
+Actual: 403 "Missing required fields: signature, timestamp"
+Result: PASS
+
+Test: Observations: valid signature → 202
+Method: same HMAC flow against /v1/observations
+Expected: 202
+Actual: 202
+Result: PASS
+```
 
 ---
 

@@ -1,5 +1,5 @@
 import type { Env } from './index'
-import { sha256 } from './hmac'
+import { sha256, verifyHMAC, isTimestampValid } from './hmac'
 import { getPropertyConfig, validateOrigin, rejectOrigin } from './origin'
 
 interface ObservationPayload {
@@ -47,7 +47,28 @@ export async function handleObservation(
     return rejectOrigin(originResult.origin)
   }
 
-  // Step 2: HMAC verification — TODO (ADR-0002 Sprint 1.2)
+  // Step 2: HMAC verification
+  if (!body.signature || !body.timestamp) {
+    return new Response('Missing required fields: signature, timestamp', {
+      status: 403,
+      headers: CORS_HEADERS,
+    })
+  }
+
+  if (!isTimestampValid(body.timestamp)) {
+    return new Response('Timestamp expired (±5 minutes)', { status: 403, headers: CORS_HEADERS })
+  }
+
+  const hmacValid = await verifyHMAC(
+    body.org_id,
+    body.property_id,
+    body.timestamp,
+    body.signature,
+    propConfig.event_signing_secret,
+  )
+  if (!hmacValid) {
+    return new Response('Invalid signature', { status: 403, headers: CORS_HEADERS })
+  }
 
   const pageUrlHash = body.page_url ? await sha256(body.page_url) : null
 
