@@ -118,7 +118,7 @@ This unblocks ADR-0002 (consent banner builder + dashboard) and ADR-0003 (Worker
 - [ ] Verify 10: Encryption salts populated (on any test organisations)
 - [ ] Verify 11: Cross-tenant isolation (basic)
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete`
 
 ### Phase 2: Auth Flow + RLS Isolation Tests
 
@@ -284,9 +284,34 @@ Method: migrations applied without error
 Result: PASS
 ```
 
-### Sprint 1.4 — [Date]
+### Sprint 1.4 — 2026-04-13
 
-_Pending_
+```
+Migrations applied: 006 (RLS enable), 007 (RLS operational), 008 (RLS buffer),
+  009 (RLS special), 010 (scoped roles), 011 (auth restrictions),
+  012 (triggers), 013 (buffer lifecycle), 015 (fix stuck buffers)
+Migration 014 (pg_cron): DEFERRED — requires dashboard extension enablement
+
+Verify 1: RLS enabled on every table — PASS (32/32)
+Verify 2: No UPDATE/DELETE on buffer tables for authenticated — PASS (0 rows)
+Verify 3: No INSERT on critical buffers for authenticated — PASS (0 rows)
+Verify 4: SLA deadline trigger active — PASS (BEFORE INSERT)
+Verify 5: Breach deadline trigger active — PASS (BEFORE INSERT)
+Verify 6: pg_cron jobs — DEFERRED (extension not enabled yet)
+Verify 7: No stale buffer data — PASS (0 stuck rows)
+Verify 8a: Scoped roles exist — PASS (cs_worker, cs_delivery, cs_orchestrator)
+Verify 8b: cs_worker CAN INSERT consent_events — PASS
+Verify 8c: cs_worker CANNOT SELECT organisations — PASS
+Verify 8d: cs_delivery CANNOT SELECT organisations — PASS
+Verify 8e: cs_delivery CAN DELETE consent_events — PASS
+Verify 8f: cs_orchestrator CANNOT SELECT consent_events — PASS
+Verify 8g: cs_orchestrator CAN INSERT audit_log — PASS
+Verify 9: Event signing secrets — PASS (default generates on insert)
+Verify 10: Encryption salts — PASS (0 missing)
+```
+
+**Bug encountered:** `consent_probe_runs` uses `run_at` not `created_at`. Fixed in migration 015.
+**Deferred:** pg_cron migration (014) pending dashboard extension enablement. Renamed to .pending.
 
 ### Sprint 2.1 — [Date]
 
