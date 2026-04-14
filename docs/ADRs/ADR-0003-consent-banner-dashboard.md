@@ -2,7 +2,7 @@
 
 (c) 2026 Sudhindra Anegondhi a.d.sudhindra@gmail.com
 
-**Status:** Proposed
+**Status:** In Progress
 **Date proposed:** 2026-04-13
 **Date completed:** —
 
@@ -47,7 +47,7 @@ After this ADR:
 - [ ] RLS: can only see own org's properties
 - [ ] Script tag includes correct org and property IDs
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete`
 
 #### Sprint 1.2: Banner Configuration UI
 **Estimated effort:** 4–5 hours
@@ -135,7 +135,36 @@ _None expected — implements existing architecture features._
 
 ## Test Results
 
-_Pending_
+### Sprint 1.1 — 2026-04-14
+
+```
+Test: Build passes with all property routes
+Method: bun run build
+Actual: routes registered:
+  - /api/orgs/[orgId]/properties (GET, POST)
+  - /api/orgs/[orgId]/properties/[propertyId] (GET, PATCH)
+  - /dashboard/properties (list page)
+  - /dashboard/properties/[propertyId] (detail page)
+Result: PASS
+
+Test: Lint passes
+Method: bun run lint
+Actual: clean
+Result: PASS
+
+Test: RLS isolation tests still pass (no regressions)
+Method: bun run test
+Actual: 39/39 passed
+Result: PASS
+
+Implementation:
+- API routes: GET/POST list/create, GET/PATCH detail
+- URL validation on allowed_origins (rejects malformed URLs)
+- Dashboard nav with sign-out
+- Properties list with status indicators (snippet verified / not installed)
+- Property detail page with copyable script tag, settings editor
+- Origin-aware: events from non-allowed origins will be rejected by Worker
+```
 
 ---
 
