@@ -47,41 +47,47 @@ export async function handleObservation(
     return rejectOrigin(originResult.origin)
   }
 
-  // Step 2: HMAC verification
-  if (!body.signature || !body.timestamp) {
-    return new Response('Missing required fields: signature, timestamp', {
-      status: 403,
-      headers: CORS_HEADERS,
-    })
-  }
+  // See events.ts — same two accepted authentication modes.
+  let originVerified: 'origin-only' | 'hmac-verified'
 
-  if (!isTimestampValid(body.timestamp)) {
-    return new Response('Timestamp expired (±5 minutes)', { status: 403, headers: CORS_HEADERS })
-  }
-
-  let hmacValid = await verifyHMAC(
-    body.org_id,
-    body.property_id,
-    body.timestamp,
-    body.signature,
-    propConfig.event_signing_secret,
-  )
-
-  if (!hmacValid) {
-    const prevSecret = await getPreviousSigningSecret(body.property_id, env)
-    if (prevSecret) {
-      hmacValid = await verifyHMAC(
-        body.org_id,
-        body.property_id,
-        body.timestamp,
-        body.signature,
-        prevSecret,
-      )
+  if (body.signature && body.timestamp) {
+    if (!isTimestampValid(body.timestamp)) {
+      return new Response('Timestamp expired (±5 minutes)', { status: 403, headers: CORS_HEADERS })
     }
-  }
 
-  if (!hmacValid) {
-    return new Response('Invalid signature', { status: 403, headers: CORS_HEADERS })
+    let hmacValid = await verifyHMAC(
+      body.org_id,
+      body.property_id,
+      body.timestamp,
+      body.signature,
+      propConfig.event_signing_secret,
+    )
+
+    if (!hmacValid) {
+      const prevSecret = await getPreviousSigningSecret(body.property_id, env)
+      if (prevSecret) {
+        hmacValid = await verifyHMAC(
+          body.org_id,
+          body.property_id,
+          body.timestamp,
+          body.signature,
+          prevSecret,
+        )
+      }
+    }
+
+    if (!hmacValid) {
+      return new Response('Invalid signature', { status: 403, headers: CORS_HEADERS })
+    }
+    originVerified = 'hmac-verified'
+  } else {
+    if (originResult.status !== 'valid') {
+      return new Response('Origin required for unsigned observations', {
+        status: 403,
+        headers: CORS_HEADERS,
+      })
+    }
+    originVerified = 'origin-only'
   }
 
   const pageUrlHash = body.page_url ? await sha256(body.page_url) : null
@@ -94,6 +100,7 @@ export async function handleObservation(
     trackers_detected: body.trackers_detected,
     violations: body.violations ?? [],
     page_url_hash: pageUrlHash,
+    origin_verified: originVerified,
   }
 
   const bufferRes = await fetch(`${env.SUPABASE_URL}/rest/v1/tracker_observations`, {

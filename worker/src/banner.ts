@@ -71,7 +71,6 @@ export async function handleBannerScript(request: Request, env: Env): Promise<Re
     propertyId,
     bannerId: config.id,
     bannerVersion: config.version,
-    signingSecret: propConfig.event_signing_secret,
     headline: config.headline,
     bodyCopy: config.body_copy,
     position: config.position,
@@ -129,7 +128,6 @@ interface CompileArgs {
   propertyId: string
   bannerId: string
   bannerVersion: number
-  signingSecret: string
   headline: string
   bodyCopy: string
   position: string
@@ -139,14 +137,13 @@ interface CompileArgs {
 }
 
 function compileBannerScript(args: CompileArgs): string {
-  // The compiled script is self-contained vanilla JS. It uses Web Crypto (SubtleCrypto)
-  // for HMAC signing — available in all modern browsers since 2020.
+  // Browser-origin events are authenticated by Origin validation at the Worker.
+  // No shared secret is shipped to the client; see ADR-0008.
   const config = JSON.stringify({
     org: args.orgId,
     prop: args.propertyId,
     banner: args.bannerId,
     version: args.bannerVersion,
-    secret: args.signingSecret,
     cdn: args.cdnOrigin,
     headline: args.headline,
     body: args.bodyCopy,
@@ -161,14 +158,6 @@ function compileBannerScript(args: CompileArgs): string {
 var CFG=${config};
 var STORAGE_KEY="cs_consent_"+CFG.prop+"_v"+CFG.version;
 if(localStorage.getItem(STORAGE_KEY))return;
-
-function hex(buf){var h="";var b=new Uint8Array(buf);for(var i=0;i<b.length;i++){h+=("0"+b[i].toString(16)).slice(-2)}return h}
-function utf8(s){return new TextEncoder().encode(s)}
-async function hmac(msg,secret){
-  var k=await crypto.subtle.importKey("raw",utf8(secret),{name:"HMAC",hash:"SHA-256"},false,["sign"]);
-  var sig=await crypto.subtle.sign("HMAC",k,utf8(msg));
-  return hex(sig);
-}
 
 function buildBanner(){
   var wrap=document.createElement("div");
@@ -265,8 +254,6 @@ var ui;
 function render(){ui=buildBanner();document.body.appendChild(ui.root)}
 
 async function postEvent(eventType,accepted,rejected){
-  var ts=String(Date.now());
-  var sig=await hmac(CFG.org+CFG.prop+ts,CFG.secret);
   var payload={
     org_id:CFG.org,
     property_id:CFG.prop,
@@ -274,9 +261,7 @@ async function postEvent(eventType,accepted,rejected){
     banner_version:CFG.version,
     event_type:eventType,
     purposes_accepted:accepted,
-    purposes_rejected:rejected,
-    signature:sig,
-    timestamp:ts
+    purposes_rejected:rejected
   };
   try{
     await fetch(CFG.cdn+"/v1/events",{
@@ -390,8 +375,6 @@ function startMonitoring(accepted,rejected){
 
 async function postObservation(detected,violations,consentState){
   try{
-    var ts=String(Date.now());
-    var sig=await hmac(CFG.org+CFG.prop+ts,CFG.secret);
     var trackersList=[];
     for(var k in detected)if(detected.hasOwnProperty(k))trackersList.push(detected[k]);
     var payload={
@@ -400,9 +383,7 @@ async function postObservation(detected,violations,consentState){
       consent_state:consentState,
       trackers_detected:trackersList,
       violations:violations,
-      page_url:location.href,
-      signature:sig,
-      timestamp:ts
+      page_url:location.href
     };
     await fetch(CFG.cdn+"/v1/observations",{
       method:"POST",

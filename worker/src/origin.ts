@@ -53,12 +53,10 @@ export async function getPreviousSigningSecret(
 export function validateOrigin(request: Request, allowedOrigins: string[]): OriginResult {
   const origin = request.headers.get('Origin') || request.headers.get('Referer')
 
-  // No origin header — server-side request or privacy browser
   if (!origin) {
     return { status: 'unverified' }
   }
 
-  // Normalize: extract origin from Referer if it's a full URL
   let originHost: string
   try {
     const url = new URL(origin)
@@ -67,12 +65,13 @@ export function validateOrigin(request: Request, allowedOrigins: string[]): Orig
     originHost = origin
   }
 
-  // Empty allowed_origins list → accept all (property not configured yet)
+  // Empty allowed_origins → treat as rejected. A property that has not
+  // configured origins cannot authenticate browser events. This is the
+  // authentication boundary now that the banner no longer ships a secret.
   if (allowedOrigins.length === 0) {
-    return { status: 'valid', origin: originHost }
+    return { status: 'rejected', origin: originHost }
   }
 
-  // Check against allowed list
   for (const allowed of allowedOrigins) {
     try {
       const allowedUrl = new URL(allowed)
@@ -80,14 +79,12 @@ export function validateOrigin(request: Request, allowedOrigins: string[]): Orig
         return { status: 'valid', origin: originHost }
       }
     } catch {
-      // Plain domain match
       if (allowed === originHost) {
         return { status: 'valid', origin: originHost }
       }
     }
   }
 
-  // Origin present but not in allowed list
   return { status: 'rejected', origin: originHost }
 }
 

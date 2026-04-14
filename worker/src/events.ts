@@ -62,43 +62,52 @@ export async function handleConsentEvent(
     return rejectOrigin(originResult.origin)
   }
 
-  // Step 2: HMAC verification
-  if (!body.signature || !body.timestamp) {
-    return new Response('Missing required fields: signature, timestamp', {
-      status: 403,
-      headers: CORS_HEADERS,
-    })
-  }
+  // Step 2: Authentication. Two accepted modes:
+  //   (a) hmac-verified — server-to-server caller posts signature + timestamp
+  //       derived from event_signing_secret. Origin may be absent.
+  //   (b) origin-only   — browser caller posts without signature. Requires a
+  //       valid origin in the property's allowed_origins list.
+  // Missing both leaves the request unauthenticated → 403.
+  let originVerified: 'origin-only' | 'hmac-verified'
 
-  if (!isTimestampValid(body.timestamp)) {
-    return new Response('Timestamp expired (±5 minutes)', { status: 403, headers: CORS_HEADERS })
-  }
-
-  // Try current secret first
-  let hmacValid = await verifyHMAC(
-    body.org_id,
-    body.property_id,
-    body.timestamp,
-    body.signature,
-    propConfig.event_signing_secret,
-  )
-
-  // If current secret fails, try previous secret (1-hour grace period after rotation)
-  if (!hmacValid) {
-    const prevSecret = await getPreviousSigningSecret(body.property_id, env)
-    if (prevSecret) {
-      hmacValid = await verifyHMAC(
-        body.org_id,
-        body.property_id,
-        body.timestamp,
-        body.signature,
-        prevSecret,
-      )
+  if (body.signature && body.timestamp) {
+    if (!isTimestampValid(body.timestamp)) {
+      return new Response('Timestamp expired (±5 minutes)', { status: 403, headers: CORS_HEADERS })
     }
-  }
 
-  if (!hmacValid) {
-    return new Response('Invalid signature', { status: 403, headers: CORS_HEADERS })
+    let hmacValid = await verifyHMAC(
+      body.org_id,
+      body.property_id,
+      body.timestamp,
+      body.signature,
+      propConfig.event_signing_secret,
+    )
+
+    if (!hmacValid) {
+      const prevSecret = await getPreviousSigningSecret(body.property_id, env)
+      if (prevSecret) {
+        hmacValid = await verifyHMAC(
+          body.org_id,
+          body.property_id,
+          body.timestamp,
+          body.signature,
+          prevSecret,
+        )
+      }
+    }
+
+    if (!hmacValid) {
+      return new Response('Invalid signature', { status: 403, headers: CORS_HEADERS })
+    }
+    originVerified = 'hmac-verified'
+  } else {
+    if (originResult.status !== 'valid') {
+      return new Response('Origin required for unsigned events', {
+        status: 403,
+        headers: CORS_HEADERS,
+      })
+    }
+    originVerified = 'origin-only'
   }
 
   // Step 3: Truncate IP, hash user agent
@@ -119,6 +128,7 @@ export async function handleConsentEvent(
     purposes_rejected: body.purposes_rejected ?? [],
     ip_truncated: ipTruncated,
     user_agent_hash: uaHash,
+    origin_verified: originVerified,
   }
 
   // Step 4: Write to consent_events buffer via cs_worker role
