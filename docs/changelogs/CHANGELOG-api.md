@@ -28,6 +28,17 @@ API route changes.
   lookup fallback to `razorpay_subscription_id` is preserved. Razorpay will
   retry on non-2xx, buying time for investigation instead of losing the event.
 
+## S-3 / S-6 remediation — 2026-04-14
+
+### Changed
+- `src/app/api/webhooks/razorpay/route.ts` — reads
+  `x-razorpay-event-id`, calls `rpc_webhook_mark_processed` before the state
+  transition, returns `{received:true, duplicate:true}` on replays.
+- `src/lib/encryption/crypto.ts` — adds a 60-second in-process cache for
+  per-org derived keys. Eliminates the per-call round trip to
+  `organisations.encryption_salt` during hot paths (e.g. batch deletion
+  dispatch).
+
 ## ADR-0009 Sprint 2.1 + 3.1 — 2026-04-14
 
 ### Changed

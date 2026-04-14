@@ -395,3 +395,61 @@ sufficient to reject a security review. B-4 is the largest structural item and
 will shape a new ADR.
 
 This review will be re-opened and re-dated after the blocking items are closed.
+
+---
+
+## 9. Remediation Log (2026-04-14, same day)
+
+All nine blocking items were closed in four commits:
+
+| Item | Commit | ADR / migration |
+|------|--------|-----------------|
+| B-1 banner signing-secret leak | `feat(ADR-0008): phase 1 — browser auth hardening` | ADR-0008, migrations 003/004 |
+| B-2 origin_verified persisted | same commit | ADR-0008, migration 003 |
+| B-3 Turnstile fail-fast | same commit | ADR-0008 Sprint 1.3 |
+| B-4 zero service-role in app code | `feat(ADR-0009): sprint 1.1` + `feat(ADR-0009): complete B-4` | ADR-0009, migrations 005/007 |
+| B-5 Razorpay hard-fail | `fix: close B-5, B-7, B-8, B-9` | route change + ADR-0009 migration 007 |
+| B-6 deletion-callback state guard | ADR-0009 Sprint 1.1 commit | migration 005 (`rpc_deletion_receipt_confirm`) |
+| B-7 buffer sweep indexes | fix commit | migration 006 |
+| B-8 encryption RPC grants shifted | same fix commit | migration 006 |
+| B-9 unverified rights-request cleanup | same fix commit | migration 006 |
+
+Should-fix items closed in the same pass:
+
+- **S-3** webhook dedup via `rpc_webhook_mark_processed` (migration 008).
+- **S-4** Turnstile fetch timeout (8 s) added in ADR-0008 Sprint 1.3.
+- **S-6** per-org encryption-key 60 s cache in `crypto.ts`.
+- **S-7** SLA Edge Function now throws when `SUPABASE_ORCHESTRATOR_ROLE_KEY`
+  is unset; service-role fallback removed.
+- **S-8** org-membership check now enforced inside `rpc_rights_event_append`.
+- **S-9** empty `allowed_origins` now returns `rejected` from the Worker.
+- **S-10** test-result sections in ADR-0004, ADR-0005, ADR-0006 updated to
+  record what was actually verified (build / lint / test / structural review).
+- **S-12** pg_cron jobs read the orchestrator key from
+  `current_setting('app.cs_orchestrator_key', true)` instead of a literal
+  placeholder.
+- **S-13** the Supabase REST scoped-role limitation called out by ADR-0002
+  is now fully addressed by ADR-0009 (security-definer RPCs owned by
+  scoped roles).
+
+### Deferred (explicit rationale)
+
+- **S-1 distributed rate limiter.** Needs a new runtime dependency (Vercel
+  KV / Upstash Redis) and a short RFC on key schema. In-memory limits are
+  still correct for a single-instance Vercel deployment; the risk is real
+  but narrowly scoped. Tracked for a follow-up ADR.
+- **S-2 explicit JWT org_id defense in depth.** Closed for every mutating
+  authenticated path via RPC membership checks (`auth.uid()` →
+  `organisation_members`). Read paths still rely on RLS, which is
+  test-covered (39/39). A middleware-level check is belt-and-suspenders
+  and can be added later without breaking callers.
+- **S-5 deletion retry scheduler.** Needs a new Supabase Edge Function
+  + deploy pipeline entry. Deferred to a dedicated ADR; the absence is
+  visible in the dashboard (stuck `awaiting_callback` rows).
+- **S-11 new automated test suites** (`tests/buffer`, `tests/worker`,
+  `tests/workflows`). Scoped as an ADR in its own right; this pass closed
+  documentation debt around the existing manual tests (S-10).
+
+Live database migration apply and Worker redeploy are still pending — the
+secret-rotation migration (ADR-0008 Sprint 1.4) is destructive and needs
+operator approval.

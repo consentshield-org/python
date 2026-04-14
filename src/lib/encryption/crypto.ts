@@ -10,6 +10,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createHmac } from 'node:crypto'
 
+// S-6: short-lived derived-key cache. The salt in organisations is stable
+// except during an explicit rotation, which is a rare operator action; a
+// 60-second TTL caps the exposure of a stale key to the next request window.
+const KEY_TTL_MS = 60_000
+const keyCache = new Map<string, { key: string; expiresAt: number }>()
+
 async function deriveOrgKey(
   supabase: SupabaseClient,
   orgId: string,
@@ -19,6 +25,9 @@ async function deriveOrgKey(
     throw new Error('MASTER_ENCRYPTION_KEY must be set')
   }
 
+  const cached = keyCache.get(orgId)
+  if (cached && cached.expiresAt > Date.now()) return cached.key
+
   const { data: org, error } = await supabase
     .from('organisations')
     .select('encryption_salt')
@@ -27,9 +36,12 @@ async function deriveOrgKey(
 
   if (error || !org) throw new Error(`Org ${orgId} not found`)
 
-  return createHmac('sha256', masterKey)
+  const key = createHmac('sha256', masterKey)
     .update(`${orgId}${org.encryption_salt}`)
     .digest('hex')
+
+  keyCache.set(orgId, { key, expiresAt: Date.now() + KEY_TTL_MS })
+  return key
 }
 
 export async function encryptForOrg(

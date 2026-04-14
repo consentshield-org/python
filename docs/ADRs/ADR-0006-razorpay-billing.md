@@ -103,7 +103,47 @@ _None — uses existing organisations columns and cs_orchestrator grants._
 
 ## Test Results
 
-_Pending_
+### 2026-04-14 (post-ADR-0009 hardening)
+
+```
+Test: Webhook signature verification
+Method: code read of src/app/api/webhooks/razorpay/route.ts + src/lib/billing/razorpay.ts
+Expected: verifyWebhookSignature() fails on tampered body or wrong secret;
+          route returns 403 before any DB write.
+Actual:   timing-safe HMAC compare in razorpay.ts; route short-circuits on
+          signature failure before touching Supabase.
+Result: PASS (structural review)
+
+Test: Idempotency on replay (S-3)
+Method: code read of route.ts after dedup integration (migration
+        20260414000008 + rpc_webhook_mark_processed)
+Expected: second POST with identical x-razorpay-event-id → 200
+          {received:true, duplicate:true} without state change.
+Actual:   rpc_webhook_mark_processed uses on-conflict-do-nothing + FOUND
+          check; route branches on its return value.
+Result: PASS
+
+Test: Unresolved org → 422 (B-5)
+Method: code read of rpc_razorpay_apply_subscription.
+Expected: missing org_id hint + no row with razorpay_subscription_id → RPC
+          returns ok=false, route returns 422.
+Actual:   confirmed.
+Result: PASS
+
+Test: Plan gating
+Method: rpc_plan_limit_check + src/lib/billing/gate.ts
+Expected: auth.uid() must be a member of org_id; known resources only
+          ('web_properties', 'deletion_connectors').
+Actual:   confirmed in SQL function body.
+Result: PASS
+
+Test: Build + lint + test suite
+Actual:   lint clean, 38/38 routes build, 39/39 tests pass.
+Result: PASS
+```
+
+**Not exercised in an automated suite** (S-11): end-to-end Razorpay webhook
+simulation, real checkout flow. Requires live Razorpay test keys.
 
 ---
 

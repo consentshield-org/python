@@ -15,6 +15,7 @@ const HANDLED_EVENTS = [
 export async function POST(request: Request) {
   const raw = await request.text()
   const signature = request.headers.get('x-razorpay-signature') ?? ''
+  const eventId = request.headers.get('x-razorpay-event-id') ?? ''
 
   if (!verifyWebhookSignature(raw, signature)) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 403 })
@@ -47,6 +48,20 @@ export async function POST(request: Request) {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
   )
+
+  // S-3: drop duplicate Razorpay retries of the same event ID.
+  if (eventId) {
+    const dedup = await anon.rpc('rpc_webhook_mark_processed', {
+      p_source: 'razorpay',
+      p_event_id: eventId,
+      p_org_id: null,
+    })
+    if (dedup.error) {
+      console.error('[razorpay] dedup check failed', dedup.error)
+    } else if (dedup.data === false) {
+      return NextResponse.json({ received: true, duplicate: true })
+    }
+  }
 
   const { data, error } = await anon.rpc('rpc_razorpay_apply_subscription', {
     p_event: event.event,

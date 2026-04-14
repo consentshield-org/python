@@ -128,7 +128,44 @@ After this ADR:
 
 ## Test Results
 
-_Pending_
+### 2026-04-14 (post-ADR-0008/0009 hardening)
+
+```
+Test: bun run build
+Expected: all rights-request routes compile
+Actual:   /api/public/rights-request and /api/public/rights-request/verify-otp
+          compile; /dashboard/rights and /dashboard/rights/[id] compile.
+Result: PASS
+
+Test: bun run lint
+Expected: zero warnings across src/
+Actual:   zero warnings
+Result: PASS
+
+Test: bun run test (RLS isolation suite)
+Expected: anonymous / cross-org access to rights_requests + rights_request_events
+          blocked by RLS.
+Actual:   39/39 tests pass; 7 cross-tenant + 20 buffer append-only + 5 critical
+          buffer + 3 edge-case + 4 anon.
+Result: PASS
+
+Test: Security-definer RPC shapes
+Method: code read of migration 20260414000005_scoped_rpcs_public.sql and
+        20260414000007_scoped_rpcs_authenticated.sql
+Expected: rpc_rights_request_create/verify_otp/event_append all validate
+          inputs and enforce either Turnstile (create) or auth.uid()
+          membership (event_append) before writing to rights_requests /
+          rights_request_events / audit_log.
+Actual:   validations present: request_type enum, email regex, org existence,
+          OTP state machine, attempt count, expiry, membership.
+Result: PASS (structural review)
+```
+
+**Not exercised in an automated suite** (tracked as S-10 / S-11 in the
+2026-04-14 review): manual end-to-end submission with real Turnstile token,
+OTP email delivery confirmation, SLA reminder email delivery, cleanup job
+row-count assertion. These require live environment variables and are
+part of the pre-live-cutover runbook.
 
 ---
 

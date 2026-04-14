@@ -6,9 +6,14 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
-// Uses cs_orchestrator role (per ADR-0001 non-negotiable rule 5)
-const ORCHESTRATOR_KEY =
-  Deno.env.get('SUPABASE_ORCHESTRATOR_ROLE_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+// S-7: cs_orchestrator key is required. The service-role fallback is gone —
+// running this function under the master key would violate rule #5.
+const ORCHESTRATOR_KEY = Deno.env.get('SUPABASE_ORCHESTRATOR_ROLE_KEY')
+if (!ORCHESTRATOR_KEY) {
+  throw new Error(
+    'SUPABASE_ORCHESTRATOR_ROLE_KEY is required. Set it as a Supabase Function secret.',
+  )
+}
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 const RESEND_FROM = Deno.env.get('RESEND_FROM') || 'onboarding@resend.dev'

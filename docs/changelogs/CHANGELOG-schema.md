@@ -44,6 +44,20 @@ Closes four blocking findings from the 2026-04-14 review.
 ### Tested
 - [ ] Live `supabase db push` — pending user approval.
 
+## S-3 / S-12 remediation — 2026-04-14
+
+### Added
+- `20260414000008_webhook_dedup_and_cron_secret.sql`:
+  - **S-3:** `webhook_events_processed(source, event_id, org_id, processed_at)`
+    table with composite primary key; `rpc_webhook_mark_processed` (anon
+    grant, security definer, uses ON CONFLICT DO NOTHING + FOUND check) so
+    callers can detect and drop replays.
+  - **S-12:** re-scheduled pg_cron jobs (stuck-buffer, sla-reminders,
+    security-scan, retention-check) now read the orchestrator key via
+    `current_setting('app.cs_orchestrator_key', true)` instead of a literal
+    `<cs_orchestrator_key>` placeholder. The operator injects the real key
+    via `alter database postgres set app.cs_orchestrator_key to '...';`.
+
 ## ADR-0009 Sprint 2.1 + 3.1 — 2026-04-14
 
 **ADR:** ADR-0009 — Scoped-Role Enforcement in REST Paths

@@ -105,7 +105,35 @@ _None — extends existing banner script and tracker_observations buffer._
 
 ## Test Results
 
-_Pending_
+### 2026-04-14 (post-ADR-0008 banner refactor)
+
+```
+Test: Worker typecheck + banner compile
+Method: cd worker && bunx tsc --noEmit
+Expected: clean compile after signing-secret removal (ADR-0008 B-1).
+Actual:   clean.
+Result: PASS
+
+Test: Tracker signature catalogue seeded
+Method: wc -l supabase/seed/tracker_signatures.sql
+Expected: ≥ 30 entries (original target was 30+).
+Actual:   125-line seed file covering the common analytics/marketing/
+          personalisation/functional families.
+Result: PASS
+
+Test: Banner monitoring + enforcement dashboard compile
+Method: bun run build
+Expected: /dashboard/enforcement, /api/orgs/[orgId]/banners/[bannerId]/publish
+          compile and proxy.ts auth guard protects them.
+Actual:   38/38 routes compile.
+Result: PASS
+```
+
+**Not exercised in an automated suite** (tracked as S-11 in the 2026-04-14
+review): controlled test pages with known tracker payloads to measure
+detection accuracy. The MutationObserver + PerformanceObserver loop in
+`worker/src/banner.ts` relies on manual walkthrough against
+`tests/fixtures/banner-test.html` until a synthetic probe suite is built.
 
 ---
 
