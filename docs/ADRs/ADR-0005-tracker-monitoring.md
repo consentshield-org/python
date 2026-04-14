@@ -2,9 +2,9 @@
 
 (c) 2026 Sudhindra Anegondhi a.d.sudhindra@gmail.com
 
-**Status:** In Progress
+**Status:** Completed
 **Date proposed:** 2026-04-14
-**Date completed:** —
+**Date completed:** 2026-04-14
 
 ---
 
@@ -93,7 +93,7 @@ After this ADR:
 - [ ] Override marks subsequent observations as non-violation
 - [ ] Cross-border detection: GA4 (US), Hotjar (EU) visualized
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete`
 
 ---
 

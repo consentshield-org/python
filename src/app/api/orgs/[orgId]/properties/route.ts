@@ -1,5 +1,6 @@
 import { createServerClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { checkPlanLimit } from '@/lib/billing/gate'
 
 export async function GET(
   _request: Request,
@@ -36,6 +37,23 @@ export async function POST(
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  // Plan gating: check web property limit before creating
+  const gate = await checkPlanLimit(orgId, 'web_properties')
+  if (!gate.allowed) {
+    return NextResponse.json(
+      {
+        error: `Your ${gate.plan} plan allows ${gate.limit} web ${
+          gate.limit === 1 ? 'property' : 'properties'
+        }. Upgrade to add more.`,
+        code: 'plan_limit_reached',
+        limit: gate.limit,
+        current: gate.current,
+        plan: gate.plan,
+      },
+      { status: 402 },
+    )
+  }
 
   const body = await request.json()
   const { name, url, allowed_origins } = body

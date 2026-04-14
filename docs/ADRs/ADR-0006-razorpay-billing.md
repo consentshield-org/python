@@ -2,9 +2,9 @@
 
 (c) 2026 Sudhindra Anegondhi a.d.sudhindra@gmail.com
 
-**Status:** In Progress
+**Status:** Completed
 **Date proposed:** 2026-04-14
-**Date completed:** —
+**Date completed:** 2026-04-14
 
 ---
 
@@ -91,7 +91,7 @@ After this ADR:
 - [ ] Starter org creating 2nd property → 403 "plan limit"
 - [ ] Cancellation event → plan downgraded to 'trial', dunning email sent
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete`
 
 ---
 

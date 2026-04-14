@@ -2,9 +2,9 @@
 
 (c) 2026 Sudhindra Anegondhi a.d.sudhindra@gmail.com
 
-**Status:** In Progress
+**Status:** Completed
 **Date proposed:** 2026-04-14
-**Date completed:** —
+**Date completed:** 2026-04-14
 
 ---
 
@@ -90,7 +90,7 @@ After this ADR:
 - [ ] Status transitions logged in rights_request_events
 - [ ] RLS: only own org's requests visible
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete`
 
 #### Sprint 2.2: SLA Reminders Edge Function
 **Estimated effort:** 2–3 hours
@@ -107,7 +107,7 @@ After this ADR:
 - [ ] Request 29 days old (1 left) → 1-day warning sent
 - [ ] Request 31 days old → overdue alert
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete`
 
 ---
 
