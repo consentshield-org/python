@@ -2,6 +2,7 @@ import { createServerClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { RightsRequestActions } from './actions'
+import { DeletionPanel } from './deletion-panel'
 
 export default async function RightsRequestDetailPage({
   params,
@@ -37,6 +38,12 @@ export default async function RightsRequestDetailPage({
     .select('id, event_type, notes, actor_id, created_at')
     .eq('request_id', id)
     .order('created_at', { ascending: true })
+
+  const { data: receipts } = await supabase
+    .from('deletion_receipts')
+    .select('id, target_system, status, requested_at, confirmed_at, failure_reason')
+    .eq('trigger_id', id)
+    .order('created_at', { ascending: false })
 
   return (
     <main className="p-8 space-y-6 max-w-4xl">
@@ -87,6 +94,17 @@ export default async function RightsRequestDetailPage({
         currentStatus={req.status}
         identityVerified={req.identity_verified}
       />
+
+      {req.request_type === 'erasure' && (
+        <DeletionPanel
+          orgId={membership.org_id}
+          requestId={req.id}
+          canExecute={
+            req.identity_verified && req.email_verified && req.status !== 'completed'
+          }
+          receipts={receipts ?? []}
+        />
+      )}
 
       <section className="rounded border border-gray-200">
         <div className="px-4 py-3 border-b border-gray-200">
