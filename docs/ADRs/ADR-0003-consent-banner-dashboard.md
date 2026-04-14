@@ -106,7 +106,7 @@ After this ADR:
 - [ ] Shows only current org's data (RLS verified)
 - [ ] Consent events appear within seconds of being posted
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete`
 
 #### Sprint 2.2: Data Inventory + Privacy Notice
 **Estimated effort:** 4–5 hours
@@ -235,6 +235,43 @@ Implementation:
   - Uses keepalive: true so the POST survives page navigation
   - Wraps everything in try/catch — never breaks the customer's site
 - Worker fires async UPDATE on snippet_last_seen_at (non-blocking)
+```
+
+### Sprint 2.1 — 2026-04-14
+
+```
+Test: Build passes with new dashboard
+Method: bun run build
+Actual: dashboard, score-gauge, score lib all compile
+Result: PASS
+
+Test: Lint passes
+Result: PASS (after extracting Date.now() to helper functions —
+  React 19 purity rule blocks inline impure calls in server components)
+
+Test: RLS tests still pass
+Method: bun run test
+Actual: 39/39 passed
+Result: PASS
+
+Implementation:
+- src/lib/compliance/score.ts: weighted composite score (6 components)
+  - 20% consent infrastructure (banner + verified snippet)
+  - 30% consent enforcement (events flowing, no violations)
+  - 15% rights workflow
+  - 15% data lifecycle
+  - 10% security posture
+  - 10% audit readiness
+  - red/amber/green levels at 50/80 thresholds
+- daysUntilEnforcement(): countdown to 13 May 2027
+- isoSinceHours/nowIso: date helpers (extracted for React 19 purity rule)
+- Dashboard page:
+  - Compliance score gauge (SVG circle) + 6-component breakdown
+  - Enforcement clock card (days until DPDP enforcement)
+  - 4 stat cards: properties, verified snippets, consents 24h, pending rights
+  - Recent consent events table (last 10 from buffer)
+  - 8 parallel Supabase queries for dashboard data
+- ScoreGauge component: animated SVG ring with level color
 ```
 
 ---

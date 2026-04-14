@@ -21,6 +21,7 @@
 - **Supabase hosted: `gen_random_bytes()` lives in `extensions` schema.** Must qualify as `extensions.gen_random_bytes()` in all migrations. Same applies to other pgcrypto functions.
 - **Use pooler connection string for psql queries.** Direct DB hostname doesn't resolve from local. Use `postgresql://postgres.xlqiakmkdjycfiioslgs:PASSWORD@aws-1-ap-northeast-1.pooler.supabase.com:5432/postgres`.
 - **Supabase REST API only supports anon/service_role JWT auth, not custom Postgres roles.** The scoped roles (cs_worker, cs_delivery, cs_orchestrator) work with direct Postgres connections only. The Cloudflare Worker must use the service role key for Supabase REST API calls because the anon key triggers RLS with no org_id claim → empty results. The Worker's queries are limited in code (only reads web_properties and consent_banners, writes to consent_events and tracker_observations), even though the key technically has full access. This is a Supabase platform constraint, not a design choice.
+- **React 19 purity rule flags `Date.now()` and `new Date()` inline in server components.** Extract to helper functions in `lib/` (e.g., `nowIso()`, `isoSinceHours(n)`). The lint rule only catches inline calls, not those wrapped in named functions. Same applies to `Math.random` and other impure operations.
 
 ## Do-Not-Repeat
 
