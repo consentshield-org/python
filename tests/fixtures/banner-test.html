@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ConsentShield Banner Test</title>
+
+    <!-- ConsentShield banner (production CDN) -->
+    <script
+      async
+      src="https://cdn.consentshield.in/v1/banner.js?org=94412c69-7916-4d1b-8e68-7ad120f68ed7&prop=cd63861c-ab3e-4ed8-ab6c-67862b22c7b2"
+    ></script>
+
+    <!-- Dev fallback (workers.dev) — swap to this if cdn.consentshield.in is unreachable -->
+    <!--
+    <script
+      async
+      src="https://consentshield-cdn.a-d-sudhindra.workers.dev/v1/banner.js?org=94412c69-7916-4d1b-8e68-7ad120f68ed7&prop=cd63861c-ab3e-4ed8-ab6c-67862b22c7b2"
+    ></script>
+    -->
+
+    <style>
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 32px 24px;
+        color: #111;
+      }
+      h1 {
+        margin-top: 0;
+      }
+      code {
+        background: #f3f4f6;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 13px;
+      }
+      pre {
+        background: #111;
+        color: #e5e7eb;
+        padding: 16px;
+        border-radius: 8px;
+        overflow-x: auto;
+        font-size: 12px;
+      }
+      .box {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 16px;
+        margin: 16px 0;
+      }
+      button {
+        background: #111;
+        color: #fff;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 14px;
+        cursor: pointer;
+      }
+      #consent-log {
+        margin-top: 12px;
+        font-family: 'SF Mono', Menlo, monospace;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>ConsentShield Banner Test</h1>
+    <p>
+      This page loads the ConsentShield banner script. The banner should appear at the bottom
+      of the page. Click <strong>Accept all</strong>, <strong>Reject all</strong>, or
+      <strong>Customise</strong> to submit a consent event.
+    </p>
+
+    <div class="box">
+      <strong>Org ID:</strong> <code>94412c69-7916-4d1b-8e68-7ad120f68ed7</code><br />
+      <strong>Property ID:</strong> <code>cd63861c-ab3e-4ed8-ab6c-67862b22c7b2</code>
+    </div>
+
+    <h2>Consent decision log</h2>
+    <p class="note">
+      This panel listens for the <code>consentshield:consent</code> custom event that the banner
+      script dispatches when a user makes a decision.
+    </p>
+    <div id="consent-log">(waiting for a decision…)</div>
+
+    <h2>Reset</h2>
+    <p>
+      The banner stores your decision in <code>localStorage</code> and won't show again.
+      Click below to clear and reload.
+    </p>
+    <button onclick="Object.keys(localStorage).filter(k=>k.startsWith('cs_consent_')).forEach(k=>localStorage.removeItem(k));location.reload();">
+      Clear consent and reload
+    </button>
+
+    <script>
+      window.addEventListener('consentshield:consent', function (e) {
+        var log = document.getElementById('consent-log')
+        var d = e.detail
+        log.textContent =
+          d.event_type +
+          ' — accepted: [' +
+          d.accepted.join(', ') +
+          '] rejected: [' +
+          d.rejected.join(', ') +
+          ']'
+      })
+    </script>
+  </body>
+</html>
