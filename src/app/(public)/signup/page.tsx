@@ -4,83 +4,121 @@ import { createBrowserClient } from '@/lib/supabase/browser'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
+type Stage = 'form' | 'code'
+
 export default function SignupPage() {
+  const [stage, setStage] = useState<Stage>('form')
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [orgName, setOrgName] = useState('')
   const [industry, setIndustry] = useState('')
+  const [code, setCode] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [pending, setPending] = useState(false)
   const router = useRouter()
 
-  async function handleSignup(e: React.FormEvent) {
+  async function handleRequestCode(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError('')
 
     const supabase = createBrowserClient()
-    const callbackUrl = `${window.location.origin}/auth/callback`
-
-    const { data, error: authError } = await supabase.auth.signUp({
+    const { error: otpError } = await supabase.auth.signInWithOtp({
       email,
-      password,
       options: {
         data: { org_name: orgName, industry: industry || null },
-        emailRedirectTo: callbackUrl,
+        shouldCreateUser: true,
       },
     })
 
-    if (authError) {
-      setError(authError.message)
+    if (otpError) {
+      setError(otpError.message)
       setLoading(false)
       return
     }
 
-    if (!data.user) {
-      setError('Signup failed — no user returned')
-      setLoading(false)
-      return
-    }
-
-    // Two Supabase flavours converge on /auth/callback:
-    //   - "Confirm email" OFF: signUp returns a session; cookies are set;
-    //     navigate to the callback which runs rpc_signup_bootstrap_org.
-    //   - "Confirm email" ON: session is null. Show the pending panel;
-    //     the user clicks the email link and lands on /auth/callback?code=…
-    //     which does the exchange + bootstrap.
-    if (data.session) {
-      router.push('/auth/callback')
-      router.refresh()
-      return
-    }
-
-    setPending(true)
+    setStage('code')
     setLoading(false)
   }
 
-  if (pending) {
+  async function handleVerify(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+
+    const supabase = createBrowserClient()
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      email,
+      token: code.trim(),
+      type: 'email',
+    })
+
+    if (verifyError) {
+      setError(verifyError.message)
+      setLoading(false)
+      return
+    }
+
+    // /auth/callback reads the freshly-set session cookie, runs
+    // rpc_signup_bootstrap_org if this is a first-time user, then
+    // redirects to /dashboard.
+    router.push('/auth/callback')
+    router.refresh()
+  }
+
+  if (stage === 'code') {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center p-8">
-        <div className="w-full max-w-sm space-y-4 text-center">
-          <h1 className="text-2xl font-bold">Check your email</h1>
-          <p className="text-sm text-gray-600">
-            We sent a confirmation link to <strong>{email}</strong>. Click it to finish
-            creating <strong>{orgName}</strong>. You&rsquo;ll land on the dashboard once
-            verified.
-          </p>
-          <p className="text-xs text-gray-500">
-            If the email doesn&rsquo;t arrive in a minute, check your spam folder or{' '}
+        <div className="w-full max-w-sm space-y-6">
+          <div>
+            <h1 className="text-2xl font-bold">Enter your code</h1>
+            <p className="mt-1 text-sm text-gray-600">
+              We sent a 6-digit code to <strong>{email}</strong>. It expires in 1 hour.
+            </p>
+          </div>
+
+          <form onSubmit={handleVerify} className="space-y-4">
+            <div>
+              <label htmlFor="code" className="block text-sm font-medium">
+                Verification code
+              </label>
+              <input
+                id="code"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                autoComplete="one-time-code"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                required
+                maxLength={6}
+                className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-center text-2xl tracking-widest"
+              />
+            </div>
+
+            {error && <p className="text-sm text-red-600">{error}</p>}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+            >
+              {loading ? 'Verifying...' : 'Verify and continue'}
+            </button>
+          </form>
+
+          <p className="text-center text-sm text-gray-600">
+            Didn&rsquo;t get it?{' '}
             <button
               type="button"
               onClick={() => {
-                setPending(false)
+                setCode('')
+                setError('')
+                setStage('form')
               }}
-              className="underline"
+              className="font-medium text-black hover:underline"
             >
-              try again
+              Use a different email
             </button>
-            .
           </p>
         </div>
       </main>
@@ -92,10 +130,12 @@ export default function SignupPage() {
       <div className="w-full max-w-sm space-y-6">
         <div>
           <h1 className="text-2xl font-bold">Create your account</h1>
-          <p className="mt-1 text-sm text-gray-600">Start your DPDP compliance journey</p>
+          <p className="mt-1 text-sm text-gray-600">
+            No password. We&rsquo;ll email you a one-time code.
+          </p>
         </div>
 
-        <form onSubmit={handleSignup} className="space-y-4">
+        <form onSubmit={handleRequestCode} className="space-y-4">
           <div>
             <label htmlFor="orgName" className="block text-sm font-medium">
               Organisation name
@@ -144,21 +184,6 @@ export default function SignupPage() {
             />
           </div>
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={8}
-              className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm"
-            />
-          </div>
-
           {error && <p className="text-sm text-red-600">{error}</p>}
 
           <button
@@ -166,7 +191,7 @@ export default function SignupPage() {
             disabled={loading}
             className="w-full rounded bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
           >
-            {loading ? 'Creating account...' : 'Create account'}
+            {loading ? 'Sending code...' : 'Send code'}
           </button>
         </form>
 

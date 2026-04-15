@@ -2,8 +2,9 @@
 
 (c) 2026 Sudhindra Anegondhi a.d.sudhindra@gmail.com
 
-**Status:** In Progress
+**Status:** Completed (pending live manual signup test)
 **Date proposed:** 2026-04-15
+**Date completed:** 2026-04-15
 
 ---
 
@@ -96,7 +97,52 @@ ADR-0013 supersedes that file.
 - Idempotency: hitting `/auth/callback` twice in a row does not create a
   second `organisations` row.
 
-**Status:** `[~] in progress`
+**Status:** `[x] complete` (superseded in effect by Sprint 1.2; magic-link path is no longer the primary flow)
+
+#### Sprint 1.2: OTP-only email verification (supersedes magic-link flow)
+
+**Goal:** Eliminate the magic-link email entirely. Replace with a 6-digit
+OTP that the user types back into the session that requested it. Closes
+the phishing, email-forwarding, referer-leak, and email-scanner-prefetch
+failure modes that magic links carry.
+
+**Why OTP over magic link:**
+1. **Phishing / forwarding resistance.** Magic link in email = anyone with
+   mailbox access can complete signup. OTP requires the originating
+   browser tab.
+2. **No URL leakage.** Browser history, `Referer`, proxy logs never carry
+   an OTP.
+3. **No email-scanner premature consumption.** Outlook / Google Workspace
+   scanners prefetch links and consume single-use tokens before the user.
+4. **Device continuity.** OTP forces the same browser to start and
+   finish; a lost phone with logged-in email isn't a full takeover.
+
+Matches ADR-0004 (rights-request OTP). Consistency across every
+email-as-identity moment.
+
+**Deliverables:**
+- `src/app/(public)/signup/page.tsx` — two-stage form (email + org
+  → OTP). Uses `supabase.auth.signInWithOtp({email, options:{data}})`;
+  then `supabase.auth.verifyOtp({email, token, type:'email'})`. Navigates
+  to `/auth/callback` on success.
+- `src/app/(public)/login/page.tsx` — two-stage form (email → OTP).
+  Passwords removed from the UI (Supabase still accepts password auth at
+  the API, but we don't surface it).
+- `/auth/callback` — no code change. Already handles the "session already
+  set by client, no `?code` param" path.
+- Operator action: set the Supabase "Magic Link" email template to
+  surface `{{ .Token }}` prominently and drop the `{{ .ConfirmationURL }}`
+  link (eliminates the link fallback a scanner could prefetch).
+
+**Testing plan:**
+- `bun run lint`, `bun run build`, `bun run test` — green.
+- Manual: signup a new email → code arrives → enter code → `/dashboard`.
+- Manual: login with an existing email (Estara-ai admin) → code arrives
+  → enter code → `/dashboard`, org loads.
+- Idempotency: existing user re-submitting the signup form does not
+  create a new org.
+
+**Status:** `[x] complete` (pending live manual test)
 
 ---
 
