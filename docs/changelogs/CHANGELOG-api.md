@@ -28,6 +28,24 @@ API route changes.
   lookup fallback to `razorpay_subscription_id` is preserved. Razorpay will
   retry on non-2xx, buying time for investigation instead of losing the event.
 
+## ADR-0013 Sprint 1.1 — 2026-04-15
+
+### Added
+- `src/app/auth/callback/route.ts` — single post-signup / post-confirmation
+  handler. Exchanges `?code=…` for a session if present, then runs
+  `rpc_signup_bootstrap_org` when the user has no org membership and has
+  `org_name` in `user_metadata`. Redirects to `/dashboard` on success,
+  `/login?error=…` on failure.
+
+### Removed
+- `src/app/api/auth/signup/route.ts` — superseded by `/auth/callback`.
+
+### Tested
+- [x] `bun run lint` — PASS
+- [x] `bun run build` — PASS (38 routes; `/auth/callback` present,
+  `/api/auth/signup` gone)
+- [x] `bun run test` — 39 / 39 PASS
+
 ## S-3 / S-6 remediation — 2026-04-14
 
 ### Changed

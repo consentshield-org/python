@@ -11,6 +11,7 @@ export default function SignupPage() {
   const [industry, setIndustry] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [pending, setPending] = useState(false)
   const router = useRouter()
 
   async function handleSignup(e: React.FormEvent) {
@@ -19,11 +20,15 @@ export default function SignupPage() {
     setError('')
 
     const supabase = createBrowserClient()
+    const callbackUrl = `${window.location.origin}/auth/callback`
 
-    // 1. Create auth user
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    const { data, error: authError } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        data: { org_name: orgName, industry: industry || null },
+        emailRedirectTo: callbackUrl,
+      },
     })
 
     if (authError) {
@@ -32,35 +37,54 @@ export default function SignupPage() {
       return
     }
 
-    if (!authData.user) {
+    if (!data.user) {
       setError('Signup failed — no user returned')
       setLoading(false)
       return
     }
 
-    // 2. Create org + link member via server API
-    const res = await fetch('/api/auth/signup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userId: authData.user.id,
-        orgName,
-        industry: industry || undefined,
-      }),
-    })
-
-    if (!res.ok) {
-      const body = await res.json()
-      setError(body.error || 'Failed to create organisation')
-      setLoading(false)
+    // Two Supabase flavours converge on /auth/callback:
+    //   - "Confirm email" OFF: signUp returns a session; cookies are set;
+    //     navigate to the callback which runs rpc_signup_bootstrap_org.
+    //   - "Confirm email" ON: session is null. Show the pending panel;
+    //     the user clicks the email link and lands on /auth/callback?code=…
+    //     which does the exchange + bootstrap.
+    if (data.session) {
+      router.push('/auth/callback')
+      router.refresh()
       return
     }
 
-    // 3. Refresh session to pick up JWT claims (org_id, org_role)
-    await supabase.auth.refreshSession()
+    setPending(true)
+    setLoading(false)
+  }
 
-    router.push('/dashboard')
-    router.refresh()
+  if (pending) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center p-8">
+        <div className="w-full max-w-sm space-y-4 text-center">
+          <h1 className="text-2xl font-bold">Check your email</h1>
+          <p className="text-sm text-gray-600">
+            We sent a confirmation link to <strong>{email}</strong>. Click it to finish
+            creating <strong>{orgName}</strong>. You&rsquo;ll land on the dashboard once
+            verified.
+          </p>
+          <p className="text-xs text-gray-500">
+            If the email doesn&rsquo;t arrive in a minute, check your spam folder or{' '}
+            <button
+              type="button"
+              onClick={() => {
+                setPending(false)
+              }}
+              className="underline"
+            >
+              try again
+            </button>
+            .
+          </p>
+        </div>
+      </main>
+    )
   }
 
   return (

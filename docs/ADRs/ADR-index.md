@@ -13,6 +13,7 @@ All Architecture Decision Records for ConsentShield, in chronological order.
 | ADR-0007 | Deletion Orchestration (Generic Webhook Protocol) | Completed | 2026-04-14 | 1 | 3 |
 | ADR-0008 | Browser Auth Hardening (Remove Client Signing Secret, origin_verified, Fail-Fast Turnstile) | Completed | 2026-04-14 | 1 | 4 |
 | ADR-0009 | Scoped-Role Enforcement in REST Paths | Completed | 2026-04-14 | 3 | 3 |
+| ADR-0013 | Signup Bootstrap Hardening (single `/auth/callback` path) | In Progress | 2026-04-15 | 1 | 1 |
 
 <!--
 When adding a new ADR:
