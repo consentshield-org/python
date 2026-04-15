@@ -10,12 +10,13 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@sentry/nextjs": "10.48.0",
+    "@supabase/ssr": "0.10.2",
+    "@supabase/supabase-js": "2.103.0",
+    "input-otp": "1.4.2",
     "next": "16.2.3",
     "react": "19.2.5",
-    "react-dom": "19.2.5",
-    "@supabase/supabase-js": "2.103.0",
-    "@supabase/ssr": "0.10.2",
-    "@sentry/nextjs": "10.48.0"
+    "react-dom": "19.2.5"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "4.20260414.1",

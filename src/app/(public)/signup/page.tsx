@@ -3,6 +3,7 @@
 import { createBrowserClient } from '@/lib/supabase/browser'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { OtpBoxes } from '@/components/otp-boxes'
 
 type Stage = 'form' | 'code'
 
@@ -72,28 +73,12 @@ export default function SignupPage() {
           <div>
             <h1 className="text-2xl font-bold">Enter your code</h1>
             <p className="mt-1 text-sm text-gray-600">
-              We sent a 6-digit code to <strong>{email}</strong>. It expires in 1 hour.
+              We sent a verification code to <strong>{email}</strong>. It expires in 1 hour.
             </p>
           </div>
 
           <form onSubmit={handleVerify} className="space-y-4">
-            <div>
-              <label htmlFor="code" className="block text-sm font-medium">
-                Verification code
-              </label>
-              <input
-                id="code"
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                autoComplete="one-time-code"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                required
-                maxLength={6}
-                className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-center text-2xl tracking-widest"
-              />
-            </div>
+            <OtpBoxes value={code} onChange={setCode} autoFocus />
 
             {error && <p className="text-sm text-red-600">{error}</p>}
 

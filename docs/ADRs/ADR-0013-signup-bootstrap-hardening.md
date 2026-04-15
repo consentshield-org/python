@@ -158,7 +158,47 @@ email-as-identity moment.
 
 ## Test Results
 
-_Recorded after sprint._
+### Sprint 1.2 — 2026-04-15 (live, end-to-end)
+
+```
+Test: bun run lint / build / test
+Expected: all green
+Actual:   lint clean, 38 routes built, 39/39 tests pass
+Result: PASS
+
+Test: deliverability audit for noreply@consentshield.in
+Method: POST /auth/v1/otp → observe Resend event log
+Expected: OTP email delivers to Gmail
+Actual: initial attempts bounced. Diagnostic below, all fixed:
+  - DMARC had adkim=s; aspf=s (strict). Resend signs from send.
+    subdomain; strict alignment rejected. Fixed: relaxed to r.
+  - DKIM TXT at resend._domainkey.consentshield.in was stale with
+    an empty public key ("v=DKIM1; p="). Cloudflare zone itself
+    had the correct record; DNS cache/sync lag was the proximate
+    cause. After a manual refresh the record resolved correctly.
+  - Supabase's "Confirm signup" and "Magic Link" templates are
+    separate; the operator customised both to surface `{{ .Token }}`
+    and drop the `{{ .ConfirmationURL }}` fallback.
+Result: PASS — Resend event log shows `delivered` for every
+Supabase-path signup and login OTP after the DNS + template fixes.
+
+Test: end-to-end signup via /signup on the live deploy
+Method: Visit https://consentshield-one.vercel.app/signup; fill
+  email + orgName + industry; receive code; verify; land on /dashboard.
+Expected: organisations + organisation_members + audit_log rows
+  created under the new auth.uid().
+Actual: confirmed by user. Idempotency not stressed yet (single
+  fresh account) — revisit on next signup.
+Result: PASS (pending idempotency regression test in ADR-0012).
+```
+
+### Follow-ups noted
+
+- DMARC is back at strict `p=reject` which is fine post-fix; relaxed
+  alignment (`adkim=r; aspf=r`) stays.
+- Operators adding any *new* Supabase Auth flow (password reset, etc.)
+  must customise that template too. Add a checklist item to the ops
+  runbook.
 
 ---
 
