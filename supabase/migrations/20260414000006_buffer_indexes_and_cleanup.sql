@@ -40,6 +40,9 @@ create index if not exists idx_probe_runs_delivered_stale
 -- it without a service-role JWT.
 -- -----------------------------------------------------------------------------
 
+-- Migration role must be a member of cs_orchestrator (true for postgres
+-- per migration 010).
+
 create or replace function public.cleanup_unverified_rights_requests()
 returns integer
 language plpgsql

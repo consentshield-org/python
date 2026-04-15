@@ -4,6 +4,9 @@
 -- scoped role that should be the runtime principal, and granted to the
 -- appropriate PostgREST role (anon or authenticated).
 
+-- Migration role must be a member of cs_orchestrator (true for postgres
+-- per migration 010).
+
 -- -----------------------------------------------------------------------------
 -- Public reads (replaces service-role use in the /rights/[orgId] and
 -- /privacy/[orgId] server components).

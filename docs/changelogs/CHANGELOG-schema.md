@@ -44,6 +44,34 @@ Closes four blocking findings from the 2026-04-14 review.
 ### Tested
 - [ ] Live `supabase db push` — pending user approval.
 
+## 2026-04-15 — deployment fixups
+
+### Added
+- `20260414000000_scoped_roles_set_option.sql` — corrective migration for
+  PostgreSQL 16's split of GRANT ROLE into admin/inherit/set options.
+  Migration 010 used the pre-16 syntax and produced `set_option = f`, which
+  made `ALTER FUNCTION ... OWNER TO cs_orchestrator` fail with "must be
+  able to SET ROLE". This migration re-grants with `with set true` and
+  grants `CREATE on schema public` to `cs_orchestrator` and `cs_delivery`
+  (PG 15+ revoked `CREATE` on public by default, without which function
+  ownership transfer fails with "permission denied for schema public").
+- `20260414000009_cron_vault_secret.sql` — re-scheduled the four
+  pg_net-based cron jobs to read the orchestrator key from Supabase Vault
+  (`select decrypted_secret from vault.decrypted_secrets where name =
+  'cs_orchestrator_key'`). Hosted Supabase forbids `ALTER DATABASE ... SET
+  app.<key>` (permission denied), so the GUC-based approach in migration
+  008 was non-viable.
+
+### Operator one-time actions (not in migrations)
+- `select vault.create_secret('<key>', 'cs_orchestrator_key');` — run in
+  the Supabase SQL editor or via psql.
+
+### Applied
+- All migrations through `20260414000009` applied via psql (the Supabase
+  CLI pooler path FATAL'd on the large rpc migration; fallback ran clean).
+- Confirmed `consent_events.origin_verified` now shows rows with
+  `'origin-only'` from a live smoke test.
+
 ## S-3 / S-12 remediation — 2026-04-14
 
 ### Added

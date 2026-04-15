@@ -22,4 +22,12 @@ Cloudflare Worker changes.
 
 ### Tested
 - [x] `bunx tsc --noEmit` — PASS
-- [ ] Live `wrangler dev` smoke — pending deploy
+- [x] Live deploy `wrangler deploy` via `CLOUDFLARE_API_TOKEN`. Version ID
+  `9fb7bd37-20cf-4589-985c-9c8512ce9e9f`.
+- [x] Smoke test on `cdn.consentshield.in`:
+  - `GET /v1/banner.js` — 200, no `"secret"` substring in the compiled
+    script.
+  - `POST /v1/events` without `Origin` header → 403 `"Origin required for
+    unsigned events"`.
+  - `POST /v1/events` with allowed origin + valid banner_id → 202 and
+    `consent_events.origin_verified = 'origin-only'` persisted.

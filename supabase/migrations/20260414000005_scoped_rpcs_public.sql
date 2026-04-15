@@ -5,6 +5,11 @@
 -- validates its inputs. Input validation mirrors the checks previously
 -- performed in the Next.js routes.
 
+-- Note: the migration role (postgres) is already a member of cs_orchestrator
+-- via migration 010 (scoped_roles) — ALTER FUNCTION ... OWNER TO cs_orchestrator
+-- succeeds directly. If run under a role without membership, grant it first:
+--   grant cs_orchestrator to <migration_role>;
+
 -- -----------------------------------------------------------------------------
 -- Grant extensions. The original cs_orchestrator grants (migration 010) did
 -- not cover INSERT on rights_requests nor the OTP columns, because the

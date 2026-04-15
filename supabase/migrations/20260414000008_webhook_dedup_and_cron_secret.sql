@@ -3,6 +3,9 @@
 -- S-12: pg_cron jobs read the orchestrator key from a session setting
 --       instead of a baked-in placeholder.
 
+-- Migration role must be a member of cs_orchestrator (true for postgres
+-- per migration 010).
+
 -- -----------------------------------------------------------------------------
 -- S-3: webhook_events_processed — tiny operational table that records every
 -- event ID we have already acted on. Row lives forever (row count is small
