@@ -151,7 +151,14 @@ The migration is reversible until Phase 4 (Vercel project split). Up to that poi
 - [ ] After all 3 commits: `grep -rn "from '@/lib/encryption\\|from '@/lib/compliance" app/src/` returns zero hits for the moved files (only app-specific lib paths remain).
 - [ ] After all 3 commits: shared types are imported from `@consentshield/shared-types` in `app/src/`; app-specific types continue to live at `from '@/types/...'` and are unchanged.
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete` — 2026-04-16
+
+**Execution notes (2026-04-16):**
+- Three commits, one per package — revert-friendly.
+- `packages/compliance` — moved `score.ts` + `privacy-notice.ts` verbatim; `src/index.ts` re-exports the full surface (`computeComplianceScore`, `daysBetween`, `daysUntilEnforcement`, `isoSinceHours`, `nowIso`, `composePrivacyNotice` + their types). 5 app/src call sites rewired.
+- `packages/encryption` — moved `crypto.ts` verbatim. `@supabase/supabase-js` is declared as a `peerDependency` (not a direct dep) because `crypto.ts` takes `SupabaseClient` as a parameter and doesn't instantiate its own client; pinning here would risk version drift with the host app. 2 app/src call sites rewired.
+- `packages/shared-types` — shipped as a stub (`app/src/types/` was empty at extraction time). `src/index.ts` is an `export {}` with a comment describing which ADRs will populate it (0020 DEPA, 0027 admin). Added to `app/package.json` so the dependency edge exists before any type is moved in.
+- Root `package.json` workspace list expanded to `["app", "worker", "packages/*"]` at the compliance commit (the first time a `packages/*` entry was non-empty).
 
 ### Phase 3: Admin app skeleton
 
@@ -251,7 +258,27 @@ bun run test:rls                 → 2 files, 44/44 tests pass
 Total: 42 + 44 = 86/86 (matches Phase 2 close baseline)
 ```
 
-### Sprint 2.1 — TBD
+### Sprint 2.1 — 2026-04-16 (Completed)
+
+```
+# Split into 3 commits (one per package):
+# - 4b48545 feat(ADR-0026): sprint 2.1a — extract packages/compliance
+# - 4eb34d3 feat(ADR-0026): sprint 2.1b — extract packages/encryption
+# - fec7a0a feat(ADR-0026): sprint 2.1c — extract packages/shared-types (stub)
+
+After each commit:
+  cd app && bun run lint     → 0 warnings
+  cd app && bun run build    → all routes compiled
+  cd app && bun run test     → 7 files, 42/42 pass
+  bun run test:rls           → 2 files, 44/44 pass
+  Combined: 86/86 (matches Sprint 1.1 baseline)
+
+Verification:
+  grep -rn "from '@/lib/encryption\|from '@/lib/compliance" app/src/ → 0 hits
+  ls app/src/lib/           → no compliance/ or encryption/ subdirectories
+  bun pm ls                 → 5 workspace members (app, worker, compliance,
+                              encryption, shared-types)
+```
 
 ### Sprint 3.1 — TBD
 

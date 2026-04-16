@@ -43,3 +43,28 @@ Vercel, Cloudflare, Supabase config changes.
 - `packages/*` workspace entries — Sprint 2.1
 - Vercel project root-directory change + `consentshield-admin` project creation + Cloudflare Access + CI isolation guards — Sprint 4.1 (point of no return)
 - Cleaner shared test-utility extraction (today: `app/tests/buffer/lifecycle.test.ts` imports `../../../tests/rls/helpers`) — deferred; not a correctness issue, just a path hop
+
+## [Sprint 2.1] — 2026-04-16
+
+**ADR:** ADR-0026 — Monorepo Restructure
+**Sprint:** Phase 2, Sprint 2.1 — Extract 3 shared packages (one commit per package)
+
+### Added
+- `packages/compliance/` — `@consentshield/compliance`, deterministic compliance logic (`computeComplianceScore`, `daysBetween`, `daysUntilEnforcement`, `isoSinceHours`, `nowIso`, `composePrivacyNotice` + their types). Commit `4b48545`.
+- `packages/encryption/` — `@consentshield/encryption`, per-org key derivation helpers (`encryptForOrg`, `decryptForOrg`). `@supabase/supabase-js` declared as peerDependency (takes `SupabaseClient` as a parameter). Commit `4eb34d3`.
+- `packages/shared-types/` — `@consentshield/shared-types`, stub package for schema-derived types shared by both apps. Populated by subsequent ADRs (0020 DEPA, 0027 admin). Commit `fec7a0a`.
+
+### Changed
+- Root `package.json` workspaces → `["app", "worker", "packages/*"]` (added on the compliance commit).
+- `app/package.json` — added `@consentshield/compliance`, `@consentshield/encryption`, `@consentshield/shared-types` as `workspace:*` dependencies.
+- `git mv` `app/src/lib/compliance/{score,privacy-notice}.ts` → `packages/compliance/src/`. Empty `app/src/lib/compliance/` directory removed.
+- `git mv` `app/src/lib/encryption/crypto.ts` → `packages/encryption/src/`. Empty `app/src/lib/encryption/` directory removed.
+- 7 call sites in `app/src/` rewired from relative `@/lib/{compliance,encryption}` paths to `@consentshield/{compliance,encryption}` package imports.
+
+### Tested (after each of the 3 commits)
+- [x] `cd app && bun run lint` — zero warnings — PASS
+- [x] `cd app && bun run build` — all 38 routes compiled — PASS
+- [x] `cd app && bun run test` — 7 files, 42/42 tests pass — PASS
+- [x] `bun run test:rls` (root) — 2 files, 44/44 tests pass — PASS
+- [x] Combined: 86/86 (matches Sprint 1.1 baseline)
+- [x] `grep -rn "from '@/lib/encryption\|from '@/lib/compliance" app/src/` → 0 hits — PASS
