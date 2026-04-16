@@ -19,6 +19,7 @@
       "dependencies": {
         "@consentshield/compliance": "workspace:*",
         "@consentshield/encryption": "workspace:*",
+        "@consentshield/shared-types": "workspace:*",
         "@sentry/nextjs": "10.48.0",
         "@supabase/ssr": "0.10.2",
         "@supabase/supabase-js": "2.103.0",
@@ -53,6 +54,10 @@
       "peerDependencies": {
         "@supabase/supabase-js": "2.103.0",
       },
+    },
+    "packages/shared-types": {
+      "name": "@consentshield/shared-types",
+      "version": "0.1.0",
     },
     "worker": {
       "name": "@consentshield/worker",
@@ -114,6 +119,8 @@
     "@consentshield/compliance": ["@consentshield/compliance@workspace:packages/compliance"],
 
     "@consentshield/encryption": ["@consentshield/encryption@workspace:packages/encryption"],
+
+    "@consentshield/shared-types": ["@consentshield/shared-types@workspace:packages/shared-types"],
 
     "@consentshield/worker": ["@consentshield/worker@workspace:worker"],
 
