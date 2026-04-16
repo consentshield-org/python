@@ -52,3 +52,9 @@ coverage/
 
 # Archive
 files.zip
+
+# OpenWolf — token ledger grows unboundedly per session; keep local only
+.wolf/token-ledger.json
+
+# Unzipped scratch dirs
+docs/design/consentshield-zip/

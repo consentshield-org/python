@@ -112,6 +112,1574 @@
       "related_bugs": [],
       "occurrences": 4,
       "last_seen": "2026-04-13T11:45:03.815Z"
+    },
+    {
+      "id": "bug-008",
+      "timestamp": "2026-04-13T12:21:15.426Z",
+      "error_message": "Wrong reference: Proposed should be In",
+      "file": "docs/ADRs/ADR-0001-project-scaffolding.md",
+      "root_cause": "Used \"Proposed\" instead of \"In\"",
+      "fix": "Changed Proposed → In",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-13T12:21:15.426Z"
+    },
+    {
+      "id": "bug-009",
+      "timestamp": "2026-04-13T12:21:16.851Z",
+      "error_message": "Incorrect value in code",
+      "file": "docs/ADRs/ADR-0001-project-scaffolding.md",
+      "root_cause": "Had `[ ] planned`",
+      "fix": "Changed to `[~] in progress`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-13T12:21:16.851Z"
+    },
+    {
+      "id": "bug-010",
+      "timestamp": "2026-04-13T13:06:22.737Z",
+      "error_message": "Incorrect value in code",
+      "file": "package.json",
+      "root_cause": "Had \"next lint\"",
+      "fix": "Changed to \"next lint .\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "json"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-04-13T13:06:40.077Z"
+    },
+    {
+      "id": "bug-011",
+      "timestamp": "2026-04-13T13:07:06.841Z",
+      "error_message": "Incorrect value in code",
+      "file": "docs/ADRs/ADR-0001-project-scaffolding.md",
+      "root_cause": "Had `[~] in progress`",
+      "fix": "Changed to `[x] complete`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-13T13:07:06.841Z"
+    },
+    {
+      "id": "bug-012",
+      "timestamp": "2026-04-13T13:07:13.026Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/ADRs/ADR-0001-project-scaffolding.md",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 3→28 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-13T13:07:13.026Z"
+    },
+    {
+      "id": "bug-013",
+      "timestamp": "2026-04-13T13:19:43.749Z",
+      "error_message": "Incorrect value in code",
+      "file": "docs/ADRs/ADR-0001-project-scaffolding.md",
+      "root_cause": "Had `[ ] planned`",
+      "fix": "Changed to `[~] in progress`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-13T13:19:43.749Z"
+    },
+    {
+      "id": "bug-014",
+      "timestamp": "2026-04-13T13:28:37.357Z",
+      "error_message": "Incorrect value in code",
+      "file": "docs/ADRs/ADR-0001-project-scaffolding.md",
+      "root_cause": "Had `[~] in progress`",
+      "fix": "Changed to `[x] complete`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 9,
+      "last_seen": "2026-04-13T13:49:40.982Z"
+    },
+    {
+      "id": "bug-015",
+      "timestamp": "2026-04-13T13:28:46.733Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/ADRs/ADR-0001-project-scaffolding.md",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 3→32 lines (2 removed) | Also: ### Sprint 1.3 — [Date]; _Pending_",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-04-13T13:31:35.037Z"
+    },
+    {
+      "id": "bug-016",
+      "timestamp": "2026-04-13T13:38:23.908Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/ADRs/ADR-0001-project-scaffolding.md",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 3→28 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-13T13:38:23.908Z"
+    },
+    {
+      "id": "bug-017",
+      "timestamp": "2026-04-13T13:43:48.331Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/ADRs/ADR-0001-project-scaffolding.md",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 3→24 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-13T13:43:48.331Z"
+    },
+    {
+      "id": "bug-018",
+      "timestamp": "2026-04-13T13:49:50.070Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/ADRs/ADR-0001-project-scaffolding.md",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 3→30 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-13T13:49:50.070Z"
+    },
+    {
+      "id": "bug-019",
+      "timestamp": "2026-04-13T16:06:56.916Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/ADRs/ADR-0001-project-scaffolding.md",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 3→19 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-13T16:06:56.916Z"
+    },
+    {
+      "id": "bug-020",
+      "timestamp": "2026-04-13T16:11:52.300Z",
+      "error_message": "Wrong reference: Proposed should be In",
+      "file": "docs/ADRs/ADR-0002-worker-hmac-origin.md",
+      "root_cause": "Used \"Proposed\" instead of \"In\"",
+      "fix": "Changed Proposed → In",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-13T16:11:52.300Z"
+    },
+    {
+      "id": "bug-021",
+      "timestamp": "2026-04-13T16:11:53.829Z",
+      "error_message": "Incorrect value in code",
+      "file": "docs/ADRs/ADR-0002-worker-hmac-origin.md",
+      "root_cause": "Had `[ ] planned`",
+      "fix": "Changed to `[~] in progress`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-13T16:11:53.829Z"
+    },
+    {
+      "id": "bug-022",
+      "timestamp": "2026-04-13T16:33:58.387Z",
+      "error_message": "Incorrect value in code",
+      "file": "docs/ADRs/ADR-0002-worker-hmac-origin.md",
+      "root_cause": "Had `[~] in progress`",
+      "fix": "Changed to `[x] complete`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-04-13T16:35:46.132Z"
+    },
+    {
+      "id": "bug-023",
+      "timestamp": "2026-04-13T16:34:05.877Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/ADRs/ADR-0002-worker-hmac-origin.md",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 7→35 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-13T16:34:05.877Z"
+    },
+    {
+      "id": "bug-024",
+      "timestamp": "2026-04-13T16:36:06.665Z",
+      "error_message": "Missing await",
+      "file": "worker/src/events.ts",
+      "root_cause": "Async call without await — returned Promise instead of value",
+      "fix": "Added await to async call",
+      "tags": [
+        "auto-detected",
+        "async-fix",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-13T16:36:06.665Z"
+    },
+    {
+      "id": "bug-025",
+      "timestamp": "2026-04-13T16:36:19.031Z",
+      "error_message": "Missing await",
+      "file": "worker/src/observations.ts",
+      "root_cause": "Async call without await — returned Promise instead of value",
+      "fix": "Added await to async call",
+      "tags": [
+        "auto-detected",
+        "async-fix",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-13T16:36:19.031Z"
+    },
+    {
+      "id": "bug-026",
+      "timestamp": "2026-04-13T16:41:13.274Z",
+      "error_message": "Incorrect value in code",
+      "file": "docs/ADRs/ADR-0002-worker-hmac-origin.md",
+      "root_cause": "Had `[~] in progress`",
+      "fix": "Changed to `[x] complete`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-13T16:41:13.274Z"
+    },
+    {
+      "id": "bug-027",
+      "timestamp": "2026-04-13T16:42:46.680Z",
+      "error_message": "Function not marked async",
+      "file": "worker/src/origin.ts",
+      "root_cause": "Function uses await but wasn't declared async",
+      "fix": "Added async modifier",
+      "tags": [
+        "auto-detected",
+        "async-fix",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-13T16:42:46.680Z"
+    },
+    {
+      "id": "bug-028",
+      "timestamp": "2026-04-14T00:49:13.459Z",
+      "error_message": "Wrong reference: Proposed should be In",
+      "file": "docs/ADRs/ADR-0003-consent-banner-dashboard.md",
+      "root_cause": "Used \"Proposed\" instead of \"In\"",
+      "fix": "Changed Proposed → In",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-14T00:49:13.459Z"
+    },
+    {
+      "id": "bug-029",
+      "timestamp": "2026-04-14T00:49:15.327Z",
+      "error_message": "Incorrect value in code",
+      "file": "docs/ADRs/ADR-0003-consent-banner-dashboard.md",
+      "root_cause": "Had `[ ] planned`",
+      "fix": "Changed to `[~] in progress`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 10,
+      "last_seen": "2026-04-14T01:10:43.391Z"
+    },
+    {
+      "id": "bug-030",
+      "timestamp": "2026-04-14T01:02:57.417Z",
+      "error_message": "Missing error handling in UPDATE",
+      "file": "docs/ADRs/ADR-0003-consent-banner-dashboard.md",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-14T01:02:57.417Z"
+    },
+    {
+      "id": "bug-031",
+      "timestamp": "2026-04-14T01:06:03.204Z",
+      "error_message": "Wrong reference: new should be nowIso",
+      "file": "src/app/(dashboard)/dashboard/page.tsx",
+      "root_cause": "Used \"new\" instead of \"nowIso\"",
+      "fix": "Changed new → nowIso",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-14T01:06:03.204Z"
+    },
+    {
+      "id": "bug-032",
+      "timestamp": "2026-04-14T01:11:05.108Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/ADRs/ADR-0003-consent-banner-dashboard.md",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 6→38 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-14T01:11:05.108Z"
+    },
+    {
+      "id": "bug-033",
+      "timestamp": "2026-04-14T08:15:11.231Z",
+      "error_message": "Wrong reference: Proposed should be In",
+      "file": "docs/ADRs/ADR-0004-rights-request-workflow.md",
+      "root_cause": "Used \"Proposed\" instead of \"In\"",
+      "fix": "Changed Proposed → In",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-14T08:15:11.231Z"
+    },
+    {
+      "id": "bug-034",
+      "timestamp": "2026-04-14T08:15:12.353Z",
+      "error_message": "Wrong reference: Proposed should be In",
+      "file": "docs/ADRs/ADR-0005-tracker-monitoring.md",
+      "root_cause": "Used \"Proposed\" instead of \"In\"",
+      "fix": "Changed Proposed → In",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-14T08:15:12.353Z"
+    },
+    {
+      "id": "bug-035",
+      "timestamp": "2026-04-14T08:15:13.222Z",
+      "error_message": "Wrong reference: Proposed should be In",
+      "file": "docs/ADRs/ADR-0006-razorpay-billing.md",
+      "root_cause": "Used \"Proposed\" instead of \"In\"",
+      "fix": "Changed Proposed → In",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-14T08:15:13.222Z"
+    },
+    {
+      "id": "bug-036",
+      "timestamp": "2026-04-14T08:18:10.131Z",
+      "error_message": "CSS fix: href",
+      "file": "src/components/dashboard-nav.tsx",
+      "root_cause": "href: '/dashboard/rights', label: 'Rights Requests' → '/dashboard/billing', label: 'Billing'",
+      "fix": "Changed href: '/dashboard/rights', label: 'Rights Requests' → '/dashboard/billing', label: 'Billing'",
+      "tags": [
+        "auto-detected",
+        "style-fix",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-14T08:18:10.131Z"
+    },
+    {
+      "id": "bug-037",
+      "timestamp": "2026-04-14T08:22:17.216Z",
+      "error_message": "Incorrect value in code",
+      "file": "docs/ADRs/ADR-0004-rights-request-workflow.md",
+      "root_cause": "Had `[ ] planned`",
+      "fix": "Changed to `[x] complete`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-14T08:22:17.216Z"
+    },
+    {
+      "id": "bug-038",
+      "timestamp": "2026-04-14T08:22:19.300Z",
+      "error_message": "Incorrect value in code",
+      "file": "docs/ADRs/ADR-0005-tracker-monitoring.md",
+      "root_cause": "Had `[ ] planned`",
+      "fix": "Changed to `[x] complete`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-14T08:22:19.300Z"
+    },
+    {
+      "id": "bug-039",
+      "timestamp": "2026-04-14T08:22:20.488Z",
+      "error_message": "Incorrect value in code",
+      "file": "docs/ADRs/ADR-0006-razorpay-billing.md",
+      "root_cause": "Had `[ ] planned`",
+      "fix": "Changed to `[x] complete`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-14T08:22:20.488Z"
+    },
+    {
+      "id": "bug-040",
+      "timestamp": "2026-04-14T08:23:58.242Z",
+      "error_message": "Missing await",
+      "file": "worker/src/banner.ts",
+      "root_cause": "Async call without await — returned Promise instead of value",
+      "fix": "Added await to async call",
+      "tags": [
+        "auto-detected",
+        "async-fix",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-14T08:23:58.242Z"
+    },
+    {
+      "id": "bug-041",
+      "timestamp": "2026-04-14T08:24:31.908Z",
+      "error_message": "Missing error handling in finalise",
+      "file": "worker/src/banner.ts",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-14T08:24:31.908Z"
+    },
+    {
+      "id": "bug-042",
+      "timestamp": "2026-04-14T09:26:00.944Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/app/(dashboard)/dashboard/billing/page.tsx",
+      "root_cause": "6 lines replaced/restructured",
+      "fix": "Rewrote 8→3 lines (6 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-14T09:26:00.944Z"
+    },
+    {
+      "id": "bug-043",
+      "timestamp": "2026-04-14T09:26:55.407Z",
+      "error_message": "Incorrect value in code",
+      "file": "docs/ADRs/ADR-0004-rights-request-workflow.md",
+      "root_cause": "Had `[ ] planned`",
+      "fix": "Changed to `[x] complete`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-14T09:26:55.407Z"
+    },
+    {
+      "id": "bug-044",
+      "timestamp": "2026-04-14T09:26:56.938Z",
+      "error_message": "Incorrect value in code",
+      "file": "docs/ADRs/ADR-0005-tracker-monitoring.md",
+      "root_cause": "Had `[ ] planned`",
+      "fix": "Changed to `[x] complete`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-14T09:26:56.938Z"
+    },
+    {
+      "id": "bug-045",
+      "timestamp": "2026-04-14T09:33:49.475Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/components/dashboard-nav.tsx",
+      "root_cause": "Had '/dashboard/inventory'",
+      "fix": "Changed to '/dashboard/enforcement'",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-14T09:33:49.475Z"
+    },
+    {
+      "id": "bug-046",
+      "timestamp": "2026-04-14T09:44:55.330Z",
+      "error_message": "Wrong reference: ReturnType should be SupabaseClient",
+      "file": "src/app/api/webhooks/razorpay/route.ts",
+      "root_cause": "Used \"ReturnType\" instead of \"SupabaseClient\"",
+      "fix": "Changed ReturnType → SupabaseClient",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-14T09:44:55.330Z"
+    },
+    {
+      "id": "bug-047",
+      "timestamp": "2026-04-14T09:46:28.373Z",
+      "error_message": "Incorrect value in code",
+      "file": "docs/ADRs/ADR-0004-rights-request-workflow.md",
+      "root_cause": "Had `[ ] planned`",
+      "fix": "Changed to `[x] complete`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-14T09:46:28.373Z"
+    },
+    {
+      "id": "bug-048",
+      "timestamp": "2026-04-14T09:46:39.650Z",
+      "error_message": "Incorrect value in code",
+      "file": "docs/ADRs/ADR-0005-tracker-monitoring.md",
+      "root_cause": "Had `[ ] planned`",
+      "fix": "Changed to `[x] complete`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-14T09:46:39.650Z"
+    },
+    {
+      "id": "bug-049",
+      "timestamp": "2026-04-14T09:46:46.457Z",
+      "error_message": "Incorrect value in code",
+      "file": "docs/ADRs/ADR-0006-razorpay-billing.md",
+      "root_cause": "Had `[ ] planned`",
+      "fix": "Changed to `[x] complete`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-14T09:46:46.457Z"
+    },
+    {
+      "id": "bug-050",
+      "timestamp": "2026-04-14T11:56:45.328Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/components/dashboard-nav.tsx",
+      "root_cause": "Had '/dashboard/billing'",
+      "fix": "Changed to '/dashboard/integrations'",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-14T11:56:45.328Z"
+    },
+    {
+      "id": "bug-051",
+      "timestamp": "2026-04-14T13:46:57.425Z",
+      "error_message": "CSS fix: data, ascending",
+      "file": "src/app/(dashboard)/dashboard/rights/[id]/page.tsx",
+      "root_cause": "data: events → receipts; ascending: true → false",
+      "fix": "Changed data: events → receipts; ascending: true → false",
+      "tags": [
+        "auto-detected",
+        "style-fix",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-14T13:46:57.425Z"
+    },
+    {
+      "id": "bug-052",
+      "timestamp": "2026-04-14T13:47:00.956Z",
+      "error_message": "Null/undefined access in ",
+      "file": "src/app/(dashboard)/dashboard/rights/[id]/page.tsx",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check)",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-14T13:47:00.956Z"
+    },
+    {
+      "id": "bug-053",
+      "timestamp": "2026-04-14T13:48:51.702Z",
+      "error_message": "Incorrect value in code",
+      "file": "docs/ADRs/ADR-0007-deletion-orchestration.md",
+      "root_cause": "Had `[ ] planned`",
+      "fix": "Changed to `[x] complete`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-14T13:48:51.702Z"
+    },
+    {
+      "id": "bug-054",
+      "timestamp": "2026-04-14T14:01:03.911Z",
+      "error_message": "Significant refactor of ",
+      "file": "CLAUDE.md",
+      "root_cause": "5 lines replaced/restructured",
+      "fix": "Rewrote 8→8 lines (5 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-14T14:01:03.911Z"
+    },
+    {
+      "id": "bug-055",
+      "timestamp": "2026-04-14T15:14:37.927Z",
+      "error_message": "Type error",
+      "file": "worker/src/origin.ts",
+      "root_cause": "Missing or incorrect type annotation",
+      "fix": "Added type assertion/annotation",
+      "tags": [
+        "auto-detected",
+        "type-fix",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-14T15:14:37.927Z"
+    },
+    {
+      "id": "bug-056",
+      "timestamp": "2026-04-14T15:14:53.838Z",
+      "error_message": "Wrong operator: || should be !==",
+      "file": "worker/src/events.ts",
+      "root_cause": "Used \"||\" instead of \"!==\"",
+      "fix": "Changed operator || → !==",
+      "tags": [
+        "auto-detected",
+        "operator-fix",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-14T15:14:53.838Z"
+    },
+    {
+      "id": "bug-057",
+      "timestamp": "2026-04-14T15:15:12.351Z",
+      "error_message": "Wrong operator: || should be !==",
+      "file": "worker/src/observations.ts",
+      "root_cause": "Used \"||\" instead of \"!==\"",
+      "fix": "Changed operator || → !==",
+      "tags": [
+        "auto-detected",
+        "operator-fix",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-14T15:15:12.351Z"
+    },
+    {
+      "id": "bug-058",
+      "timestamp": "2026-04-14T15:15:40.810Z",
+      "error_message": "Significant refactor of ",
+      "file": "worker/src/banner.ts",
+      "root_cause": "10 lines replaced/restructured",
+      "fix": "Rewrote 48→38 lines (10 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-14T15:15:40.810Z"
+    },
+    {
+      "id": "bug-059",
+      "timestamp": "2026-04-14T15:25:42.118Z",
+      "error_message": "Incorrect value in code",
+      "file": "package.json",
+      "root_cause": "Had \"@tailwindcss/postcss\"",
+      "fix": "Changed to \"@cloudflare/workers-types\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "json"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-14T15:25:42.118Z"
+    },
+    {
+      "id": "bug-060",
+      "timestamp": "2026-04-14T15:29:16.945Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/lib/rights/turnstile.ts",
+      "root_cause": "4 lines replaced/restructured",
+      "fix": "Rewrote 41→62 lines (4 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-14T15:29:16.945Z"
+    },
+    {
+      "id": "bug-061",
+      "timestamp": "2026-04-14T15:30:18.018Z",
+      "error_message": "Incorrect value in code",
+      "file": "docs/ADRs/ADR-0008-browser-auth-hardening.md",
+      "root_cause": "Had `[ ] planned`",
+      "fix": "Changed to `[x] complete`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-04-14T15:30:22.329Z"
+    },
+    {
+      "id": "bug-062",
+      "timestamp": "2026-04-14T15:47:17.838Z",
+      "error_message": "Incorrect value in code",
+      "file": "docs/ADRs/ADR-0009-scoped-role-enforcement.md",
+      "root_cause": "Had `[ ] planned`",
+      "fix": "Changed to `[x] complete`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-14T15:47:17.838Z"
+    },
+    {
+      "id": "bug-063",
+      "timestamp": "2026-04-14T15:50:03.947Z",
+      "error_message": "Type error",
+      "file": "supabase/functions/send-sla-reminders/index.ts",
+      "root_cause": "Missing or incorrect type annotation",
+      "fix": "Added type assertion/annotation",
+      "tags": [
+        "auto-detected",
+        "type-fix",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-14T15:50:03.947Z"
+    },
+    {
+      "id": "bug-064",
+      "timestamp": "2026-04-14T16:37:20.490Z",
+      "error_message": "Significant refactor of ",
+      "file": "supabase/migrations/20260414000005_scoped_rpcs_public.sql",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 3→4 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "sql"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-14T16:37:20.490Z"
+    },
+    {
+      "id": "bug-065",
+      "timestamp": "2026-04-15T01:32:56.445Z",
+      "error_message": "Significant refactor of ",
+      "file": "supabase/functions/send-sla-reminders/index.ts",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 9→11 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-15T01:32:56.445Z"
+    },
+    {
+      "id": "bug-066",
+      "timestamp": "2026-04-15T01:38:58.909Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/changelogs/CHANGELOG-edge-functions.md",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 3→12 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-15T01:38:58.909Z"
+    },
+    {
+      "id": "bug-067",
+      "timestamp": "2026-04-15T12:38:45.939Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/ADRs/ADR-0013-signup-bootstrap-hardening.md",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 5→46 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-15T12:38:45.939Z"
+    },
+    {
+      "id": "bug-068",
+      "timestamp": "2026-04-15T16:10:27.674Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/app/(public)/signup/page.tsx",
+      "root_cause": "17 lines replaced/restructured",
+      "fix": "Rewrote 20→4 lines (17 removed) | Also: <div>; <label htmlFor=\"code\" className=\"block text-sm fon",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-04-15T16:10:44.357Z"
+    },
+    {
+      "id": "bug-069",
+      "timestamp": "2026-04-16T00:28:53.705Z",
+      "error_message": "Significant refactor of ",
+      "file": "supabase/migrations/20260414000010_scoped_roles_rls_and_auth.sql",
+      "root_cause": "5 lines replaced/restructured",
+      "fix": "Rewrote 9→15 lines (5 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "sql"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-16T00:28:53.705Z"
+    },
+    {
+      "id": "bug-070",
+      "timestamp": "2026-04-16T00:29:06.733Z",
+      "error_message": "Significant refactor of ",
+      "file": "../../../.claude/projects/-Users-sudhindra-projects-aiSpirit-consent-sheild/memory/reference_email_deliverability.md",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 4→29 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-16T00:29:06.733Z"
+    },
+    {
+      "id": "bug-071",
+      "timestamp": "2026-04-16T00:31:39.300Z",
+      "error_message": "Significant refactor of ",
+      "file": ".claude/session-handoff.md",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 5→10 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-16T00:31:39.300Z"
+    },
+    {
+      "id": "bug-072",
+      "timestamp": "2026-04-16T00:39:03.373Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/app/api/public/rights-request/route.ts",
+      "root_cause": "Had `rights:${ip}`",
+      "fix": "Changed to `rl:rights:${ip}`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-04-16T00:39:04.753Z"
+    },
+    {
+      "id": "bug-073",
+      "timestamp": "2026-04-16T00:40:24.220Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/ADRs/ADR-0010-distributed-rate-limiter.md",
+      "root_cause": "5 lines replaced/restructured",
+      "fix": "Rewrote 17→25 lines (5 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-16T00:40:24.220Z"
+    },
+    {
+      "id": "bug-074",
+      "timestamp": "2026-04-16T00:40:57.134Z",
+      "error_message": "Missing await",
+      "file": "docs/changelogs/CHANGELOG-api.md",
+      "root_cause": "Async call without await — returned Promise instead of value",
+      "fix": "Added await to async call",
+      "tags": [
+        "auto-detected",
+        "async-fix",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-16T00:40:57.134Z"
+    },
+    {
+      "id": "bug-075",
+      "timestamp": "2026-04-16T00:46:48.054Z",
+      "error_message": "Missing error handling in function",
+      "file": "scripts/smoke-test-rate-limit.ts",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-16T00:46:48.054Z"
+    },
+    {
+      "id": "bug-076",
+      "timestamp": "2026-04-16T00:47:00.398Z",
+      "error_message": "Missing import: ../src/lib/rights/rate-limit",
+      "file": "scripts/smoke-test-rate-limit.ts",
+      "root_cause": "Module(s) not imported: ../src/lib/rights/rate-limit",
+      "fix": "Added import(s) for ../src/lib/rights/rate-limit",
+      "tags": [
+        "auto-detected",
+        "missing-import",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-16T00:47:00.398Z"
+    },
+    {
+      "id": "bug-077",
+      "timestamp": "2026-04-16T00:47:20.834Z",
+      "error_message": "Incorrect value in code",
+      "file": "docs/ADRs/ADR-0010-distributed-rate-limiter.md",
+      "root_cause": "Had `vercel env pull`",
+      "fix": "Changed to `upstash-kv-citrine-blanket`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-16T00:47:20.834Z"
+    },
+    {
+      "id": "bug-078",
+      "timestamp": "2026-04-16T00:47:25.391Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/ADRs/ADR-0010-distributed-rate-limiter.md",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 4→5 lines (2 removed) | Also: Test: Manual — multi-instance 429; Method: Six POSTs to /api/public/rights-request (p",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-04-16T00:47:32.270Z"
+    },
+    {
+      "id": "bug-079",
+      "timestamp": "2026-04-16T00:55:47.186Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/ADRs/ADR-0012-automated-test-suites.md",
+      "root_cause": "10 lines replaced/restructured",
+      "fix": "Rewrote 15→23 lines (10 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-16T00:55:47.186Z"
+    },
+    {
+      "id": "bug-080",
+      "timestamp": "2026-04-16T01:13:02.485Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/ADRs/ADR-0011-deletion-retry.md",
+      "root_cause": "7 lines replaced/restructured",
+      "fix": "Rewrote 15→15 lines (7 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-16T01:13:02.485Z"
+    },
+    {
+      "id": "bug-081",
+      "timestamp": "2026-04-16T01:13:35.936Z",
+      "error_message": "Wrong reference: Proposed should be Completed",
+      "file": "docs/STATUS.md",
+      "root_cause": "Used \"Proposed\" instead of \"Completed\"",
+      "fix": "Changed Proposed → Completed",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-16T01:13:35.936Z"
+    },
+    {
+      "id": "bug-082",
+      "timestamp": "2026-04-16T01:13:37.431Z",
+      "error_message": "Incorrect value in code",
+      "file": "docs/STATUS.md",
+      "root_cause": "Had `20260415000001_request_uid_helper.sql`",
+      "fix": "Changed to `20260416000003_enable_pg_net.sql`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 4,
+      "last_seen": "2026-04-16T01:17:57.749Z"
+    },
+    {
+      "id": "bug-083",
+      "timestamp": "2026-04-16T01:27:48.101Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/ADRs/ADR-0013-signup-bootstrap-hardening.md",
+      "root_cause": "4 lines replaced/restructured",
+      "fix": "Rewrote 10→22 lines (4 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-16T01:27:48.101Z"
+    },
+    {
+      "id": "bug-084",
+      "timestamp": "2026-04-16T01:28:23.605Z",
+      "error_message": "Incorrect value in code",
+      "file": "docs/STATUS.md",
+      "root_cause": "Had `reference_email_deliverability`",
+      "fix": "Changed to `docs/ops/supabase-auth-templates.md`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-16T01:28:23.605Z"
+    },
+    {
+      "id": "bug-085",
+      "timestamp": "2026-04-16T01:41:03.341Z",
+      "error_message": "Significant refactor of ",
+      "file": ".claude/session-handoff.md",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 7→7 lines (3 removed) | Also: - Turnstile production keys + Razorpay live keys s; ### Closed 2026-04-16",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-04-16T01:41:05.229Z"
+    },
+    {
+      "id": "bug-086",
+      "timestamp": "2026-04-16T01:45:37.881Z",
+      "error_message": "Significant refactor of ",
+      "file": "tests/buffer/lifecycle.test.ts",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 9→19 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-16T01:45:37.881Z"
+    },
+    {
+      "id": "bug-087",
+      "timestamp": "2026-04-16T01:45:42.684Z",
+      "error_message": "Significant refactor of ",
+      "file": "tests/buffer/delivery.test.ts",
+      "root_cause": "5 lines replaced/restructured",
+      "fix": "Rewrote 10→14 lines (5 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-16T01:45:42.684Z"
+    },
+    {
+      "id": "bug-088",
+      "timestamp": "2026-04-16T01:46:46.405Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/ADRs/ADR-0012-automated-test-suites.md",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 3→3 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-16T01:46:46.405Z"
+    },
+    {
+      "id": "bug-089",
+      "timestamp": "2026-04-16T01:53:58.223Z",
+      "error_message": "Wrong reference: process should be resolveFrom",
+      "file": "src/lib/rights/email.ts",
+      "root_cause": "Used \"process\" instead of \"resolveFrom\"",
+      "fix": "Changed process → resolveFrom",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-16T01:53:58.223Z"
+    },
+    {
+      "id": "bug-090",
+      "timestamp": "2026-04-16T01:54:04.553Z",
+      "error_message": "Type error",
+      "file": "src/lib/rights/email.ts",
+      "root_cause": "Missing or incorrect type annotation",
+      "fix": "Added type assertion/annotation",
+      "tags": [
+        "auto-detected",
+        "type-fix",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-16T01:54:04.553Z"
+    },
+    {
+      "id": "bug-091",
+      "timestamp": "2026-04-16T04:24:10.026Z",
+      "error_message": "Incorrect value in code",
+      "file": "docs/ADRs/ADR-0014-external-service-activation.md",
+      "root_cause": "Had `[~] in progress`",
+      "fix": "Changed to `[x] complete`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-16T04:24:10.026Z"
+    },
+    {
+      "id": "bug-092",
+      "timestamp": "2026-04-16T04:28:36.320Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/app/(dashboard)/dashboard/enforcement/page.tsx",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 13→18 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-16T04:28:36.320Z"
+    },
+    {
+      "id": "bug-093",
+      "timestamp": "2026-04-16T04:28:39.295Z",
+      "error_message": "Type error",
+      "file": "src/app/(dashboard)/dashboard/enforcement/page.tsx",
+      "root_cause": "Missing or incorrect type annotation",
+      "fix": "Added type assertion/annotation",
+      "tags": [
+        "auto-detected",
+        "type-fix",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-16T04:28:39.295Z"
+    },
+    {
+      "id": "bug-094",
+      "timestamp": "2026-04-16T04:28:54.705Z",
+      "error_message": "Null/undefined access in ",
+      "file": "src/app/(dashboard)/dashboard/enforcement/page.tsx",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check)",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-16T04:28:54.705Z"
+    },
+    {
+      "id": "bug-095",
+      "timestamp": "2026-04-16T04:30:11.314Z",
+      "error_message": "Incorrect value in code",
+      "file": "docs/STATUS.md",
+      "root_cause": "Had `net.http_post`",
+      "fix": "Changed to `security-scan-nightly`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-16T04:30:11.314Z"
+    },
+    {
+      "id": "bug-096",
+      "timestamp": "2026-04-16T06:00:33.939Z",
+      "error_message": "Missing error handling in detect",
+      "file": "supabase/functions/run-consent-probes/index.ts",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-16T06:00:33.939Z"
+    },
+    {
+      "id": "bug-097",
+      "timestamp": "2026-04-16T06:01:49.479Z",
+      "error_message": "Type error",
+      "file": "src/app/(dashboard)/dashboard/enforcement/page.tsx",
+      "root_cause": "Missing or incorrect type annotation",
+      "fix": "Added type assertion/annotation",
+      "tags": [
+        "auto-detected",
+        "type-fix",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-16T06:01:49.479Z"
+    },
+    {
+      "id": "bug-098",
+      "timestamp": "2026-04-16T06:02:01.685Z",
+      "error_message": "Null/undefined access in ",
+      "file": "src/app/(dashboard)/dashboard/enforcement/page.tsx",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check)",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-16T06:02:01.685Z"
+    },
+    {
+      "id": "bug-099",
+      "timestamp": "2026-04-16T06:02:51.405Z",
+      "error_message": "Missing error handling in unknown",
+      "file": "docs/ADRs/ADR-0016-consent-probes.md",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-16T06:02:51.405Z"
+    },
+    {
+      "id": "bug-100",
+      "timestamp": "2026-04-16T06:03:21.167Z",
+      "error_message": "Incorrect value in code",
+      "file": "docs/STATUS.md",
+      "root_cause": "Had `net.http_post`",
+      "fix": "Changed to `consent-probes-hourly`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-16T06:03:21.167Z"
+    },
+    {
+      "id": "bug-101",
+      "timestamp": "2026-04-16T06:21:24.004Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/app/api/orgs/[orgId]/audit-export/route.ts",
+      "root_cause": "Had 'uint8Array'",
+      "fix": "Changed to 'uint8array'",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-16T06:21:24.004Z"
+    },
+    {
+      "id": "bug-102",
+      "timestamp": "2026-04-16T06:33:48.306Z",
+      "error_message": "Significant refactor of ",
+      "file": "tests/rights/connectors.test.ts",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 5→7 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-16T06:33:48.306Z"
+    },
+    {
+      "id": "bug-103",
+      "timestamp": "2026-04-16T06:34:41.636Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/ADRs/ADR-0018-prebuilt-deletion-connectors.md",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 7→45 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-16T06:34:41.636Z"
+    },
+    {
+      "id": "bug-104",
+      "timestamp": "2026-04-16T10:11:08.678Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/STATUS.md",
+      "root_cause": "9 lines replaced/restructured",
+      "fix": "Rewrote 18→29 lines (9 removed) | Also: See `docs/ROADMAP-phase2.md` for the 11-sprint Pha; through ADR-0018).",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-04-16T10:11:14.147Z"
+    },
+    {
+      "id": "bug-105",
+      "timestamp": "2026-04-16T10:42:30.828Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/reviews/2026-04-16-phase2-completion-review.md",
+      "root_cause": "6 lines replaced/restructured",
+      "fix": "Rewrote 13→27 lines (6 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-16T10:42:30.828Z"
     }
   ]
 }

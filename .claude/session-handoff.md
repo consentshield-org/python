@@ -1,10 +1,10 @@
 # Session Handoff
 
-**Last Updated:** 2026-04-16
+**Last Updated:** 2026-04-16 12:08
 
 ## Current State
 
-**10 ADRs complete** (0001–0009 + 0013). **ADRs 0010/0011/0012/0014–0018 proposed** in `docs/ROADMAP-phase2.md`.
+**Phase 2 COMPLETE.** All **18 ADRs (0001–0018) Completed** and pushed. Test suite **86/86**. No in-progress work.
 
 | ADR | Status |
 |-----|--------|
@@ -15,47 +15,72 @@
 | 0005 Tracker Monitoring (banner v2 + 34 signatures) | Completed |
 | 0006 Razorpay Billing + Plan Gating | Completed |
 | 0007 Deletion Orchestration (webhook protocol) | Completed |
-| 0008 Browser Auth Hardening (no client secret, origin_verified, fail-fast Turnstile) | Completed |
-| 0009 Scoped-Role Enforcement in REST Paths (zero service_role_key in app) | Completed |
-| 0013 Signup Bootstrap Hardening (OTP-only signup + login) | Completed |
+| 0008 Browser Auth Hardening | Completed |
+| 0009 Scoped-Role Enforcement in REST Paths | Completed |
+| 0010 Distributed Rate Limiter (Upstash via Vercel Marketplace) | Completed |
+| 0011 Deletion Retry / Timeout | Completed |
+| 0012 Automated Test Suites (Sprints 1 + 2 + 3) | Completed |
+| 0013 Signup Bootstrap Hardening (OTP-only) | Completed |
+| 0014 External Service Activation (Turnstile + Razorpay + Resend) | Completed |
+| 0015 Security Posture Scanner | Completed |
+| 0016 Consent Probes v1 (static HTML analysis) | Completed |
+| 0017 Audit Export Package Phase 1 (direct-download ZIP) | Completed |
+| 0018 Pre-built Deletion Connectors (Mailchimp + HubSpot) | Completed |
 
 ## Live Deployments
 
-- **Admin app:** `https://consentshield-one.vercel.app` (Vercel project `consentshield`)
-- **Demo customer sites:** `https://consentshield-demo.vercel.app` (Vercel project `consentshield-demo`, root `test-sites/`)
-- **Worker CDN:** `https://cdn.consentshield.in/v1/*` (version `9fb7bd37`)
-- **Supabase:** `xlqiakmkdjycfiioslgs` (ap-northeast-1 pooler)
-- **SLA Edge Fn:** deployed (reads `CS_ORCHESTRATOR_ROLE_KEY`)
-- **pg_cron:** 6 jobs active (keys read from Supabase Vault)
+- **Admin app:** `https://consentshield-one.vercel.app`
+- **Demo customer sites:** `https://consentshield-demo.vercel.app`
+- **Worker CDN:** `https://cdn.consentshield.in/v1/*`
+- **Supabase:** `xlqiakmkdjycfiioslgs`
+- **Upstash Redis:** `upstash-kv-citrine-blanket` (Vercel Marketplace)
+- **Edge Functions** (4, all `--no-verify-jwt`): `send-sla-reminders`, `check-stuck-deletions`, `run-security-scans`, `run-consent-probes`
+- **pg_cron:** 6 jobs active, all green
 
 ## Git State
 
-Latest commit: `28523d8` — `fix: public.current_uid() helper replaces auth.uid() in scoped-role RPCs`
+Latest commit: `c83831e` — `feat(ADR-0018): pre-built connectors — Mailchimp + HubSpot direct API` (pushed to main).
+27 migrations applied, through `20260416000007_audit_export.sql`.
 
 ## Where to Pick Up
 
-`docs/ROADMAP-phase2.md` enumerates Sprints 1–11. **Sprint 1 is done.**
+Phase 2 is done. The next step — per the user's 2026-04-16 plan — is a
+**post-Phase-2 review**:
 
-**Next session → Sprint 2:** ADR-0010 distributed rate limiter on Vercel KV (or Upstash Redis via Vercel Marketplace — Vercel KV is no longer offered as of 2025). ~3 hours. Replaces the in-memory `Map` in `src/lib/rights/rate-limit.ts`.
+1. Walk the existing code end-to-end.
+2. Pick **2–3 architecture decision points** from `docs/V2-BACKLOG.md` to graduate into the next phase's ADRs.
+3. Close or down-grade the rest.
 
-**Alternative smallest bite:** Sprint 3 (ADR-0012 Sprint 1) — SLA-timer property tests + the S-2 URL-path RLS test. Self-contained, no new deps.
+Do not pull items from `docs/V2-BACKLOG.md` mid-phase — the rule is codified in CLAUDE.md under the ADR workflow section.
 
-## Known Outstanding
+## V2 Backlog (11 entries)
 
-- Vercel Deployment Protection is off on both projects — fine for dev, revisit before any real traffic.
-- Turnstile production keys + Razorpay live keys still pending external-service activation (ADR-0014).
+| ID | Origin | What |
+|---|---|---|
+| V2-T1 | ADR-0013 | Signup idempotency regression test (needs Next-route harness) |
+| V2-X1 | ADR-0014 | Vercel Preview env vars (CLI per-branch quirk) |
+| V2-X2 | ADR-0014 | Razorpay end-to-end checkout UX smoke |
+| V2-X3 | ADR-0017 | Audit-export R2 upload pipeline |
+| V2-P1 | ADR-0016 | Headless-browser probe runner |
+| V2-P2 | ADR-0016 | Probe CRUD UI |
+| V2-O1 | Sprint-4 cleanup | Unbuilt cron-slot Edge Functions (stuck-buffer + retention-check) |
+| V2-O2 | Session handoff | Vercel Deployment Protection |
+| V2-O3 | ADR-0011 discovery | pg_cron failure-detection watchdog |
+| V2-K1 | Edge Fn gateway | Remove `--no-verify-jwt` once Supabase supports `sb_secret_*` keys at gateway |
+| V2-C1 | ADR-0018 | OAuth flow for pre-built connectors |
 
-### Closed 2026-04-16
+## Out-of-Phase (Phase 3+)
 
-- Stale `anegondhi@gmail.com` auth user removed via psql.
-- Migration `20260414000010` no-op `grant usage on schema auth` commented out with explanation (`2404833`).
-- Password reset + email change OTP template HTML documented in `reference_email_deliverability.md` memory — paste into Supabase Dashboard before enabling those flows.
+- Continuous buffer-delivery-to-R2 pipeline (prerequisite for V2-X3).
+- GDPR dual-framework (multi-sprint, schema-wide).
+- ABDM module (healthcare; never persists FHIR per rule #3).
 
 ## Reference Docs
 
 - `docs/STATUS.md` — high-level state snapshot
-- `docs/ROADMAP-phase2.md` — Sprints 1–11 with deliverables
-- `docs/reviews/2026-04-14-codebase-architecture-review.md` — blockers closed
-- `docs/reviews/2026-04-15-deferred-items-analysis.md` — deferred items scoped
-- `docs/ADRs/ADR-0013-signup-bootstrap-hardening.md` — OTP signup decision + test results
-- `session-context/context-2026-04-15-22-02-12.md` — full session dump
+- `docs/V2-BACKLOG.md` — **review starting point**
+- `docs/ROADMAP-phase2.md` — Sprints 1–11 with deliverables (all done)
+- `docs/ops/supabase-auth-templates.md` — OTP templates to paste into Supabase Dashboard before enabling password-reset / email-change flows
+- `docs/reviews/2026-04-14-codebase-architecture-review.md` — Phase-1 codebase review (all blockers closed)
+- `session-context/context-2026-04-16-12-08-11.md` — this session's full timeline (loose-ends → Sprint 11)
+- `session-context/context-2026-04-16-07-01-59.md` — earlier checkpoint inside the same day
