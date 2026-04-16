@@ -1,6 +1,6 @@
 # ADR-0012: Automated Test Suites for High-Risk Paths
 
-**Status:** In Progress (Sprint 1 complete; Sprints 2 + 3 deferred)
+**Status:** In Progress (Sprints 1 + 2 complete; Sprint 3 deferred)
 **Date proposed:** 2026-04-16
 **Date completed:** —
 **Superseded by:** —
@@ -76,7 +76,22 @@ test file under `tests/` and runs on every build via `bun run test`.
 
 **Status:** `[x] complete`
 
-### Phase 1 Sprint 2: Worker Miniflare tests (deferred)
+### Phase 1 Sprint 2: Worker Miniflare tests
+
+**Estimated effort:** ~6 h
+**Deliverables:**
+- [x] `miniflare@4.20260415.0` + `esbuild@0.28.0` added to devDependencies, exact-pinned.
+- [x] `tests/worker/harness.ts`: shared Miniflare factory that bundles the Worker with esbuild (once per suite run), stands up a KV namespace, and intercepts all outbound fetches via `outboundService` — returns in-memory mock responses for `/rest/v1/web_properties`, `/rest/v1/consent_banners`, `/rest/v1/tracker_signatures`, `/rest/v1/consent_events`, and `/rest/v1/tracker_observations`. Exposes `signHmac` so tests build signatures with the same contract as the Worker.
+- [x] `tests/worker/events.test.ts` — 10 tests covering `POST /v1/events`: HMAC happy path, wrong-secret rejection, ±5-minute timestamp drift rejection, previous-secret grace window via KV, origin happy path with `origin_verified='origin-only'` persisted, cross-origin rejection, empty `allowed_origins` rejection, unsigned + missing-Origin rejection, unknown property 404, missing-fields 400.
+- [x] `tests/worker/banner.test.ts` — 4 tests covering `GET /v1/banner.js`: Content-Type + Cache-Control headers, absence of the signing secret or any `"secret"` field in the compiled output (ADR-0008 invariant), correct org/property/banner/version embedding, 404 + 400 paths.
+- [x] `tsconfig.json` excludes `tests/worker` from the Next.js type-check — miniflare's Cloudflare-flavoured `RequestInit` conflicts with DOM's. Vitest still type-strips and runs the tests through its own transform pipeline.
+
+**Testing plan:**
+- [x] `bun run test` — 55 → 69 (+14), all green.
+- [x] `bun run build` + `bun run lint` — clean.
+
+**Status:** `[x] complete`
+
 ### Phase 1 Sprint 3: Buffer-pipeline integration (deferred)
 
 ---

@@ -2,6 +2,34 @@
 
 Cloudflare Worker changes.
 
+## ADR-0012 Sprint 2 — 2026-04-16
+
+**ADR:** ADR-0012 — Automated Test Suites for High-Risk Paths
+**Sprint:** Phase 1, Sprint 2
+
+### Added
+- `miniflare@4.20260415.0` + `esbuild@0.28.0` (devDependencies,
+  exact-pinned). Worker test harness now bundles `worker/src/index.ts`
+  via esbuild once per suite run and boots it inside Miniflare, with
+  all outbound Supabase fetches intercepted by an in-memory mock.
+- `tests/worker/harness.ts` — Miniflare factory + mock Supabase
+  router + HMAC helper.
+- `tests/worker/events.test.ts` — 10 tests for `POST /v1/events`
+  (HMAC valid / wrong-secret / timestamp-drift / previous-secret
+  grace; origin valid / rejected / empty-allowed / missing; unknown
+  property 404; missing-fields 400).
+- `tests/worker/banner.test.ts` — 4 tests for `GET /v1/banner.js`
+  (headers, no-secret ADR-0008 invariant, config-embedding, 404 + 400
+  paths).
+- `tsconfig.json` excludes `tests/worker` — miniflare's
+  Cloudflare-flavoured `RequestInit` doesn't round-trip with the
+  DOM-flavoured `RequestInit` that Next's type-check uses. Vitest
+  transform is unaffected.
+
+### Tested
+- [x] `bun run test` — 55 → 69 PASS (+14 worker tests)
+- [x] `bun run lint` + `bun run build` — clean
+
 ## ADR-0008 Sprint 1.1 — 2026-04-14
 
 **ADR:** ADR-0008 — Browser Auth Hardening
