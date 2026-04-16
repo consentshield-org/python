@@ -36,7 +36,7 @@ and the SLA Edge Function in Supabase. No known blocking bugs.
 | 0007 | Deletion orchestration | Completed |
 | 0008 | Browser auth hardening (remove client secret, origin_verified, fail-fast Turnstile) | Completed |
 | 0009 | Scoped-role enforcement in REST paths | Completed |
-| 0010 | Distributed rate limiter (Upstash via Vercel Marketplace) | In Progress — code landed; pending Upstash provisioning |
+| 0010 | Distributed rate limiter (Upstash via Vercel Marketplace) | Completed |
 | 0011 | Deletion retry / timeout Edge Function | Proposed (scoped) |
 | 0012 | Automated test suites (worker / buffer / workflows) | Proposed (scoped) |
 | 0013 | Signup bootstrap hardening (OTP-only) | Completed |

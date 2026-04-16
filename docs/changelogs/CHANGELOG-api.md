@@ -28,8 +28,7 @@ API route changes.
 - [x] `bun run test` — 43 / 43 PASS (was 39, +4 new for rate-limit)
 - [x] `bun run lint` — PASS
 - [x] `bun run build` — PASS
-- [ ] Manual multi-instance 429 — pending Upstash provisioning in
-  Vercel Dashboard (user action)
+- [x] Live smoke against Upstash (`scripts/smoke-test-rate-limit.ts`) — PASS; 5 allowed / 2 denied / retry=60s / no fallback warning. Upstash DB: `upstash-kv-citrine-blanket`.
 
 ## ADR-0008 Sprint 1.3 — 2026-04-14
 

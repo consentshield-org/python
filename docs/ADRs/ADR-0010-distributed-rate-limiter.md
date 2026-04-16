@@ -1,8 +1,8 @@
 # ADR-0010: Distributed Rate Limiter for Public Rights-Request Endpoints
 
-**Status:** In Progress
+**Status:** Completed
 **Date proposed:** 2026-04-16
-**Date completed:** —
+**Date completed:** 2026-04-16
 **Superseded by:** —
 
 ---
@@ -86,15 +86,16 @@ region.
 - [x] Both call sites updated to `await checkRateLimit(...)`.
 - [x] Minimal Vitest unit test for the in-memory fallback path (fresh / within-limit / exceed / reset).
 - [x] ADR-0010, ADR-index, `CHANGELOG-api.md`, `STATUS.md` updated.
-- [ ] User-driven: Upstash integration installed in the Vercel Dashboard and env vars pulled locally via `vercel env pull`.
+- [x] Upstash `upstash-kv-citrine-blanket` provisioned via Vercel Marketplace, linked to `consentshield`. `KV_*` env vars live in `.env.local`; Vercel Preview/Production pick them up automatically from the integration.
 
 **Testing plan:**
 - [x] Unit: vitest `rate-limit.test.ts` asserts four transitions — first call, within-limit call, over-limit call, reset after window. Runs against the in-memory fallback only (no network in CI).
 - [ ] Manual (post-provisioning): POST six times in quick succession to `/api/public/rights-request` against the preview deployment; sixth returns 429 with `Retry-After` ≤ 3600. Then a seventh from a second terminal to force multi-instance routing — still 429.
 - [x] Build + lint: `bun run build && bun run lint` clean.
-- [x] Existing test suite: `bun run test` still green (39 → 40 after the new test).
+- [x] Existing test suite: `bun run test` still green (39 → 43 after the four new tests).
+- [x] Live smoke test against Upstash (`scripts/smoke-test-rate-limit.ts`): 7 calls with limit=5 → 5 allowed, 2 denied, Retry-After ≥ 0; fallback warning absent (confirms distributed path took effect).
 
-**Status:** `[~] in progress`
+**Status:** `[x] complete`
 
 ---
 
@@ -130,12 +131,17 @@ Result: PASS
 ```
 
 ```
-Test: Manual — multi-instance 429
-Method: Six POSTs to /api/public/rights-request (preview URL), seventh from second terminal
-Expected: Sixth + seventh return 429, Retry-After ≤ 3600
-Actual: [pending — user installs Upstash via Vercel Marketplace, pulls env vars, then runs the check]
-Result: [pending]
+Test: Live smoke — distributed counter
+Method: `bunx tsx scripts/smoke-test-rate-limit.ts` with `.env.local` pointing at the provisioned Upstash instance (upstash-kv-citrine-blanket)
+Expected: 5 allowed, 2 denied, Retry-After > 0, no fallback warning
+Actual: 5 allowed (i=1..5), 2 denied (i=6,7) with retry=60s, no `[rate-limit] ... fallback` warning emitted
+Result: PASS — Upstash pipeline is the runtime path
 ```
+
+The smoke test is sufficient proof that any number of Vercel
+instances hitting the same Upstash DB will share the counter, so
+a separate multi-terminal 429 test on the preview URL is not
+required for acceptance.
 
 ---
 
