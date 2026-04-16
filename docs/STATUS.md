@@ -38,7 +38,7 @@ and the SLA Edge Function in Supabase. No known blocking bugs.
 | 0009 | Scoped-role enforcement in REST paths | Completed |
 | 0010 | Distributed rate limiter (Upstash via Vercel Marketplace) | Completed |
 | 0011 | Deletion retry / timeout Edge Function | Proposed (scoped) |
-| 0012 | Automated test suites (worker / buffer / workflows) | Proposed (scoped) |
+| 0012 | Automated test suites (worker / buffer / workflows) | In Progress — Sprint 1 complete (SLA trigger + URL-path RLS) |
 | 0013 | Signup bootstrap hardening (OTP-only) | Completed |
 
 See `docs/ROADMAP-phase2.md` for the 11-sprint Phase 2 plan (ADR-0010
@@ -67,7 +67,7 @@ through ADR-0018).
 - **Scoped roles** (`cs_worker`, `cs_delivery`, `cs_orchestrator`) are the runtime principals. Every mutating code path routes through a security-definer RPC owned by `cs_orchestrator` (or `cs_delivery`), granted to `anon` or `authenticated` per endpoint. `grep -r SUPABASE_SERVICE_ROLE_KEY src/` returns zero matches.
 - `cs_orchestrator` / `cs_delivery` carry `BYPASSRLS` so security-definer calls can read org-scoped tables inside their own function bodies. They do **not** have USAGE on schema `auth` (hosted Supabase forbids it); RPCs that need the caller's user id use the `public.current_uid()` helper from `20260415000001`.
 - **Demo org** seeded: `ConsentShield Demo Customer` (`432bca6d-8fce-415a-85e0-96397ddac666`) with 5 web properties + 5 banners matching the Vercel demo site routes.
-- RLS isolation suite: **39 / 39 passing** on every build.
+- Test suite: **55 / 55 passing** on every build (39 RLS isolation + 5 URL-path RLS + 4 rate-limit fallback + 7 SLA-timer). Live Supabase round trips where the test requires it.
 
 ---
 

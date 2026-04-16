@@ -2,6 +2,28 @@
 
 Database migrations, RLS policies, roles.
 
+## ADR-0012 Sprint 1 — 2026-04-16
+
+**ADR:** ADR-0012 — Automated Test Suites for High-Risk Paths
+**Sprint:** Phase 1, Sprint 1
+
+### Added
+- `tests/workflows/sla-timer.test.ts` — covers the
+  `set_rights_request_sla` trigger across six boundary dates +
+  20-date property sweep (2026–2030). Exact millisecond comparisons
+  via `Date.getTime()` so Postgres millisecond-trimming doesn't
+  cause false positives.
+- `tests/rls/url-path.test.ts` — S-2 from the 2026-04-14 review:
+  authenticated Org A client cannot SELECT or UPDATE Org B's
+  rights_request regardless of whether `.eq('org_id', orgB)` is
+  included in the predicate. Confirms both the URL contract and
+  the RLS contract.
+
+### Tested
+- [x] `bun run test` — 43 → 55 PASS (+12 new)
+- [x] `bun run lint` — PASS
+- [x] `bun run build` — PASS
+
 ## Loose-end cleanup — 2026-04-16
 
 **ADR:** n/a (cleanup)
