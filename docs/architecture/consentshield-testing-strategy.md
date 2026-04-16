@@ -3,6 +3,7 @@
 *(c) 2026 Sudhindra Anegondhi a.d.sudhindra@gmail.com*
 *Development reference · April 2026*
 *Companion to: Definitive Architecture Reference, Complete Schema Design*
+*Amended: 2026-04-16 (DEPA alignment — Priority 10 added for consent-artefact lifecycle. See [`docs/reviews/2026-04-16-depa-package-architecture-review.md`](../reviews/2026-04-16-depa-package-architecture-review.md).)*
 
 ---
 
@@ -21,12 +22,16 @@ Testing effort is allocated in strict priority order. The top of the list is tes
 | Priority | What | Why | Frequency |
 |---|---|---|---|
 | 1 | Multi-tenant isolation (RLS) | A cross-tenant leak is an extinction event | Every deploy |
+| 1b | Database guard verification | Section §11 SQL verification queries must all pass | Every deploy |
 | 2 | Consent event integrity | Append-only guarantee + delivery pipeline | Hourly in staging |
 | 3 | Tracker detection accuracy | The enforcement engine's credibility | Weekly (test pages), monthly (real sites) |
 | 4 | Cloudflare Worker reliability | Banner must never break the customer's website | Every Worker deploy |
 | 5 | Workflow correctness | SLA timers and breach clocks have legal deadlines | On every workflow change |
 | 6 | Deletion orchestration | "Deleted from Mailchimp at 14:32" must be true | Before each connector ships, monthly thereafter |
 | 7 | Security posture scanner | Findings must match reality | Before scanner ships, monthly thereafter |
+| 8 | Rights request submission flow (Turnstile + OTP) | Bot-floor for the public rights endpoint | On every rights-flow change |
+| 9 | Processing mode enforcement | Zero-Storage orgs must never persist to buffer tables | On every API-gateway change |
+| **10** | **Consent artefact lifecycle (DEPA)** | **DEPA compliance hinges on artefacts being created, revoked, expired, and deleted correctly across the trigger + cron + Edge Function pipeline** | **On every DEPA-code change; full suite monthly** |
 
 ---
 
@@ -489,6 +494,132 @@ A Zero-Storage organisation's consent events are written to a persistent buffer 
 5. POST same consent event
    Expected: normal buffer lifecycle (write → deliver → delete)
 ```
+
+---
+
+## Priority 10: Consent Artefact Lifecycle (DEPA)
+
+*Added 2026-04-16. Covers the §11 DEPA schema — artefact creation, revocation cascade, expiry enforcement, score computation, and the artefact-scoped deletion orchestration.*
+
+### What can go wrong
+
+The DEPA pipeline is a hybrid: Worker writes `consent_events`; an AFTER INSERT trigger fires `net.http_post` to `process-consent-event`; a pg_cron safety-net sweeps orphans. The compliance-critical failure modes:
+
+- **Orphan consent events.** Worker insert succeeds, trigger fires, but `process-consent-event` never creates artefacts. The event exists; the artefacts don't. A DPB audit would find a consent claim with no per-purpose artefact backing.
+- **Duplicate artefacts from race.** Trigger path lands, then the 5-minute safety-net cron picks up the same event because `artefact_ids` isn't yet reconciled. Without the idempotency check, you'd get 2N artefacts per consent interaction. The audit trail becomes unreadable.
+- **Trigger failure rolls back the Worker INSERT.** If the trigger body ever propagates an exception, the customer's page sees a 500 instead of 202 and the banner breaks. The `EXCEPTION WHEN OTHERS THEN NULL` wrapper is load-bearing.
+- **Revocation cascade drift.** A user withdraws marketing consent; the artefact is marked `revoked` in the DB but the Edge Function never creates the corresponding `deletion_requests` for Mailchimp. The dashboard says "revoked", the customer's Mailchimp still holds the email.
+- **Expiry enforcement misses an artefact.** An artefact expires at midnight; the pg_cron job fails silently; the artefact stays `active` with a past `expires_at`. The validity cache still shows it as valid; tracker enforcement treats expired consent as valid.
+- **Replacement chain cascade bug.** Artefact A replaced by B; B revoked. If the revocation walks `replaced_by` and also marks A as revoked, the audit trail becomes inconsistent with the §7.3 spec (A must stay frozen at `replaced`).
+- **DEPA score sub-metric arithmetic wrong.** `coverage_score` says 80% when the real value is 60%. The compliance dashboard lies to the customer about their posture.
+- **Data-scope value leakage.** A purpose_definition is created with `data_scope = ['ABCDE1234F']` (an actual PAN value) instead of `['pan']` (the category label). Rule 3 broadened is violated at the metadata layer.
+
+### How to test
+
+```
+-- Test 10.1 — Artefact creation on consent_given (integration)
+  1. Insert a consent_events row with purposes_accepted = ['analytics', 'marketing']
+     (where both purposes in the banner have valid purpose_definition_id).
+  2. Wait up to 10 seconds (trigger path should complete within 1 second under load).
+  3. SELECT * FROM consent_artefacts WHERE consent_event_id = <inserted_id>.
+     Expected: 2 rows, statuses = 'active', expires_at set per purpose_definitions.default_expiry_days,
+               data_scope copied from purpose_definitions at insert time (snapshot).
+  4. SELECT artefact_ids FROM consent_events WHERE id = <inserted_id>.
+     Expected: array of 2 artefact_id strings, each with 'cs_art_' prefix.
+  5. SELECT * FROM consent_artefact_index WHERE artefact_id IN (<the 2 ids>).
+     Expected: 2 entries, validity_state = 'active', framework populated.
+  6. SELECT * FROM consent_expiry_queue WHERE artefact_id IN (<the 2 ids>).
+     Expected: 2 entries, notify_at = expires_at - 30 days.
+
+-- Test 10.2 — Idempotency under trigger + cron race (integration)
+  1. Insert a consent_events row (as 10.1).
+  2. IMMEDIATELY trigger the safety-net pg_cron function manually:
+     SELECT safety_net_process_consent_events();
+  3. After both paths complete, count artefacts for the event_id.
+     Expected: exactly N (number of purposes), never 2N.
+
+-- Test 10.3 — Trigger failure must not roll back the INSERT
+  1. Temporarily break the supabase_url Vault secret:
+     UPDATE vault.secrets SET name = 'supabase_url_broken' WHERE name = 'supabase_url';
+  2. INSERT a consent_events row.
+     Expected: INSERT succeeds (202 to Worker). Trigger fails silently.
+  3. Check consent_events — row exists. No artefacts yet.
+  4. Restore Vault secret. Safety-net cron picks up within 5 minutes.
+  5. Expected: artefacts created; consent_events.artefact_ids populated.
+
+-- Test 10.4 — Revocation cascade (integration)
+  1. Create an artefact (via 10.1). Note the artefact_id.
+  2. INSERT into artefact_revocations (org_id, artefact_id, reason, revoked_by_type).
+  3. Immediately after insert (same transaction):
+     - SELECT status FROM consent_artefacts WHERE artefact_id = <id>. Expected: 'revoked'.
+     - SELECT count(*) FROM consent_artefact_index WHERE artefact_id = <id>. Expected: 0.
+     - SELECT count(*) FROM audit_log WHERE entity_id = <artefact_row_id>
+       AND event_type = 'consent_artefact_revoked'. Expected: 1.
+     - SELECT superseded FROM consent_expiry_queue WHERE artefact_id = <id>. Expected: true.
+  4. Wait up to 10 seconds for the out-of-DB cascade.
+  5. SELECT * FROM deletion_requests WHERE artefact_id = <id>. Expected: one row per connector
+     mapped to the artefact's data_scope via purpose_connector_mappings.
+
+-- Test 10.5 — Cross-tenant revocation blocked by BEFORE trigger
+  1. Create artefact for org_A.
+  2. Attempt INSERT into artefact_revocations with the org_A artefact_id but org_id = org_B.
+     Expected: exception 'Artefact does not belong to org'; INSERT rolled back.
+
+-- Test 10.6 — Expiry enforcement (time-travel)
+  1. Create an artefact with expires_at = now() - interval '1 minute' (past).
+  2. Call enforce_artefact_expiry() directly.
+  3. SELECT status FROM consent_artefacts. Expected: 'expired'.
+  4. SELECT count(*) FROM consent_artefact_index. Expected: 0.
+  5. If purpose_definitions.auto_delete_on_expiry = true:
+     SELECT count(*) FROM delivery_buffer WHERE event_type = 'artefact_expiry_deletion'. Expected: 1.
+
+-- Test 10.7 — Replacement chain frozen (S-5)
+  1. Create artefact A.
+  2. Insert new consent_events for same session/purpose triggering the re-consent path;
+     observe A.status transitions to 'replaced' and A.replaced_by = B.artefact_id.
+  3. INSERT artefact_revocations for B.
+  4. SELECT status FROM consent_artefacts WHERE artefact_id = A.artefact_id.
+     Expected: 'replaced' (unchanged, NOT 'revoked'). B is 'revoked'.
+
+-- Test 10.8 — DEPA score arithmetic (property-based unit)
+  For a matrix of purpose_definitions + artefact populations:
+  1. Call compute_depa_score(org_id).
+  2. Hand-calculate expected total, coverage_score, expiry_score, freshness_score, revocation_score.
+  3. Expected: returned JSONB values match hand calculations within 0.1 tolerance.
+  Cases to cover: zero purposes, purposes with empty data_scope, all artefacts active,
+                  all artefacts expired, no revocations, revocations-without-receipts.
+
+-- Test 10.9 — data_scope is CATEGORIES not values (Rule 3 broadened)
+  grep -rE '[A-Z]{5}[0-9]{4}[A-Z]' supabase/migrations/*.sql   # PAN pattern
+    Expected: zero matches (no literal PANs in migrations; data_scope uses category names like 'pan').
+  grep -rE '\b[0-9]{12}\b' supabase/migrations/*.sql           # Aadhaar pattern (12 digits)
+    Expected: zero matches.
+  A CI check runs these greps on every PR that touches migrations.
+
+-- Test 10.10 — Artefact-scoped deletion precision (integration)
+  Scenario: org with 3 artefacts — marketing, analytics, bureau_reporting.
+  purpose_connector_mappings wires marketing → Mailchimp; analytics → Hotjar; bureau_reporting → CIBIL.
+  1. Revoke the marketing artefact only.
+  2. Wait up to 10 seconds for the Edge Function cascade.
+  3. Expected:
+     - deletion_requests has 1 row for Mailchimp with data_scope from the marketing artefact.
+     - deletion_requests has NO rows for Hotjar or CIBIL.
+     - Analytics and bureau_reporting artefacts still have status = 'active'.
+```
+
+### Automation
+
+Integration tests (10.1–10.7, 10.10) are implemented as Vitest suites in `tests/depa/` that round-trip to the dev Supabase. Each test creates its own fixtures, runs the assertions, and tears down. They run on every deploy alongside the RLS suite.
+
+Property test 10.8 runs as a hand-rolled table-driven suite (no `fast-check` needed — inputs are well-bounded). Runs on every CI build.
+
+Greps 10.9 run as a CI check (`.github/workflows/depa-lint.yml`) on every PR touching `supabase/migrations/`. Zero tolerance for matches.
+
+Time-travel test 10.6 runs weekly in staging via a scheduled trigger, since it requires write access beyond what an ephemeral test harness should do.
+
+### The non-negotiable rule
+
+If the DEPA suite detects a pipeline break (orphan events older than 10 minutes, revocation cascade missing a connector, expiry enforcement skipping artefacts), a deploy is blocked. The compliance guarantee at the DEPA layer is "no claim is made without an artefact, and every revocation reaches every mapped connector." That guarantee is tested, not assumed.
 
 ---
 

@@ -3,6 +3,7 @@
 *(c) 2026 Sudhindra Anegondhi a.d.sudhindra@gmail.com*
 *Source of truth for all development · April 2026*
 *Supersedes: consentshield-technical-architecture.md, consentshield-stateless-oracle-architecture.md*
+*Amended: 2026-04-16 (DEPA alignment — see [`docs/reviews/2026-04-16-depa-package-architecture-review.md`](../reviews/2026-04-16-depa-package-architecture-review.md))*
 
 ---
 
@@ -50,25 +51,44 @@ Supabase Auth and Supabase Postgres are the same system. The `auth.uid()` and `a
 
 ## 3. Data Classification
 
-Every table in ConsentShield's database belongs to exactly one of two categories. This distinction is the single most important thing to understand before touching any code.
+Every table in ConsentShield's database belongs to exactly one of three categories. This distinction is the single most important thing to understand before touching any code.
 
 ### Category A — Operational State (permanent)
 
-Data that ConsentShield needs to function. Organisation configs, banner settings, billing records, team membership, tracker signature definitions. This is standard SaaS business data — no different from what any B2B tool holds about its paying users. It stays in ConsentShield's database permanently.
+Data that ConsentShield needs to function. Organisation configs, banner settings, billing records, team membership, tracker signature definitions, DEPA purpose definitions, consent artefacts, consent expiry scheduling. This is the working set — no different from what any B2B tool holds, plus the DEPA-native consent record that lives in ConsentShield's database while the artefact's lifecycle is active. It stays in ConsentShield's database until explicit lifecycle transitions or org-cascade deletes remove it.
 
-**Org-scoped tables:** organisations, organisation_members, web_properties, consent_banners, data_inventory, tracker_overrides, integration_connectors, retention_rules, export_configurations, consent_artefact_index, api_keys, breach_notifications, rights_requests, consent_probes, cross_border_transfers, gdpr_configurations, dpo_engagements, white_label_configs, notification_channels
+**A.1 — Org-scoped tables:** organisations, organisation_members, web_properties, consent_banners, data_inventory, tracker_overrides, integration_connectors, retention_rules, export_configurations, consent_artefact_index, api_keys, breach_notifications, rights_requests, consent_probes, cross_border_transfers, gdpr_configurations, dpo_engagements, white_label_configs, notification_channels, **purpose_definitions** (DEPA), **purpose_connector_mappings** (DEPA), **consent_artefacts** (DEPA), **consent_expiry_queue** (DEPA), **depa_compliance_metrics** (DEPA)
 
-**Global reference tables (no org_id):** tracker_signatures, sector_templates, dpo_partners
+**A.2 — Global reference tables (no org_id):** tracker_signatures, sector_templates, dpo_partners
+
+### Category A — Orthogonal Property: Delivered to Customer Storage
+
+Several Category A tables carry a *secondary* property: their state changes are also staged in `delivery_buffer` for nightly export to customer-owned storage, so the customer holds the canonical compliance record independently of ConsentShield. This is an *additional* flow, not a lifecycle transition — the source row in the Category A table is unaffected by the delivery.
+
+Tables with this property today: **consent_artefacts** (every insert + status change), **rights_requests** (every state change), **retention_rules** (every policy change), **consent_artefact_index** (validity transitions). The property is orthogonal to Category A / B / C; a row does not move between categories because it happens to be delivered.
 
 ### Category B — User Data Buffer (transient)
 
-Personal data of data principals that flows through ConsentShield on its way to customer-owned storage. Consent events, audit log entries, tracker observations, deletion receipts, processing log entries, security scan results, withdrawal verification results. This data is buffered only to guarantee delivery. Once customer storage confirms the write, ConsentShield's copy is deleted.
+Personal data of data principals that flows through ConsentShield on its way to customer-owned storage. Consent events, audit log entries, tracker observations, deletion receipts, processing log entries, security scan results, withdrawal verification results, artefact revocations. This data is buffered only to guarantee delivery. Once customer storage confirms the write, ConsentShield's copy is deleted.
 
-**Tables:** consent_events, tracker_observations, audit_log, processing_log, delivery_buffer, rights_request_events, deletion_receipts, security_scans, withdrawal_verifications, consent_probe_runs
+**Tables:** consent_events, tracker_observations, audit_log, processing_log, delivery_buffer, rights_request_events, deletion_receipts, security_scans, withdrawal_verifications, consent_probe_runs, **artefact_revocations** (DEPA)
 
-### Category C — Health Data (zero persistence)
+### Category C — Regulated Sensitive Content (zero persistence)
 
-FHIR records from ABDM. Never written to any table, any log, any file. Flows through ConsentShield's server in memory only. Processed (drug interaction check, prescription template), then released. Any code that attempts to persist FHIR content is rejected in review without exception.
+*Scope broadened 2026-04-16 per the DEPA alignment review.*
+
+Content-layer data governed by sector-specific retention regulation. Never written to any table, any log, any file, any buffer. Flows through ConsentShield's server in memory only, if at all. Processed (e.g., drug interaction check for FHIR; deletion-request signature for banking connectors), then released.
+
+Currently enumerated as in-scope:
+
+- **FHIR clinical records** from ABDM — diagnoses, medications, lab results, prescriptions, observations, imaging. Processed (drug interaction check, prescription template), then released.
+- **Banking identifiers and transactional content** from BFSI customers — PAN values, Aadhaar values, bank account numbers, account balances, bank statements, repayment history, transaction records, bureau pulls, KYC documents. Handled at the deletion-orchestration and tracker-monitoring boundaries only; the actual values are never seen by ConsentShield's database.
+
+Any future regulated sector's content (telecom CDRs, insurance claims content, education records, etc.) inherits Category C by default and is enumerated here when the corresponding module ships.
+
+**DEPA artefact model — category metadata vs content.** The `consent_artefacts` table under the DEPA model holds *category declarations*, never values. `data_scope = ['pan', 'repayment_history']` declares which regulated categories a consent covers — the actual PAN value never enters the row. The same separation applies to ABDM: an ABDM consent artefact is a row in `consent_artefacts` with `framework = 'abdm'` and metadata (`abdm_artefact_id`, `abdm_hip_id`, `abdm_hiu_id`, `abdm_fhir_types`) — Category A metadata, not FHIR content. The FHIR records that the artefact authorises remain Category C and never enter any table.
+
+This is a structural property of the schema, not a policy to follow — the DDL has no column where a PAN value or a FHIR resource payload can be written. A review that encounters such a column rejects the change.
 
 ---
 
@@ -168,14 +188,21 @@ If the Worker credential leaks, the attacker can insert garbage consent events b
 
 ```
 CAN SELECT: all buffer tables (application-level convention: query WHERE delivered_at IS NULL)
-CAN UPDATE: delivered_at column on all buffer tables
+            — includes consent_events, tracker_observations, audit_log, processing_log,
+              delivery_buffer, rights_request_events, deletion_receipts, withdrawal_verifications,
+              security_scans, consent_probe_runs, artefact_revocations (DEPA)
+CAN UPDATE: delivered_at column on all buffer tables (same list)
 CAN DELETE: all buffer tables (application-level convention: only rows WHERE delivered_at IS NOT NULL)
 CAN SELECT: export_configurations (to read storage credentials for delivery)
 CAN DELETE: consent_artefact_index (expired entries)
+CAN SELECT: consent_artefacts (DEPA — to read delivered-to-customer-storage payload),
+            purpose_definitions (DEPA — to include with artefact export),
+            artefact_revocations (DEPA — buffer pattern)
 CANNOT: read organisations, integration_connectors, consent_banners, or any operational table
+        outside of what is needed to assemble the delivery payload.
 ```
 
-If the delivery credential leaks, the attacker can read in-flight buffer rows (minutes of data, hashed/truncated) and export configuration (encrypted credentials they can't decrypt). They cannot access any operational data.
+If the delivery credential leaks, the attacker can read in-flight buffer rows (minutes of data, hashed/truncated) and export configuration (encrypted credentials they can't decrypt). They cannot access any operational data outside of the DEPA artefact metadata that is already being delivered to the customer.
 
 **Role: cs_orchestrator** (used by all other Edge Functions)
 
@@ -183,16 +210,26 @@ The following is a summary of security-relevant permissions. See consentshield-c
 
 ```
 CAN INSERT: audit_log, processing_log, rights_request_events, deletion_receipts,
-            withdrawal_verifications, security_scans, consent_probe_runs, delivery_buffer
+            withdrawal_verifications, security_scans, consent_probe_runs, delivery_buffer,
+            consent_artefacts (DEPA — process-consent-event Edge Function fan-out),
+            artefact_revocations (DEPA — system-originated revocations: expiry, regulatory)
 CAN SELECT: organisations, organisation_members, web_properties, integration_connectors,
             retention_rules, notification_channels, rights_requests, consent_artefact_index,
-            consent_probes, data_inventory
+            consent_probes, data_inventory,
+            consent_events (DEPA — process-consent-event needs the originating event row),
+            purpose_definitions (DEPA), purpose_connector_mappings (DEPA),
+            consent_artefacts (DEPA), consent_expiry_queue (DEPA),
+            depa_compliance_metrics (DEPA)
 CAN UPDATE: rights_requests.status/assignee_id, consent_artefact_index.validity_state,
             organisations.plan/plan_started_at/razorpay fields,
             consent_probes scheduling fields, integration_connectors health fields,
             retention_rules check fields, deletion_receipts status fields,
-            withdrawal_verifications scan fields
-CANNOT: read consent_events, tracker_observations directly. Cannot delete any row.
+            withdrawal_verifications scan fields,
+            consent_events.artefact_ids (DEPA — reconcile back-reference after artefact creation),
+            consent_artefacts.status (DEPA — expiry enforcement and replacement only),
+            consent_expiry_queue.notified_at/processed_at/superseded (DEPA — expiry pipeline),
+            depa_compliance_metrics.* (DEPA — nightly score refresh upsert)
+CANNOT: read tracker_observations directly. Cannot delete any row.
 ```
 
 **The full service_role key** is never used in running application code. It exists for:
@@ -283,6 +320,52 @@ Configured in the Cloudflare dashboard (not in Worker code):
 
 These thresholds are generous for legitimate use (a single IP won't generate more than a handful of consent events). The HMAC signing (step 2 above) handles determined attackers who use distributed IPs — the rate limit handles casual abuse.
 
+### 6.7 Consent Artefact Pipeline (DEPA)
+
+*Added 2026-04-16 per the DEPA alignment review.*
+
+The Worker's contract is unchanged: it validates a consent event, writes a row to `consent_events`, and returns 202. What's new is the DEPA fan-out that happens **downstream** of the Worker, asynchronously, without affecting the Worker's latency budget.
+
+**Fan-out rule.** One `consent_events` row generates N `consent_artefacts` rows — one per purpose accepted. The banner's `purposes` JSONB array carries a `purpose_definition_id` for each purpose, which keys into the `purpose_definitions` table for the canonical `data_scope` and `default_expiry_days`. Artefacts copy those fields at creation time (stable snapshot — the artefact's `data_scope` does not change if the purpose definition is later edited).
+
+**No legacy accommodation.** Every purpose on every banner MUST carry a `purpose_definition_id`. This is a hard constraint, not a migration-era softening. Banner save and banner publish endpoints reject the request with HTTP 422 if any purpose object in the `purposes` JSONB array lacks a `purpose_definition_id`. The `process-consent-event` Edge Function asserts the mapping exists when processing an event; if a mapping is missing, it writes a `consent_events_misconfigured` audit entry, fires a P1 alert via the notification channels, and creates zero artefacts. The flow is broken and visible, not silently accommodated. The DEPA `coverage_score` sub-metric is expected to read 100% at all times — any lower reading is a configuration bug to be caught and fixed, not a gradient to tolerate.
+
+**Two Edge Functions drive the pipeline:**
+
+- **`process-consent-event`** — reads a new `consent_events` row, looks up each accepted purpose in `purpose_definitions`, creates one `consent_artefacts` row per mapped purpose, upserts each into `consent_artefact_index` (validity cache), inserts corresponding `consent_expiry_queue` rows, stages the artefacts in `delivery_buffer` for export, and finally updates `consent_events.artefact_ids` with the created IDs.
+- **`process-artefact-revocation`** — fires after an INSERT into `artefact_revocations`. Transitions the referenced `consent_artefacts.status` to `'revoked'`, removes it from `consent_artefact_index`, looks up `purpose_connector_mappings` for the artefact's `data_scope`, and creates one `deletion_requests` row per connector. Audit log entry written.
+
+**Trigger mechanism — hybrid (Q2 Option D from the 2026-04-16 review).** The primary path is an `AFTER INSERT` trigger on `consent_events` whose body calls `net.http_post()` to invoke `process-consent-event` — the same primitive the HTTP cron jobs use. Trigger body is wrapped in `EXCEPTION WHEN OTHERS THEN NULL` so a failing trigger cannot roll back the Worker's INSERT (Worker always returns 202). The secondary path is a pg_cron job every 5 minutes that sweeps `consent_events WHERE artefact_ids = '{}' AND created_at < now() - interval '5 minutes'` and re-fires the same Edge Function. Typical latency sub-second; worst-case 5 minutes.
+
+**Idempotency contract (load-bearing).** The Edge Function is idempotent by convention: `SELECT count(*) FROM consent_artefacts WHERE consent_event_id = $1` — if > 0, it skips creation and only reconciles `consent_events.artefact_ids` from the existing rows. This prevents duplicate artefacts when both trigger and safety-net cron paths land for the same event.
+
+**Orphan event detection.** A compliance metric `orphan_consent_events` counts `consent_events` rows where `artefact_ids = '{}'` and `created_at > now() - interval '10 minutes'`. Any non-zero value on the dashboard indicates a stuck pipeline. Alert fires via the notification channels.
+
+**Data flow summary:**
+
+```
+Worker validates + writes consent_events row + returns 202 to browser
+    │
+    ▼
+AFTER INSERT trigger on consent_events
+    └─→ net.http_post(process-consent-event)   (EXCEPTION → NULL, non-blocking)
+            │
+            ▼
+        process-consent-event Edge Function (cs_orchestrator)
+            ├─ idempotency check: count artefacts for consent_event_id
+            ├─ lookup purpose_definitions for each purpose
+            ├─ INSERT N rows into consent_artefacts (with data_scope snapshot)
+            ├─ UPSERT into consent_artefact_index (validity cache)
+            ├─ INSERT into consent_expiry_queue (notify_at = expires_at - 30 days)
+            ├─ INSERT into delivery_buffer (stage for nightly export)
+            ├─ UPDATE consent_events SET artefact_ids = ARRAY[...]
+            └─ INSERT audit_log
+
+Safety net (pg_cron every 5 min):
+    SELECT consent_events WHERE artefact_ids = '{}' AND created_at < now() - 5 min
+        └─→ re-fire process-consent-event for each (idempotent)
+```
+
 ---
 
 ## 7. The Stateless Oracle Pipeline
@@ -350,6 +433,7 @@ DELETE FROM tracker_observations WHERE delivered_at IS NOT NULL AND delivered_at
 DELETE FROM audit_log WHERE delivered_at IS NOT NULL AND delivered_at < now() - interval '5 minutes';
 DELETE FROM processing_log WHERE delivered_at IS NOT NULL AND delivered_at < now() - interval '5 minutes';
 DELETE FROM delivery_buffer WHERE delivered_at IS NOT NULL AND delivered_at < now() - interval '5 minutes';
+DELETE FROM artefact_revocations WHERE delivered_at IS NOT NULL AND delivered_at < now() - interval '5 minutes';  -- DEPA
 ```
 
 **Stuck row detection (alert, don't silently lose data):**
@@ -380,6 +464,45 @@ Stored in `export_configurations` per organisation. Credentials are encrypted at
 **Default (Standard mode):** ConsentShield provisions a Cloudflare R2 bucket within its own account, scoped to a per-customer path prefix. A per-customer encryption key is generated, delivered to the customer once, and discarded. ConsentShield cannot read the exported data.
 
 **BYOS (Insulated/Zero-Storage mode):** Customer provides their own bucket and a write-only credential. ConsentShield validates the credential on setup (test write + verify), stores it encrypted, and uses it for all exports.
+
+### 7.3 Consent Artefact Lifecycle (Category A, delivered via staging)
+
+*Added 2026-04-16 per the DEPA alignment review.*
+
+`consent_artefacts` is Category A (operational) — it is not a buffer table. Rows are not deleted when delivery is confirmed, because an active artefact is the live authorisation record for the data flow it governs. Deletion of an artefact row happens only when the organisation is cascade-deleted (via `organisations ON DELETE CASCADE`); status transitions (revoked, expired, replaced) update the status column but leave the row in place.
+
+The "delivered to customer storage" orthogonal property (introduced in §3) applies: every insert and every status transition also stages a `delivery_buffer` row so the customer's canonical compliance record stays in sync. The staging row **is** Category B and follows the standard deliver-then-delete lifecycle; the source `consent_artefacts` row is unaffected by staging-row deletion.
+
+**Lifecycle states and transitions:**
+
+```
+                    ┌──────────┐
+                    │  active  │ ◄── created by process-consent-event
+                    └─────┬────┘
+              ┌───────────┼─────────────┐
+              ▼           ▼             ▼
+         ┌─────────┐  ┌─────────┐  ┌─────────┐
+         │ revoked │  │ expired │  │ replaced│
+         └─────────┘  └─────────┘  └─────────┘
+         (artefact_   (enforce_     (new consent
+         revocations  artefact_     interaction
+         INSERT +     expiry()      creates successor
+         trigger)     pg_cron)      artefact)
+```
+
+**Replacement chain semantics (S-5 from the review, decided).** If artefact A is replaced by B (re-consent), and B is later revoked, A's status stays frozen at `replaced`. Revocation of B creates an `artefact_revocations` row referencing B only and does **not** walk the `replaced_by` chain. Rationale: the chain is a *historical* record of how consent was re-obtained, not a live authorisation chain. Only the most recent non-replaced artefact authorises the current data flow.
+
+**What's retained, what's staged:**
+
+| Action | `consent_artefacts` | `delivery_buffer` staging |
+|---|---|---|
+| Artefact created | Row inserted, `status = 'active'` | `event_type = 'artefact_created'` staged |
+| Artefact revoked | Status updated to `'revoked'` (row stays) | `event_type = 'artefact_revoked'` staged |
+| Artefact expired | Status updated to `'expired'` (row stays) | `event_type = 'artefact_expired'` staged |
+| Artefact replaced | Status updated to `'replaced'`, `replaced_by` set (row stays) | `event_type = 'artefact_replaced'` staged |
+| Org cascade-delete | All rows removed | Staging rows that weren't yet delivered orphan — caught by the 1-hour stuck-detection alert |
+
+**Safety invariant.** A compliance audit reading only the customer's storage can reconstruct the complete artefact lifecycle from the staged events alone — the ConsentShield `consent_artefacts` table is the working set, not the canonical record.
 
 ---
 
@@ -431,23 +554,43 @@ Nightly Vercel Cron (02:00 IST) per web property:
 | Mixed content | HTML parse | Warning |
 | Cookie flags | Set-Cookie inspection | Warning |
 
-### 8.4 Deletion Orchestration
+### 8.4 Deletion Orchestration (Artefact-Scoped)
 
-Triggered by: erasure request approved, retention period expired, or consent withdrawn.
+*Amended 2026-04-16 per the DEPA alignment review. The generic webhook protocol is preserved; the orchestration inputs and deletion scoping change.*
 
-**Generic webhook protocol (universal):**
+Deletion is now **artefact-scoped**. Every `deletion_requests` row references an `artefact_id` (nullable for non-artefact-triggered deletions — see below). The scoping rule:
+
+1. **Resolve the artefact** — read `consent_artefacts.data_scope` for the triggering artefact.
+2. **Map to connectors** — `SELECT * FROM purpose_connector_mappings WHERE purpose_definition_id = <artefact's purpose_definition_id>`. Each row declares which connector handles which subset of the artefact's data_scope.
+3. **Create scoped deletion requests** — one `deletion_requests` row per connector, with the subset of `data_scope` that connector handles. Deduplicate.
+4. **Dispatch** — call each connector with the scoped payload.
+
+This replaces the prior blanket "delete the user from every connector" pattern. A user withdrawing their `marketing` consent no longer triggers a bureau-reporting deletion at a banking customer (bureau is governed by a different artefact).
+
+**Deletion triggers and their inputs:**
+
+| Trigger | `deletion_requests.artefact_id` | Scope |
+|---|---|---|
+| `artefact_revocations` INSERT (user-withdrawn consent) | The revoked artefact | Only connectors mapped to the artefact's purpose |
+| `enforce_artefact_expiry()` pg_cron (TTL lapse) | The expired artefact | Same |
+| Rights-portal erasure request (DPDP Section 13) | `NULL` — sweeps *all* active artefacts for the requestor's session fingerprints | All connectors mapped to any active artefact |
+| Retention-rule expiry on a Category B buffer | `NULL` — data-scope-driven, not artefact-driven | Connectors mapped to the data category |
+
+**Generic webhook protocol (unchanged shape; new fields):**
 ```json
 POST customer's endpoint:
 {
   "event": "deletion_request",
   "request_id": "uuid",
+  "artefact_id": "cs_art_01HXX2",                 // DEPA — null for non-artefact triggers
   "data_principal": { "identifier": "...", "identifier_type": "email" },
-  "reason": "erasure_request",
+  "data_scope": ["email_address", "name"],        // DEPA — what to delete, per this artefact
+  "reason": "consent_revoked",                    // DEPA — 'consent_revoked' | 'consent_expired' | 'erasure_request' | 'retention_expired'
   "callback_url": "https://api.consentshield.in/v1/deletion-receipts/{request_id}?sig={HMAC}",
   "deadline": "ISO timestamp"
 }
 
-Customer callback:
+Customer callback (unchanged):
 {
   "request_id": "uuid",
   "status": "completed | partial | failed",
@@ -456,11 +599,13 @@ Customer callback:
 }
 ```
 
-The callback URL includes an HMAC signature: `HMAC-SHA256(request_id, DELETION_CALLBACK_SECRET)`. The callback endpoint verifies the signature before accepting the confirmation. An attacker who discovers a request_id cannot forge a valid callback URL without the secret.
+The callback URL's HMAC signature and state-guard verification (Rule 14) are unchanged from the pre-DEPA design.
 
-**Pre-built connectors:** Direct API integrations (OAuth). Each follows the standard DeletionConnector interface: `getAuthUrl()`, `handleCallback()`, `deleteUser()`, `checkHealth()`.
+**Chain of custody.** Every deletion now has a four-link audit chain: `consent_artefacts.artefact_id → artefact_revocations.artefact_id → deletion_requests.artefact_id → deletion_receipts.artefact_id`. An auditor can reconstruct which user consented, when they withdrew, which systems were instructed to delete which fields, and when each system confirmed. This is the DPDP Section 12 evidence trail.
 
-Every deletion produces an immutable receipt in the deletion_receipts table, exported to customer storage as DPB evidence.
+**Pre-built connectors** (Mailchimp, HubSpot; more planned) continue to follow the standard `DeletionConnector` interface. The connector authors do not see a contract change — they receive a `data_scope` array in the deletion payload and are responsible for deleting only those fields, not the entire contact. Legacy connectors written before DEPA alignment may ignore `data_scope` and delete the whole contact; the orchestration allows this as a degraded mode but flags it via the `degraded_deletion_scope` audit event.
+
+Every deletion produces an immutable `deletion_receipts` row (Category B buffer) exported to customer storage as DPB evidence.
 
 ### 8.5 Consent Probe Testing Engine (Phase 3)
 
@@ -587,6 +732,15 @@ This ensures the notification email — the one that could be used as a spam vec
 | /api/orgs/[orgId]/integrations | GET, POST, DELETE | Manage connectors |
 | /api/orgs/[orgId]/integrations/[id]/delete | POST | Trigger deletion via connector |
 | /api/orgs/[orgId]/notifications | GET, PATCH | Notification channel config |
+| /api/orgs/[orgId]/purpose-definitions | GET, POST | (DEPA) List/create purpose definitions |
+| /api/orgs/[orgId]/purpose-definitions/[id] | GET, PATCH | (DEPA) Read/update a purpose definition |
+| /api/orgs/[orgId]/purpose-definitions/[id]/connectors | GET, POST, DELETE | (DEPA) Manage purpose → connector mappings |
+| /api/orgs/[orgId]/artefacts | GET | (DEPA) List consent artefacts (filter: status, framework, purpose_code, expiring_before) |
+| /api/orgs/[orgId]/artefacts/[id] | GET | (DEPA) Read one artefact with its full audit trail |
+| /api/orgs/[orgId]/artefacts/[id]/revoke | POST | (DEPA) Revoke an artefact — creates an `artefact_revocations` row |
+| /api/orgs/[orgId]/expiry-queue | GET | (DEPA) List upcoming expiry notifications |
+| /api/orgs/[orgId]/expiry-queue/export | POST | (DEPA) Export expiring session fingerprints for re-consent campaign |
+| /api/orgs/[orgId]/depa-score | GET | (DEPA) Read the cached DEPA compliance score + sub-metrics |
 
 ### 10.3 Compliance API (API key auth — Pro/Enterprise)
 
@@ -605,6 +759,11 @@ Authorization: Bearer cs_live_xxxxxxxxxxxxxxxx
 | /api/v1/audit/export | GET | read:audit |
 | /api/v1/security/scans | GET | read:security |
 | /api/v1/probes/results | GET | read:probes |
+| /api/v1/artefacts | GET | (DEPA) `read:artefacts` |
+| /api/v1/artefacts/[id] | GET | (DEPA) `read:artefacts` |
+| /api/v1/artefacts/[id]/revoke | POST | (DEPA) `write:artefacts` |
+| /api/v1/expiry/upcoming | GET | (DEPA) `read:artefacts` |
+| /api/v1/purpose-definitions | GET | (DEPA) `read:consent` |
 
 ---
 
@@ -614,9 +773,9 @@ These are architectural constraints, not feature decisions. They cannot be relax
 
 **Rule 1 — No single key unlocks everything.** Three scoped database roles (cs_worker, cs_delivery, cs_orchestrator) replace the single service role key in all running application code. Each role has the minimum permissions for its function. The full service role is for migrations and emergency admin only — never in running code.
 
-**Rule 2 — Buffer tables are append-only for authenticated users.** No UPDATE or DELETE RLS policy exists on any buffer table for any user role. No INSERT privilege for the `authenticated` role on critical buffers (consent_events, tracker_observations, audit_log, processing_log, delivery_buffer). Only the scoped service roles can write. Delivered rows are deleted by the cs_delivery role immediately after confirmed delivery.
+**Rule 2 — Buffer tables are append-only for authenticated users.** No UPDATE or DELETE RLS policy exists on any buffer table for any user role. No INSERT privilege for the `authenticated` role on critical buffers (consent_events, tracker_observations, audit_log, processing_log, delivery_buffer, **artefact_revocations**). Only the scoped service roles can write. Delivered rows are deleted by the cs_delivery role immediately after confirmed delivery. The DEPA `consent_artefacts` table is Category A (operational) rather than a buffer, but is also append-only for `authenticated` — see Rule 19.
 
-**Rule 3 — Health data (ABDM) is never stored.** FHIR records flow through memory only. No schema, no table, no log ever holds clinical content. Any code that persists FHIR content is rejected in review without exception.
+**Rule 3 — Regulated sensitive content is never persisted.** *(Scope broadened 2026-04-16 per the DEPA alignment review.)* Content-layer data governed by sector-specific retention regulation — FHIR clinical records under ABDM; banking identifiers (PAN values, Aadhaar values, bank account numbers, account balances, transaction records, repayment history) under RBI KYC / PMLA / Credit Information Companies Act / Banking Regulation Act; and any future sector's regulated content — flows through ConsentShield's server in memory only, if at all. No schema, no table, no log, no buffer ever holds regulated sensitive content. The DEPA artefact model is structurally compatible with this rule: `consent_artefacts.data_scope` is a **category declaration** like `['pan', 'account_balance']` or `['MedicationRequest', 'Observation']`, never an actual value like `'ABCDE1234F'` or `'43,250.00'`. Any code that attempts to persist regulated sensitive content — whether by direct column write, JSONB payload, log line, error message, or queue entry — is rejected in review without exception.
 
 **Rule 4 — org_id is validated at two levels.** API routes check the session's org_id against the resource. RLS policies enforce the same check at the database level. Both must pass.
 
@@ -647,6 +806,10 @@ These are architectural constraints, not feature decisions. They cannot be relax
 **Rule 17 — All infrastructure accounts use hardware security keys.** Supabase, Vercel, Cloudflare, GitHub, domain registrar, Razorpay, Resend — all require hardware 2FA. Not SMS. Not TOTP app.
 
 **Rule 18 — The Cloudflare Worker has zero npm dependencies.** It is vanilla TypeScript. This is a policy. Every dependency added to the Worker runs on every page load of every customer's website and is a supply chain risk surface.
+
+**Rule 19 — Consent artefacts are append-only.** *(Added 2026-04-16 per the DEPA alignment review.)* The `consent_artefacts` table has no INSERT, UPDATE, or DELETE RLS policy for `authenticated`. Artefacts are created exclusively by the `process-consent-event` Edge Function running as `cs_orchestrator`. Status transitions occur only through three paths: (a) `artefact_revocations` INSERT trigger (`active → revoked`), (b) `enforce_artefact_expiry()` pg_cron job (`active → expired`), or (c) `process-consent-event` during a re-consent flow (`active → replaced`). Direct UPDATE of `consent_artefacts.status` from application code is a bug and is rejected in review. Artefact rows are never deleted except by the `organisations ON DELETE CASCADE` path.
+
+**Rule 20 — Every consent artefact has an explicit expiry.** *(Added 2026-04-16 per the DEPA alignment review.)* Open-ended consent is not permitted. Every `consent_artefacts` row carries a non-null `expires_at` populated at creation from `purpose_definitions.default_expiry_days` (default 365 days). A purpose definition that intentionally creates non-expiring artefacts (e.g., `functional` required purposes that don't need consent anyway) must set `default_expiry_days = 0` which resolves to `'infinity'::timestamptz`. The `send_expiry_alerts()` pg_cron job notifies compliance contacts 30 days before expiry; `enforce_artefact_expiry()` transitions expired artefacts to `status = 'expired'` and, if `auto_delete_on_expiry = true` on the purpose definition, cascades deletion via the artefact-scoped deletion orchestration (§8.4).
 
 ---
 

@@ -3,6 +3,7 @@
 *(c) 2026 Sudhindra Anegondhi a.d.sudhindra@gmail.com*
 *Source of truth for all database objects · April 2026*
 *Companion to: Definitive Architecture Reference*
+*Amended: 2026-04-16 (DEPA alignment — see [`docs/reviews/2026-04-16-depa-package-architecture-review.md`](../reviews/2026-04-16-depa-package-architecture-review.md). DEPA content is in §11.)*
 
 ---
 
@@ -26,6 +27,7 @@ Every table, index, policy, trigger, function, and scheduled job is here. Nothin
 8. Buffer lifecycle functions (immediate delete, sweep, stuck detection)
 9. Scheduled jobs (pg_cron)
 10. Verification queries (run after setup to confirm guards are active)
+11. **DEPA alignment (2026-04-16)** — helper functions, new tables, ALTER TABLE amendments, indexes, RLS, scoped-role grant additions, triggers (including the `AFTER INSERT` trigger on `consent_events` for the hybrid artefact-creation pipeline), scheduled jobs (expiry alerts, expiry enforcement, DEPA score refresh, artefact-creation safety-net sweep), verification queries, guard additions. Run §11 in its entirety after §1–§10. All DEPA content is self-contained in §11 so future readers see it as one coherent extension.
 
 ---
 
@@ -1412,4 +1414,1241 @@ select count(*) from organisations where encryption_salt is null or length(encry
 
 ---
 
-*Document prepared April 2026. This is the complete schema design. Run top to bottom on a fresh Supabase Postgres instance. Every guard must be verified before any customer data enters the system. Security hardening changes integrated April 2026.*
+## 11. DEPA Alignment
+
+*Added 2026-04-16 per the [DEPA package architecture review](../reviews/2026-04-16-depa-package-architecture-review.md).*
+
+### 11.1 Overview
+
+§11 extends the schema to make ConsentShield DEPA-native: one consent artefact per purpose per interaction, each with a stable external ID, declared `data_scope`, explicit `expires_at`, and independent revocation and expiry lifecycles. The existing §1–§10 schema is unchanged except for the ALTER TABLE amendments in §11.3. All new objects live in §11.
+
+**Categorisation (per Q1 Option B in the Phase A review):** `consent_artefacts`, `purpose_definitions`, `purpose_connector_mappings`, `consent_expiry_queue`, and `depa_compliance_metrics` are Category A (operational). `artefact_revocations` is Category B (buffer). `consent_artefacts` and a few other Category A tables carry the orthogonal "delivered to customer storage" property via `delivery_buffer` staging — see definitive-architecture §3 for the classification model.
+
+**Artefact-creation pipeline (per Q2 Option D in the Phase A review):** primary path is an `AFTER INSERT` trigger on `consent_events` that fires `net.http_post()` to the `process-consent-event` Edge Function. Safety net is a pg_cron job every 5 minutes that sweeps orphan events. Both paths share the same idempotent Edge Function. The trigger body is wrapped in `EXCEPTION WHEN OTHERS THEN NULL` so a failing trigger never rolls back the Worker's INSERT — the Worker always returns 202.
+
+**No legacy in the data model (per the Phase B review).** Runtime behaviour: every banner purpose MUST carry a `purpose_definition_id`; missing mappings are configuration errors to be caught and fixed, not gradients to tolerate. This is a *data-model* posture, not a statement about schema objects — the dev Supabase instance does have pre-DEPA tables (`consent_events`, `deletion_requests`, `deletion_receipts`, `consent_artefact_index`, `consent_banners`), and §11.3 evolves them in place via ALTER TABLE. Customer consent data is zero across all environments, so no data-migration path exists or is needed; schema-object evolution is a routine dev operation. See §11.13 for the ALTER-vs-DROP+RECREATE decision per amendment.
+
+**Regulated sensitive content (per Rule 3 as broadened in Phase B).** The DEPA `data_scope` column on `consent_artefacts` and `purpose_definitions` holds **category declarations** (e.g., `'pan'`, `'email_address'`, `'MedicationRequest'`) — never actual values. No DDL in §11 admits a column where regulated content (FHIR resource payloads, PAN values, Aadhaar values, bank statements, transaction records) could be written. A review that encounters such a column rejects the change.
+
+---
+
+### 11.2 New Helper Functions
+
+```sql
+-- ═══════════════════════════════════════════════════════════
+-- generate_artefact_id() — stable, time-sortable external ID
+-- Format: 'cs_art_' + 26-character ULID.
+-- Stored as text (not uuid) so time-ordered retrieval does not
+-- require a created_at index on large tables.
+-- ═══════════════════════════════════════════════════════════
+create or replace function generate_artefact_id()
+returns text language plpgsql as $$
+declare
+  t bigint;
+  r text := '';
+  chars text := '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+  i int;
+begin
+  t := extract(epoch from now()) * 1000;
+  for i in 1..10 loop
+    r := substring(chars from (t % 32)::int + 1 for 1) || r;
+    t := t / 32;
+  end loop;
+  for i in 1..16 loop
+    r := r || substring(chars from (floor(random() * 32))::int + 1 for 1);
+  end loop;
+  return 'cs_art_' || r;
+end;
+$$;
+
+-- ═══════════════════════════════════════════════════════════
+-- compute_depa_score(org_id) — 0–20 DEPA-quality score
+-- Called by depa-score-refresh-nightly pg_cron job.
+-- ═══════════════════════════════════════════════════════════
+create or replace function compute_depa_score(p_org_id uuid)
+returns jsonb language plpgsql security definer as $$
+declare
+  v_coverage_score   numeric;
+  v_expiry_score     numeric;
+  v_freshness_score  numeric;
+  v_revocation_score numeric;
+  v_total            numeric;
+begin
+  -- Sub-metric 1: Artefact coverage
+  -- % of active purpose_definitions that have data_scope populated.
+  select case
+    when count(*) = 0 then 0
+    else round((count(*) filter (where array_length(data_scope, 1) > 0)::numeric / count(*)) * 5, 1)
+  end
+  into v_coverage_score
+  from purpose_definitions
+  where org_id = p_org_id and is_active = true;
+
+  -- Sub-metric 2: Expiry definition
+  -- % of active purpose_definitions with an explicitly set expiry (not the system default).
+  select case
+    when count(*) = 0 then 0
+    else round((count(*) filter (where default_expiry_days != 365)::numeric / count(*)) * 5, 1)
+  end
+  into v_expiry_score
+  from purpose_definitions
+  where org_id = p_org_id and is_active = true;
+
+  -- Sub-metric 3: Artefact freshness
+  -- % of active artefacts that expire more than 90 days in the future.
+  select case
+    when count(*) = 0 then 5
+    else round((count(*) filter (where expires_at > now() + interval '90 days')::numeric / count(*)) * 5, 1)
+  end
+  into v_freshness_score
+  from consent_artefacts
+  where org_id = p_org_id and status = 'active';
+
+  -- Sub-metric 4: Revocation chain completeness
+  -- % of revocations with a confirmed deletion_receipt within 30 days.
+  select case
+    when count(*) = 0 then 5
+    else round((count(dr.id)::numeric / count(ar.id)) * 5, 1)
+  end
+  into v_revocation_score
+  from artefact_revocations ar
+  left join deletion_receipts dr
+    on dr.artefact_id = ar.artefact_id
+   and dr.status = 'completed'
+   and dr.created_at < ar.revoked_at + interval '30 days'
+  where ar.org_id = p_org_id
+    and ar.revoked_at > now() - interval '90 days';
+
+  v_total := coalesce(v_coverage_score, 0)
+           + coalesce(v_expiry_score, 0)
+           + coalesce(v_freshness_score, 0)
+           + coalesce(v_revocation_score, 0);
+
+  return jsonb_build_object(
+    'total',             v_total,
+    'coverage_score',    v_coverage_score,
+    'expiry_score',      v_expiry_score,
+    'freshness_score',   v_freshness_score,
+    'revocation_score',  v_revocation_score,
+    'computed_at',       now()
+  );
+end;
+$$;
+
+-- ═══════════════════════════════════════════════════════════
+-- enforce_artefact_expiry() — nightly pg_cron job
+-- Transitions expired active artefacts to status = 'expired',
+-- removes them from the validity cache, writes audit log, and
+-- stages deletion if the purpose definition has
+-- auto_delete_on_expiry = true.
+-- ═══════════════════════════════════════════════════════════
+create or replace function enforce_artefact_expiry()
+returns void language plpgsql security definer as $$
+declare
+  v_artefact record;
+  v_auto_delete boolean;
+begin
+  for v_artefact in
+    select ca.id, ca.org_id, ca.artefact_id, ca.purpose_definition_id, ca.data_scope
+    from consent_artefacts ca
+    where ca.status = 'active'
+      and ca.expires_at <= now()
+  loop
+    update consent_artefacts set status = 'expired' where id = v_artefact.id;
+
+    delete from consent_artefact_index
+     where artefact_id = v_artefact.artefact_id
+       and org_id = v_artefact.org_id;
+
+    insert into audit_log (org_id, event_type, entity_type, entity_id, payload)
+    values (
+      v_artefact.org_id,
+      'consent_artefact_expired',
+      'consent_artefacts',
+      v_artefact.id,
+      jsonb_build_object('artefact_id', v_artefact.artefact_id, 'reason', 'ttl_exceeded')
+    );
+
+    select auto_delete_on_expiry into v_auto_delete
+      from purpose_definitions where id = v_artefact.purpose_definition_id;
+
+    if v_auto_delete then
+      insert into delivery_buffer (org_id, event_type, payload)
+      values (
+        v_artefact.org_id,
+        'artefact_expiry_deletion',
+        jsonb_build_object(
+          'artefact_id', v_artefact.artefact_id,
+          'data_scope',  v_artefact.data_scope,
+          'reason',      'consent_expired'
+        )
+      );
+    end if;
+
+    update consent_expiry_queue
+       set processed_at = now()
+     where artefact_id = v_artefact.artefact_id
+       and processed_at is null;
+  end loop;
+end;
+$$;
+
+-- ═══════════════════════════════════════════════════════════
+-- send_expiry_alerts() — daily pg_cron job
+-- Identifies artefacts approaching expiry and stages expiry-alert
+-- payloads in delivery_buffer (Edge Function dispatches emails).
+-- ═══════════════════════════════════════════════════════════
+create or replace function send_expiry_alerts()
+returns void language plpgsql security definer as $$
+declare
+  v_entry record;
+begin
+  for v_entry in
+    select ceq.id, ceq.org_id, ceq.artefact_id, ceq.purpose_code,
+           ceq.expires_at, o.compliance_contact_email
+      from consent_expiry_queue ceq
+      join organisations o on o.id = ceq.org_id
+     where ceq.notify_at <= now()
+       and ceq.notified_at is null
+       and ceq.processed_at is null
+       and ceq.superseded = false
+  loop
+    update consent_expiry_queue set notified_at = now() where id = v_entry.id;
+
+    insert into delivery_buffer (org_id, event_type, payload)
+    values (
+      v_entry.org_id,
+      'consent_expiry_alert',
+      jsonb_build_object(
+        'artefact_id',        v_entry.artefact_id,
+        'purpose_code',       v_entry.purpose_code,
+        'expires_at',         v_entry.expires_at,
+        'compliance_contact', v_entry.compliance_contact_email
+      )
+    );
+  end loop;
+end;
+$$;
+
+-- ═══════════════════════════════════════════════════════════
+-- trigger_process_consent_event() — AFTER INSERT on consent_events
+-- Q2 Option D primary path: fires net.http_post to the
+-- process-consent-event Edge Function. Trigger body is wrapped in
+-- EXCEPTION WHEN OTHERS THEN NULL so a failing trigger NEVER rolls
+-- back the Worker's INSERT. Safety-net cron (§11.10) picks up any
+-- dropped events.
+-- ═══════════════════════════════════════════════════════════
+create or replace function trigger_process_consent_event()
+returns trigger language plpgsql security definer as $$
+begin
+  begin
+    perform net.http_post(
+      url := (select decrypted_secret from vault.decrypted_secrets
+              where name = 'supabase_url' limit 1)
+             || '/functions/v1/process-consent-event',
+      headers := jsonb_build_object(
+        'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets
+                                       where name = 'cs_orchestrator_key' limit 1),
+        'Content-Type',  'application/json'
+      ),
+      body := jsonb_build_object('consent_event_id', NEW.id)
+    );
+  exception when others then
+    -- Never block the INSERT. The safety-net cron catches orphans.
+    null;
+  end;
+  return null;  -- AFTER INSERT trigger — return value ignored.
+end;
+$$;
+
+-- ═══════════════════════════════════════════════════════════
+-- trigger_process_artefact_revocation() — AFTER INSERT on
+-- artefact_revocations. Dispatches the out-of-database cascade
+-- (purpose_connector_mappings lookup + deletion_requests fan-out)
+-- to the process-artefact-revocation Edge Function. The in-
+-- database cascade (status update, validity index removal, audit
+-- log) is handled by trg_artefact_revocation_cascade (§11.8).
+-- ═══════════════════════════════════════════════════════════
+create or replace function trigger_process_artefact_revocation()
+returns trigger language plpgsql security definer as $$
+begin
+  begin
+    perform net.http_post(
+      url := (select decrypted_secret from vault.decrypted_secrets
+              where name = 'supabase_url' limit 1)
+             || '/functions/v1/process-artefact-revocation',
+      headers := jsonb_build_object(
+        'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets
+                                       where name = 'cs_orchestrator_key' limit 1),
+        'Content-Type',  'application/json'
+      ),
+      body := jsonb_build_object(
+        'artefact_id',   NEW.artefact_id,
+        'revocation_id', NEW.id
+      )
+    );
+  exception when others then
+    null;
+  end;
+  return null;
+end;
+$$;
+
+-- ═══════════════════════════════════════════════════════════
+-- safety_net_process_consent_events() — pg_cron helper
+-- Picks up consent_events with empty artefact_ids older than 5
+-- minutes (trigger dispatch dropped) and re-fires the Edge
+-- Function. Idempotent — the Edge Function's idempotency contract
+-- (§11.1, load-bearing) prevents duplicate artefact creation.
+-- ═══════════════════════════════════════════════════════════
+create or replace function safety_net_process_consent_events()
+returns integer language plpgsql security definer as $$
+declare
+  v_event_id uuid;
+  v_count    integer := 0;
+begin
+  for v_event_id in
+    select id from consent_events
+     where artefact_ids = '{}'
+       and created_at < now() - interval '5 minutes'
+       and created_at > now() - interval '24 hours'
+     limit 100
+  loop
+    begin
+      perform net.http_post(
+        url := (select decrypted_secret from vault.decrypted_secrets
+                where name = 'supabase_url' limit 1)
+               || '/functions/v1/process-consent-event',
+        headers := jsonb_build_object(
+          'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets
+                                         where name = 'cs_orchestrator_key' limit 1),
+          'Content-Type',  'application/json'
+        ),
+        body := jsonb_build_object('consent_event_id', v_event_id)
+      );
+      v_count := v_count + 1;
+    exception when others then
+      null;  -- Continue processing other events.
+    end;
+  end loop;
+  return v_count;
+end;
+$$;
+```
+
+---
+
+### 11.3 Amendments to Existing Tables (ALTER TABLE)
+
+Five existing tables gain columns to connect them to the DEPA artefact model.
+
+```sql
+-- ═══════════════════════════════════════════════════════════
+-- consent_events — gain artefact_ids back-reference
+-- Populated by the process-consent-event Edge Function after
+-- artefact creation. Empty array → event has no artefacts yet
+-- (either the trigger/cron dispatch is still in flight, or the
+-- event is orphaned and needs investigation — see §11.10 for the
+-- safety-net pickup rules).
+-- ═══════════════════════════════════════════════════════════
+alter table consent_events
+  add column artefact_ids text[] not null default '{}';
+
+create index idx_consent_events_artefact_ids
+  on consent_events using gin (artefact_ids);
+
+create index idx_consent_events_awaiting_artefact
+  on consent_events (created_at)
+  where artefact_ids = '{}';
+
+comment on column consent_events.artefact_ids is
+  'Denormalised list of consent_artefacts.artefact_id values generated from this event. '
+  'Populated by process-consent-event Edge Function after successful fan-out. '
+  'Empty array older than 5 minutes indicates the dispatch pipeline is broken — '
+  'safety-net pg_cron (§11.10) picks these up for retry.';
+
+-- ═══════════════════════════════════════════════════════════
+-- deletion_requests — link to the artefact that authorised the
+-- deletion (nullable for rights-request-triggered erasures that
+-- sweep all active artefacts).
+-- ═══════════════════════════════════════════════════════════
+alter table deletion_requests
+  add column artefact_id text references consent_artefacts(artefact_id) on delete set null;
+
+create index idx_deletion_requests_artefact
+  on deletion_requests (artefact_id)
+  where artefact_id is not null;
+
+comment on column deletion_requests.artefact_id is
+  'Consent artefact whose revocation or expiry triggered this deletion. '
+  'NULL for rights-request-triggered erasures (DPDP Section 13 full erasure). '
+  'Non-null for consent_revoked, consent_expired, and retention_expired triggers.';
+
+-- ═══════════════════════════════════════════════════════════
+-- deletion_receipts — denormalised back-reference for the
+-- artefact-scoped chain of custody query. Populated from
+-- deletion_requests.artefact_id at receipt creation.
+-- ═══════════════════════════════════════════════════════════
+alter table deletion_receipts
+  add column artefact_id text;
+
+create index idx_deletion_receipts_artefact
+  on deletion_receipts (artefact_id)
+  where artefact_id is not null;
+
+comment on column deletion_receipts.artefact_id is
+  'Denormalised from deletion_requests.artefact_id for chain-of-custody queries. '
+  'NULL for non-artefact-triggered deletions. '
+  'Completes the 4-link chain: consent_artefacts → artefact_revocations → '
+  'deletion_requests → deletion_receipts.';
+
+-- ═══════════════════════════════════════════════════════════
+-- consent_artefact_index — extend from ABDM-specific to
+-- multi-framework validity cache (per S-3 in the Phase A review).
+-- Populated by process-consent-event for every created artefact;
+-- removed by the revocation trigger and by enforce_artefact_expiry().
+-- ═══════════════════════════════════════════════════════════
+alter table consent_artefact_index
+  add column framework   text not null default 'abdm',
+  add column purpose_code text;
+
+create index idx_consent_artefact_index_framework
+  on consent_artefact_index (org_id, framework)
+  where validity_state = 'active';
+
+comment on column consent_artefact_index.framework is
+  'dpdp | abdm | gdpr — which framework this artefact belongs to. '
+  'Default ''abdm'' preserves the pre-DEPA semantics of this table; '
+  'new DEPA artefacts write the correct framework at insert time.';
+
+comment on column consent_artefact_index.purpose_code is
+  'Machine-readable purpose code. Used for fast lookup during tracker enforcement '
+  'without joining back to consent_artefacts.';
+
+-- ═══════════════════════════════════════════════════════════
+-- consent_banners.purposes — JSONB object-schema extension
+-- (documentation only; no ALTER TABLE needed).
+--
+-- Every purpose object in the purposes array MUST include
+-- purpose_definition_id after this amendment. The banner save
+-- and publish API endpoints reject requests with HTTP 422 if any
+-- purpose object lacks it — see definitive-architecture §6.7.
+--
+-- Updated purpose object schema:
+--   {
+--     id: string,                    -- 'analytics' | 'marketing' | custom
+--     purpose_definition_id: uuid,   -- REQUIRED. FK to purpose_definitions.id.
+--     name: string,
+--     description: string,
+--     data_scope: string[],          -- snapshot copy from purpose_definitions at save time
+--     default_expiry_days: integer,  -- snapshot copy
+--     auto_delete_on_expiry: boolean,-- snapshot copy
+--     required: boolean,
+--     default: boolean
+--   }
+-- ═══════════════════════════════════════════════════════════
+```
+
+---
+
+### 11.4 New Tables
+
+Execute in order. Foreign-key dependencies require `purpose_definitions` before `consent_artefacts`, and `consent_artefacts` before `artefact_revocations` and `consent_expiry_queue`.
+
+```sql
+-- ═══════════════════════════════════════════════════════════
+-- 11.4.1  purpose_definitions  (Category A.1 operational)
+-- Canonical purpose library per organisation. Banners reference
+-- purpose_definition_id from their purposes JSONB. Artefacts copy
+-- data_scope and default_expiry_days from here at creation time.
+-- Mutable (admins can edit descriptions and expiry windows);
+-- purpose_code is stable (unique per org per framework).
+-- ═══════════════════════════════════════════════════════════
+create table purpose_definitions (
+  id                    uuid primary key default gen_random_uuid(),
+  org_id                uuid not null references organisations(id) on delete cascade,
+  purpose_code          text not null,                 -- machine-readable, stable
+  display_name          text not null,                 -- shown to user in banner
+  description           text not null,                 -- plain language, shown in preference centre
+  data_scope            text[] not null default '{}',  -- CATEGORIES (e.g. 'email_address'), never values
+  default_expiry_days   integer not null default 365,  -- 0 → 'infinity' (rarely used)
+  auto_delete_on_expiry boolean not null default false,
+  is_required           boolean not null default false,-- required purposes generate NO artefacts
+  framework             text not null default 'dpdp',  -- 'dpdp' | 'abdm' | 'gdpr' (gdpr reserved for Phase 3)
+  abdm_hi_types         text[] default null,           -- FHIR resource type NAMES (not content), abdm only
+  is_active             boolean not null default true,
+  created_at            timestamptz default now(),
+  updated_at            timestamptz default now(),
+  unique (org_id, purpose_code, framework)
+);
+
+comment on table purpose_definitions is
+  'Canonical purpose library per organisation. Source of truth for what each '
+  'purpose means: what data category it covers, how long consent lasts, and '
+  'what to delete on revocation. data_scope is a CATEGORY list (e.g. ''pan'', '
+  '''email_address'') — never actual values. Do not delete a purpose_definition '
+  'that has active consent_artefacts; deactivate via is_active = false instead.';
+
+-- ═══════════════════════════════════════════════════════════
+-- 11.4.2  purpose_connector_mappings  (Category A.1 operational)
+-- Maps (purpose_definition × data_scope category) → connector.
+-- Drives the artefact-scoped deletion orchestration in §8.4 of
+-- the definitive architecture.
+-- ═══════════════════════════════════════════════════════════
+create table purpose_connector_mappings (
+  id                    uuid primary key default gen_random_uuid(),
+  org_id                uuid not null references organisations(id) on delete cascade,
+  purpose_definition_id uuid not null references purpose_definitions(id) on delete cascade,
+  connector_id          uuid not null references integration_connectors(id) on delete cascade,
+  data_categories       text[] not null default '{}',  -- SUBSET of purpose_definitions.data_scope
+  created_at            timestamptz default now(),
+  unique (purpose_definition_id, connector_id)
+);
+
+comment on table purpose_connector_mappings is
+  'Links purpose data_scope categories to deletion connectors. When an artefact '
+  'is revoked, this table determines which connectors handle which data categories. '
+  'Without a mapping, the revocation alert fires but automated deletion cannot execute.';
+
+-- ═══════════════════════════════════════════════════════════
+-- 11.4.3  consent_artefacts  (Category A.1 operational,
+--                             delivered via delivery_buffer staging)
+--
+-- The DEPA-native consent record. One row per purpose per consent
+-- interaction. APPEND-ONLY for authenticated role (Rule 19);
+-- status transitions via (a) artefact_revocations INSERT trigger,
+-- (b) enforce_artefact_expiry() pg_cron, or (c) process-consent-
+-- event re-consent path. Rows are NOT deleted on delivery — the
+-- delivery happens via delivery_buffer staging while the row
+-- stays in this table for active-status queries.
+--
+-- Replacement chain semantics (per S-5 in the Phase A review):
+-- if A is replaced by B and B is later revoked, A stays frozen
+-- at 'replaced'. Revocation does NOT walk the replaced_by chain.
+-- ═══════════════════════════════════════════════════════════
+create table consent_artefacts (
+  id                    uuid primary key default gen_random_uuid(),
+  artefact_id           text not null unique default generate_artefact_id(),
+  org_id                uuid not null,                 -- denormalised for RLS (same pattern as consent_events)
+  property_id           uuid not null references web_properties(id),
+  banner_id             uuid not null references consent_banners(id),
+  banner_version        integer not null,              -- snapshot of banner version user saw
+  consent_event_id      uuid not null references consent_events(id),
+  session_fingerprint   text not null,                 -- matches consent_events.session_fingerprint
+  purpose_definition_id uuid not null references purpose_definitions(id),
+  purpose_code          text not null,                 -- denormalised from purpose_definitions
+  data_scope            text[] not null default '{}',  -- SNAPSHOT of data_scope at creation — CATEGORIES, not values
+  framework             text not null default 'dpdp',
+  expires_at            timestamptz not null,          -- mandatory per Rule 20
+  status                text not null default 'active',-- 'active' | 'revoked' | 'expired' | 'replaced'
+  replaced_by           text references consent_artefacts(artefact_id),
+  abdm_artefact_id      text,                          -- framework = 'abdm' only
+  abdm_hip_id           text,
+  abdm_hiu_id           text,
+  abdm_fhir_types       text[],                        -- FHIR resource type NAMES — not content
+  created_at            timestamptz default now()
+  -- No updated_at. Status transitions are externally enforced.
+);
+
+comment on table consent_artefacts is
+  'DEPA-native consent artefact table. One row per purpose per consent interaction. '
+  'Authoritative record for compliance, audit, and deletion orchestration. '
+  'APPEND-ONLY for authenticated role (Rule 19). Status changes via triggers, pg_cron, '
+  'and Edge Functions only. Exported to customer storage via delivery_buffer staging; '
+  'the row itself is retained while status = ''active'' for revocation and expiry queries. '
+  'data_scope and abdm_fhir_types are category declarations — never regulated content values (Rule 3).';
+
+-- ═══════════════════════════════════════════════════════════
+-- 11.4.4  artefact_revocations  (Category B buffer)
+-- Immutable revocation records. Inserting a row triggers the
+-- in-database cascade (status → revoked, index removal, audit
+-- log) AND the out-of-database cascade (Edge Function creates
+-- deletion_requests for the mapped connectors). See §11.8.
+-- APPEND-ONLY. No UPDATE or DELETE for any role.
+-- ═══════════════════════════════════════════════════════════
+create table artefact_revocations (
+  id              uuid primary key default gen_random_uuid(),
+  org_id          uuid not null,                       -- denormalised for RLS
+  artefact_id     text not null references consent_artefacts(artefact_id),
+  revoked_at      timestamptz not null default now(),
+  reason          text not null,                       -- 'user_preference_change' | 'user_withdrawal' |
+                                                       -- 'business_withdrawal' | 'data_breach' | 'regulatory_instruction'
+  revoked_by_type text not null,                       -- 'data_principal' | 'organisation' | 'system' | 'regulator'
+  revoked_by_ref  text,                                -- session_fingerprint | user_id | instruction ref | NULL
+  notes           text,
+  delivered_at    timestamptz,                         -- buffer-pattern delivery tracking
+  created_at      timestamptz default now()
+);
+
+comment on table artefact_revocations is
+  'Immutable log of every consent artefact revocation. Inserting a row here is '
+  'the mechanism for revoking an artefact — the trigger updates consent_artefacts.status. '
+  'Do not attempt to UPDATE consent_artefacts.status directly from application code. '
+  'Exported to customer storage and deleted from this table after confirmed delivery.';
+
+-- ═══════════════════════════════════════════════════════════
+-- 11.4.5  consent_expiry_queue  (Category A.1 operational)
+-- Scheduled expiry management per artefact. Rows are retained as
+-- a historical expiry audit trail — NOT deleted after processing.
+-- ═══════════════════════════════════════════════════════════
+create table consent_expiry_queue (
+  id              uuid primary key default gen_random_uuid(),
+  org_id          uuid not null references organisations(id) on delete cascade,
+  artefact_id     text not null references consent_artefacts(artefact_id) on delete cascade,
+  purpose_code    text not null,                       -- denormalised for efficient alert batching
+  expires_at      timestamptz not null,
+  notify_at       timestamptz not null,                -- expires_at - 30 days
+  notified_at     timestamptz,                         -- null = alert not yet sent
+  processed_at    timestamptz,                         -- null = pending enforcement
+  superseded      boolean not null default false,      -- true if re-consented before expiry
+  created_at      timestamptz default now()
+);
+
+comment on table consent_expiry_queue is
+  'Scheduled expiry management for consent artefacts. One row per finite-expiry '
+  'artefact, created by trigger on consent_artefacts INSERT. notify_at fires '
+  'expiry alerts via send_expiry_alerts() pg_cron; enforce_artefact_expiry() reads '
+  'consent_artefacts directly and updates this table as a side effect. Rows are '
+  'NOT deleted after processing — they form a historical expiry audit trail.';
+
+-- ═══════════════════════════════════════════════════════════
+-- 11.4.6  depa_compliance_metrics  (Category A.1 operational)
+-- Cached DEPA compliance score per organisation. Refreshed nightly
+-- by the depa-score-refresh-nightly pg_cron job. Read by the
+-- compliance score API without recomputing.
+-- ═══════════════════════════════════════════════════════════
+create table depa_compliance_metrics (
+  id               uuid primary key default gen_random_uuid(),
+  org_id           uuid not null references organisations(id) on delete cascade unique,
+  total_score      numeric(4,1) not null default 0,
+  coverage_score   numeric(4,1) not null default 0,
+  expiry_score     numeric(4,1) not null default 0,
+  freshness_score  numeric(4,1) not null default 0,
+  revocation_score numeric(4,1) not null default 0,
+  computed_at      timestamptz not null default now(),
+  created_at       timestamptz default now(),
+  updated_at       timestamptz default now()
+);
+
+comment on table depa_compliance_metrics is
+  'Cached DEPA compliance score per organisation. Updated nightly by the '
+  'depa-score-refresh-nightly pg_cron job. Stale by at most 24 hours. '
+  'Staleness is surfaced in the dashboard if computed_at is older than 25 hours.';
+```
+
+---
+
+### 11.5 New Indexes
+
+```sql
+-- purpose_definitions
+create index idx_purpose_defs_org           on purpose_definitions (org_id);
+create index idx_purpose_defs_org_framework on purpose_definitions (org_id, framework);
+create index idx_purpose_defs_code          on purpose_definitions (org_id, purpose_code);
+
+-- purpose_connector_mappings
+create index idx_pcm_purpose_def on purpose_connector_mappings (purpose_definition_id);
+create index idx_pcm_connector   on purpose_connector_mappings (connector_id);
+
+-- consent_artefacts
+create index idx_artefacts_org_status
+  on consent_artefacts (org_id, status);
+create index idx_artefacts_org_status_expires
+  on consent_artefacts (org_id, status, expires_at)
+  where status = 'active';
+create index idx_artefacts_fingerprint
+  on consent_artefacts (org_id, session_fingerprint)
+  where status = 'active';
+create index idx_artefacts_event_id
+  on consent_artefacts (consent_event_id);
+create index idx_artefacts_purpose_def
+  on consent_artefacts (purpose_definition_id);
+create index idx_artefacts_framework
+  on consent_artefacts (org_id, framework, status)
+  where status = 'active';
+create index idx_artefacts_abdm
+  on consent_artefacts (abdm_artefact_id)
+  where abdm_artefact_id is not null;
+
+-- artefact_revocations
+create index idx_revocations_artefact   on artefact_revocations (artefact_id);
+create index idx_revocations_org_time   on artefact_revocations (org_id, revoked_at desc);
+create index idx_revocations_undelivered on artefact_revocations (delivered_at)
+  where delivered_at is null;
+
+-- consent_expiry_queue
+create index idx_expiry_queue_alert_pending
+  on consent_expiry_queue (notify_at)
+  where notified_at is null and superseded = false;
+create index idx_expiry_queue_org_upcoming
+  on consent_expiry_queue (org_id, expires_at)
+  where processed_at is null and superseded = false;
+create index idx_expiry_queue_artefact
+  on consent_expiry_queue (artefact_id);
+```
+
+---
+
+### 11.6 Row-Level Security — New Policies
+
+```sql
+alter table purpose_definitions         enable row level security;
+alter table purpose_connector_mappings  enable row level security;
+alter table consent_artefacts           enable row level security;
+alter table artefact_revocations        enable row level security;
+alter table consent_expiry_queue        enable row level security;
+alter table depa_compliance_metrics     enable row level security;
+
+-- ═══════════════════════════════════════════════════════════
+-- purpose_definitions — admin-managed mutable config
+-- ═══════════════════════════════════════════════════════════
+create policy "purpose_defs_select_own"
+  on purpose_definitions for select
+  using (org_id = current_org_id());
+
+create policy "purpose_defs_insert_admin"
+  on purpose_definitions for insert
+  with check (org_id = current_org_id() and is_org_admin());
+
+create policy "purpose_defs_update_admin"
+  on purpose_definitions for update
+  using (org_id = current_org_id() and is_org_admin());
+-- No DELETE policy. Deactivate via is_active = false.
+
+-- ═══════════════════════════════════════════════════════════
+-- purpose_connector_mappings — admin-managed
+-- ═══════════════════════════════════════════════════════════
+create policy "pcm_select_own"
+  on purpose_connector_mappings for select
+  using (org_id = current_org_id());
+
+create policy "pcm_insert_admin"
+  on purpose_connector_mappings for insert
+  with check (org_id = current_org_id() and is_org_admin());
+
+create policy "pcm_delete_admin"
+  on purpose_connector_mappings for delete
+  using (org_id = current_org_id() and is_org_admin());
+
+-- ═══════════════════════════════════════════════════════════
+-- consent_artefacts — append-only for authenticated (Rule 19)
+-- No INSERT, UPDATE, or DELETE policy for authenticated role.
+-- All writes flow through the process-consent-event Edge Function
+-- running as cs_orchestrator (bypass-RLS scoped role).
+-- ═══════════════════════════════════════════════════════════
+create policy "artefacts_select_own"
+  on consent_artefacts for select
+  using (org_id = current_org_id());
+
+-- ═══════════════════════════════════════════════════════════
+-- artefact_revocations — append-only; any org member can revoke
+-- via the rights centre or preference centre. The BEFORE trigger
+-- (§11.8) validates the artefact belongs to the claimed org.
+-- ═══════════════════════════════════════════════════════════
+create policy "revocations_select_own"
+  on artefact_revocations for select
+  using (org_id = current_org_id());
+
+create policy "revocations_insert_own"
+  on artefact_revocations for insert
+  with check (org_id = current_org_id());
+-- No UPDATE or DELETE policy (immutability).
+
+-- ═══════════════════════════════════════════════════════════
+-- consent_expiry_queue — read-only for authenticated
+-- ═══════════════════════════════════════════════════════════
+create policy "expiry_queue_select_own"
+  on consent_expiry_queue for select
+  using (org_id = current_org_id());
+
+-- ═══════════════════════════════════════════════════════════
+-- depa_compliance_metrics — read-only for authenticated
+-- ═══════════════════════════════════════════════════════════
+create policy "depa_metrics_select_own"
+  on depa_compliance_metrics for select
+  using (org_id = current_org_id());
+```
+
+---
+
+### 11.7 Scoped Role Grant Additions
+
+Mirrors the amendments in definitive-architecture §5.4.
+
+```sql
+-- ═══════════════════════════════════════════════════════════
+-- cs_worker — NO new grants. The Worker creates consent_events;
+-- the Edge Function running as cs_orchestrator creates artefacts.
+-- cs_worker has no DEPA table access.
+-- ═══════════════════════════════════════════════════════════
+
+-- ═══════════════════════════════════════════════════════════
+-- cs_delivery — extends to the new buffer table and the artefact
+-- + purpose_definitions tables (needed to assemble delivery payload).
+-- ═══════════════════════════════════════════════════════════
+grant select, delete                on artefact_revocations to cs_delivery;
+grant update (delivered_at)         on artefact_revocations to cs_delivery;
+grant select                        on consent_artefacts    to cs_delivery;
+grant select                        on purpose_definitions  to cs_delivery;
+
+-- ═══════════════════════════════════════════════════════════
+-- cs_orchestrator — extends to create artefacts, read the DEPA
+-- tables, and update the specific fields the DEPA pipeline mutates.
+-- ═══════════════════════════════════════════════════════════
+grant select                                on consent_events           to cs_orchestrator;
+grant update (artefact_ids)                 on consent_events           to cs_orchestrator;
+
+grant select                                on purpose_definitions      to cs_orchestrator;
+grant select                                on purpose_connector_mappings to cs_orchestrator;
+
+grant insert, select                        on consent_artefacts        to cs_orchestrator;
+grant update (status, replaced_by)          on consent_artefacts        to cs_orchestrator;
+
+grant insert                                on artefact_revocations     to cs_orchestrator;
+
+grant select                                on consent_expiry_queue     to cs_orchestrator;
+grant update (notified_at, processed_at, superseded)
+                                            on consent_expiry_queue     to cs_orchestrator;
+
+grant insert, select, update                on depa_compliance_metrics  to cs_orchestrator;
+
+grant usage on all sequences in schema public to cs_delivery, cs_orchestrator;
+```
+
+---
+
+### 11.8 New Triggers
+
+```sql
+-- ═══════════════════════════════════════════════════════════
+-- trg_consent_event_artefact_dispatch (AFTER INSERT on consent_events)
+-- Q2 Option D primary path. Fires net.http_post to
+-- process-consent-event. EXCEPTION swallowed so a failing trigger
+-- can never roll back the Worker's INSERT.
+-- ═══════════════════════════════════════════════════════════
+create trigger trg_consent_event_artefact_dispatch
+  after insert on consent_events
+  for each row execute function trigger_process_consent_event();
+
+-- ═══════════════════════════════════════════════════════════
+-- trg_consent_artefact_expiry_queue (AFTER INSERT on consent_artefacts)
+-- Creates the corresponding consent_expiry_queue row for every
+-- finite-expiry artefact. Artefacts with expires_at = 'infinity'
+-- are skipped.
+-- ═══════════════════════════════════════════════════════════
+create or replace function trg_artefact_create_expiry_entry()
+returns trigger language plpgsql security definer as $$
+begin
+  if new.expires_at < 'infinity'::timestamptz then
+    insert into consent_expiry_queue (
+      org_id, artefact_id, purpose_code, expires_at, notify_at
+    ) values (
+      new.org_id,
+      new.artefact_id,
+      new.purpose_code,
+      new.expires_at,
+      new.expires_at - interval '30 days'
+    );
+  end if;
+  return new;
+end;
+$$;
+
+create trigger trg_consent_artefact_expiry_queue
+  after insert on consent_artefacts
+  for each row execute function trg_artefact_create_expiry_entry();
+
+-- ═══════════════════════════════════════════════════════════
+-- trg_revocation_org_validation (BEFORE INSERT on artefact_revocations)
+-- Rejects cross-tenant revocation attempts by validating the
+-- artefact's org_id matches the revocation's org_id BEFORE INSERT.
+-- ═══════════════════════════════════════════════════════════
+create or replace function trg_revocation_org_check()
+returns trigger language plpgsql as $$
+declare v_artefact_org_id uuid;
+begin
+  select org_id into v_artefact_org_id
+    from consent_artefacts where artefact_id = new.artefact_id;
+
+  if v_artefact_org_id is null then
+    raise exception 'Artefact % does not exist', new.artefact_id;
+  end if;
+
+  if v_artefact_org_id != new.org_id then
+    raise exception 'Artefact % does not belong to org %', new.artefact_id, new.org_id;
+  end if;
+
+  return new;
+end;
+$$;
+
+create trigger trg_revocation_org_validation
+  before insert on artefact_revocations
+  for each row execute function trg_revocation_org_check();
+
+-- ═══════════════════════════════════════════════════════════
+-- trg_artefact_revocation_cascade (AFTER INSERT on artefact_revocations)
+-- In-database cascade: updates status, removes from validity index,
+-- marks expiry queue superseded, writes audit log. Does NOT walk
+-- the replaced_by chain (S-5: replaced artefacts stay frozen).
+-- ═══════════════════════════════════════════════════════════
+create or replace function trg_artefact_revocation_cascade()
+returns trigger language plpgsql security definer as $$
+begin
+  update consent_artefacts
+     set status = 'revoked'
+   where artefact_id = new.artefact_id
+     and status = 'active';
+
+  if not found then
+    raise exception 'Cannot revoke artefact %: not found or not active', new.artefact_id;
+  end if;
+
+  delete from consent_artefact_index
+   where artefact_id = new.artefact_id;
+
+  update consent_expiry_queue
+     set superseded = true
+   where artefact_id = new.artefact_id
+     and processed_at is null;
+
+  insert into audit_log (org_id, event_type, entity_type, entity_id, payload)
+  values (
+    new.org_id,
+    'consent_artefact_revoked',
+    'consent_artefacts',
+    (select id from consent_artefacts where artefact_id = new.artefact_id),
+    jsonb_build_object(
+      'artefact_id', new.artefact_id,
+      'reason',      new.reason,
+      'revoked_by',  new.revoked_by_type
+    )
+  );
+
+  return new;
+end;
+$$;
+
+create trigger trg_artefact_revocation
+  after insert on artefact_revocations
+  for each row execute function trg_artefact_revocation_cascade();
+
+-- ═══════════════════════════════════════════════════════════
+-- trg_artefact_revocation_dispatch (AFTER INSERT on artefact_revocations)
+-- Out-of-database cascade: fires net.http_post to
+-- process-artefact-revocation for the connector fan-out. Runs
+-- AFTER trg_artefact_revocation so the in-DB state is already
+-- consistent by the time the Edge Function queries it.
+-- ═══════════════════════════════════════════════════════════
+create trigger trg_artefact_revocation_dispatch
+  after insert on artefact_revocations
+  for each row execute function trigger_process_artefact_revocation();
+
+-- ═══════════════════════════════════════════════════════════
+-- updated_at triggers on mutable DEPA tables
+-- ═══════════════════════════════════════════════════════════
+create trigger trg_purpose_defs_updated_at
+  before update on purpose_definitions
+  for each row execute function set_updated_at();
+
+create trigger trg_depa_metrics_updated_at
+  before update on depa_compliance_metrics
+  for each row execute function set_updated_at();
+```
+
+---
+
+### 11.9 Buffer Lifecycle Function Additions
+
+```sql
+-- ═══════════════════════════════════════════════════════════
+-- confirm_revocation_delivery(id) — mirrors mark_delivered_and_delete
+-- for artefact_revocations. Called by the delivery pipeline after
+-- the revocation record is confirmed written to customer storage.
+-- ═══════════════════════════════════════════════════════════
+create or replace function confirm_revocation_delivery(p_revocation_id uuid)
+returns void language plpgsql security definer as $$
+begin
+  delete from artefact_revocations
+   where id = p_revocation_id
+     and delivered_at is not null;
+
+  if not found then
+    raise exception 'Revocation % not found or not marked delivered', p_revocation_id;
+  end if;
+end;
+$$;
+
+-- ═══════════════════════════════════════════════════════════
+-- detect_stuck_buffers() — extended to include artefact_revocations.
+-- Redefinition (CREATE OR REPLACE) of the existing function from §7.
+-- ═══════════════════════════════════════════════════════════
+create or replace function detect_stuck_buffers()
+returns table(table_name text, stuck_count bigint, oldest_stuck_at timestamptz)
+language sql security definer as $$
+  select 'consent_events'::text, count(*), min(created_at)
+    from consent_events where delivered_at is null and created_at < now() - interval '1 hour'
+  union all
+  select 'tracker_observations', count(*), min(created_at)
+    from tracker_observations where delivered_at is null and created_at < now() - interval '1 hour'
+  union all
+  select 'audit_log', count(*), min(created_at)
+    from audit_log where delivered_at is null and created_at < now() - interval '1 hour'
+  union all
+  select 'processing_log', count(*), min(created_at)
+    from processing_log where delivered_at is null and created_at < now() - interval '1 hour'
+  union all
+  select 'rights_request_events', count(*), min(created_at)
+    from rights_request_events where delivered_at is null and created_at < now() - interval '1 hour'
+  union all
+  select 'deletion_receipts', count(*), min(created_at)
+    from deletion_receipts where delivered_at is null and created_at < now() - interval '1 hour'
+  union all
+  select 'withdrawal_verifications', count(*), min(created_at)
+    from withdrawal_verifications where delivered_at is null and created_at < now() - interval '1 hour'
+  union all
+  select 'security_scans', count(*), min(created_at)
+    from security_scans where delivered_at is null and created_at < now() - interval '1 hour'
+  union all
+  select 'consent_probe_runs', count(*), min(created_at)
+    from consent_probe_runs where delivered_at is null and created_at < now() - interval '1 hour'
+  union all
+  select 'artefact_revocations', count(*), min(created_at)
+    from artefact_revocations where delivered_at is null and created_at < now() - interval '1 hour'
+$$;
+```
+
+---
+
+### 11.10 New Scheduled Jobs
+
+```sql
+-- ═══════════════════════════════════════════════════════════
+-- expiry-alerts-daily — fires send_expiry_alerts() at 02:30 UTC (08:00 IST).
+-- ═══════════════════════════════════════════════════════════
+do $$ begin perform cron.unschedule('expiry-alerts-daily');
+exception when others then null; end $$;
+
+select cron.schedule(
+  'expiry-alerts-daily',
+  '30 2 * * *',
+  $$select send_expiry_alerts()$$
+);
+
+-- ═══════════════════════════════════════════════════════════
+-- expiry-enforcement-daily — fires enforce_artefact_expiry() at
+-- 19:00 UTC (00:30 IST), slightly before the alert job so expired
+-- artefacts are cleaned before the day's alert batch fires.
+-- ═══════════════════════════════════════════════════════════
+do $$ begin perform cron.unschedule('expiry-enforcement-daily');
+exception when others then null; end $$;
+
+select cron.schedule(
+  'expiry-enforcement-daily',
+  '0 19 * * *',
+  $$select enforce_artefact_expiry()$$
+);
+
+-- ═══════════════════════════════════════════════════════════
+-- depa-score-refresh-nightly — computes compute_depa_score() for
+-- every organisation and upserts into depa_compliance_metrics.
+-- 19:30 UTC (01:00 IST).
+-- ═══════════════════════════════════════════════════════════
+do $$ begin perform cron.unschedule('depa-score-refresh-nightly');
+exception when others then null; end $$;
+
+select cron.schedule(
+  'depa-score-refresh-nightly',
+  '30 19 * * *',
+  $$
+    insert into depa_compliance_metrics (
+      org_id, total_score, coverage_score, expiry_score, freshness_score, revocation_score, computed_at
+    )
+    select
+      id as org_id,
+      (compute_depa_score(id) ->> 'total')::numeric,
+      (compute_depa_score(id) ->> 'coverage_score')::numeric,
+      (compute_depa_score(id) ->> 'expiry_score')::numeric,
+      (compute_depa_score(id) ->> 'freshness_score')::numeric,
+      (compute_depa_score(id) ->> 'revocation_score')::numeric,
+      now()
+    from organisations
+    on conflict (org_id) do update set
+      total_score      = excluded.total_score,
+      coverage_score   = excluded.coverage_score,
+      expiry_score     = excluded.expiry_score,
+      freshness_score  = excluded.freshness_score,
+      revocation_score = excluded.revocation_score,
+      computed_at      = excluded.computed_at,
+      updated_at       = now()
+  $$
+);
+
+-- ═══════════════════════════════════════════════════════════
+-- consent-events-artefact-safety-net — Q2 Option D secondary path.
+-- Every 5 minutes, picks up consent_events with empty artefact_ids
+-- older than 5 minutes and re-fires the process-consent-event Edge
+-- Function. Idempotency in the Edge Function prevents duplicates.
+-- ═══════════════════════════════════════════════════════════
+do $$ begin perform cron.unschedule('consent-events-artefact-safety-net');
+exception when others then null; end $$;
+
+select cron.schedule(
+  'consent-events-artefact-safety-net',
+  '*/5 * * * *',
+  $$select safety_net_process_consent_events()$$
+);
+```
+
+---
+
+### 11.11 New Verification Queries
+
+Run after §11 migrations are applied.
+
+```sql
+-- VERIFY 1: RLS enabled on all 6 new tables.
+select tablename, rowsecurity
+  from pg_tables
+ where schemaname = 'public'
+   and tablename in (
+     'purpose_definitions', 'purpose_connector_mappings',
+     'consent_artefacts', 'artefact_revocations',
+     'consent_expiry_queue', 'depa_compliance_metrics'
+   )
+ order by tablename;
+-- EXPECTED: rowsecurity = true for all 6 rows.
+
+-- VERIFY 2: authenticated role has NO INSERT/UPDATE/DELETE on consent_artefacts.
+select grantee, table_name, privilege_type
+  from information_schema.table_privileges
+ where table_schema = 'public'
+   and grantee = 'authenticated'
+   and table_name = 'consent_artefacts'
+   and privilege_type in ('UPDATE', 'DELETE', 'INSERT');
+-- EXPECTED: 0 rows.
+
+-- VERIFY 3: authenticated role has NO UPDATE/DELETE on artefact_revocations.
+select grantee, table_name, privilege_type
+  from information_schema.table_privileges
+ where table_schema = 'public'
+   and grantee = 'authenticated'
+   and table_name = 'artefact_revocations'
+   and privilege_type in ('UPDATE', 'DELETE');
+-- EXPECTED: 0 rows.
+
+-- VERIFY 4: Revocation cascade trigger is active.
+select trigger_name, event_manipulation, action_timing
+  from information_schema.triggers
+ where event_object_table = 'artefact_revocations'
+   and trigger_name in ('trg_artefact_revocation', 'trg_artefact_revocation_dispatch', 'trg_revocation_org_validation');
+-- EXPECTED: 3 rows — BEFORE INSERT (org validation), AFTER INSERT (cascade), AFTER INSERT (dispatch).
+
+-- VERIFY 5: Consent event dispatch trigger active.
+select trigger_name, event_manipulation, action_timing
+  from information_schema.triggers
+ where event_object_table = 'consent_events'
+   and trigger_name = 'trg_consent_event_artefact_dispatch';
+-- EXPECTED: 1 row, AFTER INSERT.
+
+-- VERIFY 6: Expiry queue trigger active on consent_artefacts.
+select trigger_name, event_manipulation, action_timing
+  from information_schema.triggers
+ where event_object_table = 'consent_artefacts'
+   and trigger_name = 'trg_consent_artefact_expiry_queue';
+-- EXPECTED: 1 row, AFTER INSERT.
+
+-- VERIFY 7: All four new pg_cron jobs scheduled.
+select jobname, schedule, active
+  from cron.job
+ where jobname in (
+   'expiry-alerts-daily',
+   'expiry-enforcement-daily',
+   'depa-score-refresh-nightly',
+   'consent-events-artefact-safety-net'
+ );
+-- EXPECTED: 4 rows, all active = true.
+
+-- VERIFY 8: generate_artefact_id() produces correctly-prefixed 33-char IDs.
+select generate_artefact_id() like 'cs_art_%' as has_prefix,
+       length(generate_artefact_id()) as id_length;
+-- EXPECTED: has_prefix = true, id_length = 33.
+
+-- VERIFY 9: Unique constraint on (org_id, purpose_code, framework).
+select count(*) from information_schema.table_constraints
+ where table_name = 'purpose_definitions'
+   and constraint_type = 'UNIQUE';
+-- EXPECTED: >= 1.
+
+-- VERIFY 10: Vault secrets required by triggers/cron exist.
+select name from vault.secrets where name in ('supabase_url', 'cs_orchestrator_key');
+-- EXPECTED: 2 rows.
+
+-- VERIFY 11: Revocation with invalid artefact_id is blocked (FK + trigger).
+-- (Commented out — run interactively in a transaction block.)
+-- do $$ begin
+--   insert into artefact_revocations (org_id, artefact_id, reason, revoked_by_type)
+--   values (gen_random_uuid(), 'cs_art_DOESNOTEXIST', 'test', 'system');
+--   raise exception 'Should have failed';
+-- exception when foreign_key_violation then
+--   raise notice 'PASS: FK violation raised';
+-- when others then
+--   raise notice 'PASS: % raised', SQLERRM;
+-- end $$;
+-- EXPECTED: FK violation OR trigger exception.
+
+-- VERIFY 12: compute_depa_score returns the expected JSONB structure.
+select compute_depa_score((select id from organisations limit 1));
+-- EXPECTED: jsonb with keys total, coverage_score, expiry_score, freshness_score,
+--           revocation_score, computed_at.
+```
+
+---
+
+### 11.12 Guard Summary Additions
+
+Supplements the guard table in §10.
+
+| Guard | What it protects | How it's enforced | Failure mode |
+|---|---|---|---|
+| `consent_artefacts` append-only (Rule 19) | Status transitions happen only via defined paths | No INSERT/UPDATE/DELETE RLS policy for authenticated; cs_orchestrator has INSERT and UPDATE (status, replaced_by) only | Permission denied for any authenticated write |
+| `artefact_revocations` immutability | Revocations cannot be edited or undone | No UPDATE or DELETE RLS policy for any role | Permission denied |
+| `trg_revocation_org_validation` (BEFORE trigger) | Cross-tenant revocation attempt | Trigger validates `consent_artefacts.org_id = NEW.org_id` before INSERT | Exception raised; INSERT rolled back |
+| `trg_artefact_revocation` (AFTER trigger) | Status consistency between revocation and artefact | Trigger updates `consent_artefacts.status` inside the same transaction as the revocation INSERT | Transaction rollback if status update fails |
+| `trg_consent_artefact_expiry_queue` (AFTER trigger) | Every finite-expiry artefact has an expiry queue entry | Trigger inserts into `consent_expiry_queue` on every artefact INSERT where `expires_at < infinity` | Missing queue entry surfaced by the coverage verification query |
+| `trg_consent_event_artefact_dispatch` (AFTER trigger) | Consent events reach the artefact fan-out pipeline | Trigger calls `net.http_post` to the Edge Function; wrapped in EXCEPTION swallow; safety-net cron picks up orphans | Orphan detection metric (Q2 Option D) |
+| Mandatory `expires_at` (Rule 20) | No open-ended consent | `NOT NULL` column + application-layer validation that banner save requires an expiry window | NULL INSERT rejected |
+| `data_scope` category-only (Rule 3 broadened) | Regulated sensitive content never persisted | Structural — no column in DEPA tables admits FHIR content, PAN values, account numbers, or other regulated values. `data_scope` is documented as category labels only | Reviewer rejects any change that adds a value-holding column |
+| `generate_artefact_id()` prefix | Artefact IDs distinguishable from UUIDs in logs and APIs | Function always prepends `cs_art_` | Cannot fail silently — ID is always prefixed |
+| Unique `(org_id, purpose_code, framework)` on `purpose_definitions` | Duplicate purpose codes per org per framework | Unique constraint | Unique violation on INSERT |
+| `depa_compliance_metrics` staleness detection | Dashboard never shows a silently-stale score | `computed_at` surfaced in API; UI warns if > 25h old | User sees warning, not a wrong score |
+| `consent_artefact_index.framework` | Multi-framework validity cache without joins | Denormalised `framework` on index entry | Wrong framework = wrong cache; caught by integration test |
+| `process-consent-event` idempotency (S-7) | Duplicate artefacts from trigger + cron race | Edge Function does `SELECT count(*)` keyed on `consent_event_id` before INSERT | Would produce duplicates if contract is violated — enforced by code review |
+| Banner purpose validation (Point 1 flip) | No legacy banner can generate orphan consent events | API-layer 422 on any `purposes` object missing `purpose_definition_id` | Banner cannot be saved or published with an unmapped purpose |
+
+---
+
+### 11.13 Migration Note
+
+The dev Supabase instance carries existing pre-DEPA schema objects (tables, columns, indexes, policies, triggers, functions). Customer consent data across all environments is zero, so no data-migration is needed — this section is about **schema-object evolution**, not about migrating data.
+
+**ALTER in place vs DROP + RECREATE.** Two strategies are available per amendment; the table below records the choice and the rationale for each DEPA amendment to an existing object.
+
+| Existing object | §11.x | Strategy | Rationale |
+|---|---|---|---|
+| `consent_events` | 11.3 | ALTER TABLE (add `artefact_ids`) | Additive column; no semantics change; preserves seed rows used by the RLS suite. |
+| `deletion_requests` | 11.3 | ALTER TABLE (add `artefact_id` FK) | Additive column referencing a new table; safe after §11.4.3 is applied. |
+| `deletion_receipts` | 11.3 | ALTER TABLE (add `artefact_id`) | Additive column; denormalised pointer for the chain-of-custody query. |
+| `consent_artefact_index` | 11.3 | ALTER TABLE (add `framework`, `purpose_code`) | Existing rows receive `framework = 'abdm'` by default (preserves pre-DEPA semantics). |
+| `consent_banners.purposes` | 11.3 | No DDL — JSONB schema documentation only | Enforcement is at the API layer (422 on missing `purpose_definition_id`). |
+| `detect_stuck_buffers()` | 11.9 | `CREATE OR REPLACE FUNCTION` (adds `artefact_revocations` to the UNION) | Function body changes; signature unchanged; no callers break. |
+
+DROP + RECREATE is available as a fallback if any future DEPA amendment requires a change that ALTER cannot express cleanly (e.g., altering a column type with a non-trivial cast, or reseating a primary key). None of the §11 amendments require it today. Development seed data is regeneratable via `supabase/seed.sql`, so losing it is not a blocker.
+
+**Apply procedure.** `supabase db push` applies §11 end-to-end. Before the first §11.10 cron fires, confirm Vault secrets `supabase_url` and `cs_orchestrator_key` exist (operator prerequisite). After apply, run §11.11 verification queries. Regenerate dev seed data if any prior seed rows depended on the pre-DEPA purpose-object shape.
+
+**No back-fill of historical `consent_events` into `consent_artefacts` is permitted.** Back-filled artefacts would carry inaccurate `data_scope` snapshots from purposes that predate the `purpose_definitions` registry. The pre-DEPA `consent_events` rows that exist in dev are test fixtures; they stay in `consent_events` as their own (now-amendment-compliant with the new `artefact_ids = '{}'` default) rows and are not promoted to artefacts.
+
+---
+
+*Document prepared April 2026. This is the complete schema design. Run top to bottom on a fresh Supabase Postgres instance. Every guard must be verified before any customer data enters the system. Security hardening changes integrated April 2026. DEPA alignment (§11) added 2026-04-16.*
