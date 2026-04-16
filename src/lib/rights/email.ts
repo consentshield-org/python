@@ -1,5 +1,13 @@
 // Resend client for rights request emails
 
+function resolveFrom(): string {
+  const from = process.env.RESEND_FROM
+  if (!from) {
+    throw new Error('RESEND_FROM must be set (e.g. noreply@consentshield.in)')
+  }
+  return from
+}
+
 export async function sendOtpEmail(to: string, code: string, orgName: string): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY
   if (!apiKey) {
@@ -7,7 +15,7 @@ export async function sendOtpEmail(to: string, code: string, orgName: string): P
     return
   }
 
-  const from = process.env.RESEND_FROM || 'onboarding@resend.dev'
+  const from = resolveFrom()
 
   await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -39,7 +47,7 @@ export async function sendComplianceNotification(
   const apiKey = process.env.RESEND_API_KEY
   if (!apiKey) return
 
-  const from = process.env.RESEND_FROM || 'onboarding@resend.dev'
+  const from = resolveFrom()
 
   await fetch('https://api.resend.com/emails', {
     method: 'POST',

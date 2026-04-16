@@ -17,6 +17,7 @@ All Architecture Decision Records for ConsentShield, in chronological order.
 | ADR-0011 | Deletion Retry and Timeout for Stuck Callbacks (hourly Edge Function + 1h/6h/24h backoff) | Completed | 2026-04-16 | 1 | 1 |
 | ADR-0012 | Automated Test Suites for High-Risk Paths (SLA trigger, URL-path RLS, Worker, buffer pipeline) | Completed | 2026-04-16 | 1 | 3 |
 | ADR-0013 | Signup Bootstrap Hardening (OTP signup + login, single `/auth/callback` path) | Completed | 2026-04-15 | 1 | 2 |
+| ADR-0014 | External Service Activation (Resend / Turnstile / Razorpay) | In Progress | 2026-04-16 | 1 | 1 |
 
 <!--
 When adding a new ADR:
