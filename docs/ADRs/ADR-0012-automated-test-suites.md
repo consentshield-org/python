@@ -1,8 +1,8 @@
 # ADR-0012: Automated Test Suites for High-Risk Paths
 
-**Status:** In Progress (Sprints 1 + 2 complete; Sprint 3 deferred)
+**Status:** Completed
 **Date proposed:** 2026-04-16
-**Date completed:** —
+**Date completed:** 2026-04-16
 **Superseded by:** —
 
 ---
@@ -92,7 +92,18 @@ test file under `tests/` and runs on every build via `bun run test`.
 
 **Status:** `[x] complete`
 
-### Phase 1 Sprint 3: Buffer-pipeline integration (deferred)
+### Phase 1 Sprint 3: Buffer-pipeline integration
+
+**Estimated effort:** ~6 h
+**Deliverables:**
+- [x] `tests/buffer/delivery.test.ts` — 6 tests exercising the three lifecycle functions (`sweep_delivered_buffers`, `detect_stuck_buffers`, `mark_delivered_and_delete`) against `audit_log` as the representative buffer table. Tests seed rows via service role and assert: sweep removes delivered rows > 5 min old; sweep leaves < 5 min + undelivered; stuck detection reports old undelivered; stuck detection ignores fresh rows (delta-based to handle pre-existing data); mark+delete atomics.
+- [x] `tests/buffer/lifecycle.test.ts` — 6 tests confirming the authenticated role's REVOKE from migration 011: UPDATE + DELETE on `audit_log` and `processing_log` both fail with "permission denied"; INSERT on `consent_events` and `tracker_observations` also fails.
+
+**Testing plan:**
+- [x] `bun run test` — 69 → 81 (+12), all green.
+- [x] `bun run lint` + `bun run build` — clean.
+
+**Status:** `[x] complete`
 
 ---
 

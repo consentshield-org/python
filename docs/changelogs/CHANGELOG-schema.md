@@ -2,6 +2,26 @@
 
 Database migrations, RLS policies, roles.
 
+## ADR-0012 Sprint 3 — 2026-04-16
+
+**ADR:** ADR-0012 — Automated Test Suites for High-Risk Paths
+**Sprint:** Phase 1, Sprint 3
+
+### Added
+- `tests/buffer/delivery.test.ts` — 6 tests for the three buffer
+  lifecycle functions: `sweep_delivered_buffers` (delivered > 5 min →
+  deleted; < 5 min → kept; undelivered → kept),
+  `detect_stuck_buffers` (old undelivered → reported; fresh row →
+  delta = 0), `mark_delivered_and_delete` (atomic mark + delete).
+- `tests/buffer/lifecycle.test.ts` — 6 tests confirming the
+  `authenticated` role's REVOKE from migration 011: UPDATE + DELETE
+  on `audit_log` and `processing_log` fail with "permission denied";
+  INSERT on `consent_events` and `tracker_observations` also fails.
+
+### Tested
+- [x] `bun run test` — 69 → 81 PASS (+12 buffer tests)
+- [x] `bun run lint` + `bun run build` — clean
+
 ## ADR-0011 Sprint 1.1 — 2026-04-16
 
 **ADR:** ADR-0011 — Deletion Retry and Timeout
