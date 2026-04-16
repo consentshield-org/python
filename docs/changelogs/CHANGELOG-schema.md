@@ -2,6 +2,38 @@
 
 Database migrations, RLS policies, roles.
 
+## [Sprint 1.1] — 2026-04-16
+
+**ADR:** ADR-0027 — Admin Platform Schema
+**Sprint:** Phase 1, Sprint 1.1 — Foundation (schema + cs_admin role + helpers + admin_users + admin_audit_log)
+
+### Added
+- `20260416000011_admin_schema.sql` — `create schema admin`; revoke-all from public; grant USAGE + CREATE to postgres. Tables + RPCs in subsequent migrations populate it.
+- `20260416000012_cs_admin_role.sql` — third scoped role `cs_admin` (NOLOGIN NOINHERIT BYPASSRLS). Used by security-definer admin RPCs for cross-org SELECTs. `grant cs_admin to authenticator with set true` (Postgres 16 GRANT ROLE separation). Default-privilege grant on future public tables so new customer schemas inherit SELECT automatically.
+- `20260416000013_admin_helpers.sql` — 4 helper functions: `admin.is_admin()`, `admin.current_admin_role()`, `admin.require_admin(p_min_role)`, `admin.create_next_audit_partition()` (SECURITY DEFINER — invoked by pg_cron in Sprint 3.1).
+- `20260416000014_admin_users.sql` — `admin.admin_users` table with FK to `auth.users(id)` (ON DELETE CASCADE), partial unique index on `bootstrap_admin=true`, is_admin RLS policy. Granted SELECT/INSERT/UPDATE/DELETE to authenticated (RLS is the row-level gate).
+- `20260416000015_admin_audit_log.sql` — `admin.admin_audit_log` partitioned by month, with the 2026-04 first partition; 4 indexes (admin/org/action/session); SELECT-only RLS policy; INSERT/UPDATE/DELETE REVOKED from authenticated AND cs_admin (append-only invariant enforced). FK to `admin.impersonation_sessions` deferred to Sprint 2.1 (table doesn't exist yet); column is plain uuid for now.
+- `20260416000016_expose_admin_schema_postgrest.sql` — `alter role authenticator set pgrst.db_schemas to 'public, graphql_public, admin'` + NOTIFY reload config. PostgREST now serves admin.* routes.
+- `20260416000017_reload_postgrest_schema.sql` — NOTIFY `reload schema` nudge so PostgREST re-introspects the admin schema and caches the new tables/RPCs.
+- `20260416000018_grant_admin_schema_usage_to_authenticated.sql` — `grant usage on schema admin to authenticated`. Schema-level prerequisite so the is_admin RLS policies get to evaluate. anon role deliberately left out.
+
+### Changed
+- `supabase/config.toml` — `[api] schemas` expanded from `["public", "graphql_public"]` to `["public", "graphql_public", "admin"]`. Mirrors the hosted project's PostgREST setting so local dev (`supabase start`) and `supabase config push` stay aligned.
+
+### Deviations from ADR-0027 plan
+- ADR-0027 listed Sprint 1.1 as 5 migrations in the order: admin_schema → cs_admin_role → admin_helpers → admin_audit_log → admin_users. Audit log FK-references admin_users, so the actual deploy order is schema → role → helpers → **admin_users → admin_audit_log**. Documented in ADR-0027 execution notes; the deliverables themselves are unchanged.
+- ADR-0027 did not list the PostgREST exposure migrations (20260416000016/17/18). Those surfaced during Sprint 1.1 test execution — the default Supabase PostgREST config exposes only public + graphql_public. Without exposing admin, no admin-app code path works. Treated as Sprint 1.1 follow-ups and logged in the execution notes.
+
+### Tested
+- [x] `bun run test:rls` (root; now runs both tests/rls and tests/admin) — 3 files, 55/55 tests pass — PASS
+  - tests/rls/isolation.test.ts — 25/25 (unchanged baseline)
+  - tests/rls/url-path.test.ts — 19/19 (unchanged baseline)
+  - tests/admin/foundation.test.ts — 11/11 (new): is_admin() function; admin_users RLS (admin can SELECT, customer denied, anon denied); admin_audit_log RLS + append-only (customer denied; admin can SELECT; admin cannot INSERT/UPDATE/DELETE via direct query); customer regression (public.organisations unaffected)
+- [x] `cd app && bun run test` — 7 files, 42/42 (unchanged baseline) — PASS
+- [x] `cd admin && bun run test` — 1/1 smoke (unchanged from ADR-0026 Sprint 3.1) — PASS
+
+Combined: 42 (app) + 55 (rls + admin foundation) + 1 (admin smoke) = 98/98.
+
 ## Review fix-batch — 2026-04-16
 
 **Source:** `docs/reviews/2026-04-16-phase2-completion-review.md` (N-S1, N-S3)

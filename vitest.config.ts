@@ -8,6 +8,6 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     testTimeout: 60000,
-    include: ['tests/rls/**/*.test.ts'],
+    include: ['tests/rls/**/*.test.ts', 'tests/admin/**/*.test.ts'],
   },
 })

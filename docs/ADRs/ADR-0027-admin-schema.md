@@ -2,10 +2,10 @@
 
 (c) 2026 Sudhindra Anegondhi a.d.sudhindra@gmail.com
 
-**Status:** Proposed
+**Status:** In Progress
 **Date proposed:** 2026-04-16
 **Date completed:** —
-**Depends on:** ADR-0026 (Monorepo Restructure) — must be Completed before Sprint 1.1 of this ADR begins.
+**Depends on:** ADR-0026 (Monorepo Restructure). Sprints 1.1–3.1 of ADR-0026 are Completed; Sprint 4.1 (Vercel split + CI isolation guards) is deferred — not a blocker for ADR-0027 because this ADR operates against the dev database (routine per `project_dev_only_no_prod`) and introduces no Vercel-project dependencies.
 
 ---
 
@@ -72,7 +72,23 @@ The full SQL for every object is already specified in `docs/admin/architecture/c
 - [ ] **Customer regression**: existing `tests/rls/isolation.test.ts` (39/39) continues to pass — confirms admin schema does not bleed into customer RLS.
 - [ ] **Build/lint/test on the customer app** — `bun --filter app run build` + `bun --filter app run test` (86/86) still pass; no app code references the admin schema yet.
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete` — 2026-04-16
+
+**Execution notes (2026-04-16):**
+
+- **Migration order reordered from the ADR draft.** The ADR listed `admin_audit_log` before `admin_users`, but the audit-log table FK-references `admin_users`, so the actual deploy order is: `admin_schema` → `cs_admin_role` → `admin_helpers` → **`admin_users` → `admin_audit_log`**. Deliverables unchanged.
+- **3 additional migrations landed beyond the 5 listed in the ADR**, all driven by test-execution discoveries:
+  1. `20260416000016_expose_admin_schema_postgrest.sql` — `alter role authenticator set pgrst.db_schemas to 'public, graphql_public, admin'` + `notify pgrst, 'reload config'`. Default Supabase PostgREST exposes only `public` + `graphql_public`; without this, every admin-app request returns "invalid schema: admin".
+  2. `20260416000017_reload_postgrest_schema.sql` — `notify pgrst, 'reload schema'`. Reloading config doesn't reload the schema cache; without this, PostgREST still returns "could not find the table in the schema cache".
+  3. `20260416000018_grant_admin_schema_usage_to_authenticated.sql` — `grant usage on schema admin to authenticated`. Schema-level prerequisite (RLS gates rows; grants gate schema access). Without this, every admin-app request from authenticated JWT returns "permission denied for schema admin" before RLS evaluates.
+- **`supabase/config.toml` `[api] schemas` expanded** from `["public", "graphql_public"]` to `["public", "graphql_public", "admin"]` so local dev and future `config push` stay aligned with the hosted project's exposed schemas.
+- **`admin.admin_audit_log`'s FK to `admin.impersonation_sessions`** is deferred to Sprint 2.1 (the table doesn't exist yet). The column is a plain uuid; the retrofit in Sprint 2.1 adds `alter table admin.admin_audit_log add constraint ... foreign key (impersonation_session_id) references admin.impersonation_sessions(id)`.
+- **`admin.create_next_audit_partition()`** is not granted EXECUTE to anyone in Sprint 1.1 — it's only called by pg_cron (scheduled in Sprint 3.1), which runs as postgres.
+
+**Test harness additions (new):**
+- `tests/admin/helpers.ts` — `createAdminTestUser(role)` provisions an auth user with `app_metadata.is_admin=true` + `admin_role=...` and signs them in to get a JWT. Complements `tests/rls/helpers.ts` (customer-side).
+- `tests/admin/foundation.test.ts` — 11 assertions: `admin.is_admin()` returns correct value per JWT; admin JWT can SELECT `admin.admin_users` + `admin.admin_audit_log`; customer JWT denied; anon JWT denied; admin JWT cannot INSERT/UPDATE/DELETE on audit log (append-only); customer regression (`public.organisations` unaffected).
+- Root `vitest.config.ts` `include` expanded to `['tests/rls/**/*.test.ts', 'tests/admin/**/*.test.ts']`. The `bun run test:rls` script now runs both suites.
 
 ---
 
@@ -230,10 +246,30 @@ The full SQL for every object is already specified in `docs/admin/architecture/c
 
 _To be filled per sprint as the work executes._
 
-### Sprint 1.1 — TBD
+### Sprint 1.1 — 2026-04-16 (Completed)
 
 ```
-Test: [pending]
+bunx supabase db push      → 8 migrations applied (5 core + 3 PostgREST-exposure follow-ups)
+bun run test:rls           → 3 files, 55/55 pass
+  - tests/rls/isolation.test.ts      → 25/25 (unchanged baseline)
+  - tests/rls/url-path.test.ts       → 19/19 (unchanged baseline)
+  - tests/admin/foundation.test.ts   → 11/11 (new)
+cd app && bun run test     → 42/42 (unchanged baseline)
+cd admin && bun run test   → 1/1 (unchanged smoke)
+Combined: 98/98 (was 87/87 before Sprint 1.1)
+
+New admin-foundation assertions (11):
+  ✓ admin.is_admin() returns true for admin JWT
+  ✓ admin.is_admin() returns false for customer JWT
+  ✓ admin JWT can SELECT admin.admin_users
+  ✓ customer JWT denied SELECT on admin.admin_users
+  ✓ anon JWT denied SELECT on admin.admin_users
+  ✓ admin JWT can SELECT admin.admin_audit_log
+  ✓ customer JWT denied SELECT on admin.admin_audit_log
+  ✓ admin JWT cannot INSERT into admin.admin_audit_log (append-only)
+  ✓ admin JWT cannot UPDATE admin.admin_audit_log (append-only)
+  ✓ admin JWT cannot DELETE from admin.admin_audit_log (append-only)
+  ✓ customer regression — customer JWT can SELECT own org
 ```
 
 ### Sprint 2.1 — TBD
