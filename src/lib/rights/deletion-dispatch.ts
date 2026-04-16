@@ -1,10 +1,10 @@
-// Deletion orchestration — dispatches deletion requests to webhook connectors
-// and creates immutable receipts in deletion_receipts.
+// Deletion orchestration — dispatches erasure to connectors and records
+// immutable receipts in deletion_receipts.
 //
-// Caller supplies the SupabaseClient. In the request path it is the
-// authenticated user's client (via createServerClient); from an Edge Function
-// it is the cs_delivery client. Either can insert/update deletion_receipts
-// and audit_log via the appropriate RLS policies and column grants.
+// ADR-0007 shipped the generic webhook connector. ADR-0018 adds per-provider
+// direct-API dispatchers (Mailchimp, HubSpot) — no customer-owned webhook
+// required. Caller supplies the SupabaseClient (authenticated user's client
+// in the request path; cs_delivery from an Edge Function).
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createHash, createHmac } from 'node:crypto'
@@ -24,6 +24,14 @@ export interface DispatchResult {
   receipt_id: string
   status: string
   error?: string
+}
+
+type ReceiptState = 'awaiting_callback' | 'confirmed' | 'dispatch_failed'
+
+interface DispatchOutcome {
+  state: ReceiptState
+  failure_reason?: string
+  request_payload: Record<string, unknown>
 }
 
 export async function dispatchDeletion(params: {
@@ -74,113 +82,52 @@ export async function dispatchDeletion(params: {
       continue
     }
 
-    let webhookUrl: string
-    let sharedSecret: string
+    let config: Record<string, unknown>
     try {
       const plaintext = await decryptForOrg(supabase, orgId, conn.config)
-      const cfg = JSON.parse(plaintext) as { webhook_url: string; shared_secret: string }
-      webhookUrl = cfg.webhook_url
-      sharedSecret = cfg.shared_secret ?? ''
+      config = JSON.parse(plaintext) as Record<string, unknown>
     } catch (e) {
-      await markReceiptFailed(supabase, receipt.id, `Config decrypt failed: ${e instanceof Error ? e.message : 'unknown'}`)
-      results.push({
-        connector_id: conn.id,
-        display_name: conn.display_name,
-        receipt_id: receipt.id,
-        status: 'failed',
-        error: 'Failed to decrypt connector config',
-      })
-      continue
-    }
-
-    const deadline = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-    const payload = {
-      event: 'deletion_request',
-      request_id: triggerId,
-      receipt_id: receipt.id,
-      data_principal: {
-        identifier: dataPrincipalEmail,
-        identifier_type: 'email',
-      },
-      reason: triggerType,
-      callback_url: buildCallbackUrl(receipt.id),
-      deadline,
-    }
-    const rawBody = JSON.stringify(payload)
-    const signatureHeader = sharedSecret
-      ? createHmac('sha256', sharedSecret).update(rawBody).digest('hex')
-      : undefined
-
-    const redactedPayload = {
-      ...payload,
-      data_principal: { identifier_hash: identifierHash, identifier_type: 'email' },
-    }
-
-    await supabase
-      .from('deletion_receipts')
-      .update({
-        request_payload: redactedPayload,
-        requested_at: new Date().toISOString(),
-      })
-      .eq('id', receipt.id)
-
-    try {
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-      if (signatureHeader) headers['X-ConsentShield-Signature'] = signatureHeader
-
-      const dispatchRes = await fetch(webhookUrl, {
-        method: 'POST',
-        headers,
-        body: rawBody,
-        signal: AbortSignal.timeout(10000),
-      })
-
-      if (!dispatchRes.ok) {
-        await supabase
-          .from('deletion_receipts')
-          .update({
-            status: 'dispatch_failed',
-            failure_reason: `HTTP ${dispatchRes.status}: ${await dispatchRes.text().catch(() => '')}`,
-            retry_count: 1,
-          })
-          .eq('id', receipt.id)
-
-        results.push({
-          connector_id: conn.id,
-          display_name: conn.display_name,
-          receipt_id: receipt.id,
-          status: 'dispatch_failed',
-          error: `HTTP ${dispatchRes.status}`,
-        })
-        continue
-      }
-
-      await supabase
-        .from('deletion_receipts')
-        .update({ status: 'awaiting_callback' })
-        .eq('id', receipt.id)
-
-      results.push({
-        connector_id: conn.id,
-        display_name: conn.display_name,
-        receipt_id: receipt.id,
-        status: 'awaiting_callback',
-      })
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Network error'
-      await supabase
-        .from('deletion_receipts')
-        .update({ status: 'dispatch_failed', failure_reason: msg, retry_count: 1 })
-        .eq('id', receipt.id)
-
+      const reason = `Config decrypt failed: ${e instanceof Error ? e.message : 'unknown'}`
+      await markReceipt(supabase, receipt.id, { state: 'dispatch_failed', failure_reason: reason, request_payload: {} })
       results.push({
         connector_id: conn.id,
         display_name: conn.display_name,
         receipt_id: receipt.id,
         status: 'dispatch_failed',
-        error: msg,
+        error: reason,
       })
+      continue
     }
+
+    const outcome = await dispatchByType(
+      conn.connector_type,
+      config,
+      {
+        triggerId,
+        triggerType,
+        receiptId: receipt.id,
+        dataPrincipalEmail,
+        identifierHash,
+      },
+    )
+
+    await supabase
+      .from('deletion_receipts')
+      .update({
+        request_payload: outcome.request_payload,
+        requested_at: new Date().toISOString(),
+      })
+      .eq('id', receipt.id)
+
+    await markReceipt(supabase, receipt.id, outcome)
+
+    results.push({
+      connector_id: conn.id,
+      display_name: conn.display_name,
+      receipt_id: receipt.id,
+      status: outcome.state,
+      error: outcome.failure_reason,
+    })
   }
 
   await supabase.from('audit_log').insert({
@@ -198,13 +145,209 @@ export async function dispatchDeletion(params: {
   return results
 }
 
-async function markReceiptFailed(
+interface DispatchContext {
+  triggerId: string
+  triggerType: string
+  receiptId: string
+  dataPrincipalEmail: string
+  identifierHash: string
+}
+
+async function dispatchByType(
+  connectorType: string,
+  config: Record<string, unknown>,
+  ctx: DispatchContext,
+): Promise<DispatchOutcome> {
+  switch (connectorType) {
+    case 'webhook':    return dispatchWebhook(config, ctx)
+    case 'mailchimp':  return dispatchMailchimp(config, ctx)
+    case 'hubspot':    return dispatchHubspot(config, ctx)
+    default:
+      return {
+        state: 'dispatch_failed',
+        failure_reason: `Unknown connector_type: ${connectorType}`,
+        request_payload: { connector_type: connectorType },
+      }
+  }
+}
+
+async function dispatchWebhook(
+  config: Record<string, unknown>,
+  ctx: DispatchContext,
+): Promise<DispatchOutcome> {
+  const webhookUrl = String(config.webhook_url ?? '')
+  const sharedSecret = String(config.shared_secret ?? '')
+
+  if (!webhookUrl) {
+    return {
+      state: 'dispatch_failed',
+      failure_reason: 'webhook_url missing from connector config',
+      request_payload: {},
+    }
+  }
+
+  const deadline = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+  const payload = {
+    event: 'deletion_request',
+    request_id: ctx.triggerId,
+    receipt_id: ctx.receiptId,
+    data_principal: { identifier: ctx.dataPrincipalEmail, identifier_type: 'email' },
+    reason: ctx.triggerType,
+    callback_url: buildCallbackUrl(ctx.receiptId),
+    deadline,
+  }
+  const rawBody = JSON.stringify(payload)
+  const signature = sharedSecret
+    ? createHmac('sha256', sharedSecret).update(rawBody).digest('hex')
+    : undefined
+
+  const redactedPayload = {
+    ...payload,
+    data_principal: { identifier_hash: ctx.identifierHash, identifier_type: 'email' },
+  }
+
+  try {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    if (signature) headers['X-ConsentShield-Signature'] = signature
+
+    const res = await fetch(webhookUrl, {
+      method: 'POST',
+      headers,
+      body: rawBody,
+      signal: AbortSignal.timeout(10_000),
+    })
+
+    if (!res.ok) {
+      return {
+        state: 'dispatch_failed',
+        failure_reason: `HTTP ${res.status}: ${await res.text().catch(() => '')}`,
+        request_payload: redactedPayload,
+      }
+    }
+    return { state: 'awaiting_callback', request_payload: redactedPayload }
+  } catch (e) {
+    return {
+      state: 'dispatch_failed',
+      failure_reason: e instanceof Error ? e.message : 'Network error',
+      request_payload: redactedPayload,
+    }
+  }
+}
+
+async function dispatchMailchimp(
+  config: Record<string, unknown>,
+  ctx: DispatchContext,
+): Promise<DispatchOutcome> {
+  const apiKey = String(config.api_key ?? '')
+  const audienceId = String(config.audience_id ?? '')
+  const [, serverPrefix] = apiKey.split('-')
+
+  if (!apiKey || !audienceId || !serverPrefix) {
+    return {
+      state: 'dispatch_failed',
+      failure_reason: 'Mailchimp config missing api_key or audience_id (or api_key has no server prefix)',
+      request_payload: { connector_type: 'mailchimp' },
+    }
+  }
+
+  const memberHash = createHash('md5')
+    .update(ctx.dataPrincipalEmail.toLowerCase())
+    .digest('hex')
+  const url = `https://${serverPrefix}.api.mailchimp.com/3.0/lists/${audienceId}/members/${memberHash}`
+  const request_payload: Record<string, unknown> = {
+    connector_type: 'mailchimp',
+    method: 'DELETE',
+    url_template: `https://{server_prefix}.api.mailchimp.com/3.0/lists/{audience_id}/members/{md5_email_hash}`,
+    identifier_hash: ctx.identifierHash,
+  }
+
+  try {
+    const res = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        Authorization: 'Basic ' + Buffer.from(`anystring:${apiKey}`).toString('base64'),
+      },
+      signal: AbortSignal.timeout(10_000),
+    })
+
+    // 204 = archived / deleted; 404 = member already absent — both acceptable.
+    if (res.ok || res.status === 404) {
+      return { state: 'confirmed', request_payload }
+    }
+    const body = await res.text().catch(() => '')
+    return {
+      state: 'dispatch_failed',
+      failure_reason: `Mailchimp HTTP ${res.status}: ${body.slice(0, 500)}`,
+      request_payload,
+    }
+  } catch (e) {
+    return {
+      state: 'dispatch_failed',
+      failure_reason: e instanceof Error ? e.message : 'Network error',
+      request_payload,
+    }
+  }
+}
+
+async function dispatchHubspot(
+  config: Record<string, unknown>,
+  ctx: DispatchContext,
+): Promise<DispatchOutcome> {
+  const apiKey = String(config.api_key ?? '')
+  if (!apiKey) {
+    return {
+      state: 'dispatch_failed',
+      failure_reason: 'HubSpot config missing api_key',
+      request_payload: { connector_type: 'hubspot' },
+    }
+  }
+
+  const email = encodeURIComponent(ctx.dataPrincipalEmail)
+  const url = `https://api.hubapi.com/crm/v3/objects/contacts/${email}?idProperty=email`
+  const request_payload: Record<string, unknown> = {
+    connector_type: 'hubspot',
+    method: 'DELETE',
+    url_template: `https://api.hubapi.com/crm/v3/objects/contacts/{email}?idProperty=email`,
+    identifier_hash: ctx.identifierHash,
+  }
+
+  try {
+    const res = await fetch(url, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${apiKey}` },
+      signal: AbortSignal.timeout(10_000),
+    })
+
+    if (res.ok || res.status === 404) {
+      return { state: 'confirmed', request_payload }
+    }
+    const body = await res.text().catch(() => '')
+    return {
+      state: 'dispatch_failed',
+      failure_reason: `HubSpot HTTP ${res.status}: ${body.slice(0, 500)}`,
+      request_payload,
+    }
+  } catch (e) {
+    return {
+      state: 'dispatch_failed',
+      failure_reason: e instanceof Error ? e.message : 'Network error',
+      request_payload,
+    }
+  }
+}
+
+async function markReceipt(
   supabase: SupabaseClient,
   receiptId: string,
-  reason: string,
+  outcome: DispatchOutcome,
 ): Promise<void> {
-  await supabase
-    .from('deletion_receipts')
-    .update({ status: 'failed', failure_reason: reason })
-    .eq('id', receiptId)
+  const update: Record<string, unknown> = { status: outcome.state }
+  if (outcome.state === 'confirmed') {
+    update.confirmed_at = new Date().toISOString()
+  }
+  if (outcome.state === 'dispatch_failed') {
+    update.failure_reason = outcome.failure_reason ?? 'unknown'
+    update.retry_count = 1
+  }
+  await supabase.from('deletion_receipts').update(update).eq('id', receiptId)
 }

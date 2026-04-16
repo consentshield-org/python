@@ -2,6 +2,36 @@
 
 API route changes.
 
+## ADR-0018 Sprint 1.1 — 2026-04-16
+
+**ADR:** ADR-0018 — Pre-built Deletion Connectors (Phase 1)
+
+### Added
+- `VALID_CONNECTOR_TYPES` in
+  `src/app/api/orgs/[orgId]/integrations/route.ts` now accepts
+  `mailchimp` and `hubspot` alongside `webhook`. Per-type required-
+  field validation and per-type `configPayload` shape (api_key +
+  audience_id for Mailchimp; api_key for HubSpot).
+
+### Changed
+- `src/lib/rights/deletion-dispatch.ts`: refactored the single
+  inline webhook dispatch into a per-type switch. `dispatchWebhook`
+  (existing logic moved verbatim), `dispatchMailchimp`
+  (DELETE /3.0/lists/{audience}/members/{md5(email)} with HTTP
+  Basic auth), `dispatchHubspot`
+  (DELETE /crm/v3/objects/contacts/{email}?idProperty=email with
+  Bearer auth). Synchronous-API dispatchers mark the receipt
+  `confirmed` on 2xx/404; `dispatch_failed` otherwise with the
+  provider's response body in `failure_reason`.
+
+### Tested
+- [x] `tests/rights/connectors.test.ts` — 5 new tests for the
+  Mailchimp + HubSpot dispatchers via mocked `global.fetch`
+  (URL shape, auth header, 204/404/5xx branches, missing-config
+  rejection).
+- [x] `bun run test` — 81 → 86 PASS.
+- [x] `bun run lint` + `bun run build` — clean.
+
 ## ADR-0017 Sprint 1.1 — 2026-04-16
 
 **ADR:** ADR-0017 — Audit Export Package (Phase 1)

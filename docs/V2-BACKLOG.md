@@ -180,6 +180,32 @@ job failed more than N times.
 
 ---
 
+## Connectors
+
+### V2-C1. OAuth flow for pre-built connectors  *(origin: ADR-0018)*
+
+ADR-0018 Phase 1 authenticates with pasted API keys (Mailchimp API
+keys, HubSpot private-app tokens). The full product promise — "click
+Connect Mailchimp, complete OAuth in a popup, done" — requires:
+
+1. Provider-specific OAuth app registration (Mailchimp, HubSpot).
+2. `/api/integrations/oauth/{provider}/callback` route that handles
+   the redirect + token exchange.
+3. Refresh-token rotation job.
+4. Replace the dashboard form's pasted-key inputs with a single
+   "Connect" button per provider.
+
+**Why deferred.** API-key auth closes 95% of the usability gap; the
+remaining OAuth polish is a per-provider config effort with external
+app-registration dependencies (each provider wants proof of a live
+privacy policy, sometimes app review). Out of scope for the Phase-2
+close.
+
+**Shape of the v2 fix.** Per-provider `lib/connectors/{provider}/oauth.ts`
+following the pattern established by the Razorpay webhook flow.
+
+---
+
 ## API key format
 
 ### V2-K1. Edge Functions require `--no-verify-jwt`  *(origin: Edge Function gateway)*

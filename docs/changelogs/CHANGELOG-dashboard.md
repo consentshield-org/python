@@ -2,6 +2,15 @@
 
 Next.js UI changes.
 
+## ADR-0018 Sprint 1.1 — 2026-04-16
+
+### Changed
+- `src/app/(dashboard)/dashboard/integrations/integrations-table.tsx`:
+  the "New Connector" form now surfaces a Type selector
+  (Generic webhook / Mailchimp / HubSpot) with per-type conditional
+  fields. Button label moved from "Add Webhook Connector" to
+  "Add Connector".
+
 ## ADR-0017 Sprint 1.1 — 2026-04-16
 
 ### Added

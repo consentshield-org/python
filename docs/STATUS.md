@@ -66,7 +66,7 @@ through ADR-0018).
 - **Scoped roles** (`cs_worker`, `cs_delivery`, `cs_orchestrator`) are the runtime principals. Every mutating code path routes through a security-definer RPC owned by `cs_orchestrator` (or `cs_delivery`), granted to `anon` or `authenticated` per endpoint. `grep -r SUPABASE_SERVICE_ROLE_KEY src/` returns zero matches.
 - `cs_orchestrator` / `cs_delivery` carry `BYPASSRLS` so security-definer calls can read org-scoped tables inside their own function bodies. They do **not** have USAGE on schema `auth` (hosted Supabase forbids it); RPCs that need the caller's user id use the `public.current_uid()` helper from `20260415000001`.
 - **Demo org** seeded: `ConsentShield Demo Customer` (`432bca6d-8fce-415a-85e0-96397ddac666`) with 5 web properties + 5 banners matching the Vercel demo site routes.
-- Test suite: **81 / 81 passing** on every build (39 RLS isolation + 5 URL-path RLS + 4 rate-limit fallback + 7 SLA-timer + 10 Worker events + 4 Worker banner + 6 buffer delivery + 6 buffer lifecycle). Live Supabase round trips where the test requires it; Worker tests run entirely in Miniflare with mocked outbound Supabase.
+- Test suite: **86 / 86 passing** on every build (39 RLS isolation + 5 URL-path RLS + 4 rate-limit fallback + 7 SLA-timer + 10 Worker events + 4 Worker banner + 6 buffer delivery + 6 buffer lifecycle + 5 Mailchimp/HubSpot dispatch). Live Supabase round trips where the test requires it; Worker tests run entirely in Miniflare with mocked outbound Supabase.
 - **27 migrations applied**, through `20260416000007_audit_export.sql`.
 
 ---

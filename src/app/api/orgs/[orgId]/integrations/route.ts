@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { encryptForOrg } from '@/lib/encryption/crypto'
 import { checkPlanLimit } from '@/lib/billing/gate'
 
-const VALID_CONNECTOR_TYPES = ['webhook']
+const VALID_CONNECTOR_TYPES = ['webhook', 'mailchimp', 'hubspot']
 
 export async function GET(
   _request: Request,
@@ -59,6 +59,8 @@ export async function POST(
     display_name?: string
     webhook_url?: string
     shared_secret?: string
+    api_key?: string
+    audience_id?: string
   } | null
 
   if (!body?.connector_type || !body.display_name) {
@@ -75,6 +77,8 @@ export async function POST(
     )
   }
 
+  let configPayload: string
+
   if (body.connector_type === 'webhook') {
     if (!body.webhook_url) {
       return NextResponse.json(
@@ -87,12 +91,38 @@ export async function POST(
     } catch {
       return NextResponse.json({ error: 'Invalid webhook_url' }, { status: 400 })
     }
+    configPayload = JSON.stringify({
+      webhook_url: body.webhook_url,
+      shared_secret: body.shared_secret ?? '',
+    })
+  } else if (body.connector_type === 'mailchimp') {
+    if (!body.api_key || !body.audience_id) {
+      return NextResponse.json(
+        { error: 'api_key and audience_id are required for mailchimp connectors' },
+        { status: 400 },
+      )
+    }
+    if (!body.api_key.includes('-')) {
+      return NextResponse.json(
+        { error: 'Mailchimp api_key must include a server-prefix suffix (e.g. abc123-us21)' },
+        { status: 400 },
+      )
+    }
+    configPayload = JSON.stringify({
+      api_key: body.api_key,
+      audience_id: body.audience_id,
+    })
+  } else if (body.connector_type === 'hubspot') {
+    if (!body.api_key) {
+      return NextResponse.json(
+        { error: 'api_key is required for hubspot connectors' },
+        { status: 400 },
+      )
+    }
+    configPayload = JSON.stringify({ api_key: body.api_key })
+  } else {
+    return NextResponse.json({ error: 'Unhandled connector_type' }, { status: 400 })
   }
-
-  const configPayload = JSON.stringify({
-    webhook_url: body.webhook_url,
-    shared_secret: body.shared_secret ?? '',
-  })
   const encryptedConfig = await encryptForOrg(supabase, orgId, configPayload)
 
   // rpc_integration_connector_create (ADR-0009) enforces admin membership,
