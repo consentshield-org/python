@@ -1,7 +1,7 @@
 import { createServerClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { PLANS, PLAN_ORDER, getPlan, formatInr, type PlanId } from '@/lib/billing/plans'
-import { daysBetween } from '@/lib/compliance/score'
+import { daysBetween } from '@consentshield/compliance'
 import { UpgradeButton } from './upgrade-button'
 
 export default async function BillingPage() {

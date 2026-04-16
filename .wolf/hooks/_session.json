@@ -131,6 +131,46 @@
       "count": 1,
       "tokens": 19,
       "first_read": "2026-04-16T15:43:38.456Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/src/lib/compliance/score.ts": {
+      "count": 1,
+      "tokens": 1025,
+      "first_read": "2026-04-16T15:45:31.512Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/src/lib/compliance/privacy-notice.ts": {
+      "count": 1,
+      "tokens": 1794,
+      "first_read": "2026-04-16T15:45:32.188Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/src/lib/encryption/crypto.ts": {
+      "count": 1,
+      "tokens": 787,
+      "first_read": "2026-04-16T15:45:32.509Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/src/app/(dashboard)/dashboard/page.tsx": {
+      "count": 1,
+      "tokens": 2480,
+      "first_read": "2026-04-16T15:46:00.166Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/src/app/(dashboard)/dashboard/billing/page.tsx": {
+      "count": 1,
+      "tokens": 1726,
+      "first_read": "2026-04-16T15:46:32.363Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/src/app/(dashboard)/dashboard/rights/page.tsx": {
+      "count": 1,
+      "tokens": 0,
+      "first_read": "2026-04-16T15:46:32.958Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/src/app/(dashboard)/dashboard/enforcement/page.tsx": {
+      "count": 1,
+      "tokens": 4843,
+      "first_read": "2026-04-16T15:46:33.429Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/src/app/(public)/privacy/[orgId]/page.tsx": {
+      "count": 1,
+      "tokens": 707,
+      "first_read": "2026-04-16T15:46:34.086Z"
     }
   },
   "files_written": [
@@ -277,12 +317,72 @@
       "action": "create",
       "tokens": 1087,
       "at": "2026-04-16T15:44:06.778Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/packages/compliance/package.json",
+      "action": "create",
+      "tokens": 54,
+      "at": "2026-04-16T15:46:16.083Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/packages/compliance/tsconfig.json",
+      "action": "create",
+      "tokens": 22,
+      "at": "2026-04-16T15:46:16.903Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/packages/compliance/src/index.ts",
+      "action": "create",
+      "tokens": 82,
+      "at": "2026-04-16T15:46:18.202Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/package.json",
+      "action": "edit",
+      "tokens": 14,
+      "at": "2026-04-16T15:46:21.461Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/package.json",
+      "action": "edit",
+      "tokens": 29,
+      "at": "2026-04-16T15:46:22.991Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/src/app/(dashboard)/dashboard/page.tsx",
+      "action": "edit",
+      "tokens": 8,
+      "at": "2026-04-16T15:46:24.144Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/src/app/(dashboard)/dashboard/billing/page.tsx",
+      "action": "edit",
+      "tokens": 16,
+      "at": "2026-04-16T15:46:38.413Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/src/app/(dashboard)/dashboard/rights/page.tsx",
+      "action": "edit",
+      "tokens": 18,
+      "at": "2026-04-16T15:46:40.023Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/src/app/(dashboard)/dashboard/enforcement/page.tsx",
+      "action": "edit",
+      "tokens": 17,
+      "at": "2026-04-16T15:46:40.713Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/src/app/(public)/privacy/[orgId]/page.tsx",
+      "action": "edit",
+      "tokens": 19,
+      "at": "2026-04-16T15:46:42.127Z"
     }
   ],
   "edit_counts": {
     "tsconfig.base.json": 1,
-    "package.json": 2,
-    "app/package.json": 1,
+    "package.json": 3,
+    "app/package.json": 2,
     "worker/package.json": 1,
     "vitest.config.ts": 1,
     "app/tsconfig.json": 2,
@@ -295,10 +395,18 @@
     "CLAUDE.md": 3,
     "docs/ADRs/ADR-0026-monorepo-restructure.md": 3,
     "docs/ADRs/ADR-index.md": 1,
-    "docs/changelogs/CHANGELOG-infra.md": 1
+    "docs/changelogs/CHANGELOG-infra.md": 1,
+    "packages/compliance/package.json": 1,
+    "packages/compliance/tsconfig.json": 1,
+    "packages/compliance/src/index.ts": 1,
+    "app/src/app/(dashboard)/dashboard/page.tsx": 1,
+    "app/src/app/(dashboard)/dashboard/billing/page.tsx": 1,
+    "app/src/app/(dashboard)/dashboard/rights/page.tsx": 1,
+    "app/src/app/(dashboard)/dashboard/enforcement/page.tsx": 1,
+    "app/src/app/(public)/privacy/[orgId]/page.tsx": 1
   },
-  "anatomy_hits": 18,
-  "anatomy_misses": 8,
+  "anatomy_hits": 25,
+  "anatomy_misses": 9,
   "repeated_reads_warned": 4,
   "cerebrum_warnings": 0,
   "stop_count": 2

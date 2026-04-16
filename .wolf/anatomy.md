@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-16T15:44:06.771Z
-> Files: 244 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-16T15:46:42.120Z
+> Files: 252 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../.claude/plans/
 
@@ -37,7 +37,7 @@
 - `.gitignore` — Git ignore rules (~182 tok)
 - `.prettierrc` (~29 tok)
 - `CLAUDE.md` — OpenWolf (~4938 tok)
-- `package.json` — Node.js package manifest (~104 tok)
+- `package.json` — Node.js package manifest (~108 tok)
 - `sentry.client.config.ts` (~166 tok)
 - `sentry.server.config.ts` (~166 tok)
 - `tsconfig.base.json` (~110 tok)
@@ -50,8 +50,28 @@
 
 ## app/
 
-- `package.json` — Node.js package manifest (~245 tok)
+- `package.json` — Node.js package manifest (~258 tok)
 - `tsconfig.json` — TypeScript configuration (~117 tok)
+
+## app/src/app/(dashboard)/dashboard/
+
+- `page.tsx` — DashboardPage — renders table (~2481 tok)
+
+## app/src/app/(dashboard)/dashboard/billing/
+
+- `page.tsx` — BillingPage (~1727 tok)
+
+## app/src/app/(dashboard)/dashboard/enforcement/
+
+- `page.tsx` — EnforcementPage — renders table (~4844 tok)
+
+## app/src/app/(dashboard)/dashboard/rights/
+
+- `page.tsx` — RightsInboxPage — renders table (~1435 tok)
+
+## app/src/app/(public)/privacy/[orgId]/
+
+- `page.tsx` — Public privacy notice page — no auth required. Backed by rpc_get_privacy_notice (~705 tok)
 
 ## app/tests/buffer/
 
@@ -147,6 +167,15 @@
 - `2026-04-15-deferred-items-analysis.md` — Deferred Items — Analysis (~1954 tok)
 - `2026-04-16-depa-package-architecture-review.md` — DEPA Package Architecture Review — 2026-04-16 (~5618 tok)
 - `2026-04-16-phase2-completion-review.md` — Critical Codebase Review — Phase 2 Completion (~6107 tok)
+
+## packages/compliance/
+
+- `package.json` — Node.js package manifest (~54 tok)
+- `tsconfig.json` — TypeScript configuration (~22 tok)
+
+## packages/compliance/src/
+
+- `index.ts` (~82 tok)
 
 ## scripts/
 

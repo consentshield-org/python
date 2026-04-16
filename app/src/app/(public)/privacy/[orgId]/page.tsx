@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
-import { composePrivacyNotice } from '@/lib/compliance/privacy-notice'
+import { composePrivacyNotice } from '@consentshield/compliance'
 
 // Public privacy notice page — no auth required. Backed by rpc_get_privacy_notice
 // (anon-granted security-definer RPC owned by cs_orchestrator). See ADR-0009.

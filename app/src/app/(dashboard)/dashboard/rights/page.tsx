@@ -1,7 +1,7 @@
 import { createServerClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { daysBetween, nowIso } from '@/lib/compliance/score'
+import { daysBetween, nowIso } from '@consentshield/compliance'
 
 export default async function RightsInboxPage() {
   const supabase = await createServerClient()

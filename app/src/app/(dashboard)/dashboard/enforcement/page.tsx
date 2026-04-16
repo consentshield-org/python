@@ -1,6 +1,6 @@
 import { createServerClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { isoSinceHours } from '@/lib/compliance/score'
+import { isoSinceHours } from '@consentshield/compliance'
 
 interface Violation {
   slug: string

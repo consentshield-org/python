@@ -5,7 +5,7 @@ import {
   daysUntilEnforcement,
   isoSinceHours,
   nowIso,
-} from '@/lib/compliance/score'
+} from '@consentshield/compliance'
 import { ScoreGauge } from './score-gauge'
 
 export default async function DashboardPage() {

@@ -978,3 +978,13 @@
 | 21:13 | Edited docs/ADRs/ADR-0026-monorepo-restructure.md | 5→10 lines | ~116 |
 | 21:13 | Edited docs/ADRs/ADR-index.md | inline fix | ~33 |
 | 21:14 | Created docs/changelogs/CHANGELOG-infra.md | — | ~1014 |
+| 21:16 | Created packages/compliance/package.json | — | ~54 |
+| 21:16 | Created packages/compliance/tsconfig.json | — | ~22 |
+| 21:16 | Created packages/compliance/src/index.ts | — | ~82 |
+| 21:16 | Edited package.json | inline fix | ~14 |
+| 21:16 | Edited app/package.json | 2→3 lines | ~29 |
+| 21:16 | Edited app/src/app/(dashboard)/dashboard/page.tsx | "@/lib/compliance/score" → "@consentshield/compliance" | ~8 |
+| 21:16 | Edited app/src/app/(dashboard)/dashboard/billing/page.tsx | "@/lib/compliance/score" → "@consentshield/compliance" | ~16 |
+| 21:16 | Edited app/src/app/(dashboard)/dashboard/rights/page.tsx | "@/lib/compliance/score" → "@consentshield/compliance" | ~18 |
+| 21:16 | Edited app/src/app/(dashboard)/dashboard/enforcement/page.tsx | "@/lib/compliance/score" → "@consentshield/compliance" | ~17 |
+| 21:16 | Edited app/src/app/(public)/privacy/[orgId]/page.tsx | "@/lib/compliance/privacy-" → "@consentshield/compliance" | ~19 |

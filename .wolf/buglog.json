@@ -2080,6 +2080,38 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-04-16T15:43:25.533Z"
+    },
+    {
+      "id": "bug-131",
+      "timestamp": "2026-04-16T15:46:22.992Z",
+      "error_message": "Incorrect value in code",
+      "file": "app/package.json",
+      "root_cause": "Had \"@sentry/nextjs\"",
+      "fix": "Changed to \"@consentshield/compliance\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "json"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-16T15:46:22.992Z"
+    },
+    {
+      "id": "bug-132",
+      "timestamp": "2026-04-16T15:46:24.145Z",
+      "error_message": "Incorrect value in code",
+      "file": "app/src/app/(dashboard)/dashboard/page.tsx",
+      "root_cause": "Had '@/lib/compliance/score'",
+      "fix": "Changed to '@consentshield/compliance'",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 5,
+      "last_seen": "2026-04-16T15:46:42.129Z"
     }
   ]
 }
