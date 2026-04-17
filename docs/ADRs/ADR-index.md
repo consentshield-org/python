@@ -44,7 +44,9 @@ All Architecture Decision Records for ConsentShield, in chronological order.
 | ADR-0039 | Connector OAuth (Mailchimp + HubSpot) | Completed | 2026-04-17 | 1 | 3 |
 | ADR-0031 | Connector Catalogue + Tracker Signature Catalogue (admin panels) | Completed | 2026-04-17 | 2 | 4 |
 | ADR-0033 | Admin Ops + Security — Pipeline Operations + Abuse & Security panels (folds ADR-0035) | Completed | 2026-04-17 | 2 | 5 |
+| ADR-0034 | Admin Billing Operations — Razorpay failures + refunds + comps + plan overrides | Proposed | 2026-04-17 | 2 | 3 |
 | ADR-0035 | Abuse & Security admin panel | Abandoned | 2026-04-17 | — | — | _(folded into ADR-0033; see its context)_ |
+| ADR-0043 | Customer App is Auth-Only (drop public landing; marketing site becomes www.consentshield.in) | Completed | 2026-04-17 | 1 | 1 |
 
 <!--
 When adding a new ADR:
