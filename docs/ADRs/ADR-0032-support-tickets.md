@@ -80,9 +80,9 @@ Messages are append-only — there is no edit, delete, or redaction from the UI.
 - [x] `tests/rls/support-tickets.test.ts` — 3 assertions covering cross-tenant read blocking on list_org_support_tickets, list_support_ticket_messages, and add_customer_support_message (+ positive own-tenant cases).
 
 **Note on ADR deviations:**
-- The ADR said the customer view "filters is_internal_note = false" — the schema has no is_internal_note column. Moot.
+- ~~The ADR said the customer view "filters is_internal_note = false" — the schema has no is_internal_note column.~~ **Resolved 2026-04-17 post-review:** migration `20260421000002_support_internal_notes.sql` adds `admin.support_ticket_messages.is_internal`, extends `admin.add_support_ticket_message(p_is_internal boolean)`, and filters internal notes out of `public.list_support_ticket_messages`. Admin reply form gains an Internal-Note toggle (amber accent, skips status auto-transition, distinct 🔒 label in the thread).
 - Instead of an RLS policy extension on `admin.support_tickets`, we chose the SECURITY DEFINER RPC route — matches the `public.org_support_sessions` precedent from ADR-0027 Sprint 2.1 and keeps the admin-table RLS boundary intact (only admins can SELECT `admin.*` directly; customers go through scoped public helpers).
-- Open-ticket count badge in the nav deferred — would require a client-side or per-request count that the `DashboardNav` is a pure Client Component and doesn't own a session to query from. Status pills on the list page make the count visible.
+- Open-ticket count badge in the nav **deferred → formally moved out-of-scope** (see §Out of Scope).
 
 **Testing plan:**
 - [x] `tests/rls/support-tickets.test.ts` — 3 assertions covering cross-tenant read/write blocks + positive own-tenant path.
@@ -126,6 +126,7 @@ _To be filled per sprint as the work executes._
 - **SLA timers / breach alerts.** The metric tile shows "Median first response" but there is no SLA enforcement or alerting. Deferred.
 - **Ticket templates / canned replies.** Deferred.
 - **Export tickets to CSV.** Deferred (same pattern as audit-log export if/when added).
+- **Open-ticket count badge in customer nav.** Open count is already surfaced on the `/dashboard/support` list itself; a nav badge would require a separate per-request count query from the client-side DashboardNav. Cosmetic, not worth the coupling. Formally moved out of scope 2026-04-17 after Sprint 2.1 review.
 
 ---
 

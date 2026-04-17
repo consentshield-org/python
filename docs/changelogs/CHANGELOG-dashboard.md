@@ -2,6 +2,22 @@
 
 Next.js UI changes.
 
+## ADR-0032 post-review follow-up — 2026-04-17
+
+**ADR:** ADR-0032 — Support Tickets
+**Context:** close Sprint 2.1 review deviations.
+
+### Added
+- `admin/src/components/support/reply-form.tsx` — Internal-Note toggle. When checked: amber background + "Save internal note" button; submits with `isInternal: true`; does not auto-transition ticket status.
+- `admin/src/app/(operator)/support/actions.ts` — `sendMessage(ticketId, body, { isInternal })`. Passes `p_is_internal` through to the RPC.
+- `admin/src/app/(operator)/support/[ticketId]/page.tsx` — thread renders internal notes with an amber stripe + 🔒 label; customer-side view filters them out (via `list_support_ticket_messages`).
+
+### Changed
+- `admin/src/components/flags/kill-switches-tab.tsx` — copy in the footer + Engage modal softened to note that Worker/Edge propagation requires `CF_*` Supabase secrets to be set (until then kill-switch state lives only in the DB row).
+
+### Out of Scope (formalised)
+- Open-ticket count badge in customer nav — the list page already shows counts; nav badge would add a coupling without meaningful UX payoff.
+
 ## ADR-0030 Sprint 2.1 — 2026-04-17
 
 **ADR:** ADR-0030 — Sectoral Templates

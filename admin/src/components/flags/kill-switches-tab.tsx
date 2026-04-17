@@ -115,7 +115,9 @@ export function KillSwitchesTab({
           Confirmation prompt asks the operator to type the switch_key to
           confirm. Worker and Edge Functions read state from Cloudflare KV;
           sync runs every 2 minutes via the <code>admin-sync-config-to-kv</code>
-          cron.
+          cron <strong>once the CF_* Supabase secrets are set</strong> — until
+          then the Edge Function runs in dry_run and kill-switch state does
+          not propagate past the DB.
         </p>
       </div>
 
@@ -162,8 +164,9 @@ function EngageModal({ sw, onClose }: { sw: KillSwitch; onClose: () => void }) {
         <div className="rounded border border-red-200 bg-red-50 p-3 text-xs text-red-900">
           <strong>{sw.description}</strong>
           <br />
-          Propagates to Worker and Edge Functions within ~2 minutes via the
-          Cloudflare KV sync cron.
+          Propagates to Worker and Edge Functions within ~2 minutes once the
+          Cloudflare KV sync is live (requires CF_* Supabase secrets). Until
+          then, engaging only updates the DB row.
         </div>
 
         <ReasonField reason={reason} onChange={setReason} />

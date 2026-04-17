@@ -2,6 +2,21 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-0032 post-review follow-up] — 2026-04-17
+
+**ADR:** ADR-0032 — Support Tickets
+**Context:** Sprint 2.1 review flagged the wireframe's Internal-Note button had no schema backing. Closes the gap.
+
+### Added
+- `20260421000002_support_internal_notes.sql`:
+  - `admin.support_ticket_messages.is_internal boolean not null default false`.
+  - `admin.add_support_ticket_message` extended: new `p_is_internal boolean default false` param; internal notes skip the `awaiting_customer` auto-transition (a private comment shouldn't nudge the ticket). Distinct `add_support_ticket_internal_note` audit-log action code for internal notes vs `add_support_ticket_message` for customer-visible replies. DROP+CREATE was required (extending the signature); EXECUTE grant re-issued.
+  - `public.list_support_ticket_messages` filters `is_internal = true` so customer-side callers can't see operator-only notes.
+
+### Tested
+- [x] `tests/rls/support-tickets.test.ts` — new 4th assertion: seed an internal note with is_internal=true; confirm customer-side `list_support_ticket_messages` does NOT return it; confirm admin-side service-role SELECT does.
+- [x] `bun run test:rls` — 142/142 passes (Terminal B's ADR-0022 tests contribute the extra files).
+
 ## [ADR-0032 Sprint 2.1] — 2026-04-17
 
 **ADR:** ADR-0032 — Support Tickets

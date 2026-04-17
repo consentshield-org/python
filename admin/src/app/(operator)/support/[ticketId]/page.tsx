@@ -29,6 +29,7 @@ interface TicketMessage {
   author_kind: 'admin' | 'customer' | 'system'
   author_id: string | null
   body: string
+  is_internal: boolean
   created_at: string
 }
 
@@ -52,7 +53,7 @@ export default async function TicketDetailPage({ params }: PageProps) {
     supabase
       .schema('admin')
       .from('support_ticket_messages')
-      .select('id, ticket_id, author_kind, author_id, body, created_at')
+      .select('id, ticket_id, author_kind, author_id, body, is_internal, created_at')
       .eq('ticket_id', ticketId)
       .order('created_at'),
     supabase.schema('admin').from('admin_users').select('id, display_name'),
@@ -154,28 +155,36 @@ function Message({
 }) {
   const isAdmin = message.author_kind === 'admin'
   const isSystem = message.author_kind === 'system'
+  const isInternal = message.is_internal === true
+
   const authorLabel = isAdmin
     ? adminName ?? 'Operator'
     : isSystem
       ? 'System'
       : reporterName
 
-  const wrapperClasses = isAdmin
-    ? 'ml-auto max-w-[85%] rounded-lg bg-teal-50 p-3 shadow-sm'
-    : isSystem
-      ? 'mx-auto max-w-[85%] rounded-lg bg-zinc-100 p-3 text-zinc-700'
-      : 'mr-auto max-w-[85%] rounded-lg bg-zinc-50 p-3 shadow-sm'
+  const wrapperClasses = isInternal
+    ? 'ml-auto max-w-[85%] rounded-lg border-l-4 border-amber-400 bg-amber-50 p-3 shadow-sm'
+    : isAdmin
+      ? 'ml-auto max-w-[85%] rounded-lg bg-teal-50 p-3 shadow-sm'
+      : isSystem
+        ? 'mx-auto max-w-[85%] rounded-lg bg-zinc-100 p-3 text-zinc-700'
+        : 'mr-auto max-w-[85%] rounded-lg bg-zinc-50 p-3 shadow-sm'
 
-  const labelClasses = isAdmin
-    ? 'text-xs font-semibold text-teal-800'
-    : isSystem
-      ? 'text-xs font-semibold text-zinc-600'
-      : 'text-xs font-semibold text-zinc-700'
+  const labelClasses = isInternal
+    ? 'text-xs font-semibold text-amber-800'
+    : isAdmin
+      ? 'text-xs font-semibold text-teal-800'
+      : isSystem
+        ? 'text-xs font-semibold text-zinc-600'
+        : 'text-xs font-semibold text-zinc-700'
 
   return (
     <li className={wrapperClasses}>
       <div className="flex items-center justify-between">
-        <span className={labelClasses}>{authorLabel}</span>
+        <span className={labelClasses}>
+          {isInternal ? `${authorLabel} · 🔒 Internal note` : authorLabel}
+        </span>
         <span className="text-xs text-zinc-500">
           {new Date(message.created_at).toLocaleString()}
         </span>

@@ -121,4 +121,40 @@ describe('ADR-0032 support ticket isolation', () => {
     )
     expect(crossErr?.message ?? '').toMatch(/forbidden|ticket does not belong/i)
   })
+
+  it('list_support_ticket_messages hides is_internal=true from customer', async () => {
+    const service = getServiceClient()
+
+    // Seed an internal note on ticket A via service-role.
+    const INTERNAL_BODY = 'INTERNAL_MARKER_should_not_leak_to_customer'
+    const { error: seedErr } = await service
+      .schema('admin')
+      .from('support_ticket_messages')
+      .insert({
+        ticket_id: ticketA,
+        author_kind: 'admin',
+        body: INTERNAL_BODY,
+        is_internal: true,
+      })
+    expect(seedErr).toBeNull()
+
+    // Customer-side read should NOT see the internal note.
+    const { data: visible, error: listErr } = await orgA.client.rpc(
+      'list_support_ticket_messages',
+      { p_ticket_id: ticketA },
+    )
+    expect(listErr).toBeNull()
+    const bodies = (visible ?? []).map((m: { body: string }) => m.body)
+    expect(bodies).not.toContain(INTERNAL_BODY)
+
+    // Admin-side read (service-role bypasses RLS) SHOULD see it.
+    const { data: admin, error: adminErr } = await service
+      .schema('admin')
+      .from('support_ticket_messages')
+      .select('body, is_internal')
+      .eq('ticket_id', ticketA)
+      .eq('is_internal', true)
+    expect(adminErr).toBeNull()
+    expect((admin ?? []).some((m) => m.body === INTERNAL_BODY)).toBe(true)
+  })
 })

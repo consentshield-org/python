@@ -24,6 +24,7 @@ const TICKET_PRIORITIES = ['low', 'normal', 'high', 'urgent'] as const
 export async function sendMessage(
   ticketId: string,
   body: string,
+  options?: { isInternal?: boolean },
 ): Promise<ActionResult> {
   if (!body || body.trim().length === 0) {
     return { ok: false, error: 'Message body required.' }
@@ -35,6 +36,7 @@ export async function sendMessage(
     .rpc('add_support_ticket_message', {
       p_ticket_id: ticketId,
       p_body: body.trim(),
+      p_is_internal: options?.isInternal === true,
     })
   if (error) return { ok: false, error: error.message }
 
