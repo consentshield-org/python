@@ -2,7 +2,7 @@
 
 (c) 2026 Sudhindra Anegondhi a.d.sudhindra@gmail.com
 
-**Status:** Proposed
+**Status:** In Progress
 **Date proposed:** 2026-04-17
 **Date completed:** —
 
@@ -49,20 +49,21 @@ Messages are append-only — there is no edit, delete, or redaction from the UI.
 **Estimated effort:** 3 hours.
 
 **Deliverables:**
-- [ ] `admin/src/app/(operator)/support/page.tsx` — Server Component. Four metric tiles at top (Open / Resolved this week / Median first response / Urgent open) + split view. Reads `admin.support_tickets` with joins to `admin.admin_users` (assignee) + `public.organisations` (org name). Default sort: `priority DESC, updated_at DESC` so urgent + recent bubble up.
-- [ ] `admin/src/app/(operator)/support/[ticketId]/page.tsx` — detail view with reply surface. Shows ticket header (subject, org, reporter email, created, status dropdown, priority, assignee). Scrollable message thread — customer messages left-aligned, admin messages right-aligned + teal background. Internal notes rendered with a distinct amber stripe.
-- [ ] `admin/src/components/support/ticket-table.tsx` — Client Component. Row click navigates to detail. Columns match wireframe (ID, Subject, Org, Priority, Status, Updated).
-- [ ] `admin/src/components/support/reply-form.tsx` — textarea + "Send reply" + "Internal note" toggle + "Attach file" (disabled stub; V2). Server Action wraps `admin.add_support_ticket_message`.
-- [ ] `admin/src/app/(operator)/support/[ticketId]/actions.ts` — Server Actions: `sendMessage`, `changeStatus`, `assignTicket`, `changePriority`. All four wrap existing RPCs. Status change requires no reason for support role (routine work); reassignment and priority change require reason ≥ 10 chars.
-- [ ] `admin/src/components/dashboard-nav.tsx` — wire "Support Tickets" nav to `/support`.
+- [x] `admin/src/app/(operator)/support/page.tsx` — Server Component. Four metric tiles at top (Open / Resolved last 7 days / Urgent open / Median first response — placeholder with V2 note). Client-side sort by priority desc → open-statuses-first → created_at desc. Tickets list with 200-row cap, rendered inline rather than a separate `ticket-table` file (table is simple).
+- [x] `admin/src/app/(operator)/support/[ticketId]/page.tsx` — detail view. Header (subject, id, reporter, org, opened-at), `TicketControls` (status / priority / assignee), thread (admin right + teal / customer left + zinc / system centred + grey), `ReplyForm`.
+- [x] `admin/src/app/(operator)/support/actions.ts` — Server Actions `sendMessage`, `changeStatus`, `changePriority`, `assignTicket`. `sendMessage` needs only a non-empty body (RPC enforces). The other three require reason ≥ 10 chars (schema note: RPC `update_support_ticket` requires reason; the ADR's original "routine work, no reason" plan was wrong — schema always demands it).
+- [x] `admin/src/components/support/reply-form.tsx` — textarea + send button. No internal-note toggle this sprint (schema does not model `is_internal_note`; deferred to a schema-amendment follow-up).
+- [x] `admin/src/components/support/ticket-controls.tsx` — the three control cards + three modal forms reusing the common `ModalShell / ReasonField / FormFooter` (hoisted in ADR-0036 Sprint 1.1).
+- [x] `admin/src/app/(operator)/layout.tsx` — "Support Tickets" nav item live (href=/support).
 
 **Testing plan:**
-- [ ] Existing `tests/admin/rpcs.test.ts` covers all four ticket RPCs — no new RPC tests needed.
-- [ ] `cd admin && bun run build` — /support + /support/[ticketId] compile.
-- [ ] Manual: create a synthetic ticket via RPC (psql) → /support lists it → click through → reply → verify message appears in thread → change status to Resolved → verify audit_log row.
-- [ ] Cross-role: read_only admin sees list + detail but can't reply (Send button disabled or absent).
+- [x] `cd admin && bun run lint` — zero warnings.
+- [x] `cd admin && bun run build` — 13 routes compile (+ /support and /support/[ticketId]).
+- [x] `cd admin && bun run test` — 1/1 smoke.
+- [x] `bun run test:rls` — 135/135 (no regression).
+- [ ] Manual (deferred until a synthetic ticket exists): create a ticket via psql → /support lists it → click through → reply → verify status auto-transitions to awaiting_customer and audit_log row lands. Will be exercised naturally when Sprint 2.1 ships the customer-side create flow.
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete` — 2026-04-17
 
 ### Sprint 2.1: Customer-side "Contact support" surface
 

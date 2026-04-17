@@ -2,6 +2,35 @@
 
 Next.js UI changes.
 
+## ADR-0032 Sprint 1.1 — 2026-04-17
+
+**ADR:** ADR-0032 — Support Tickets
+**Sprint:** 1.1 — /support admin panel (list + detail + reply + controls)
+
+### Added
+- `admin/src/app/(operator)/support/page.tsx` — list with 4 metric tiles (Open / Resolved last 7 days / Urgent open / Median first response — V2 placeholder). Client-side sort by priority (urgent first) → open-statuses-first → recent. 200-row cap.
+- `admin/src/app/(operator)/support/[ticketId]/page.tsx` — detail + thread with three author kinds (admin right-aligned + teal, customer left-aligned + zinc, system centred + grey).
+- `admin/src/app/(operator)/support/actions.ts` — four Server Actions: `sendMessage`, `changeStatus`, `changePriority`, `assignTicket`. All wrap existing RPCs. Status / priority / assign require reason ≥ 10 chars (schema enforces).
+- `admin/src/components/support/reply-form.tsx` — client reply form; transitions status to awaiting_customer automatically via the RPC.
+- `admin/src/components/support/ticket-controls.tsx` — three control cards + three modal forms reusing the shared `ModalShell / ReasonField / FormFooter`.
+
+### Changed
+- `admin/src/app/(operator)/layout.tsx` — "Support Tickets" nav item is live (href=/support).
+
+### Deferred (to Sprint 2.1)
+- Customer-side Contact Support form.
+- Customer-side ticket list + detail (new RLS policy or public view).
+
+### ADR deviations noted
+- No `is_internal_note` column in the schema — wireframe "Internal note" toggle deferred until a schema amendment introduces it.
+- ADR Sprint 1.1 had planned "status change requires no reason for support role (routine work)"; the schema's `update_support_ticket` RPC always requires reason ≥ 10 chars, so the action respects that.
+
+### Tested
+- [x] `cd admin && bun run lint` — zero warnings
+- [x] `cd admin && bun run build` — 13 routes compile (+ /support + /support/[ticketId])
+- [x] `cd admin && bun run test` — 1/1 smoke
+- [x] `bun run test:rls` (root, serial) — 135/135
+
 ## ADR-0030 Sprint 1.1 — 2026-04-17
 
 **ADR:** ADR-0030 — Sectoral Templates
