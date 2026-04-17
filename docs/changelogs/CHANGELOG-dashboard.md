@@ -2,6 +2,29 @@
 
 Next.js UI changes.
 
+## ADR-0030 Sprint 1.1 — 2026-04-17
+
+**ADR:** ADR-0030 — Sectoral Templates
+**Sprint:** 1.1 — /templates list + read-only detail
+
+### Added
+- `admin/src/app/(operator)/templates/page.tsx` — list with status + sector filters and pill counts. Fetches `admin.sectoral_templates` ordered by sector / template_code / version desc. Row click → detail.
+- `admin/src/app/(operator)/templates/[templateId]/page.tsx` — read-only detail. Description + notes + three info tiles (Created / Published / Deprecated — with admin display names resolved from `admin.admin_users`, successor link if deprecated) + purpose-definitions table.
+- `admin/src/components/templates/filter-bar.tsx` — Client Component with status + sector selects; Clear-filters link.
+
+### Changed
+- `admin/src/app/(operator)/layout.tsx` — "Sectoral Templates" nav item is live (href=/templates).
+
+### Deferred (to Sprint 2.1)
+- Create draft / Edit / Publish / Deprecate action bar + modals.
+- Used-by count on detail page (no orgs configure a template through the UI yet).
+
+### Tested
+- [x] `cd admin && bun run lint` — zero warnings
+- [x] `cd admin && bun run build` — 11 routes compile (+ /templates + /templates/[templateId])
+- [x] `cd admin && bun run test` — 1/1 smoke
+- [x] `bun run test:rls` (root, serial) — 135/135
+
 ## ADR-0036 — 2026-04-17
 
 **ADR:** ADR-0036 — Feature Flags & Kill Switches (admin panel)

@@ -2,7 +2,7 @@
 
 (c) 2026 Sudhindra Anegondhi a.d.sudhindra@gmail.com
 
-**Status:** Proposed
+**Status:** In Progress
 **Date proposed:** 2026-04-17
 **Date completed:** —
 
@@ -45,16 +45,18 @@ Core invariant (from schema design): a template is immutable once published. Edi
 **Estimated effort:** 2 hours.
 
 **Deliverables:**
-- [ ] `admin/src/app/(operator)/templates/page.tsx` — Server Component. Fetches `admin.sectoral_templates` ordered by sector, template_code, version desc. Filters: status (published / draft / deprecated / all), sector. Shows pill counts (N published · N drafts · N deprecated) matching the wireframe header.
-- [ ] `admin/src/app/(operator)/templates/[templateId]/page.tsx` — detail page. Shows metadata (code, display name, sector, version, status, updated, used-by count — join against org.settings.sectoral_template_code when relevant). Purpose definitions rendered as a read-only table matching the wireframe.
-- [ ] `admin/src/components/templates/filter-bar.tsx` — Client Component. Sector select, status select.
-- [ ] `admin/src/components/dashboard-nav.tsx` — wire the "Sectoral Templates" nav item to `/templates`.
+- [x] `admin/src/app/(operator)/templates/page.tsx` — Server Component. Fetches `admin.sectoral_templates` ordered by sector, template_code, version desc. Filters: status (published / draft / deprecated / all), sector. Pill counts in the header (N published · N drafts · N deprecated). Row-click deep-links to the detail page.
+- [x] `admin/src/app/(operator)/templates/[templateId]/page.tsx` — detail page. Metadata cards (Created / Published / Deprecated with admin display names and successor link if deprecated), description, notes, purpose-definitions table. Used-by count deferred (no orgs pick a template through UI yet — lands with Sprint 3.1).
+- [x] `admin/src/components/templates/filter-bar.tsx` — Client Component. Sector select populated from the list's distinct sectors + status select. Clear-filters link appears when either is set.
+- [x] `admin/src/app/(operator)/layout.tsx` — "Sectoral Templates" nav item live, `href=/templates`.
 
 **Testing plan:**
-- [ ] `cd admin && bun run build` — /templates + /templates/[templateId] compile.
-- [ ] Manual: /templates list renders with filters; click through to a detail page; no action buttons visible (read-only).
+- [x] `cd admin && bun run build` — /templates + /templates/[templateId] compile (11 routes total).
+- [x] `cd admin && bun run lint` — zero warnings.
+- [x] `cd admin && bun run test` — 1/1 smoke.
+- [x] `bun run test:rls` — 135/135 (no regression).
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete` — 2026-04-17
 
 ### Sprint 2.1: Draft editor + publish/deprecate actions
 
