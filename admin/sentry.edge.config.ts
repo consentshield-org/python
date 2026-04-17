@@ -1,8 +1,10 @@
+// Sentry init for Next.js edge runtime (middleware, edge routes).
+// Loaded by admin/src/instrumentation.ts when NEXT_RUNTIME === 'edge'.
+//
+// Rule 17 scrubbing mirrors the client + server configs.
+
 import * as Sentry from '@sentry/nextjs'
 
-// Read the same NEXT_PUBLIC_ var the client uses so there's one env var
-// to manage per environment. DSNs are public by design; the _ADMIN
-// suffix distinguishes admin Sentry project from the customer one.
 const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN_ADMIN
 
 Sentry.init({
@@ -23,11 +25,9 @@ Sentry.init({
   },
 
   beforeBreadcrumb(breadcrumb) {
-    if (breadcrumb.category === 'http') {
-      if (breadcrumb.data) {
-        delete breadcrumb.data.request_body
-        delete breadcrumb.data.response_body
-      }
+    if (breadcrumb.category === 'http' && breadcrumb.data) {
+      delete breadcrumb.data.request_body
+      delete breadcrumb.data.response_body
     }
     return breadcrumb
   },

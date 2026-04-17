@@ -28,7 +28,14 @@ export async function proxy(request: NextRequest) {
   }
 
   // 2. Public routes skip the session gate
-  if (url.pathname.startsWith('/login') || url.pathname.startsWith('/api/auth')) {
+  //    /monitoring is the Sentry tunnel route (next.config.ts tunnelRoute)
+  //    — admin-app client errors need to reach it without going through
+  //    the session gate, otherwise error reports get redirected to /login.
+  if (
+    url.pathname.startsWith('/login') ||
+    url.pathname.startsWith('/api/auth') ||
+    url.pathname.startsWith('/monitoring')
+  ) {
     return NextResponse.next()
   }
 
