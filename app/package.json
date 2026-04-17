@@ -34,6 +34,7 @@
     "miniflare": "4.20260415.0",
     "tailwindcss": "4.2.2",
     "typescript": "5.9.3",
+    "vercel": "51.6.1",
     "vitest": "4.1.4"
   }
 }
