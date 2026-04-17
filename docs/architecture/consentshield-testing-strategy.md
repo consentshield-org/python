@@ -508,7 +508,7 @@ The DEPA pipeline is a hybrid: Worker writes `consent_events`; an AFTER INSERT t
 - **Orphan consent events.** Worker insert succeeds, trigger fires, but `process-consent-event` never creates artefacts. The event exists; the artefacts don't. A DPB audit would find a consent claim with no per-purpose artefact backing.
 - **Duplicate artefacts from race.** Trigger path lands, then the 5-minute safety-net cron picks up the same event because `artefact_ids` isn't yet reconciled. Without the idempotency check, you'd get 2N artefacts per consent interaction. The audit trail becomes unreadable.
 - **Trigger failure rolls back the Worker INSERT.** If the trigger body ever propagates an exception, the customer's page sees a 500 instead of 202 and the banner breaks. The `EXCEPTION WHEN OTHERS THEN NULL` wrapper is load-bearing.
-- **Revocation cascade drift.** A user withdraws marketing consent; the artefact is marked `revoked` in the DB but the Edge Function never creates the corresponding `deletion_requests` for Mailchimp. The dashboard says "revoked", the customer's Mailchimp still holds the email.
+- **Revocation cascade drift.** A user withdraws marketing consent; the artefact is marked `revoked` in the DB but the Edge Function never creates the corresponding `deletion_receipts` for Mailchimp. The dashboard says "revoked", the customer's Mailchimp still holds the email.
 - **Expiry enforcement misses an artefact.** An artefact expires at midnight; the pg_cron job fails silently; the artefact stays `active` with a past `expires_at`. The validity cache still shows it as valid; tracker enforcement treats expired consent as valid.
 - **Replacement chain cascade bug.** Artefact A replaced by B; B revoked. If the revocation walks `replaced_by` and also marks A as revoked, the audit trail becomes inconsistent with the §7.3 spec (A must stay frozen at `replaced`).
 - **DEPA score sub-metric arithmetic wrong.** `coverage_score` says 80% when the real value is 60%. The compliance dashboard lies to the customer about their posture.
@@ -557,8 +557,11 @@ The DEPA pipeline is a hybrid: Worker writes `consent_events`; an AFTER INSERT t
        AND event_type = 'consent_artefact_revoked'. Expected: 1.
      - SELECT superseded FROM consent_expiry_queue WHERE artefact_id = <id>. Expected: true.
   4. Wait up to 10 seconds for the out-of-DB cascade.
-  5. SELECT * FROM deletion_requests WHERE artefact_id = <id>. Expected: one row per connector
-     mapped to the artefact's data_scope via purpose_connector_mappings.
+  5. SELECT * FROM deletion_receipts WHERE artefact_id = <id>
+       AND trigger_type = 'consent_revoked'. Expected: one row per connector
+     mapped to the artefact's data_scope via purpose_connector_mappings,
+     each with status = 'pending' and request_payload.data_scope equal to the
+     intersection of the mapping's data_fields with the artefact's data_scope.
 
 -- Test 10.5 — Cross-tenant revocation blocked by BEFORE trigger
   1. Create artefact for org_A.
@@ -602,8 +605,9 @@ The DEPA pipeline is a hybrid: Worker writes `consent_events`; an AFTER INSERT t
   1. Revoke the marketing artefact only.
   2. Wait up to 10 seconds for the Edge Function cascade.
   3. Expected:
-     - deletion_requests has 1 row for Mailchimp with data_scope from the marketing artefact.
-     - deletion_requests has NO rows for Hotjar or CIBIL.
+     - deletion_receipts has 1 row for Mailchimp (trigger_type='consent_revoked',
+       artefact_id = marketing artefact, request_payload.data_scope matches).
+     - deletion_receipts has NO rows for Hotjar or CIBIL tied to this revocation.
      - Analytics and bureau_reporting artefacts still have status = 'active'.
 ```
 

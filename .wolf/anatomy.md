@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-17T04:34:55.638Z
-> Files: 371 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-17T08:56:49.995Z
+> Files: 405 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../tmp/
 
@@ -26,17 +26,18 @@
 - `feedback_otp_over_magic_link.md` (~439 tok)
 - `feedback_parallel_adrs.md` (~378 tok)
 - `feedback_share_narrowly_not_broadly.md` (~1004 tok)
+- `feedback_supabase_aal_not_in_app_metadata.md` — Declares currentAal (~516 tok)
 - `feedback_v2_backlog_pattern.md` (~479 tok)
 - `feedback_vitest_serial_for_supabase_auth.md` (~502 tok)
 - `feedback_wireframes_before_adrs.md` (~784 tok)
-- `MEMORY.md` (~1105 tok)
+- `MEMORY.md` (~1171 tok)
 - `project_admin_platform_2026-04-16.md` — What IS implemented as of 2026-04-16 (~1994 tok)
-- `project_admin_platform_2026-04-17.md` — What IS implemented as of 2026-04-17 (~1805 tok)
+- `project_admin_platform_2026-04-17.md` — What IS implemented as of 2026-04-17 (~2346 tok)
 - `project_dev_only_no_prod.md` (~347 tok)
 - `project_status_2026-04-14.md` — ADR status (~693 tok)
 - `project_status_2026-04-15.md` — Live deployments (~680 tok)
 - `project_status_2026-04-16.md` — ADR state (~2188 tok)
-- `project_status_2026-04-17.md` — ADR state at EOD (~3004 tok)
+- `project_status_2026-04-17.md` — ADR state at EOD (~3211 tok)
 - `reference_email_deliverability.md` — Resend account (~907 tok)
 - `reference_infrastructure.md` (~628 tok)
 - `reference_supabase_platform_gotchas.md` — PG 16 GRANT ROLE split (migration role needs `WITH SET TRUE`) (~1631 tok)
@@ -59,10 +60,14 @@
 
 - `session-handoff.md` — Session Handoff (~1131 tok)
 
+## .github/workflows/
+
+- `monorepo-isolation.yml` — ADR-0026 Sprint 4.1 — monorepo isolation guard. (~337 tok)
+
 ## admin/
 
 - `eslint.config.mjs` — Declares eslintConfig (~98 tok)
-- `package.json` — Node.js package manifest (~243 tok)
+- `package.json` — Node.js package manifest (~259 tok)
 - `sentry.client.config.ts` (~170 tok)
 - `sentry.server.config.ts` (~170 tok)
 - `tsconfig.json` — TypeScript configuration (~102 tok)
@@ -84,7 +89,7 @@
 ## admin/src/app/(operator)/
 
 - `actions.ts` — Exports refreshPlatformMetrics (~167 tok)
-- `layout.tsx` — Operator shell. Red admin-mode strip + red sidebar border per the (~1451 tok)
+- `layout.tsx` — Operator shell. Red admin-mode strip + red sidebar border per the (~1456 tok)
 - `page.tsx` — ADR-0028 Sprint 2.1 — Operations Dashboard. (~1660 tok)
 
 ## admin/src/app/(operator)/audit-log/
@@ -95,6 +100,11 @@
 
 - `route.ts` — ADR-0028 Sprint 3.1 — CSV export of filtered audit log. (~1147 tok)
 
+## admin/src/app/(operator)/flags/
+
+- `actions.ts` — Exports setFeatureFlag, deleteFeatureFlag, toggleKillSwitch (~918 tok)
+- `page.tsx` — ADR-0036 Sprint 1.1 — Feature Flags & Kill Switches panel. (~1110 tok)
+
 ## admin/src/app/(operator)/orgs/
 
 - `page.tsx` — ADR-0029 Sprint 1.1 — Organisations list. (~2110 tok)
@@ -104,6 +114,32 @@
 - `actions.ts` — Exports addOrgNote, extendTrial, suspendOrg, restoreOrg (~822 tok)
 - `impersonation-actions.ts` — Exports startImpersonation, endImpersonation, forceEndImpersonation (~1296 tok)
 - `page.tsx` — ADR-0029 Sprint 1.1 — Organisation detail page (read-only). (~2946 tok)
+
+## admin/src/app/(operator)/support/
+
+- `actions.ts` — Exports sendMessage, changeStatus, changePriority, assignTicket (~960 tok)
+- `page.tsx` — ADR-0032 Sprint 1.1 — Support tickets list + metric tiles. (~2467 tok)
+
+## admin/src/app/(operator)/support/[ticketId]/
+
+- `page.tsx` — ADR-0032 Sprint 1.1 — Support ticket detail + thread + reply. (~1590 tok)
+
+## admin/src/app/(operator)/templates/
+
+- `actions.ts` — Exports PurposeRow, createDraft, updateDraft, publishTemplate + 2 more (~1652 tok)
+- `page.tsx` — ADR-0030 Sprint 1.1 — Sectoral Templates list. (~1841 tok)
+
+## admin/src/app/(operator)/templates/[templateId]/
+
+- `page.tsx` — ADR-0030 Sprint 1.1 — Sectoral Template detail (read-only). (~2993 tok)
+
+## admin/src/app/(operator)/templates/[templateId]/edit/
+
+- `page.tsx` — ADR-0030 Sprint 2.1 — Draft editor (drafts only). (~973 tok)
+
+## admin/src/app/(operator)/templates/new/
+
+- `page.tsx` — ADR-0030 Sprint 2.1 — New-draft form. (~952 tok)
 
 ## admin/src/app/api/auth/signout/
 
@@ -119,6 +155,16 @@
 - `detail-drawer.tsx` — AuditDetailDrawer (~1394 tok)
 - `filter-bar.tsx` — AuditLogFilterBar — renders form (~1110 tok)
 
+## admin/src/components/common/
+
+- `modal-form.tsx` — ModalShell (~850 tok)
+
+## admin/src/components/flags/
+
+- `feature-flags-tab.tsx` — FeatureFlagsTab — renders form, table, modal (~4012 tok)
+- `flags-tabs.tsx` — FlagsTabs (~469 tok)
+- `kill-switches-tab.tsx` — KillSwitchesTab — renders form, modal (~2212 tok)
+
 ## admin/src/components/impersonation/
 
 - `active-session-banner-client.tsx` — BannerClient (~610 tok)
@@ -129,15 +175,26 @@
 ## admin/src/components/ops-dashboard/
 
 - `cron-status-card.tsx` — CronStatusCard — renders table (~898 tok)
-- `kill-switches-card.tsx` — KillSwitchesCard (~632 tok)
+- `kill-switches-card.tsx` — KillSwitchesCard (~626 tok)
 - `metric-tile.tsx` — Pure presentational tile. Server Component. (~256 tok)
 - `recent-activity-card.tsx` — RecentActivityCard (~650 tok)
 - `refresh-button.tsx` — RefreshButton (~289 tok)
 
 ## admin/src/components/orgs/
 
-- `action-bar.tsx` — OrgActionBar — renders form, modal (~3196 tok)
+- `action-bar.tsx` — OrgActionBar — renders form, modal (~2513 tok)
 - `filter-bar.tsx` — PLANS — renders form (~898 tok)
+
+## admin/src/components/support/
+
+- `reply-form.tsx` — ReplyForm — renders form (~578 tok)
+- `ticket-controls.tsx` — STATUSES — renders form, modal (~2278 tok)
+
+## admin/src/components/templates/
+
+- `detail-actions.tsx` — TemplateDetailActions — renders form, modal (~1780 tok)
+- `filter-bar.tsx` — TemplatesFilterBar (~586 tok)
+- `template-form.tsx` — FRAMEWORKS — renders form (~3740 tok)
 
 ## admin/src/lib/impersonation/
 
@@ -154,7 +211,7 @@
 
 ## app/
 
-- `package.json` — Node.js package manifest (~286 tok)
+- `package.json` — Node.js package manifest (~310 tok)
 - `tsconfig.json` — TypeScript configuration (~117 tok)
 
 ## app/src/app/(dashboard)/
@@ -181,6 +238,15 @@
 
 - `page.tsx` — ADR-0029 Sprint 4.1 — customer-side Support sessions tab. (~1208 tok)
 
+## app/src/app/(dashboard)/dashboard/support/
+
+- `actions.ts` — Exports createTicket, replyToTicket, goToNewTicketForm (~858 tok)
+- `page.tsx` — ADR-0032 Sprint 2.1 — customer-side Support inbox. (~1612 tok)
+
+## app/src/app/(dashboard)/dashboard/support/new/
+
+- `page.tsx` — ADR-0032 Sprint 2.1 — Contact Support form (customer side). (~330 tok)
+
 ## app/src/app/(public)/privacy/[orgId]/
 
 - `page.tsx` — Public privacy notice page — no auth required. Backed by rpc_get_privacy_notice (~705 tok)
@@ -192,7 +258,12 @@
 ## app/src/components/
 
 - `dashboard-nav.tsx` — navItems (~596 tok)
+- `otp-boxes.tsx` — OtpBoxes (~345 tok)
 - `suspended-banner.tsx` — ADR-0029 Sprint 4.1 — customer-side suspension banner. (~537 tok)
+
+## app/src/components/support/
+
+- `new-ticket-form.tsx` — NewTicketForm — renders form (~1400 tok)
 
 ## app/src/lib/rights/
 
@@ -235,11 +306,15 @@
 - `ADR-0019-depa-roadmap.md` — ADR-0019: DEPA Roadmap — Charter & Sequencing of ADR-0020..0025 (~3286 tok)
 - `ADR-0020-depa-schema-skeleton.md` — ADR-0020: DEPA Schema Skeleton (~5670 tok)
 - `ADR-0021-process-consent-event.md` — ADR-0021: `process-consent-event` Edge Function + Dispatch Trigger + Safety-Net Cron (~3927 tok)
-- `ADR-0026-monorepo-restructure.md` — ADR-0026: Monorepo Restructure (Bun Workspace — `app/` + `admin/` + `packages/*`) (~8274 tok)
+- `ADR-0022-artefact-revocation-pipeline.md` — ADR-0022: `process-artefact-revocation` Edge Function + Revocation Dispatch (~4386 tok)
+- `ADR-0026-monorepo-restructure.md` — ADR-0026: Monorepo Restructure (Bun Workspace — `app/` + `admin/` + `packages/*`) (~8747 tok)
 - `ADR-0027-admin-schema.md` — ADR-0027: Admin Platform Schema (cs_admin Role + `admin.*` Tables + Audit Log + Impersonation) (~14644 tok)
 - `ADR-0028-admin-app-foundation.md` — ADR-0028: Admin App Foundation — Real Auth, Operations Dashboard, Audit Log (~4047 tok)
 - `ADR-0029-admin-organisations.md` — ADR-0029: Admin Organisations Panel — List, Detail, Actions, Impersonation (~3387 tok)
-- `ADR-index.md` — ADR Index (~913 tok)
+- `ADR-0030-sectoral-templates.md` — ADR-0030: Sectoral Templates (Admin Panel + Customer-Side Read) (~2410 tok)
+- `ADR-0032-support-tickets.md` — ADR-0032: Support Tickets (Admin Panel + Customer-Side Submit) (~2207 tok)
+- `ADR-0036-feature-flags-kill-switches.md` — ADR-0036: Feature Flags & Kill Switches (Admin Panel) (~2282 tok)
+- `ADR-index.md` — ADR Index (~1016 tok)
 - `ADR-template.md` — ADR-NNNN: Title (~423 tok)
 - `adr-workflow.md` — ADR Workflow Rules (~557 tok)
 
@@ -256,18 +331,18 @@
 
 ## docs/architecture/
 
-- `consentshield-complete-schema-design.md` — ConsentShield — Complete Schema Design (~31802 tok)
-- `consentshield-definitive-architecture.md` — ConsentShield — Definitive Architecture Reference (~15470 tok)
-- `consentshield-testing-strategy.md` — ConsentShield — The Testing Question (~8693 tok)
+- `consentshield-complete-schema-design.md` — ConsentShield — Complete Schema Design (~31827 tok)
+- `consentshield-definitive-architecture.md` — ConsentShield — Definitive Architecture Reference (~15903 tok)
+- `consentshield-testing-strategy.md` — ConsentShield — The Testing Question (~8766 tok)
 - `nextjs-16-reference.md` — Next.js 16 — Project Reference (~1408 tok)
 
 ## docs/changelogs/
 
 - `CHANGELOG-api.md` — Changelog — API (~1976 tok)
-- `CHANGELOG-dashboard.md` — Changelog — Dashboard (~2576 tok)
-- `CHANGELOG-docs.md` — Changelog — Documentation (~383 tok)
+- `CHANGELOG-dashboard.md` — Changelog — Dashboard (~3892 tok)
+- `CHANGELOG-docs.md` — Changelog — Documentation (~843 tok)
 - `CHANGELOG-edge-functions.md` — Changelog — Edge Functions (~1816 tok)
-- `CHANGELOG-infra.md` — Changelog — Infrastructure (~2605 tok)
+- `CHANGELOG-infra.md` — Changelog — Infrastructure (~3183 tok)
 - `CHANGELOG-schema.md` — Changelog — Schema (~9793 tok)
 - `CHANGELOG-worker.md` — Changelog — Worker (~1514 tok)
 
@@ -330,6 +405,9 @@
 
 - `.tmp-cleanup-rehearsal.ts` — Declares main (~297 tok)
 - `bootstrap-admin.ts` — ADR-0027 Sprint 4.1 — admin bootstrap one-shot. (~1746 tok)
+- `check-env-isolation.ts` — ADR-0026 Sprint 4.1 — env-var isolation guard. (~953 tok)
+- `check-no-admin-imports-in-app.ts` — ADR-0026 Sprint 4.1 — cross-import guard: app/ must not reference admin/. (~989 tok)
+- `check-no-customer-imports-in-admin.ts` — ADR-0026 Sprint 4.1 — cross-import guard: admin/ must not reference app/. (~910 tok)
 - `smoke-test-rate-limit.ts` — Declares main (~242 tok)
 
 ## session-context/
@@ -654,6 +732,7 @@
 - `20260418000008_depa_alter_existing.sql` — ADR-0020 Sprint 1.1 — §11.3 ALTER TABLE amendments to existing tables. (~1206 tok)
 - `20260418000009_depa_buffer_lifecycle.sql` — ADR-0020 Sprint 1.1 — DEPA buffer lifecycle additions. (~1124 tok)
 - `20260419000001_depa_consent_event_dispatch.sql` — ADR-0021 Sprint 1.1 — consent-event dispatch trigger + safety-net cron. (~1768 tok)
+- `20260421000001_customer_support_access.sql` — ADR-0032 Sprint 2.1 — customer-side access to admin.support_tickets. (~1190 tok)
 
 ## supabase/seed/
 

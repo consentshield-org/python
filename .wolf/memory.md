@@ -1311,3 +1311,118 @@
 
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
+| 11:26 | Created scripts/check-no-admin-imports-in-app.ts | — | ~820 |
+| 11:26 | Created scripts/check-no-customer-imports-in-admin.ts | — | ~738 |
+| 11:26 | Created scripts/check-env-isolation.ts | — | ~953 |
+| 11:27 | Created .github/workflows/monorepo-isolation.yml | — | ~337 |
+| 11:27 | Created scripts/check-no-admin-imports-in-app.ts | — | ~989 |
+| 11:28 | Created scripts/check-no-customer-imports-in-admin.ts | — | ~910 |
+| 11:30 | Edited app/package.json | 2→3 lines | ~31 |
+| 11:30 | Edited admin/package.json | 2→3 lines | ~34 |
+| 11:32 | Edited docs/ADRs/ADR-0026-monorepo-restructure.md | 4→4 lines | ~312 |
+| 11:32 | Edited docs/ADRs/ADR-0026-monorepo-restructure.md | "[ ] planned" → "[~] in progress" | ~49 |
+| 11:32 | Edited docs/ADRs/ADR-0026-monorepo-restructure.md | modified owner() | ~326 |
+| 11:32 | Edited docs/changelogs/CHANGELOG-infra.md | expanded (+29 lines) | ~650 |
+| 11:33 | Session end: 12 writes across 7 files (check-no-admin-imports-in-app.ts, check-no-customer-imports-in-admin.ts, check-env-isolation.ts, monorepo-isolation.yml, package.json) | 10 reads | ~25517 tok |
+| 11:33 | Session end: 12 writes across 7 files (check-no-admin-imports-in-app.ts, check-no-customer-imports-in-admin.ts, check-env-isolation.ts, monorepo-isolation.yml, package.json) | 10 reads | ~25517 tok |
+| 11:35 | Session end: 12 writes across 7 files (check-no-admin-imports-in-app.ts, check-no-customer-imports-in-admin.ts, check-env-isolation.ts, monorepo-isolation.yml, package.json) | 10 reads | ~25517 tok |
+| 11:44 | Session end: 12 writes across 7 files (check-no-admin-imports-in-app.ts, check-no-customer-imports-in-admin.ts, check-env-isolation.ts, monorepo-isolation.yml, package.json) | 10 reads | ~25517 tok |
+| 11:49 | Session end: 12 writes across 7 files (check-no-admin-imports-in-app.ts, check-no-customer-imports-in-admin.ts, check-env-isolation.ts, monorepo-isolation.yml, package.json) | 10 reads | ~25517 tok |
+| 11:50 | Session end: 12 writes across 7 files (check-no-admin-imports-in-app.ts, check-no-customer-imports-in-admin.ts, check-env-isolation.ts, monorepo-isolation.yml, package.json) | 10 reads | ~25517 tok |
+| 12:07 | Session end: 12 writes across 7 files (check-no-admin-imports-in-app.ts, check-no-customer-imports-in-admin.ts, check-env-isolation.ts, monorepo-isolation.yml, package.json) | 12 reads | ~27908 tok |
+| 12:13 | Edited ../../../.claude/projects/-Users-sudhindra-projects-aiSpirit-consent-sheild/memory/project_admin_platform_2026-04-17.md | modified shipped() | ~688 |
+| 12:13 | Edited ../../../.claude/projects/-Users-sudhindra-projects-aiSpirit-consent-sheild/memory/project_admin_platform_2026-04-17.md | 14→15 lines | ~227 |
+| 12:13 | Created ../../../.claude/projects/-Users-sudhindra-projects-aiSpirit-consent-sheild/memory/feedback_supabase_aal_not_in_app_metadata.md | — | ~536 |
+| 12:13 | Edited ../../../.claude/projects/-Users-sudhindra-projects-aiSpirit-consent-sheild/memory/MEMORY.md | 1→2 lines | ~135 |
+| 12:14 | Edited ../../../.claude/projects/-Users-sudhindra-projects-aiSpirit-consent-sheild/memory/project_status_2026-04-17.md | 1→2 lines | ~237 |
+| 12:14 | Session end: 17 writes across 11 files (check-no-admin-imports-in-app.ts, check-no-customer-imports-in-admin.ts, check-env-isolation.ts, monorepo-isolation.yml, package.json) | 12 reads | ~29860 tok |
+| 12:15 | Session end: 17 writes across 11 files (check-no-admin-imports-in-app.ts, check-no-customer-imports-in-admin.ts, check-env-isolation.ts, monorepo-isolation.yml, package.json) | 12 reads | ~29860 tok |
+| 12:23 | Edited admin/src/components/otp-boxes.tsx | 8 → 6 | ~25 |
+| 12:24 | Edited app/src/components/otp-boxes.tsx | 8 → 6 | ~25 |
+| 13:24 | Session end: 19 writes across 12 files (check-no-admin-imports-in-app.ts, check-no-customer-imports-in-admin.ts, check-env-isolation.ts, monorepo-isolation.yml, package.json) | 15 reads | ~31619 tok |
+| 13:27 | Edited admin/src/proxy.ts | modified if() | ~93 |
+| 13:27 | Session end: 20 writes across 13 files (check-no-admin-imports-in-app.ts, check-no-customer-imports-in-admin.ts, check-env-isolation.ts, monorepo-isolation.yml, package.json) | 15 reads | ~31712 tok |
+| 13:28 | Session end: 20 writes across 13 files (check-no-admin-imports-in-app.ts, check-no-customer-imports-in-admin.ts, check-env-isolation.ts, monorepo-isolation.yml, package.json) | 15 reads | ~31712 tok |
+| 13:31 | Session end: 20 writes across 13 files (check-no-admin-imports-in-app.ts, check-no-customer-imports-in-admin.ts, check-env-isolation.ts, monorepo-isolation.yml, package.json) | 15 reads | ~31712 tok |
+| 13:33 | Edited admin/src/proxy.ts | modified if() | ~50 |
+| 13:38 | Created docs/ADRs/ADR-0036-feature-flags-kill-switches.md | — | ~1998 |
+| 13:39 | Created docs/ADRs/ADR-0030-sectoral-templates.md | — | ~2286 |
+| 13:40 | Created docs/ADRs/ADR-0032-support-tickets.md | — | ~2325 |
+| 13:40 | Edited docs/ADRs/ADR-index.md | 1→4 lines | ~115 |
+| 13:55 | Session end: 25 writes across 17 files (check-no-admin-imports-in-app.ts, check-no-customer-imports-in-admin.ts, check-env-isolation.ts, monorepo-isolation.yml, package.json) | 16 reads | ~65728 tok |
+| 14:00 | Created admin/src/components/common/modal-form.tsx | — | ~850 |
+| 14:00 | Edited admin/src/components/orgs/action-bar.tsx | expanded (+6 lines) | ~94 |
+| 14:00 | Edited admin/src/components/orgs/action-bar.tsx | removed 30 lines | ~7 |
+| 14:00 | Edited admin/src/components/orgs/action-bar.tsx | — | ~0 |
+| 14:00 | Created admin/src/app/(operator)/flags/actions.ts | — | ~918 |
+| 14:01 | Created admin/src/app/(operator)/flags/page.tsx | — | ~1110 |
+| 14:01 | Created admin/src/components/flags/flags-tabs.tsx | — | ~469 |
+| 14:02 | Created admin/src/components/flags/feature-flags-tab.tsx | — | ~4012 |
+| 14:02 | Created admin/src/components/flags/kill-switches-tab.tsx | — | ~2212 |
+| 14:02 | Edited admin/src/app/(operator)/layout.tsx | inline fix | ~26 |
+| 14:02 | Edited admin/src/components/ops-dashboard/kill-switches-card.tsx | CSS: hover | ~78 |
+| 14:04 | Edited docs/ADRs/ADR-0036-feature-flags-kill-switches.md | 3→3 lines | ~22 |
+| 14:05 | Edited docs/ADRs/ADR-0036-feature-flags-kill-switches.md | "[ ] planned" → "[x] complete" | ~11 |
+| 14:05 | Edited docs/ADRs/ADR-0036-feature-flags-kill-switches.md | modified notes() | ~447 |
+| 14:05 | Edited docs/ADRs/ADR-index.md | inline fix | ~25 |
+| 14:05 | Edited docs/changelogs/CHANGELOG-dashboard.md | expanded (+24 lines) | ~560 |
+| 14:06 | Created admin/src/app/(operator)/templates/page.tsx | — | ~1776 |
+| 14:07 | Created admin/src/components/templates/filter-bar.tsx | — | ~586 |
+| 14:07 | Created admin/src/app/(operator)/templates/[templateId]/page.tsx | — | ~2839 |
+| 14:07 | Edited admin/src/app/(operator)/layout.tsx | inline fix | ~24 |
+| 14:09 | Edited docs/ADRs/ADR-0030-sectoral-templates.md | 3→3 lines | ~20 |
+| 14:09 | Edited docs/ADRs/ADR-0030-sectoral-templates.md | 4→4 lines | ~253 |
+| 14:09 | Edited docs/ADRs/ADR-0030-sectoral-templates.md | 7→9 lines | ~98 |
+| 14:09 | Edited docs/ADRs/ADR-index.md | inline fix | ~28 |
+| 14:10 | Edited docs/changelogs/CHANGELOG-dashboard.md | expanded (+23 lines) | ~348 |
+| 14:12 | Session end: 50 writes across 28 files (check-no-admin-imports-in-app.ts, check-no-customer-imports-in-admin.ts, check-env-isolation.ts, monorepo-isolation.yml, package.json) | 27 reads | ~96591 tok |
+| 14:12 | Created admin/src/app/(operator)/support/actions.ts | — | ~960 |
+| 14:13 | Created admin/src/app/(operator)/support/page.tsx | — | ~2467 |
+| 14:13 | Created admin/src/app/(operator)/support/[ticketId]/page.tsx | — | ~1590 |
+| 14:13 | Created admin/src/components/support/reply-form.tsx | — | ~578 |
+| 14:14 | Created admin/src/components/support/ticket-controls.tsx | — | ~2278 |
+| 14:14 | Edited admin/src/app/(operator)/layout.tsx | inline fix | ~23 |
+| 14:16 | Edited docs/ADRs/ADR-0032-support-tickets.md | 3→3 lines | ~20 |
+| 14:16 | Edited docs/ADRs/ADR-0032-support-tickets.md | 7→7 lines | ~408 |
+| 14:16 | Created docs/ADRs/ADR-0022-artefact-revocation-pipeline.md | — | ~4559 |
+| 14:16 | Edited docs/ADRs/ADR-0032-support-tickets.md | modified Manual() | ~171 |
+| 14:16 | Edited docs/ADRs/ADR-index.md | inline fix | ~28 |
+| 14:16 | Edited docs/ADRs/ADR-index.md | 2→3 lines | ~67 |
+| 14:17 | Edited docs/changelogs/CHANGELOG-dashboard.md | expanded (+29 lines) | ~532 |
+| 14:30 | Drafted ADR-0022 artefact-revocation-pipeline | docs/ADRs/ADR-0022-artefact-revocation-pipeline.md | Proposed, Option 2 locked (no deletion_requests table); 4 sprints planned | ~4200 |
+| 14:30 | Added ADR-0022 row to index | docs/ADRs/ADR-index.md | indexed | ~50 |
+| 14:17 | Session end: 63 writes across 31 files (check-no-admin-imports-in-app.ts, check-no-customer-imports-in-admin.ts, check-env-isolation.ts, monorepo-isolation.yml, package.json) | 30 reads | ~161958 tok |
+| 14:18 | Session end: 63 writes across 31 files (check-no-admin-imports-in-app.ts, check-no-customer-imports-in-admin.ts, check-env-isolation.ts, monorepo-isolation.yml, package.json) | 30 reads | ~161958 tok |
+| 14:19 | Created admin/src/app/(operator)/templates/actions.ts | — | ~1652 |
+| 14:20 | Edited docs/architecture/consentshield-complete-schema-design.md | inline fix | ~130 |
+| 14:20 | Edited docs/architecture/consentshield-complete-schema-design.md | modified contract() | ~173 |
+| 14:20 | Created admin/src/components/templates/template-form.tsx | — | ~3740 |
+| 14:20 | Edited docs/architecture/consentshield-complete-schema-design.md | modified Semantics() | ~414 |
+| 14:20 | Edited docs/architecture/consentshield-complete-schema-design.md | 6→6 lines | ~94 |
+| 14:20 | Edited docs/architecture/consentshield-complete-schema-design.md | 3→2 lines | ~84 |
+| 14:20 | Created admin/src/app/(operator)/templates/new/page.tsx | — | ~952 |
+| 14:21 | Edited docs/architecture/consentshield-definitive-architecture.md | inline fix | ~222 |
+| 14:21 | Created admin/src/app/(operator)/templates/[templateId]/edit/page.tsx | — | ~973 |
+| 14:21 | Created admin/src/components/templates/detail-actions.tsx | — | ~1780 |
+| 14:21 | Edited admin/src/app/(operator)/templates/[templateId]/page.tsx | added 1 import(s) | ~60 |
+| 14:21 | Edited docs/architecture/consentshield-definitive-architecture.md | modified protocol() | ~1175 |
+| 14:21 | Edited admin/src/app/(operator)/templates/[templateId]/page.tsx | added optional chaining | ~97 |
+| 14:21 | Edited docs/architecture/consentshield-testing-strategy.md | inline fix | ~74 |
+| 14:22 | Edited admin/src/app/(operator)/templates/[templateId]/page.tsx | 6→11 lines | ~94 |
+| 14:22 | Edited docs/architecture/consentshield-testing-strategy.md | 3→6 lines | ~113 |
+| 14:22 | Edited admin/src/app/(operator)/templates/page.tsx | CSS: hover | ~321 |
+| 14:22 | Edited docs/architecture/consentshield-testing-strategy.md | 4→5 lines | ~90 |
+| 14:22 | Edited docs/changelogs/CHANGELOG-docs.md | expanded (+13 lines) | ~515 |
+| 14:23 | Edited docs/ADRs/ADR-0022-artefact-revocation-pipeline.md | 2→2 lines | ~15 |
+| 14:23 | Edited docs/ADRs/ADR-0022-artefact-revocation-pipeline.md | 8→9 lines | ~412 |
+| 14:23 | Edited docs/ADRs/ADR-index.md | inline fix | ~31 |
+| 14:45 | Sprint 1.1 ADR-0022 — amended schema §11.3/§11.4.4/§11.5/§11.13, architecture §7.x/§8.4, testing-strategy §10 | 3 docs | phantom deletion_requests table removed; chain rewritten 4→3 link | ~1200 |
+| 14:45 | ADR-0022 Sprint 1.1 marked complete; ADR status → In Progress | ADR file + index + CHANGELOG-docs | indexed | ~200 |
+| 14:23 | Session end: 86 writes across 37 files (check-no-admin-imports-in-app.ts, check-no-customer-imports-in-admin.ts, check-env-isolation.ts, monorepo-isolation.yml, package.json) | 32 reads | ~184931 tok |
+| 14:24 | Edited docs/ADRs/ADR-0030-sectoral-templates.md | 5→10 lines | ~528 |
+| 14:24 | Edited docs/ADRs/ADR-0030-sectoral-templates.md | modified Manual() | ~190 |
+| 14:25 | Created supabase/migrations/20260421000001_customer_support_access.sql | — | ~1190 |
+| 14:26 | Created app/src/app/(dashboard)/dashboard/support/actions.ts | — | ~858 |
+| 14:26 | Created app/src/app/(dashboard)/dashboard/support/page.tsx | — | ~1612 |
+| 14:26 | Created app/src/app/(dashboard)/dashboard/support/new/page.tsx | — | ~330 |
+| 14:26 | Created app/src/components/support/new-ticket-form.tsx | — | ~1400 |

@@ -337,7 +337,7 @@ The Worker's contract is unchanged: it validates a consent event, writes a row t
 **Two Edge Functions drive the pipeline:**
 
 - **`process-consent-event`** — reads a new `consent_events` row, looks up each accepted purpose in `purpose_definitions`, creates one `consent_artefacts` row per mapped purpose, upserts each into `consent_artefact_index` (validity cache), inserts corresponding `consent_expiry_queue` rows, stages the artefacts in `delivery_buffer` for export, and finally updates `consent_events.artefact_ids` with the created IDs.
-- **`process-artefact-revocation`** — fires after an INSERT into `artefact_revocations`. Transitions the referenced `consent_artefacts.status` to `'revoked'`, removes it from `consent_artefact_index`, looks up `purpose_connector_mappings` for the artefact's `data_scope`, and creates one `deletion_requests` row per connector. Audit log entry written.
+- **`process-artefact-revocation`** — fires after an INSERT into `artefact_revocations`. The in-database cascade trigger (`trg_artefact_revocation_cascade`) already transitioned `consent_artefacts.status` to `'revoked'`, removed it from `consent_artefact_index`, superseded matching `consent_expiry_queue` rows, and wrote the audit log entry. The Edge Function handles the **out-of-database cascade**: looks up `purpose_connector_mappings` for the artefact's `purpose_definition_id`, intersects each connector's `data_fields` with the artefact's `data_scope`, and creates one `deletion_receipts` row per connector (`trigger_type='consent_revoked'`, `status='pending'`, `artefact_id` populated). The existing delivery dispatcher then pushes each receipt to the connector webhook and updates it to `confirmed`/`failed` on callback.
 
 **Trigger mechanism — hybrid (Q2 Option D from the 2026-04-16 review).** The primary path is an `AFTER INSERT` trigger on `consent_events` whose body calls `net.http_post()` to invoke `process-consent-event` — the same primitive the HTTP cron jobs use. Trigger body is wrapped in `EXCEPTION WHEN OTHERS THEN NULL` so a failing trigger cannot roll back the Worker's INSERT (Worker always returns 202). The secondary path is a pg_cron job every 5 minutes that sweeps `consent_events WHERE artefact_ids = '{}' AND created_at < now() - interval '5 minutes'` and re-fires the same Edge Function. Typical latency sub-second; worst-case 5 minutes.
 
@@ -560,52 +560,54 @@ Nightly Vercel Cron (02:00 IST) per web property:
 
 ### 8.4 Deletion Orchestration (Artefact-Scoped)
 
-*Amended 2026-04-16 per the DEPA alignment review. The generic webhook protocol is preserved; the orchestration inputs and deletion scoping change.*
+*Amended 2026-04-16 per the DEPA alignment review. Re-amended 2026-04-17 per ADR-0022 to reflect the single-table (`deletion_receipts`) dispatch+receipt model. The generic webhook protocol is preserved; the orchestration inputs and deletion scoping are the DEPA change.*
 
-Deletion is now **artefact-scoped**. Every `deletion_requests` row references an `artefact_id` (nullable for non-artefact-triggered deletions — see below). The scoping rule:
+Deletion is **artefact-scoped**. Every `deletion_receipts` row references an `artefact_id` (nullable for non-artefact-triggered deletions — see below). One `deletion_receipts` row represents **one connector instruction for one deletion trigger**: created with `status='pending'` when dispatched, transitioned to `status='confirmed'` or `status='failed'` when the customer's webhook callback fires. Per ADR-0022 Option 2, there is no separate `deletion_requests` table — the two semantic roles (instruction vs. proof) are disambiguated by `status`.
+
+**Scoping rule:**
 
 1. **Resolve the artefact** — read `consent_artefacts.data_scope` for the triggering artefact.
 2. **Map to connectors** — `SELECT * FROM purpose_connector_mappings WHERE purpose_definition_id = <artefact's purpose_definition_id>`. Each row declares which connector handles which subset of the artefact's data_scope.
-3. **Create scoped deletion requests** — one `deletion_requests` row per connector, with the subset of `data_scope` that connector handles. Deduplicate.
-4. **Dispatch** — call each connector with the scoped payload.
+3. **Create scoped deletion receipts** — one `deletion_receipts` row per connector, with `status='pending'`, `trigger_id=<revocation_id | expiry_queue_id | rights_request_id>`, `artefact_id` populated, and `request_payload.data_scope` set to the intersection of the mapping's `data_fields` with the artefact's `data_scope`. Deduplicate. Idempotency enforced by `UNIQUE (trigger_id, connector_id) WHERE trigger_type = 'consent_revoked'`.
+4. **Dispatch** — the existing delivery pathway calls each connector with the scoped payload and updates `status` on callback.
 
 This replaces the prior blanket "delete the user from every connector" pattern. A user withdrawing their `marketing` consent no longer triggers a bureau-reporting deletion at a banking customer (bureau is governed by a different artefact).
 
 **Deletion triggers and their inputs:**
 
-| Trigger | `deletion_requests.artefact_id` | Scope |
-|---|---|---|
-| `artefact_revocations` INSERT (user-withdrawn consent) | The revoked artefact | Only connectors mapped to the artefact's purpose |
-| `enforce_artefact_expiry()` pg_cron (TTL lapse) | The expired artefact | Same |
-| Rights-portal erasure request (DPDP Section 13) | `NULL` — sweeps *all* active artefacts for the requestor's session fingerprints | All connectors mapped to any active artefact |
-| Retention-rule expiry on a Category B buffer | `NULL` — data-scope-driven, not artefact-driven | Connectors mapped to the data category |
+| Trigger | `deletion_receipts.trigger_type` | `artefact_id` | Scope |
+|---|---|---|---|
+| `artefact_revocations` INSERT (user-withdrawn consent) | `consent_revoked` | The revoked artefact | Only connectors mapped to the artefact's purpose |
+| `enforce_artefact_expiry()` pg_cron (TTL lapse) | `consent_expired` | The expired artefact | Same |
+| Rights-portal erasure request (DPDP Section 13) | `erasure_request` | `NULL` — sweeps *all* active artefacts for the requestor's session fingerprints | All connectors mapped to any active artefact |
+| Retention-rule expiry on a Category B buffer | `retention_expired` | `NULL` — data-scope-driven, not artefact-driven | Connectors mapped to the data category |
 
-**Generic webhook protocol (unchanged shape; new fields):**
+**Generic webhook protocol (DPDP-era fields):**
 ```json
 POST customer's endpoint:
 {
   "event": "deletion_request",
-  "request_id": "uuid",
+  "receipt_id": "uuid",                           // = deletion_receipts.id
   "artefact_id": "cs_art_01HXX2",                 // DEPA — null for non-artefact triggers
   "data_principal": { "identifier": "...", "identifier_type": "email" },
   "data_scope": ["email_address", "name"],        // DEPA — what to delete, per this artefact
   "reason": "consent_revoked",                    // DEPA — 'consent_revoked' | 'consent_expired' | 'erasure_request' | 'retention_expired'
-  "callback_url": "https://api.consentshield.in/v1/deletion-receipts/{request_id}?sig={HMAC}",
+  "callback_url": "https://api.consentshield.in/v1/deletion-receipts/{receipt_id}?sig={HMAC}",
   "deadline": "ISO timestamp"
 }
 
 Customer callback (unchanged):
 {
-  "request_id": "uuid",
+  "receipt_id": "uuid",
   "status": "completed | partial | failed",
   "records_deleted": 47,
   "completed_at": "ISO timestamp"
 }
 ```
 
-The callback URL's HMAC signature and state-guard verification (Rule 14) are unchanged from the pre-DEPA design.
+The callback URL's HMAC signature and state-guard verification (Rule 14) are unchanged from the pre-DEPA design. On a successful callback the dispatcher transitions the same `deletion_receipts` row from `pending` to `confirmed` in place.
 
-**Chain of custody.** Every deletion now has a four-link audit chain: `consent_artefacts.artefact_id → artefact_revocations.artefact_id → deletion_requests.artefact_id → deletion_receipts.artefact_id`. An auditor can reconstruct which user consented, when they withdrew, which systems were instructed to delete which fields, and when each system confirmed. This is the DPDP Section 12 evidence trail.
+**Chain of custody.** Every artefact-triggered deletion has a three-link audit chain: `consent_artefacts.artefact_id → artefact_revocations.artefact_id → deletion_receipts.artefact_id`. Rights-portal erasures and retention-rule expiries produce two-link chains starting at `rights_requests`/`retention_rules` respectively. An auditor can reconstruct which user consented, when they withdrew, which systems were instructed to delete which fields, and when each system confirmed. This is the DPDP Section 12 evidence trail.
 
 **Pre-built connectors** (Mailchimp, HubSpot; more planned) continue to follow the standard `DeletionConnector` interface. The connector authors do not see a contract change — they receive a `data_scope` array in the deletion payload and are responsible for deleting only those fields, not the entire contact. Legacy connectors written before DEPA alignment may ignore `data_scope` and delete the whole contact; the orchestration allows this as a degraded mode but flags it via the `degraded_deletion_scope` audit event.
 

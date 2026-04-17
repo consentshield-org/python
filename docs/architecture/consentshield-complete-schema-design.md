@@ -1426,7 +1426,7 @@ select count(*) from organisations where encryption_salt is null or length(encry
 
 **Artefact-creation pipeline (per Q2 Option D in the Phase A review):** primary path is an `AFTER INSERT` trigger on `consent_events` that fires `net.http_post()` to the `process-consent-event` Edge Function. Safety net is a pg_cron job every 5 minutes that sweeps orphan events. Both paths share the same idempotent Edge Function. The trigger body is wrapped in `EXCEPTION WHEN OTHERS THEN NULL` so a failing trigger never rolls back the Worker's INSERT — the Worker always returns 202.
 
-**No legacy in the data model (per the Phase B review).** Runtime behaviour: every banner purpose MUST carry a `purpose_definition_id`; missing mappings are configuration errors to be caught and fixed, not gradients to tolerate. This is a *data-model* posture, not a statement about schema objects — the dev Supabase instance does have pre-DEPA tables (`consent_events`, `deletion_requests`, `deletion_receipts`, `consent_artefact_index`, `consent_banners`), and §11.3 evolves them in place via ALTER TABLE. Customer consent data is zero across all environments, so no data-migration path exists or is needed; schema-object evolution is a routine dev operation. See §11.13 for the ALTER-vs-DROP+RECREATE decision per amendment.
+**No legacy in the data model (per the Phase B review).** Runtime behaviour: every banner purpose MUST carry a `purpose_definition_id`; missing mappings are configuration errors to be caught and fixed, not gradients to tolerate. This is a *data-model* posture, not a statement about schema objects — the dev Supabase instance does have pre-DEPA tables (`consent_events`, `deletion_receipts`, `consent_artefact_index`, `consent_banners`), and §11.3 evolves them in place via ALTER TABLE. Customer consent data is zero across all environments, so no data-migration path exists or is needed; schema-object evolution is a routine dev operation. See §11.13 for the ALTER-vs-DROP+RECREATE decision per amendment.
 
 **Regulated sensitive content (per Rule 3 as broadened in Phase B).** The DEPA `data_scope` column on `consent_artefacts` and `purpose_definitions` holds **category declarations** (e.g., `'pan'`, `'email_address'`, `'MedicationRequest'`) — never actual values. No DDL in §11 admits a column where regulated content (FHIR resource payloads, PAN values, Aadhaar values, bank statements, transaction records) could be written. A review that encounters such a column rejects the change.
 
@@ -1664,10 +1664,15 @@ $$;
 -- ═══════════════════════════════════════════════════════════
 -- trigger_process_artefact_revocation() — AFTER INSERT on
 -- artefact_revocations. Dispatches the out-of-database cascade
--- (purpose_connector_mappings lookup + deletion_requests fan-out)
+-- (purpose_connector_mappings lookup + deletion_receipts fan-out)
 -- to the process-artefact-revocation Edge Function. The in-
 -- database cascade (status update, validity index removal, audit
 -- log) is handled by trg_artefact_revocation_cascade (§11.8).
+-- Idempotency contract (load-bearing, mirrors ADR-0021):
+--   UNIQUE (trigger_id, connector_id) WHERE trigger_type =
+--   'consent_revoked' on deletion_receipts + ON CONFLICT DO
+--   NOTHING in the Edge Function + dispatched_at fast-path on
+--   artefact_revocations.
 -- ═══════════════════════════════════════════════════════════
 create or replace function trigger_process_artefact_revocation()
 returns trigger language plpgsql security definer as $$
@@ -1768,39 +1773,35 @@ comment on column consent_events.artefact_ids is
   'safety-net pg_cron (§11.10) picks these up for retry.';
 
 -- ═══════════════════════════════════════════════════════════
--- deletion_requests — link to the artefact that authorised the
--- deletion (nullable for rights-request-triggered erasures that
--- sweep all active artefacts).
--- ═══════════════════════════════════════════════════════════
-alter table deletion_requests
-  add column artefact_id text references consent_artefacts(artefact_id) on delete set null;
-
-create index idx_deletion_requests_artefact
-  on deletion_requests (artefact_id)
-  where artefact_id is not null;
-
-comment on column deletion_requests.artefact_id is
-  'Consent artefact whose revocation or expiry triggered this deletion. '
-  'NULL for rights-request-triggered erasures (DPDP Section 13 full erasure). '
-  'Non-null for consent_revoked, consent_expired, and retention_expired triggers.';
-
--- ═══════════════════════════════════════════════════════════
--- deletion_receipts — denormalised back-reference for the
--- artefact-scoped chain of custody query. Populated from
--- deletion_requests.artefact_id at receipt creation.
+-- deletion_receipts — request+receipt hybrid for the artefact-
+-- scoped chain of custody. Populated by process-artefact-
+-- revocation (for consent_revoked triggers), enforce_artefact_
+-- expiry() (for consent_expired / retention_expired triggers),
+-- and the rights-portal erasure dispatcher (erasure_request
+-- trigger, NULL artefact_id).
+--
+-- Semantics (per ADR-0022 Option 2): deletion_receipts is both
+-- the dispatch instruction and the confirmation receipt for a
+-- single connector instruction. status='pending' means the row
+-- has been created but the connector has not confirmed;
+-- status='confirmed' or 'failed' means the callback has closed
+-- the loop. There is no separate deletion_requests table — the
+-- two roles are disambiguated by status.
 -- ═══════════════════════════════════════════════════════════
 alter table deletion_receipts
-  add column artefact_id text;
+  add column artefact_id text references consent_artefacts(artefact_id) on delete set null;
 
 create index idx_deletion_receipts_artefact
   on deletion_receipts (artefact_id)
   where artefact_id is not null;
 
 comment on column deletion_receipts.artefact_id is
-  'Denormalised from deletion_requests.artefact_id for chain-of-custody queries. '
-  'NULL for non-artefact-triggered deletions. '
-  'Completes the 4-link chain: consent_artefacts → artefact_revocations → '
-  'deletion_requests → deletion_receipts.';
+  'Consent artefact whose revocation or expiry triggered this deletion. '
+  'NULL for rights-request-triggered erasures (DPDP Section 13 full erasure) '
+  'and for retention-rule-driven deletions. '
+  'Non-null for consent_revoked and consent_expired triggers. '
+  'Completes the 3-link chain-of-custody: '
+  'consent_artefacts → artefact_revocations → deletion_receipts.';
 
 -- ═══════════════════════════════════════════════════════════
 -- consent_artefact_index — extend from ABDM-specific to
@@ -1963,7 +1964,7 @@ comment on table consent_artefacts is
 -- Immutable revocation records. Inserting a row triggers the
 -- in-database cascade (status → revoked, index removal, audit
 -- log) AND the out-of-database cascade (Edge Function creates
--- deletion_requests for the mapped connectors). See §11.8.
+-- deletion_receipts for the mapped connectors). See §11.8.
 -- APPEND-ONLY. No UPDATE or DELETE for any role.
 -- ═══════════════════════════════════════════════════════════
 create table artefact_revocations (
@@ -2637,8 +2638,7 @@ The dev Supabase instance carries existing pre-DEPA schema objects (tables, colu
 | Existing object | §11.x | Strategy | Rationale |
 |---|---|---|---|
 | `consent_events` | 11.3 | ALTER TABLE (add `artefact_ids`) | Additive column; no semantics change; preserves seed rows used by the RLS suite. |
-| `deletion_requests` | 11.3 | ALTER TABLE (add `artefact_id` FK) | Additive column referencing a new table; safe after §11.4.3 is applied. |
-| `deletion_receipts` | 11.3 | ALTER TABLE (add `artefact_id`) | Additive column; denormalised pointer for the chain-of-custody query. |
+| `deletion_receipts` | 11.3 | ALTER TABLE (add `artefact_id`) | Additive column; FK to `consent_artefacts` (set null on delete). Request+receipt hybrid per ADR-0022. |
 | `consent_artefact_index` | 11.3 | ALTER TABLE (add `framework`, `purpose_code`) | Existing rows receive `framework = 'abdm'` by default (preserves pre-DEPA semantics). |
 | `consent_banners.purposes` | 11.3 | No DDL — JSONB schema documentation only | Enforcement is at the API layer (422 on missing `purpose_definition_id`). |
 | `detect_stuck_buffers()` | 11.9 | `CREATE OR REPLACE FUNCTION` (adds `artefact_revocations` to the UNION) | Function body changes; signature unchanged; no callers break. |
