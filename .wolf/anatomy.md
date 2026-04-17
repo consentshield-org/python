@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-17T08:56:49.995Z
-> Files: 405 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-17T08:59:12.703Z
+> Files: 409 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../tmp/
 
@@ -243,6 +243,10 @@
 - `actions.ts` — Exports createTicket, replyToTicket, goToNewTicketForm (~858 tok)
 - `page.tsx` — ADR-0032 Sprint 2.1 — customer-side Support inbox. (~1612 tok)
 
+## app/src/app/(dashboard)/dashboard/support/[ticketId]/
+
+- `page.tsx` — ADR-0032 Sprint 2.1 — Customer-facing ticket detail + thread + reply. (~1484 tok)
+
 ## app/src/app/(dashboard)/dashboard/support/new/
 
 - `page.tsx` — ADR-0032 Sprint 2.1 — Contact Support form (customer side). (~330 tok)
@@ -257,12 +261,13 @@
 
 ## app/src/components/
 
-- `dashboard-nav.tsx` — navItems (~596 tok)
+- `dashboard-nav.tsx` — navItems (~611 tok)
 - `otp-boxes.tsx` — OtpBoxes (~345 tok)
 - `suspended-banner.tsx` — ADR-0029 Sprint 4.1 — customer-side suspension banner. (~537 tok)
 
 ## app/src/components/support/
 
+- `customer-reply-form.tsx` — CustomerReplyForm — renders form (~476 tok)
 - `new-ticket-form.tsx` — NewTicketForm — renders form (~1400 tok)
 
 ## app/src/lib/rights/
@@ -306,7 +311,7 @@
 - `ADR-0019-depa-roadmap.md` — ADR-0019: DEPA Roadmap — Charter & Sequencing of ADR-0020..0025 (~3286 tok)
 - `ADR-0020-depa-schema-skeleton.md` — ADR-0020: DEPA Schema Skeleton (~5670 tok)
 - `ADR-0021-process-consent-event.md` — ADR-0021: `process-consent-event` Edge Function + Dispatch Trigger + Safety-Net Cron (~3927 tok)
-- `ADR-0022-artefact-revocation-pipeline.md` — ADR-0022: `process-artefact-revocation` Edge Function + Revocation Dispatch (~4386 tok)
+- `ADR-0022-artefact-revocation-pipeline.md` — ADR-0022: `process-artefact-revocation` Edge Function + Revocation Dispatch (~4346 tok)
 - `ADR-0026-monorepo-restructure.md` — ADR-0026: Monorepo Restructure (Bun Workspace — `app/` + `admin/` + `packages/*`) (~8747 tok)
 - `ADR-0027-admin-schema.md` — ADR-0027: Admin Platform Schema (cs_admin Role + `admin.*` Tables + Audit Log + Impersonation) (~14644 tok)
 - `ADR-0028-admin-app-foundation.md` — ADR-0028: Admin App Foundation — Real Auth, Operations Dashboard, Audit Log (~4047 tok)
@@ -343,7 +348,7 @@
 - `CHANGELOG-docs.md` — Changelog — Documentation (~843 tok)
 - `CHANGELOG-edge-functions.md` — Changelog — Edge Functions (~1816 tok)
 - `CHANGELOG-infra.md` — Changelog — Infrastructure (~3183 tok)
-- `CHANGELOG-schema.md` — Changelog — Schema (~9793 tok)
+- `CHANGELOG-schema.md` — Changelog — Schema (~10139 tok)
 - `CHANGELOG-worker.md` — Changelog — Worker (~1514 tok)
 
 ## docs/design/
@@ -732,6 +737,7 @@
 - `20260418000008_depa_alter_existing.sql` — ADR-0020 Sprint 1.1 — §11.3 ALTER TABLE amendments to existing tables. (~1206 tok)
 - `20260418000009_depa_buffer_lifecycle.sql` — ADR-0020 Sprint 1.1 — DEPA buffer lifecycle additions. (~1124 tok)
 - `20260419000001_depa_consent_event_dispatch.sql` — ADR-0021 Sprint 1.1 — consent-event dispatch trigger + safety-net cron. (~1768 tok)
+- `20260420000001_depa_revocation_dispatch.sql` — ADR-0022 Sprint 1.2 — artefact-revocation dispatch trigger + safety-net cron. (~2320 tok)
 - `20260421000001_customer_support_access.sql` — ADR-0032 Sprint 2.1 — customer-side access to admin.support_tickets. (~1190 tok)
 
 ## supabase/seed/
@@ -798,6 +804,7 @@
 - `depa-isolation.test.ts` — ADR-0020 Sprint 1.1 — DEPA RLS isolation tests. (~3131 tok)
 - `helpers.ts` — Exports getServiceClient, getAnonClient, TestOrg, createTestOrg + 3 more (~951 tok)
 - `isolation.test.ts` — Declares admin (~2328 tok)
+- `support-tickets.test.ts` — ADR-0032 Sprint 2.1 — customer-side support access isolation. (~1167 tok)
 - `url-path.test.ts` — S-2 from the 2026-04-14 codebase review: authenticated API routes (~856 tok)
 
 ## tests/worker/

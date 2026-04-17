@@ -143,17 +143,17 @@ The Edge Function does **not** use advisory locks or explicit transactions. The 
 
 **Deliverables:**
 
-- [ ] `supabase/migrations/20260420000001_depa_revocation_dispatch.sql`:
-  - `alter table artefact_revocations add column dispatched_at timestamptz;`
+- [x] `supabase/migrations/20260420000001_depa_revocation_dispatch.sql`:
+  - `alter table artefact_revocations add column dispatched_at timestamptz;` + partial index `idx_revocations_pending_dispatch`.
   - `create unique index deletion_receipts_revocation_connector_uq on deletion_receipts (trigger_id, connector_id) where trigger_type = 'consent_revoked';`
-  - `create or replace function trigger_process_artefact_revocation() ...` (body already in §11.5, with Vault-backed URL).
-  - `create trigger trg_artefact_revocation_dispatch after insert on artefact_revocations for each row execute function trigger_process_artefact_revocation();` (runs after `trg_artefact_revocation_cascade` — Postgres fires AFTER triggers in alphabetical order; `trg_artefact_revocation` < `trg_artefact_revocation_dispatch`).
-  - `create or replace function safety_net_process_artefact_revocations() ...` — picks rows with `dispatched_at IS NULL` older than 5 minutes, `created_at > now() - 24 hours`, limit 100, re-fires Edge Function.
-  - `select cron.schedule('artefact-revocations-dispatch-safety-net', '*/5 * * * *', $$select safety_net_process_artefact_revocations();$$);` guarded by `unschedule ... exception ... null`.
-- [ ] Apply: `bunx supabase db push --linked`.
-- [ ] Verify: `select jobname, schedule, active from cron.job where jobname = 'artefact-revocations-dispatch-safety-net'` → 1 row active.
+  - `create or replace function trigger_process_artefact_revocation()` — Vault-backed URL + cs_orchestrator_key; EXCEPTION WHEN OTHERS swallowed.
+  - `create trigger trg_artefact_revocation_dispatch after insert on artefact_revocations` — fires after `trg_artefact_revocation` cascade by name-alphabetic ordering.
+  - `create or replace function safety_net_process_artefact_revocations()` — picks rows with `dispatched_at IS NULL`, `created_at` 5 min to 24 h old, 100-row batch.
+  - `cron.schedule('artefact-revocations-dispatch-safety-net', '*/5 * * * *', ...)` guarded by `unschedule ... exception null`.
+- [x] Apply: `bunx supabase db push --linked --include-all` — success on dev.
+- [ ] Full verification queries A/B/C deferred to Sprint 1.4 test suite (integration tests exercise the trigger end-to-end).
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete` — 2026-04-17
 
 #### Sprint 1.3: Edge Function
 

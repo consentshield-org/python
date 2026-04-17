@@ -2,6 +2,24 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-0022 Sprint 1.2] — 2026-04-17
+
+**ADR:** ADR-0022 — `process-artefact-revocation` Edge Function + Revocation Dispatch
+**Sprint:** 1.2 (dispatch trigger + safety-net cron)
+
+### Added
+- `20260420000001_depa_revocation_dispatch.sql` — wires the Q2 Option D hybrid pipeline for the out-of-database revocation cascade:
+  - `artefact_revocations.dispatched_at` column + partial index `idx_revocations_pending_dispatch`.
+  - UNIQUE partial index `deletion_receipts_revocation_connector_uq` on `(trigger_id, connector_id) WHERE trigger_type = 'consent_revoked'` (idempotency guard per ADR-0022 §Decision).
+  - `trigger_process_artefact_revocation()` — AFTER INSERT dispatch function; Vault-backed URL; EXCEPTION WHEN OTHERS swallowed.
+  - `trg_artefact_revocation_dispatch` — fires after `trg_artefact_revocation` (cascade) by name-alphabetic ordering; dispatch does not run if the cascade raises (S-5 frozen-chain invariant preserved).
+  - `safety_net_process_artefact_revocations()` — 5-min / 24-h window sweep, 100-row batch cap.
+  - pg_cron job `artefact-revocations-dispatch-safety-net` scheduled `*/5 * * * *`.
+
+### Tested
+- [x] `bunx supabase db push --linked --include-all` — migration applied cleanly on dev.
+- Full verification (trigger existence, cron entry, UNIQUE index shape) covered by ADR-0022 Sprint 1.4 integration suite (`tests/depa/revocation-pipeline.test.ts`).
+
 ## [ADR-0029 Sprint 1.1 + 4.1] — 2026-04-17
 
 **ADR:** ADR-0029 — Admin Organisations

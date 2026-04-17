@@ -1426,3 +1426,12 @@
 | 14:26 | Created app/src/app/(dashboard)/dashboard/support/page.tsx | — | ~1612 |
 | 14:26 | Created app/src/app/(dashboard)/dashboard/support/new/page.tsx | — | ~330 |
 | 14:26 | Created app/src/components/support/new-ticket-form.tsx | — | ~1400 |
+| 14:27 | Created app/src/app/(dashboard)/dashboard/support/[ticketId]/page.tsx | — | ~1484 |
+| 14:27 | Created app/src/components/support/customer-reply-form.tsx | — | ~476 |
+| 14:27 | Edited app/src/components/dashboard-nav.tsx | 3→4 lines | ~50 |
+| 14:28 | Created supabase/migrations/20260420000001_depa_revocation_dispatch.sql | — | ~2320 |
+| 14:28 | Created tests/rls/support-tickets.test.ts | — | ~1167 |
+| 14:28 | Edited docs/ADRs/ADR-0022-artefact-revocation-pipeline.md | now() → suite() | ~323 |
+| 14:29 | Edited docs/changelogs/CHANGELOG-schema.md | expanded (+18 lines) | ~381 |
+| 15:00 | Sprint 1.2 ADR-0022 — wrote dispatch migration (trigger + idempotency UNIQUE + safety-net cron) | supabase/migrations/20260420000001_depa_revocation_dispatch.sql | applied on dev | ~1900 |
+| 15:00 | CHANGELOG-schema: ADR-0022 Sprint 1.2 entry | docs/changelogs/CHANGELOG-schema.md | indexed | ~350 |
