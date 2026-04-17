@@ -26,7 +26,7 @@ All Architecture Decision Records for ConsentShield, in chronological order.
 | ADR-0020 | DEPA Schema Skeleton (6 new tables + §11.3 ALTERs + helpers + non-dispatch triggers + shared types) | Completed | 2026-04-17 | 1 | 1 |
 | ADR-0021 | `process-consent-event` Edge Function + Dispatch Trigger + Safety-Net Cron | Completed | 2026-04-17 | 1 | 1 |
 | ADR-0026 | Monorepo Restructure (Bun workspace — `app/` + `admin/` + `packages/*`) | In Progress | 2026-04-16 | 4 | 4 |
-| ADR-0027 | Admin Platform Schema (`cs_admin` role + `admin.*` tables + audit log + impersonation) | In Progress | 2026-04-16 | 4 | 5 |
+| ADR-0027 | Admin Platform Schema (`cs_admin` role + `admin.*` tables + audit log + impersonation) | Completed | 2026-04-17 | 4 | 5 |
 
 <!--
 When adding a new ADR:

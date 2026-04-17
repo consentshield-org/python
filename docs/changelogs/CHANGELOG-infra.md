@@ -2,6 +2,25 @@
 
 Vercel, Cloudflare, Supabase config changes.
 
+## [Sprint 4.1] — 2026-04-17
+
+**ADR:** ADR-0027 — Admin Platform Schema
+**Sprint:** Phase 4, Sprint 4.1 — Bootstrap admin user
+
+### Added
+- `scripts/bootstrap-admin.ts` — one-shot Bun script (not a migration) that promotes an existing `auth.users` row to the initial platform_operator admin. Idempotent; refuses a second run. Distinct exit codes per failure class: 2 for flag/env, 3 for idempotency, 4 for missing auth user, 1 for unexpected DB errors.
+
+### Executed
+- Rehearsal with `bootstrap-test@consentshield.in` — all 3 invariants verified (auth claims, admin_users row, re-entry refusal). Cleanup via `auth.admin.deleteUser` cascaded the admin_users row via ON DELETE CASCADE.
+- Real bootstrap of `a.d.sudhindra@gmail.com` (auth id `c073b464-34f7-4c55-9398-61dc965e94ff`) with display name `Sudhindra Anegondhi`. Post-run join query confirms `is_admin=true`, `admin_role='platform_operator'`, `bootstrap_admin=true`, `status='active'`.
+
+### Changed
+- `docs/admin/architecture/consentshield-admin-platform.md` §10 — extended with full bootstrap procedure (sign up → run script → sign in → verify → register second hardware key). Exit-code table included so any future operator running the script knows what each failure class means.
+
+### Next operator actions (NOT part of this sprint)
+- Register a second hardware key via Supabase Auth before flipping `ADMIN_HARDWARE_KEY_ENFORCED=true` (Rule 21 — AAL2 enforcement requires backup key).
+- Set CF_* Supabase secrets so the `admin-sync-config-to-kv` cron (Sprint 3.2) writes to Cloudflare KV instead of returning dry_run.
+
 ## [Sprint 1.1] — 2026-04-16
 
 **ADR:** ADR-0026 — Monorepo Restructure (Bun Workspace — `app/` + `admin/` + `packages/*`)

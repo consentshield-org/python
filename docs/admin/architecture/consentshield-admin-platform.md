@@ -519,6 +519,34 @@ These extend the customer-side Rules 1–20 (defined in `docs/architecture/conse
 
 ## 10. Security Posture — Admin-Specific
 
+### Bootstrap admin (one-shot)
+
+The first admin user is promoted via `scripts/bootstrap-admin.ts` (ADR-0027 Sprint 4.1). The script is idempotent and refuses to run a second time once any `admin.admin_users` row carries `bootstrap_admin = true`.
+
+**Procedure:**
+
+1. Sign up through the admin app's `/login` page (email + password; the app auto-confirms in dev) to create the `auth.users` row. The script does NOT create auth users — it only promotes existing ones.
+2. Run:
+   ```bash
+   BOOTSTRAP_ADMIN_EMAIL=<operator-email> \
+   BOOTSTRAP_ADMIN_DISPLAY_NAME="<Full Name>" \
+   bunx tsx scripts/bootstrap-admin.ts --i-understand-this-is-a-one-time-action
+   ```
+3. Sign out and sign in again so the JWT picks up the new `is_admin=true` + `admin_role='platform_operator'` claims.
+4. Verify the Operations Dashboard renders the operator's display name.
+5. Register a second hardware key before flipping `ADMIN_HARDWARE_KEY_ENFORCED=true` in admin-app env (AAL2 enforcement). Rule 21.
+
+**Safety rails:**
+
+- Exit 2 — safety flag or env vars missing.
+- Exit 3 — a bootstrap admin already exists (idempotency).
+- Exit 4 — email has no `auth.users` row (operator must sign up first).
+- Exit 1 — unexpected DB error; the script reports which step failed.
+
+**Recovery (lost hardware keys on the bootstrap account):** another `platform_operator` can mark the original row `status = 'disabled'` + register a new admin. Pre-second-operator, recovery is direct DB update via the service role key (break-glass procedure stored with the operator's personal secrets).
+
+### Other admin security controls
+
 - **Admin secrets** — `cs_admin` database password, Razorpay admin webhook secret, Resend admin sender token. All in Vercel env vars on the admin project only. Never set on the customer project.
 - **Admin Sentry** — separate Sentry project; same `beforeSend` hook strips sensitive data. Admin error messages may legitimately contain customer org IDs (which are not personal data) but never customer personal data, never JWT contents, never raw query results.
 - **Admin logs** — Vercel function logs for the admin project are retained per Vercel default; no customer personal data should appear in admin logs (the same `beforeSend`-style filter applies). Audit log is the canonical record of admin actions, NOT Vercel logs.
