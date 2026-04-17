@@ -1728,3 +1728,32 @@
 | 19:28 | Created docs/design/brand-assets/social-avatar.svg | — | ~188 |
 | 19:28 | Created docs/design/brand-assets/README.md | — | ~1061 |
 | 19:29 | Session end: 59 writes across 33 files (ADR-0038-operational-observability.md, ADR-index.md, V2-BACKLOG.md, CHANGELOG-schema.md, CHANGELOG-edge-functions.md) | 18 reads | ~55845 tok |
+| 20:03 | Created docs/ADRs/ADR-0041-probes-v2-sandbox.md | — | ~2240 |
+| 20:03 | Edited docs/ADRs/ADR-index.md | 1→2 lines | ~60 |
+| 20:04 | Created app/src/lib/probes/signature-match.ts | — | ~723 |
+| 20:04 | Created app/tests/probes/signature-match.test.ts | — | ~1160 |
+| 20:04 | Created app/sandbox-scripts/probe-runner.mjs | — | ~1040 |
+| 20:05 | Created app/sandbox-scripts/package.json | — | ~93 |
+| 20:05 | Created app/sandbox-scripts/README.md | — | ~292 |
+| 20:05 | Created app/src/app/api/internal/run-probes/route.ts | — | ~2232 |
+| 20:06 | Edited app/src/app/api/internal/run-probes/route.ts | 3→3 lines | ~44 |
+| 20:06 | Edited app/src/app/api/internal/run-probes/route.ts | inline fix | ~23 |
+| 20:06 | Edited app/src/app/api/internal/run-probes/route.ts | modified runProbe() | ~138 |
+| 20:06 | Edited app/src/app/api/internal/run-probes/route.ts | modified if() | ~248 |
+| 20:06 | Created supabase/migrations/20260425000003_probe_cron_vercel.sql | — | ~475 |
+| 20:07 | Created app/src/app/(dashboard)/dashboard/probes/actions.ts | — | ~1228 |
+| 20:08 | Created app/src/app/(dashboard)/dashboard/probes/page.tsx | — | ~816 |
+| 20:08 | Created app/src/app/(dashboard)/dashboard/probes/probes-list.tsx | — | ~2658 |
+| 20:08 | Edited app/src/components/dashboard-nav.tsx | 1→2 lines | ~34 |
+| 20:11 | Edited docs/ADRs/ADR-0041-probes-v2-sandbox.md | 2→3 lines | ~22 |
+| 20:11 | Edited docs/ADRs/ADR-0041-probes-v2-sandbox.md | "[ ] planned" → "[x] complete" | ~11 |
+| 20:11 | Session end: 78 writes across 41 files (ADR-0038-operational-observability.md, ADR-index.md, V2-BACKLOG.md, CHANGELOG-schema.md, CHANGELOG-edge-functions.md) | 21 reads | ~99821 tok |
+| 20:11 | Edited docs/ADRs/ADR-0041-probes-v2-sandbox.md | expanded (+32 lines) | ~393 |
+| 20:12 | Edited docs/ADRs/ADR-index.md | inline fix | ~26 |
+| 20:12 | Edited docs/V2-BACKLOG.md | removed 34 lines | ~27 |
+| 20:12 | Edited docs/changelogs/CHANGELOG-schema.md | expanded (+14 lines) | ~250 |
+| 20:12 | Edited docs/changelogs/CHANGELOG-api.md | expanded (+17 lines) | ~551 |
+| 20:12 | Edited docs/changelogs/CHANGELOG-dashboard.md | expanded (+9 lines) | ~162 |
+| 20:13 | Edited docs/changelogs/CHANGELOG-edge-functions.md | expanded (+7 lines) | ~127 |
+| 20:13 | Edited docs/changelogs/CHANGELOG-docs.md | expanded (+11 lines) | ~111 |
+| 20:15 | ADR-0041 shipped — Vercel Sandbox probe runner + probe CRUD UI | 160/160 + 10/10 sig-match; deploy-smoke deferred | V2-P1 + V2-P2 closed | ~18000 |

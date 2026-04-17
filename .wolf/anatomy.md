@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-17T13:58:37.499Z
-> Files: 488 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-17T14:43:15.942Z
+> Files: 499 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../tmp/
 
@@ -230,6 +230,12 @@
 - `tsconfig.json` — TypeScript configuration (~117 tok)
 - `vercel.json` (~33 tok)
 
+## app/sandbox-scripts/
+
+- `package.json` — Node.js package manifest (~93 tok)
+- `probe-runner.mjs` — ADR-0041 Sprint 1.2 — Playwright probe scenario. (~1040 tok)
+- `README.md` — Project documentation (~274 tok)
+
 ## app/scripts/
 
 - `vercel-should-build.sh` — (this workspace's own source) (~351 tok)
@@ -276,6 +282,12 @@
 - `page.tsx` — ExportStorageSettingsPage (~875 tok)
 - `r2-settings-form.tsx` — R2SettingsForm — renders form (~2069 tok)
 
+## app/src/app/(dashboard)/dashboard/probes/
+
+- `actions.ts` — API routes: GET (7 endpoints) (~1228 tok)
+- `page.tsx` — ProbesPage (~816 tok)
+- `probes-list.tsx` — ProbesList — renders form, table (~2658 tok)
+
 ## app/src/app/(dashboard)/dashboard/purposes/
 
 - `actions.ts` — API routes: GET (15 endpoints) (~1793 tok)
@@ -316,6 +328,10 @@
 
 - `page.tsx` — Public privacy notice page — no auth required. Backed by rpc_get_privacy_notice (~705 tok)
 
+## app/src/app/api/internal/run-probes/
+
+- `route.ts` — , runs Playwright scenario, collects stdout JSON, (~2259 tok)
+
 ## app/src/app/api/orgs/[orgId]/artefacts.csv/
 
 - `route.ts` — ADR-0037 V2-D3 — CSV export for Consent Artefacts. (~840 tok)
@@ -342,7 +358,7 @@
 
 ## app/src/components/
 
-- `dashboard-nav.tsx` — navItems (~665 tok)
+- `dashboard-nav.tsx` — navItems (~682 tok)
 - `otp-boxes.tsx` — OtpBoxes (~345 tok)
 - `suspended-banner.tsx` — ADR-0029 Sprint 4.1 — customer-side suspension banner. (~537 tok)
 
@@ -358,6 +374,10 @@
 ## app/src/lib/auth/
 
 - `bootstrap-org.ts` — ADR-0042 — signup bootstrap extracted into a pure helper so the (~423 tok)
+
+## app/src/lib/probes/
+
+- `signature-match.ts` — ADR-0041 Sprint 1.5 — pure tracker-signature matching module. (~723 tok)
 
 ## app/src/lib/rights/
 
@@ -377,6 +397,10 @@
 
 - `lifecycle.test.ts` — Migration 011 (20260413000011) revokes UPDATE and DELETE on all buffer (~1002 tok)
 
+## app/tests/probes/
+
+- `signature-match.test.ts` — ADR-0041 Sprint 1.5 — signature-match unit tests. (~1160 tok)
+
 ## app/tests/storage/
 
 - `sigv4.test.ts` — ADR-0040 Sprint 1.1 — sigv4 primitive tests. (~1066 tok)
@@ -389,7 +413,7 @@
 
 - `ROADMAP-phase2.md` — ConsentShield — Phase 2 Roadmap (~3150 tok)
 - `STATUS.md` — ConsentShield Status (~2363 tok)
-- `V2-BACKLOG.md` — V2 Backlog — Deferred Items for Post-Phase-2 Review (~1727 tok)
+- `V2-BACKLOG.md` — V2 Backlog — Deferred Items for Post-Phase-2 Review (~1362 tok)
 
 ## docs/ADRs/
 
@@ -428,8 +452,9 @@
 - `ADR-0037-depa-completion.md` — ADR-0037: DEPA Completion — Expiry Fan-out, Per-Requestor Binding, CSV Export, Audit DEPA Section, O (~3945 tok)
 - `ADR-0038-operational-observability.md` — ADR-0038: Operational Observability — Cron Failure Watchdog + Stuck-Buffer Alerting (~2095 tok)
 - `ADR-0040-audit-r2-upload.md` — ADR-0040: Audit R2 Upload Pipeline — sigv4, `export_configurations` UI, delivery-target branch (~2243 tok)
+- `ADR-0041-probes-v2-sandbox.md` — ADR-0041: Probes v2 — Headless-Browser Runner via Vercel Sandbox + Probe CRUD UI (~2480 tok)
 - `ADR-0042-signup-idempotency-test.md` — ADR-0042: Signup Idempotency Regression Test (~635 tok)
-- `ADR-index.md` — ADR Index (~1244 tok)
+- `ADR-index.md` — ADR Index (~1268 tok)
 - `ADR-template.md` — ADR-NNNN: Title (~423 tok)
 - `adr-workflow.md` — ADR Workflow Rules (~557 tok)
 
@@ -453,12 +478,12 @@
 
 ## docs/changelogs/
 
-- `CHANGELOG-api.md` — Changelog — API (~2953 tok)
-- `CHANGELOG-dashboard.md` — Changelog — Dashboard (~6793 tok)
-- `CHANGELOG-docs.md` — Changelog — Documentation (~1925 tok)
-- `CHANGELOG-edge-functions.md` — Changelog — Edge Functions (~2734 tok)
+- `CHANGELOG-api.md` — Changelog — API (~3463 tok)
+- `CHANGELOG-dashboard.md` — Changelog — Dashboard (~6938 tok)
+- `CHANGELOG-docs.md` — Changelog — Documentation (~2017 tok)
+- `CHANGELOG-edge-functions.md` — Changelog — Edge Functions (~2844 tok)
 - `CHANGELOG-infra.md` — Changelog — Infrastructure (~3667 tok)
-- `CHANGELOG-schema.md` — Changelog — Schema (~12320 tok)
+- `CHANGELOG-schema.md` — Changelog — Schema (~12545 tok)
 - `CHANGELOG-worker.md` — Changelog — Worker (~1514 tok)
 
 ## docs/design/
@@ -888,6 +913,7 @@
 - `20260424000004_apply_template_materialise.sql` — ADR-0037 Sprint 1.5 — W9 onboarding seed pack materialisation. (~1275 tok)
 - `20260425000001_operational_crons.sql` — ADR-0038 Sprint 1.2 — cron health snapshot + stuck-buffer + cron-health crons. (~1292 tok)
 - `20260425000002_export_configurations_delete.sql` — ADR-0040 Sprint 1.2 — add DELETE policy on export_configurations. (~146 tok)
+- `20260425000003_probe_cron_vercel.sql` — ADR-0041 Sprint 1.3 — swap consent-probes-hourly to the Vercel orchestrator. (~475 tok)
 
 ## supabase/seed/
 

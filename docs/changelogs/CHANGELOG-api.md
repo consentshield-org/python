@@ -2,6 +2,23 @@
 
 API route changes.
 
+## [ADR-0041] — 2026-04-17
+
+**ADR:** ADR-0041 — Probes v2 via Vercel Sandbox
+**Sprints:** 1.1 dep · 1.2 sandbox script · 1.3 orchestrator · 1.5 signature-match
+
+### Added
+- `app/package.json` — `@vercel/sandbox@1.10.0` (exact pin per Rule 16). Adds the SDK for creating / managing Firecracker microVMs programmatically.
+- `app/sandbox-scripts/probe-runner.mjs` + `package.json` + `README.md` — Playwright scenario executed inside the sandbox. Reads `/tmp/probe-input.json`, sets the consent cookie on the target domain, navigates with `waitUntil:networkidle`, snapshots script/iframe/img srcs + intercepted network URLs + final cookies + title, prints one JSON blob to stdout. No signature matching inside the sandbox — keeps the payload minimal.
+- `app/src/app/api/internal/run-probes/route.ts` — POST handler. Bearer-authenticated via `PROBE_CRON_SECRET`. Iterates active `consent_probes` due a run. For each: creates a Vercel Sandbox (`node24`, allow-all network, 2-min timeout), copies `sandbox-scripts/**` in, installs deps + Playwright Chromium, drops the probe config at `/tmp/probe-input.json`, runs the scenario, parses stdout, applies `matchSignatures` + `computeViolations` (shared helper), INSERTs `consent_probe_runs`, bumps `consent_probes.last_run_at` + `next_run_at` per schedule, stops the sandbox.
+- `app/src/lib/probes/signature-match.ts` — pure module. Exports `matchSignatures(urls, sigs)` + `computeViolations(detections, consentState)` + `overallStatus(violations)`. Unit-tested in `app/tests/probes/signature-match.test.ts` (10/10 PASS).
+
+### Tested
+- [x] `cd app && bunx vitest run tests/probes/signature-match.test.ts` — 10/10 PASS.
+- [x] `cd app && bunx tsc --noEmit` — clean.
+- [x] `cd app && bun run build` — zero errors / zero warnings; `/api/internal/run-probes` + `/dashboard/probes` in the route manifest.
+- [ ] End-to-end sandbox smoke — deploy-time step requiring operator to set `PROBE_CRON_SECRET` on Vercel + `vercel_app_url` + `probe_cron_secret` in Supabase Vault. Documented in ADR-0041 closeout.
+
 ## [ADR-0042] — 2026-04-17
 
 **ADR:** ADR-0042 — Signup Idempotency Regression Test

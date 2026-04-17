@@ -12,6 +12,7 @@ const navItems = [
   { href: '/dashboard/purposes', label: 'Purpose Definitions' },
   { href: '/dashboard/artefacts', label: 'Consent Artefacts' },
   { href: '/dashboard/enforcement', label: 'Enforcement' },
+  { href: '/dashboard/probes', label: 'Consent Probes' },
   { href: '/dashboard/inventory', label: 'Data Inventory' },
   { href: '/dashboard/template', label: 'Sector template' },
   { href: '/dashboard/rights', label: 'Rights Requests' },

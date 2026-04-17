@@ -16,6 +16,20 @@ Database migrations, RLS policies, roles.
 - [x] `tests/depa/score.test.ts` — 7/7 — PASS (10.8 arithmetic 5 cases + 10.8b refresh round-trip 2 cases).
 - [x] `bun run test:rls` — 13 files, **154/154** — PASS.
 
+## [ADR-0041 Sprint 1.3] — 2026-04-17
+
+**ADR:** ADR-0041 — Probes v2 via Vercel Sandbox
+**Sprint:** 1.3 — swap `consent-probes-hourly` cron target to Vercel
+
+### Changed
+- `20260425000003_probe_cron_vercel.sql` — unschedules and re-creates `consent-probes-hourly` pointing at `<vercel_app_url>/api/internal/run-probes` using a new Vault secret `probe_cron_secret` for the bearer token. Base URL reads from a new Vault secret `vercel_app_url`. Documented operator setup in the migration SQL comments.
+- Deprecates the Supabase Edge Function `run-consent-probes` (static-HTML path). Function stays deployed for rollback; not invoked by any cron after this migration.
+
+### Operator setup required
+- `vault.create_secret('https://app.consentshield.in', 'vercel_app_url')`
+- `vault.create_secret('<random token>', 'probe_cron_secret')`
+- Vercel project env var `PROBE_CRON_SECRET` set to the same token.
+
 ## [ADR-0040 Sprint 1.2] — 2026-04-17
 
 **ADR:** ADR-0040 — Audit R2 Upload Pipeline

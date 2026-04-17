@@ -62,40 +62,9 @@ correctly from `/api/orgs/[orgId]/billing/checkout`).
 
 ## Synthetic compliance (consent probes)
 
-### V2-P1. Headless-browser probe runner  *(origin: ADR-0016)*
+### V2-P1. Headless-browser probe runner  → see ADR-0041
 
-v1 is static HTML analysis — two-pass (structured `<script src>`,
-then full-body substring for URLs referenced in inline JS). This
-can't distinguish conditional (`if (consented) { load() }`) from
-unconditional script loads when the URL appears in inline JS. On
-the demo site, `/violator?violate=1` correctly surfaces violations;
-`/blog` emits a **documented false positive** for the same reason.
-
-**Why deferred.** Headless-browser execution requires either a
-third-party service (Browserless, ScrapingBee) with recurring cost
-and a new dep, or **Vercel Sandbox** microVMs which would be a
-first-class but non-trivial integration. Both are out of scope for
-Phase 2.
-
-**Shape of the v2 fix.**
-- Preferred: Vercel Sandbox running Playwright. Matches the
-  platform-native preference in CLAUDE.md. Probe runner becomes a
-  Vercel Function invoked by pg_cron (the Sandbox starts up for
-  each probe, executes the consent script, reports trackers via
-  a callback).
-- Alternative: adopt `@browserless/http` or similar.
-
-### V2-P2. Probe CRUD UI  *(origin: ADR-0016)*
-
-Probes are seeded via direct SQL today. `/dashboard/enforcement`
-lists them but no form creates or edits them.
-
-**Why deferred.** Only two demo probes exist. A CRUD form is about
-a half-day of dashboard work and depends on decisions about probe
-granularity (per-page vs per-property vs per-cohort).
-
-**Shape of the v2 fix.** Dedicated `/dashboard/probes` page with
-a property selector, a consent-state editor, and schedule picker.
+### V2-P2. Probe CRUD UI  → see ADR-0041
 
 ---
 

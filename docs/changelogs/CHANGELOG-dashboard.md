@@ -2,6 +2,15 @@
 
 Next.js UI changes.
 
+## ADR-0041 Sprint 1.4 — 2026-04-17
+
+**ADR:** ADR-0041 — Probes v2 via Vercel Sandbox
+**Sprint:** 1.4 — probe CRUD UI
+
+### Added
+- `app/src/app/(dashboard)/dashboard/probes/page.tsx` + `probes-list.tsx` + `actions.ts` — probe list, create/edit drawer, pause/resume/delete per-row actions, last-run status pill. Create form takes property, schedule, and a comma-separated consent_state. Help card documents the consent_state format and how v2 probes differ from v1 static-HTML.
+- `app/src/components/dashboard-nav.tsx` — new nav item "Consent Probes" slotted after "Enforcement".
+
 ## ADR-0040 — 2026-04-17
 
 **ADR:** ADR-0040 — Audit R2 Upload Pipeline

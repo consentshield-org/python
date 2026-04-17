@@ -2,6 +2,13 @@
 
 Supabase Edge Function changes.
 
+## ADR-0041 deprecation note — 2026-04-17
+
+**ADR:** ADR-0041 — Probes v2 via Vercel Sandbox
+
+### Deprecated
+- `supabase/functions/run-consent-probes/index.ts` — static-HTML probe runner shipped in ADR-0016. Has a documented false-positive on inline-JS conditional loads. No cron invokes it after migration `20260425000003_probe_cron_vercel.sql`. Stays deployed for rollback; remove after a stable window with the v2 runner in production.
+
 ## ADR-0038 Sprint 1.1 — 2026-04-17
 
 **ADR:** ADR-0038 — Operational Observability

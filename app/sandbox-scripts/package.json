@@ -1,0 +1,10 @@
+{
+  "name": "consentshield-probe-sandbox",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Playwright probe scenario executed inside Vercel Sandbox microVMs per ADR-0041. Entrypoint: probe-runner.mjs. Expects /tmp/probe-input.json.",
+  "type": "module",
+  "dependencies": {
+    "playwright-core": "1.47.2"
+  }
+}

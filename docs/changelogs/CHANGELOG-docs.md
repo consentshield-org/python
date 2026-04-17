@@ -2,6 +2,17 @@
 
 Documentation changes.
 
+## [ADR-0041 charter + closeout] — 2026-04-17
+
+**ADR:** ADR-0041 (Probes v2 — Vercel Sandbox runner + CRUD UI)
+
+### Added
+- `docs/ADRs/ADR-0041-probes-v2-sandbox.md` — drafted and shipped Completed. Five sprints. Closes V2-P1 + V2-P2.
+
+### Changed
+- `docs/V2-BACKLOG.md` — V2-P1 + V2-P2 replaced with pointers.
+- `docs/ADRs/ADR-index.md` — ADR-0041 added as Completed.
+
 ## [ADR-0042 charter + closeout] — 2026-04-17
 
 **ADR:** ADR-0042 (Signup idempotency regression test)
