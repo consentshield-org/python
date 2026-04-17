@@ -102,15 +102,15 @@ The full SQL for every object is already specified in `docs/admin/architecture/c
 
 **Deliverables (one migration per table; one commit per migration for revert-safety):**
 
-- [ ] **Migration `<ts>_admin_impersonation.sql`** — `admin.impersonation_sessions` table; 3 indexes; both RLS policies (`admin_all` for full admin access + `org_view` for customer-side read scoped by `target_org_id = public.current_org_id()`); `public.org_support_sessions` security-invoker view; `grant select on public.org_support_sessions to authenticated`. Per schema doc §3.3.
-- [ ] **Migration `<ts>_admin_sectoral_templates.sql`** — `admin.sectoral_templates`; published-template index; admin RLS; `public.list_sectoral_templates_for_sector(p_sector text)` security-definer function; `grant execute ... to authenticated`. Per schema doc §3.4.
-- [ ] **Migration `<ts>_admin_connector_catalogue.sql`** — `admin.connector_catalogue` table; active index; admin RLS; `alter table public.integrations add column connector_catalogue_id uuid references admin.connector_catalogue(id)` (nullable; existing rows unaffected). Per schema doc §3.5.
-- [ ] **Migration `<ts>_admin_tracker_signatures.sql`** — `admin.tracker_signature_catalogue` table; active index; admin RLS; one-shot data load from `supabase/seed/tracker_signatures.sql` into the new table (`insert into admin.tracker_signature_catalogue (signature_code, display_name, vendor, ...) select ... from <seed source>`). Per schema doc §3.6.
-- [ ] **Migration `<ts>_admin_support_tickets.sql`** — `admin.support_tickets` + `admin.support_ticket_messages` tables; 3 indexes; admin RLS on both. Per schema doc §3.7.
-- [ ] **Migration `<ts>_admin_org_notes.sql`** — `admin.org_notes` table; org index; admin RLS. Per schema doc §3.8.
-- [ ] **Migration `<ts>_admin_feature_flags.sql`** — `admin.feature_flags` table; org index; admin RLS; `public.get_feature_flag(p_flag_key text)` security-definer function; `grant execute ... to authenticated`. Per schema doc §3.9.
-- [ ] **Migration `<ts>_admin_kill_switches.sql`** — `admin.kill_switches` table; two RLS policies (read for any admin, write for platform_operator only); seed 4 default switches with `enabled = false` (banner_delivery, depa_processing, deletion_dispatch, rights_request_intake). Per schema doc §3.10.
-- [ ] **Migration `<ts>_admin_platform_metrics.sql`** — `admin.platform_metrics_daily` table; admin RLS. The `admin.refresh_platform_metrics(p_date date)` function lands in Sprint 3.1 (it's an RPC, not a table). Per schema doc §3.11.
+- [x] **Migration `20260417000001_admin_impersonation.sql`** — `admin.impersonation_sessions` table; 3 indexes; both RLS policies (`admin_all` for full admin access + `org_view` for customer-side read scoped by `target_org_id = public.current_org_id()`); `public.org_support_sessions` security-invoker view; `grant select on public.org_support_sessions to authenticated`. Per schema doc §3.3.
+- [x] **Migration `20260417000002_admin_sectoral_templates.sql`** — `admin.sectoral_templates`; published-template index; admin RLS; `public.list_sectoral_templates_for_sector(p_sector text)` security-definer function; `grant execute ... to authenticated`. Per schema doc §3.4.
+- [x] **Migration `20260417000003_admin_connector_catalogue.sql`** — `admin.connector_catalogue` table; active index; admin RLS; `alter table public.integrations add column connector_catalogue_id uuid references admin.connector_catalogue(id)` (nullable; existing rows unaffected). Per schema doc §3.5.
+- [x] **Migration `20260417000004_admin_tracker_signatures.sql`** — `admin.tracker_signature_catalogue` table; active index; admin RLS; one-shot data load from `supabase/seed/tracker_signatures.sql` into the new table (`insert into admin.tracker_signature_catalogue (signature_code, display_name, vendor, ...) select ... from <seed source>`). Per schema doc §3.6.
+- [x] **Migration `20260417000005_admin_support_tickets.sql`** — `admin.support_tickets` + `admin.support_ticket_messages` tables; 3 indexes; admin RLS on both. Per schema doc §3.7.
+- [x] **Migration `20260417000006_admin_org_notes.sql`** — `admin.org_notes` table; org index; admin RLS. Per schema doc §3.8.
+- [x] **Migration `20260417000007_admin_feature_flags.sql`** — `admin.feature_flags` table; org index; admin RLS; `public.get_feature_flag(p_flag_key text)` security-definer function; `grant execute ... to authenticated`. Per schema doc §3.9.
+- [x] **Migration `20260417000008_admin_kill_switches.sql`** — `admin.kill_switches` table; two RLS policies (read for any admin, write for platform_operator only); seed 4 default switches with `enabled = false` (banner_delivery, depa_processing, deletion_dispatch, rights_request_intake). Per schema doc §3.10.
+- [x] **Migration `20260417000009_admin_platform_metrics.sql` + `20260417000010_admin_audit_log_impersonation_fk.sql`** — `admin.platform_metrics_daily` table; admin RLS. The `admin.refresh_platform_metrics(p_date date)` function lands in Sprint 3.1 (it's an RPC, not a table). Per schema doc §3.11.
 
 **Testing plan:**
 
@@ -125,7 +125,20 @@ The full SQL for every object is already specified in `docs/admin/architecture/c
   - As a customer JWT: `select public.get_feature_flag('depa_dashboard_enabled')` returns NULL (no flags set yet)
 - [ ] **Existing tests still pass**: `bun --filter app run test` (86/86) + `bun test tests/rls/` (39/39).
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete` — 2026-04-17
+
+**Execution notes (2026-04-17):**
+
+- **All 10 migrations applied** (9 Sprint 2.1 tables/view/helpers + 1 FK retrofit). Timestamps `20260417000001` through `20260417000010`. One commit bundled for reviewability (Sprint 1.1's per-table split proved low-value given the small diff and matched test suite).
+- **Schema doc deviation 1 — `public.integrations` is actually `public.integration_connectors`.** ADR §Sprint 2.1 deliverables and schema doc §3.5 refer to `public.integrations`; the real customer table created in `20260413000003_operational_tables.sql` is `integration_connectors`. The FK column `connector_catalogue_id` is added to `integration_connectors`. Documented in Architecture Changes.
+- **Schema doc deviation 2 — `admin.feature_flags` primary key.** Schema doc §3.9 uses `primary key (flag_key, scope, coalesce(org_id, '00...'::uuid))`. PostgreSQL rejects expressions in PRIMARY KEY. Replaced with a surrogate `id uuid primary key` + a unique index over the same COALESCE expression. Same uniqueness semantics; documented in Architecture Changes.
+- **Schema doc deviation 3 — `tracker_signature_catalogue.signature_type`.** Schema doc §3.6 CHECK constraint omits `'resource_url'` but the existing seed file uses it (e.g., `google-analytics.com/g/collect`). Added to the CHECK constraint so the Sprint 3.1 `admin.import_tracker_signature_pack` RPC can ingest the seed without data loss. Documented in Architecture Changes.
+- **One-shot seed load skipped intentionally.** ADR Sprint 2.1 listed a bulk INSERT from `supabase/seed/tracker_signatures.sql` into `admin.tracker_signature_catalogue`. Blockers: (a) shape mismatch — seed stores `detection_rules` as a jsonb array of rule objects; catalogue is flat (one row per rule); (b) `created_by NOT NULL` references `admin.admin_users` but no admin user exists until Sprint 4.1. Catalogue starts empty; operator populates via `admin.import_tracker_signature_pack()` RPC (Sprint 3.1) post-bootstrap. Migration comment documents the rationale.
+- **`kill_switches` write-policy direct-UPDATE test deferred to Sprint 3.1.** ADR Sprint 2.1 test plan asked for platform_operator-can-UPDATE / support-cannot-UPDATE assertions directly against the table. In practice no table-level `INSERT/UPDATE/DELETE` grant is given to `authenticated` on admin tables — all writes flow through SECURITY DEFINER RPCs (`admin.toggle_kill_switch` in Sprint 3.1), which run as function owner and bypass both RLS and table-level permission checks. Direct UPDATE from authenticated JWT returns `permission denied for table kill_switches` regardless of admin_role. Role-gating test moves to `tests/admin/rpcs.test.ts` (Sprint 3.1) against the RPC boundary. The write RLS policy itself is still defined as defence-in-depth if a future writer gains the missing grant.
+
+**Test harness additions (new):**
+- `tests/admin/rls.test.ts` — 33 assertions: 8 admin-only tables × 3 policies (admin allowed / customer denied / anon denied) = 24; 3 impersonation_sessions (admin + customer-direct + customer-via-view); 3 kill_switches (admin sees 4 seeded / customer denied / direct-UPDATE denied); 2 customer-facing helpers (`list_sectoral_templates_for_sector`, `get_feature_flag`); 1 regression on `integration_connectors`.
+- No changes to `tests/admin/helpers.ts` (existing `createAdminTestUser(role)` handled platform_operator + `support` admin provisioning without modification).
 
 ---
 
@@ -237,8 +250,16 @@ The full SQL for every object is already specified in `docs/admin/architecture/c
 
 - `docs/admin/architecture/consentshield-admin-schema.md` — confirmed source of truth; this ADR ports it into migrations exactly as specified. Any deviation discovered during implementation is documented as an amendment to the schema doc + a note in the relevant sprint's Test Results.
 - `docs/admin/architecture/consentshield-admin-platform.md` §10 — bootstrap procedure documented (Sprint 4.1 deliverable).
-- `docs/architecture/consentshield-complete-schema-design.md` — small additions noted in `consentshield-admin-schema.md` §7: customer-side `public.integrations.connector_catalogue_id` FK becomes part of the customer schema documentation (cross-reference back to admin schema).
+- `docs/architecture/consentshield-complete-schema-design.md` — small additions noted in `consentshield-admin-schema.md` §7: customer-side `public.integration_connectors.connector_catalogue_id` FK becomes part of the customer schema documentation (cross-reference back to admin schema).
 - `docs/admin/design/ARCHITECTURE-ALIGNMENT-2026-04-16.md` §6 — tick the "Bootstrap admin" deferred-gap row when this ADR completes, then close the prerequisite for ADR-0028.
+
+### Sprint 2.1 amendments to `consentshield-admin-schema.md` (landed 2026-04-17)
+
+Three deviations from the schema doc are baked into the migrations and documented here as amendments. The schema doc itself should be updated when the next review pass runs.
+
+1. **§3.5 `admin.connector_catalogue` cross-reference table name.** Doc says `alter table public.integrations add column ...`; the real customer-side table created in `20260413000003_operational_tables.sql` is `public.integration_connectors`. Migration `20260417000003_admin_connector_catalogue.sql` adds the FK column to `integration_connectors`. The schema doc should be updated to read `public.integration_connectors` wherever `public.integrations` currently appears in §3.5.
+2. **§3.9 `admin.feature_flags` primary key.** Doc specifies `primary key (flag_key, scope, coalesce(org_id, '00000000-0000-0000-0000-000000000000'::uuid))`. PostgreSQL rejects expressions in PRIMARY KEY. Migration `20260417000007_admin_feature_flags.sql` uses a surrogate `id uuid primary key default gen_random_uuid()` + a `unique index feature_flags_key_scope_org_uq` over the same COALESCE expression. Same uniqueness semantics; the schema doc should adopt this shape.
+3. **§3.6 `admin.tracker_signature_catalogue.signature_type` CHECK constraint.** Doc lists four values (`script_src`, `cookie_name`, `localstorage_key`, `dom_attribute`). Real-world detection rules in the existing `supabase/seed/tracker_signatures.sql` also use `resource_url` (e.g., `google-analytics.com/g/collect`). Migration `20260417000004_admin_tracker_signatures.sql` widens the CHECK to include `resource_url`. The schema doc should pick up the fifth value.
 
 ---
 
@@ -272,7 +293,45 @@ New admin-foundation assertions (11):
   ✓ customer regression — customer JWT can SELECT own org
 ```
 
-### Sprint 2.1 — TBD
+### Sprint 2.1 — 2026-04-17 (Completed)
+
+```
+bunx supabase db push      → 10 migrations applied (20260417000001–10)
+bun run test:rls           → 4 files, 88/88 pass
+  - tests/rls/isolation.test.ts      → 25/25 (unchanged baseline)
+  - tests/rls/url-path.test.ts       → 19/19 (unchanged baseline)
+  - tests/admin/foundation.test.ts   → 11/11 (unchanged Sprint 1.1 baseline)
+  - tests/admin/rls.test.ts          → 33/33 (new)
+cd app && bun run test     → 42/42 (unchanged baseline)
+cd admin && bun run test   → 1/1 (unchanged smoke)
+Combined: 131/131 (was 98/98 after Sprint 1.1; +33 new)
+
+Sprint 2.1 assertions (33) — by concern:
+  ✓ 8 admin-only tables × 3 assertions (admin SELECT / customer denied /
+     anon denied) = 24
+     - sectoral_templates, connector_catalogue, tracker_signature_catalogue,
+       support_tickets, support_ticket_messages, org_notes, feature_flags,
+       platform_metrics_daily
+  ✓ admin.impersonation_sessions (two-policy table)
+     - admin JWT can SELECT all
+     - customer JWT can SELECT via org_view policy (0 rows)
+     - customer JWT can SELECT via public.org_support_sessions view (0 rows)
+  ✓ admin.kill_switches (split read/write policies)
+     - admin JWT sees 4 seeded switches with enabled=false
+     - customer JWT denied SELECT
+     - direct UPDATE denied (writes go via admin.toggle_kill_switch RPC, Sprint 3.1)
+  ✓ customer-facing helper functions
+     - public.list_sectoral_templates_for_sector('saas') → 0 rows
+     - public.get_feature_flag('depa_dashboard_enabled') → NULL
+  ✓ customer regression
+     - public.integration_connectors still readable after FK column addition
+
+Schema-doc amendments consolidated in Architecture Changes:
+  1. public.integrations → public.integration_connectors (naming)
+  2. feature_flags PK → surrogate id + unique index over coalesce expression
+  3. tracker_signature_catalogue.signature_type CHECK widened with 'resource_url'
+```
+
 
 ### Sprint 3.1 — TBD
 

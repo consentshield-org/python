@@ -2,6 +2,53 @@
 
 Database migrations, RLS policies, roles.
 
+## [Sprint 2.1] — 2026-04-17
+
+**ADR:** ADR-0027 — Admin Platform Schema
+**Sprint:** Phase 2, Sprint 2.1 — Operational admin tables + customer-side cross-references
+
+### Added
+- `20260417000001_admin_impersonation.sql` — `admin.impersonation_sessions` table + 3 indexes. Two RLS policies: `admin_all` (admin sees everything) + `org_view` (customer SELECTs scoped to `target_org_id = public.current_org_id()`). `public.org_support_sessions` security-invoker view exposes the customer-readable columns via a clean customer-facing path.
+- `20260417000002_admin_sectoral_templates.sql` — `admin.sectoral_templates` table + published-template index. Admin-only RLS. `public.list_sectoral_templates_for_sector(p_sector text)` SECURITY DEFINER wrapper returns published templates for the requested sector + 'general' fallback, callable by customer JWT.
+- `20260417000003_admin_connector_catalogue.sql` — `admin.connector_catalogue` table (status/connector_code partial index). Admin-only RLS. Adds `connector_catalogue_id uuid references admin.connector_catalogue(id)` nullable column to `public.integration_connectors` (customer-side).
+- `20260417000004_admin_tracker_signatures.sql` — `admin.tracker_signature_catalogue` table + active-signature index. Admin-only RLS. Starts empty; operator populates via `admin.import_tracker_signature_pack()` RPC (Sprint 3.1) post-bootstrap. `signature_type` CHECK constraint widened to include `resource_url` (schema-doc amendment — see deviations below).
+- `20260417000005_admin_support_tickets.sql` — `admin.support_tickets` + `admin.support_ticket_messages` tables; 3 indexes (open-ticket priority, org-scoped ticket list, ticket message thread). Admin-only RLS on both.
+- `20260417000006_admin_org_notes.sql` — `admin.org_notes` table (pinned + org-scoped index). Admin-only RLS.
+- `20260417000007_admin_feature_flags.sql` — `admin.feature_flags` table with surrogate `id` PK + `unique index feature_flags_key_scope_org_uq` over `(flag_key, scope, coalesce(org_id, '00…'::uuid))`. Admin-only RLS. `public.get_feature_flag(p_flag_key text)` SECURITY DEFINER resolves org-scope first, then global scope, honouring `expires_at`.
+- `20260417000008_admin_kill_switches.sql` — `admin.kill_switches` table + two policies (read: any admin; write: platform_operator only). Seeds 4 switches with `enabled=false`: `banner_delivery`, `depa_processing`, `deletion_dispatch`, `rights_request_intake`.
+- `20260417000009_admin_platform_metrics.sql` — `admin.platform_metrics_daily` table (date PK). Admin-only RLS. Written by `admin.refresh_platform_metrics()` RPC (Sprint 3.1).
+- `20260417000010_admin_audit_log_impersonation_fk.sql` — retrofit FK `admin.admin_audit_log.impersonation_session_id → admin.impersonation_sessions(id)` deferred from Sprint 1.1.
+
+### Changed
+- `public.integration_connectors` — new nullable FK column `connector_catalogue_id`. No behaviour change for existing rows; customer UI (ADR-0018 follow-up) will let operators pick pre-built connectors from the catalogue.
+- `admin.admin_audit_log` — FK on `impersonation_session_id` now enforced. No data in the column yet; Sprint 3.1 RPCs populate it.
+
+### Deviations from ADR-0027 plan
+- **`public.integrations` → `public.integration_connectors`.** ADR Sprint 2.1 deliverables + schema doc §3.5 reference `public.integrations`; real customer table is `public.integration_connectors`. FK column is on the real name.
+- **`admin.feature_flags` primary key expression.** Schema doc §3.9 uses `primary key (flag_key, scope, coalesce(org_id, '00…'::uuid))`; PostgreSQL rejects expressions in PRIMARY KEY. Replaced with surrogate `id uuid primary key` + `unique index` over the same COALESCE expression. Identical uniqueness semantics.
+- **`admin.tracker_signature_catalogue.signature_type` CHECK.** Schema doc §3.6 lists four values; the existing seed file uses `resource_url` for URL-match rules (e.g., `google-analytics.com/g/collect`). CHECK widened to include `resource_url` so Sprint 3.1 import RPC can ingest the seed.
+- **Seed data NOT loaded into `admin.tracker_signature_catalogue`.** Two blockers: shape mismatch (seed `detection_rules` is a jsonb array, catalogue is flat one-row-per-rule) and `created_by NOT NULL references admin.admin_users` (no admin exists until Sprint 4.1 bootstrap). Catalogue starts empty; `admin.import_tracker_signature_pack()` RPC (Sprint 3.1) does the transform post-bootstrap.
+- **`admin.kill_switches` write-policy direct-UPDATE test moved to Sprint 3.1.** Writes to admin operational tables are never granted to `authenticated` at the table level — they flow through SECURITY DEFINER RPCs (`admin.toggle_kill_switch` in Sprint 3.1). Role gating (platform_operator vs support) is therefore tested at the RPC boundary, not the RLS write policy. The write policy remains declared as defence-in-depth.
+
+### Tested
+- [x] `bun run test:rls` — 4 files, 88/88 — PASS
+  - tests/rls/isolation.test.ts — 25/25 (unchanged baseline)
+  - tests/rls/url-path.test.ts — 19/19 (unchanged baseline)
+  - tests/admin/foundation.test.ts — 11/11 (unchanged Sprint 1.1 baseline)
+  - tests/admin/rls.test.ts — 33/33 (new): 8 admin-only tables × 3 assertions (admin/customer/anon) = 24; impersonation_sessions two-policy split (3); kill_switches read/write split (3); 2 customer-facing helpers; 1 customer regression on `integration_connectors`
+- [x] `cd app && bun run test` — 7 files, 42/42 (unchanged baseline) — PASS
+- [x] `cd admin && bun run test` — 1/1 smoke (unchanged) — PASS
+- [x] `cd app && bun run lint` — 0 warnings — PASS
+- [x] Post-migration verification queries — PASS
+  - 12 admin tables (excluding audit_log partitions)
+  - 14 admin RLS policies (1 each for 8 tables + 2 for impersonation + 2 for kill_switches + SELECT-only audit_log + admin_users)
+  - 1 public view (`org_support_sessions`)
+  - 4 seeded kill_switches (all `enabled=false`)
+  - 2 customer-facing admin-data helpers (`list_sectoral_templates_for_sector`, `get_feature_flag`)
+  - FK retrofit present on both parent and 2026-04 partition
+
+Combined: 42 (app) + 88 (rls + admin foundation + admin rls) + 1 (admin smoke) = **131/131** (was 98 after Sprint 1.1; +33 new).
+
 ## [Sprint 1.1] — 2026-04-16
 
 **ADR:** ADR-0027 — Admin Platform Schema
