@@ -2,6 +2,52 @@
 
 Database migrations, RLS policies, roles.
 
+## [Sprint 1.1] — 2026-04-17
+
+**ADR:** ADR-0020 — DEPA Schema Skeleton
+**Sprint:** Phase 1, Sprint 1.1 — DEPA schema skeleton in dev database
+
+### Added
+
+- `20260418000001_depa_helpers.sql` — `generate_artefact_id()` (33-char `cs_art_*` prefix, 10-char time-derived + 16-char random); `compute_depa_score(p_org_id uuid)` returns jsonb with `total`, `coverage_score`, `expiry_score`, `freshness_score`, `revocation_score`, `computed_at`. Both per §11.2. `GRANT EXECUTE ... TO authenticated, cs_orchestrator` on `compute_depa_score`.
+- `20260418000002_depa_purpose_definitions.sql` — `purpose_definitions` table + 3 indexes. RLS policies: `purpose_defs_select_own`, `purpose_defs_insert_admin`, `purpose_defs_update_admin` (no DELETE — deactivate via `is_active`). Grants: select/insert/update to `authenticated`; select to `cs_orchestrator` + `cs_delivery`. `updated_at` trigger.
+- `20260418000003_depa_purpose_connector_mappings.sql` — `purpose_connector_mappings` + 2 indexes + admin-gated RLS (select/insert/delete).
+- `20260418000004_depa_consent_artefacts.sql` — `consent_artefacts` (Rule 19 append-only; ULID-default `artefact_id`; 17 columns) + 7 indexes. RLS: `artefacts_select_own` only — no authenticated INSERT/UPDATE/DELETE. Grants: insert + select + update(status, replaced_by) to `cs_orchestrator`; select to `cs_delivery`.
+- `20260418000005_depa_artefact_revocations.sql` — `artefact_revocations` (Category B buffer) + 3 indexes including `idx_revocations_undelivered WHERE delivered_at IS NULL`. RLS: select + insert own org; no UPDATE/DELETE policy. BEFORE INSERT trigger `trg_revocation_org_validation` (rejects cross-tenant). AFTER INSERT trigger `trg_artefact_revocation` (in-DB cascade: status→revoked, remove from consent_artefact_index, mark expiry queue superseded, write audit log).
+- `20260418000006_depa_consent_expiry_queue.sql` — `consent_expiry_queue` + 3 indexes + SELECT-only RLS. AFTER INSERT trigger `trg_consent_artefact_expiry_queue` on `consent_artefacts` creates one queue row per finite-expiry artefact (notify_at = expires_at − 30 days).
+- `20260418000007_depa_compliance_metrics.sql` — `depa_compliance_metrics` (UNIQUE on org_id — one row per org) + SELECT-only RLS + updated_at trigger. Grants: select to authenticated; select/insert/update to cs_orchestrator.
+- `20260418000008_depa_alter_existing.sql` — §11.3 ALTERs (4 of 5): `consent_events.artefact_ids text[]` + GIN + partial indexes; `deletion_receipts.artefact_id text` + partial index; `consent_artefact_index.{framework text NOT NULL DEFAULT 'abdm', purpose_code text}` + framework partial index. `cs_orchestrator` UPDATE grant on `consent_events.artefact_ids`.
+- `20260418000009_depa_buffer_lifecycle.sql` — `confirm_revocation_delivery(p_revocation_id uuid)` helper (grants execute to cs_delivery). `CREATE OR REPLACE FUNCTION detect_stuck_buffers()` extended to include `artefact_revocations` in the UNION.
+
+### Changed
+
+- `public.consent_events` — new `artefact_ids text[] NOT NULL DEFAULT '{}'` column populated by `process-consent-event` Edge Function (ADR-0021). Empty-array rows > 5 min old are orphans picked up by safety-net cron (ADR-0021).
+- `public.deletion_receipts` — new `artefact_id text` column (nullable). Denormalised back-reference for chain-of-custody queries.
+- `public.consent_artefact_index` — extended from ABDM-specific to multi-framework; `framework text NOT NULL DEFAULT 'abdm'` preserves pre-DEPA semantics.
+- `public.detect_stuck_buffers()` function body replaced (signature preserved at `(buffer_table, stuck_count, oldest_created)` because CREATE OR REPLACE cannot rename OUT columns; §11.9 spec uses different names — drift is cosmetic).
+
+### Deviations from ADR-0020 plan
+
+- **`deletion_requests` ALTER skipped** — the table does not exist in the schema. ADR-0007 (deletion orchestration) uses `deletion_receipts` as a request+receipt hybrid. §11.3 and §8.4 of the architecture reference `deletion_requests` as if it exists; the gap is documented as an architecture finding in ADR-0020, to be resolved in ADR-0022.
+- **`detect_stuck_buffers` OUT-column names** preserved as pre-existing `(buffer_table, stuck_count, oldest_created)` instead of §11.9 spec names `(table_name, stuck_count, oldest_stuck_at)` — CREATE OR REPLACE cannot rename OUT columns. Cosmetic drift; behaviour matches spec.
+
+### Deferred (not part of this sprint)
+
+- Dispatch-firing triggers and the `consent-events-artefact-safety-net` cron → ADR-0021.
+- Revocation dispatch trigger → ADR-0022.
+- `send_expiry_alerts()`, `enforce_artefact_expiry()`, `expiry-alerts-daily`, `expiry-enforcement-daily` cron → ADR-0023.
+- `depa-score-refresh-nightly` cron → ADR-0025 (helper `compute_depa_score()` already landed here).
+
+### Tested
+
+- [x] DEPA RLS isolation suite (new `tests/rls/depa-isolation.test.ts`) — 12/12 PASS
+- [x] Customer app regression — 42/42 PASS
+- [x] Customer app build — all routes compile, no warnings
+- [x] Customer app lint — zero warnings
+- [x] packages/shared-types type-check — clean (bunx tsc --noEmit)
+
+---
+
 ## [Sprint 2.1] — 2026-04-17
 
 **ADR:** ADR-0027 — Admin Platform Schema

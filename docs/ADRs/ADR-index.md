@@ -23,6 +23,7 @@ All Architecture Decision Records for ConsentShield, in chronological order.
 | ADR-0017 | Audit Export Package (Phase 1: direct-download ZIP; R2 upload → V2-X3) | Completed | 2026-04-16 | 1 | 1 |
 | ADR-0018 | Pre-built Deletion Connectors (Mailchimp + HubSpot via API key; OAuth → V2-C1) | Completed | 2026-04-16 | 1 | 1 |
 | ADR-0019 | DEPA Roadmap — Charter & Sequencing of ADR-0020..0025 (meta-ADR, no code) | Proposed | 2026-04-17 | — | — |
+| ADR-0020 | DEPA Schema Skeleton (6 new tables + §11.3 ALTERs + helpers + non-dispatch triggers + shared types) | Completed | 2026-04-17 | 1 | 1 |
 | ADR-0026 | Monorepo Restructure (Bun workspace — `app/` + `admin/` + `packages/*`) | In Progress | 2026-04-16 | 4 | 4 |
 | ADR-0027 | Admin Platform Schema (`cs_admin` role + `admin.*` tables + audit log + impersonation) | In Progress | 2026-04-16 | 4 | 5 |
 

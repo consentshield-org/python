@@ -1,14 +1,15 @@
 // @consentshield/shared-types — schema-derived types shared by the
 // customer app (app/) and the operator app (admin/).
 //
-// Populated by subsequent ADRs as schema-derived types are introduced:
-//   - ADR-0020 (DEPA schema skeleton): consent artefact, purpose
-//     definition, purpose-connector mapping, revocation
-//   - ADR-0027 (admin schema): admin user profile, audit log entry,
-//     impersonation session summary
+// Only types consumed by BOTH apps belong here. App-specific UI prop
+// types and React component prop types stay in the owning app
+// (app/src/types/ or admin/src/types/) per feedback_share_narrowly_not_broadly.
 //
-// App-specific UI prop types and React component prop types stay in the
-// app that owns them (app/src/types/ or admin/src/types/). Only types
-// that BOTH apps consume belong here.
+// Populated by:
+//   - ADR-0020 (DEPA schema skeleton): ./depa — purpose_definitions,
+//     purpose_connector_mappings, consent_artefacts, artefact_revocations,
+//     consent_expiry_queue, depa_compliance_metrics
+//   - ADR-0027 (admin schema): TBD — admin user profile, audit log entry,
+//     impersonation session summary
 
-export {}
+export * from './depa'
