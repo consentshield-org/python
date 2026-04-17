@@ -29,6 +29,9 @@ All Architecture Decision Records for ConsentShield, in chronological order.
 | ADR-0027 | Admin Platform Schema (`cs_admin` role + `admin.*` tables + audit log + impersonation) | Completed | 2026-04-17 | 4 | 5 |
 | ADR-0028 | Admin App Foundation (real OTP auth + Operations Dashboard + Audit Log viewer) | Completed | 2026-04-17 | 3 | 3 |
 | ADR-0029 | Admin Organisations (list + detail + actions + impersonation + customer-side cross-refs) | Completed | 2026-04-17 | 4 | 4 |
+| ADR-0030 | Sectoral Templates (admin panel + customer-side read) | Proposed | 2026-04-17 | 3 | 3 |
+| ADR-0032 | Support Tickets (admin panel + customer-side submit) | Proposed | 2026-04-17 | 2 | 2 |
+| ADR-0036 | Feature Flags & Kill Switches (admin panel) | Proposed | 2026-04-17 | 1 | 1 |
 
 <!--
 When adding a new ADR:
