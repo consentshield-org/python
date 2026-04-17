@@ -47,6 +47,7 @@ export default async function DashboardPage() {
     overdueRightsRes,
     trackerViolationsRes,
     recentEventsRes,
+    depaCachedRes,
   ] = await Promise.all([
     supabase
       .from('web_properties')
@@ -79,6 +80,11 @@ export default async function DashboardPage() {
       .select('event_type, purposes_accepted, purposes_rejected, created_at')
       .order('created_at', { ascending: false })
       .limit(10),
+    supabase
+      .from('depa_compliance_metrics')
+      .select('total_score, coverage_score, expiry_score, freshness_score, revocation_score, computed_at')
+      .eq('org_id', membership.org_id)
+      .maybeSingle(),
   ])
 
   const properties = propertiesRes.data ?? []
@@ -98,6 +104,50 @@ export default async function DashboardPage() {
   const enforcementDays = daysUntilEnforcement()
   const recentEvents = recentEventsRes.data ?? []
 
+  // DEPA score (ADR-0025) — prefer cached row; fall back to a fresh compute
+  // if the nightly refresh hasn't run yet for this org.
+  interface DepaScore {
+    total: number
+    coverage_score: number
+    expiry_score: number
+    freshness_score: number
+    revocation_score: number
+    computed_at: string | null
+    stale: boolean
+  }
+  let depa: DepaScore
+  if (depaCachedRes.data) {
+    const d = depaCachedRes.data
+    const ageHours =
+      (Date.now() - new Date(d.computed_at).getTime()) / 3_600_000
+    depa = {
+      total: Number(d.total_score),
+      coverage_score: Number(d.coverage_score),
+      expiry_score: Number(d.expiry_score),
+      freshness_score: Number(d.freshness_score),
+      revocation_score: Number(d.revocation_score),
+      computed_at: d.computed_at,
+      stale: ageHours > 25,
+    }
+  } else {
+    const { data: fresh } = await supabase.rpc('compute_depa_score', {
+      p_org_id: membership.org_id,
+    })
+    const f = (fresh ?? {}) as Record<string, unknown>
+    depa = {
+      total: Number(f.total ?? 0),
+      coverage_score: Number(f.coverage_score ?? 0),
+      expiry_score: Number(f.expiry_score ?? 0),
+      freshness_score: Number(f.freshness_score ?? 0),
+      revocation_score: Number(f.revocation_score ?? 0),
+      computed_at: null,
+      stale: true,
+    }
+  }
+  const depaPercent = Math.round((depa.total / 20) * 100)
+  const depaLevel: 'red' | 'amber' | 'green' =
+    depa.total >= 15 ? 'green' : depa.total >= 10 ? 'amber' : 'red'
+
   return (
     <main className="flex-1 p-8 space-y-6 max-w-6xl">
       <div>
@@ -108,18 +158,43 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Compliance score */}
+        {/* Compliance scores */}
         <section className="lg:col-span-2 rounded border border-gray-200 p-6">
-          <h2 className="text-sm font-medium text-gray-600 mb-4">Compliance Score</h2>
-          <div className="flex items-center gap-6">
-            <ScoreGauge score={score.total} level={score.level} />
-            <div className="flex-1 space-y-1.5 text-sm">
-              <ScoreRow label="Consent infrastructure" value={score.components.consent_infrastructure} max={20} />
-              <ScoreRow label="Consent enforcement" value={score.components.consent_enforcement} max={30} />
-              <ScoreRow label="Rights workflow" value={score.components.rights} max={15} />
-              <ScoreRow label="Data lifecycle" value={score.components.data_lifecycle} max={15} />
-              <ScoreRow label="Security posture" value={score.components.security} max={10} />
-              <ScoreRow label="Audit readiness" value={score.components.audit_readiness} max={10} />
+          <h2 className="text-sm font-medium text-gray-600 mb-4">Compliance Scores</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* DPDP */}
+            <div className="flex items-start gap-4">
+              <div className="flex flex-col items-center">
+                <ScoreGauge score={score.total} level={score.level} />
+                <p className="mt-2 text-xs font-medium text-gray-700">DPDP</p>
+              </div>
+              <div className="flex-1 space-y-1.5 text-sm">
+                <ScoreRow label="Consent infrastructure" value={score.components.consent_infrastructure} max={20} />
+                <ScoreRow label="Consent enforcement" value={score.components.consent_enforcement} max={30} />
+                <ScoreRow label="Rights workflow" value={score.components.rights} max={15} />
+                <ScoreRow label="Data lifecycle" value={score.components.data_lifecycle} max={15} />
+                <ScoreRow label="Security posture" value={score.components.security} max={10} />
+                <ScoreRow label="Audit readiness" value={score.components.audit_readiness} max={10} />
+              </div>
+            </div>
+
+            {/* DEPA (ADR-0025) */}
+            <div className="flex items-start gap-4">
+              <div className="flex flex-col items-center">
+                <ScoreGauge score={depaPercent} level={depaLevel} />
+                <p className="mt-2 text-xs font-medium text-gray-700">DEPA</p>
+              </div>
+              <div className="flex-1 space-y-1.5 text-sm">
+                <ScoreRow label="Coverage" value={depa.coverage_score} max={5} />
+                <ScoreRow label="Expiry" value={depa.expiry_score} max={5} />
+                <ScoreRow label="Freshness" value={depa.freshness_score} max={5} />
+                <ScoreRow label="Revocation" value={depa.revocation_score} max={5} />
+                <p className="pt-1 text-[10px] text-gray-500">
+                  {depa.computed_at
+                    ? `Refreshed ${new Date(depa.computed_at).toLocaleDateString()}${depa.stale ? ' · stale' : ''}`
+                    : 'Computed on demand · nightly refresh pending'}
+                </p>
+              </div>
             </div>
           </div>
         </section>

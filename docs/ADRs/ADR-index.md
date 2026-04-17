@@ -27,6 +27,7 @@ All Architecture Decision Records for ConsentShield, in chronological order.
 | ADR-0021 | `process-consent-event` Edge Function + Dispatch Trigger + Safety-Net Cron | Completed | 2026-04-17 | 1 | 1 |
 | ADR-0022 | `process-artefact-revocation` Edge Function + Revocation Dispatch | Completed | 2026-04-17 | 1 | 4 |
 | ADR-0023 | DEPA Expiry Pipeline (`send_expiry_alerts` + `enforce_artefact_expiry` + pg_cron) | Completed | 2026-04-17 | 1 | 2 |
+| ADR-0025 | DEPA Score Dimension — nightly refresh + API + dashboard gauge | Completed | 2026-04-17 | 1 | 2 |
 | ADR-0026 | Monorepo Restructure (Bun workspace — `app/` + `admin/` + `packages/*`) | In Progress | 2026-04-16 | 4 | 4 |
 | ADR-0027 | Admin Platform Schema (`cs_admin` role + `admin.*` tables + audit log + impersonation) | Completed | 2026-04-17 | 4 | 5 |
 | ADR-0028 | Admin App Foundation (real OTP auth + Operations Dashboard + Audit Log viewer) | Completed | 2026-04-17 | 3 | 3 |

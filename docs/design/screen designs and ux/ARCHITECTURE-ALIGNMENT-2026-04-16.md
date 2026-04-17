@@ -87,8 +87,9 @@ Each item: **anchor** (where in the screens), **violates** (which architecture r
 - **Anchor:** `consentshield-screens.html` Dashboard `.score-card` block (lines 397–411).
 - **Violates:** §6.7 + the new `depa_compliance_metrics` view; the partnership pitch (DEPA score is the headline differentiator).
 - **Current:** One gauge: "DPDP Compliance Score 74%".
-- **Target:** Two gauges side by side: "DPDP Score" (existing) and "DEPA Score" (new — derived from `depa_compliance_metrics.coverage_score`, `depa_compliance_metrics.timeliness_score`, `depa_compliance_metrics.scope_precision_score`). Tooltip on the DEPA gauge explains the three sub-metrics. A small caption: "Refreshed nightly · last refresh `<timestamp>`".
-- **Status:** **DONE** (visual added; the view itself is ADR-0025 scope).
+- **Target:** Two gauges side by side: "DPDP Score" (existing) and "DEPA Score" (new — derived from `depa_compliance_metrics` row populated by `refresh_depa_compliance_metrics()` nightly cron, itself calling `compute_depa_score(org_id)`). The DEPA gauge shows four sub-metrics: `coverage_score`, `expiry_score`, `freshness_score`, `revocation_score` (each 0–5, total 0–20, displayed as a 0–100% gauge). Caption: "Refreshed nightly · last refresh `<timestamp>`".
+- **Status:** **DONE** (visual + 4-sub-metric layout landed; backend refresh + API + UI binding is ADR-0025 scope).
+- **Re-aligned 2026-04-17** per ADR-0025: the schema carries four sub-scores (`coverage_score`, `expiry_score`, `freshness_score`, `revocation_score`) per `compute_depa_score` — not the three earlier drafted ("Coverage · Timeliness · Scope precision"). Wireframe sub-label strip updated to match.
 
 ### W6 — Dashboard doesn't surface artefact lifecycle health
 

@@ -2,6 +2,18 @@
 
 Documentation changes.
 
+## [ADR-0025 charter + closeout] — 2026-04-17
+
+**ADR:** ADR-0025 (DEPA Score Dimension — nightly refresh + API + dashboard gauge)
+
+### Added
+- `docs/ADRs/ADR-0025-depa-score.md` — drafted and shipped to Completed same session. Two sprints (docs+migration; API+UI+tests).
+
+### Changed
+- `docs/design/screen designs and ux/consentshield-screens.html` — Dashboard Overview panel DEPA sub-label strip updated from the 3-label earlier draft ("Coverage · Timeliness · Scope precision") to the 4 schema-true labels ("Coverage · Expiry · Freshness · Revocation"). Max-width bumped to 180px.
+- `docs/design/screen designs and ux/ARCHITECTURE-ALIGNMENT-2026-04-16.md` §W5 — sub-metric list aligned to the four `compute_depa_score` sub-scores (`coverage_score`, `expiry_score`, `freshness_score`, `revocation_score`). Re-alignment note dated 2026-04-17.
+- `docs/ADRs/ADR-index.md` — ADR-0025 added as Completed.
+
 ## [ADR-0023 charter + closeout] — 2026-04-17
 
 **ADR:** ADR-0023 (DEPA Expiry Pipeline — `send_expiry_alerts` + `enforce_artefact_expiry` + pg_cron)

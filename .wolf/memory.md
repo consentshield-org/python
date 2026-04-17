@@ -1493,3 +1493,45 @@
 | 15:55 | ADR-0023 drafted + implemented same session (expiry pipeline: enforce_artefact_expiry + send_expiry_alerts + 2 pg_cron) | docs/ADRs/ADR-0023, migration, tests | Completed | ~6000 |
 | 15:55 | V2-D1 logged — expiry-triggered connector fan-out deferred (currently stages delivery_buffer R2 export only) | docs/V2-BACKLOG.md | logged | ~450 |
 | 15:55 | Full test:rls 144/144 across 11 files (after ADR-0023 added 2) | — | PASS | — |
+| 14:56 | Session end: 147 writes across 56 files (check-no-admin-imports-in-app.ts, check-no-customer-imports-in-admin.ts, check-env-isolation.ts, monorepo-isolation.yml, package.json) | 48 reads | ~293649 tok |
+| 14:56 | Edited docs/ADRs/ADR-0030-sectoral-templates.md | 3→3 lines | ~22 |
+| 14:56 | Edited docs/ADRs/ADR-0030-sectoral-templates.md | modified Deliverables() | ~467 |
+| 14:57 | Edited docs/ADRs/ADR-index.md | inline fix | ~27 |
+| 14:57 | Edited docs/changelogs/CHANGELOG-schema.md | expanded (+12 lines) | ~240 |
+| 14:57 | Edited docs/changelogs/CHANGELOG-dashboard.md | expanded (+18 lines) | ~284 |
+| 15:49 | Session end: 152 writes across 56 files (check-no-admin-imports-in-app.ts, check-no-customer-imports-in-admin.ts, check-env-isolation.ts, monorepo-isolation.yml, package.json) | 48 reads | ~295168 tok |
+| 15:51 | Created docs/ADRs/ADR-0025-depa-score.md | — | ~3209 |
+| 15:51 | Edited docs/ADRs/ADR-index.md | 1→2 lines | ~65 |
+| 15:51 | Edited docs/design/screen designs and ux/consentshield-screens.html | 3→3 lines | ~47 |
+| 15:52 | Edited docs/design/screen designs and ux/ARCHITECTURE-ALIGNMENT-2026-04-16.md | 7→8 lines | ~320 |
+| 15:52 | Created supabase/migrations/20260423000001_depa_score_refresh.sql | — | ~933 |
+| 15:54 | Edited app/src/app/layout.tsx | CSS: Pre-launch, robots | ~104 |
+| 15:54 | Edited admin/src/app/layout.tsx | 5→8 lines | ~104 |
+| 15:54 | Created app/src/app/robots.ts | — | ~326 |
+| 15:54 | Created admin/src/app/robots.ts | — | ~326 |
+| 15:54 | Created app/next.config.ts | — | ~148 |
+| 15:55 | Created admin/next.config.ts | — | ~150 |
+| 15:55 | Created app/scripts/vercel-should-build.sh | — | ~351 |
+| 15:55 | Created admin/scripts/vercel-should-build.sh | — | ~267 |
+| 16:02 | Created app/src/app/api/orgs/[orgId]/depa-score/route.ts | — | ~822 |
+| 16:02 | Edited app/src/app/(dashboard)/dashboard/page.tsx | 12→13 lines | ~80 |
+| 16:02 | Edited app/src/app/(dashboard)/dashboard/page.tsx | 6→11 lines | ~118 |
+| 16:02 | Edited docs/ADRs/ADR-0026-monorepo-restructure.md | inline fix | ~131 |
+| 16:03 | Edited app/src/app/(dashboard)/dashboard/page.tsx | added 1 condition(s) | ~454 |
+| 16:03 | Edited docs/ADRs/ADR-0026-monorepo-restructure.md | modified scripts() | ~665 |
+| 16:03 | Edited app/src/app/(dashboard)/dashboard/page.tsx | CSS: md | ~682 |
+| 16:03 | Edited docs/changelogs/CHANGELOG-infra.md | expanded (+23 lines) | ~547 |
+| 16:04 | Session end: 173 writes across 64 files (check-no-admin-imports-in-app.ts, check-no-customer-imports-in-admin.ts, check-env-isolation.ts, monorepo-isolation.yml, package.json) | 54 reads | ~316167 tok |
+| 16:05 | Session end: 173 writes across 64 files (check-no-admin-imports-in-app.ts, check-no-customer-imports-in-admin.ts, check-env-isolation.ts, monorepo-isolation.yml, package.json) | 54 reads | ~316167 tok |
+| 16:10 | Created tests/depa/score.test.ts | — | ~3145 |
+| 16:13 | Edited docs/ADRs/ADR-0025-depa-score.md | 2→3 lines | ~22 |
+| 16:13 | Edited docs/ADRs/ADR-0025-depa-score.md | 9→6 lines | ~180 |
+| 16:14 | Edited docs/ADRs/ADR-0025-depa-score.md | modified populates() | ~494 |
+| 16:14 | Edited docs/ADRs/ADR-0025-depa-score.md | expanded (+23 lines) | ~153 |
+| 16:14 | Edited docs/ADRs/ADR-index.md | inline fix | ~30 |
+| 16:14 | Edited docs/changelogs/CHANGELOG-schema.md | expanded (+14 lines) | ~232 |
+| 16:14 | Edited docs/changelogs/CHANGELOG-api.md | expanded (+8 lines) | ~170 |
+| 16:15 | Edited docs/changelogs/CHANGELOG-dashboard.md | modified column() | ~288 |
+| 16:15 | Edited docs/changelogs/CHANGELOG-docs.md | expanded (+12 lines) | ~253 |
+| 16:15 | ADR-0025 drafted + shipped to Completed same session (DEPA score nightly refresh + API + dashboard gauge) | docs/ADRs/ADR-0025, migration, route, page, tests | 154/154 | ~6500 |
+| 16:15 | Wireframe + alignment-doc §W5 amended: 3 sub-labels → 4 (Coverage/Expiry/Freshness/Revocation) | consentshield-screens.html, ARCHITECTURE-ALIGNMENT | aligned | ~350 |

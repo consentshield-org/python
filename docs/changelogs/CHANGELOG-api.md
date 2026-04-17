@@ -2,6 +2,14 @@
 
 API route changes.
 
+## [ADR-0025 Sprint 1.2] — 2026-04-17
+
+**ADR:** ADR-0025 — DEPA Score Dimension
+**Sprint:** 1.2 — score API endpoint
+
+### Added
+- `app/src/app/api/orgs/[orgId]/depa-score/route.ts` — `GET` endpoint returning `{ total, coverage_score, expiry_score, freshness_score, revocation_score, computed_at, stale }`. Auth via `supabase.auth.getUser()` + `organisation_members` membership check. Reads cached row from `depa_compliance_metrics`; falls back to a live `compute_depa_score` RPC call when the cache is empty (flags `stale: true`). Flags `stale: true` when cached `computed_at` is older than 25 hours.
+
 ## Review fix-batch — 2026-04-16
 
 **Source:** `docs/reviews/2026-04-16-phase2-completion-review.md` (N-S2)

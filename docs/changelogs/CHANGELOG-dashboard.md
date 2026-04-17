@@ -2,6 +2,21 @@
 
 Next.js UI changes.
 
+## ADR-0025 Sprint 1.2 — 2026-04-17
+
+**ADR:** ADR-0025 — DEPA Score Dimension
+**Sprint:** 1.2 — dashboard DEPA gauge
+
+### Changed
+- `app/src/app/(dashboard)/dashboard/page.tsx` — "Compliance Score" card restructured to "Compliance Scores" as a 2-column grid:
+  - **Left column (DPDP):** existing `ScoreGauge` with the 6 component `ScoreRow`s (unchanged scoring, unchanged values).
+  - **Right column (DEPA):** new `ScoreGauge` fed from `depa_compliance_metrics` (cache) or `compute_depa_score` RPC (fallback), converted to 0–100% via `total / 20 * 100`. Level thresholds: `>=15 green · >=10 amber · <10 red`. Below the gauge, four `ScoreRow`s render the sub-scores ("Coverage · Expiry · Freshness · Revocation", each out of 5). Caption shows `Refreshed <date>` or `Computed on demand · nightly refresh pending` for orgs whose nightly refresh hasn't landed yet.
+- Gauge labels ("DPDP" / "DEPA") rendered beneath each gauge.
+
+### Tested
+- [x] `cd app && bun run build` — success, zero errors / zero warnings.
+- [x] `bunx tsc --noEmit` — clean.
+
 ## ADR-0030 Sprint 3.1 — 2026-04-17
 
 **ADR:** ADR-0030 — Sectoral Templates

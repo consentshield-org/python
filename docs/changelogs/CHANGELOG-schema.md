@@ -2,6 +2,20 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-0025 Sprint 1.1] — 2026-04-17
+
+**ADR:** ADR-0025 — DEPA Score Dimension
+**Sprint:** 1.1 — nightly refresh + pg_cron
+
+### Added
+- `20260423000001_depa_score_refresh.sql`:
+  - `refresh_depa_compliance_metrics()` — iterates `organisations`, calls `compute_depa_score(org_id)` (ADR-0020), UPSERTs into `depa_compliance_metrics` with `ON CONFLICT (org_id) DO UPDATE`. Returns the processed count. Granted EXECUTE to `authenticated` + `cs_orchestrator`.
+  - pg_cron job `depa-score-refresh-nightly` at `30 19 * * *` (01:00 IST) — runs after ADR-0023's `expiry-enforcement-daily` (19:00 UTC) so the night's expired artefacts are reflected in the score.
+
+### Tested
+- [x] `tests/depa/score.test.ts` — 7/7 — PASS (10.8 arithmetic 5 cases + 10.8b refresh round-trip 2 cases).
+- [x] `bun run test:rls` — 13 files, **154/154** — PASS.
+
 ## [ADR-0030 Sprint 3.1] — 2026-04-17
 
 **ADR:** ADR-0030 — Sectoral Templates
