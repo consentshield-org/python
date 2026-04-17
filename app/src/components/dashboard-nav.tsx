@@ -11,6 +11,7 @@ const navItems = [
   { href: '/dashboard/banners', label: 'Banners' },
   { href: '/dashboard/enforcement', label: 'Enforcement' },
   { href: '/dashboard/inventory', label: 'Data Inventory' },
+  { href: '/dashboard/template', label: 'Sector template' },
   { href: '/dashboard/rights', label: 'Rights Requests' },
   { href: '/dashboard/integrations', label: 'Integrations' },
   { href: '/dashboard/billing', label: 'Billing' },

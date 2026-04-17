@@ -2,9 +2,9 @@
 
 (c) 2026 Sudhindra Anegondhi a.d.sudhindra@gmail.com
 
-**Status:** In Progress
+**Status:** Completed
 **Date proposed:** 2026-04-17
-**Date completed:** —
+**Date completed:** 2026-04-17
 
 ---
 
@@ -88,12 +88,19 @@ Core invariant (from schema design): a template is immutable once published. Edi
 
 **Estimated effort:** TBD — scope locks when we check which customer wireframe owns the template-selection surface. Likely onboarding flow.
 
-**Deliverables (tentative):**
-- [ ] Customer onboarding sector selector reads `public.list_sectoral_templates_for_sector(sector)`.
-- [ ] Applying a template writes the selected `template_code` + `version` into `public.organisations.settings.sectoral_template`.
-- [ ] A future DEPA sprint (not this one) may auto-materialise the template's purposes into `public.purpose_definitions` for the org. Scope gated on DEPA panel work.
+**Deliverables (final scope):**
+- [x] Migration `20260421000003_apply_sectoral_template.sql` — new SECURITY DEFINER RPC `public.apply_sectoral_template(p_template_code text)`. Picks the latest published version, updates `public.organisations.settings.sectoral_template = { code, version, applied_at, applied_by }`. Granted EXECUTE to `authenticated`.
+- [x] `app/src/app/(dashboard)/dashboard/template/page.tsx` — customer template-picker surface. Reads caller's org industry → calls `public.list_sectoral_templates_for_sector(industry)` → renders available templates with "Apply" buttons. Shows the currently-active template (if any) in a teal banner at the top.
+- [x] `app/src/app/(dashboard)/dashboard/template/actions.ts` — Server Action `applyTemplate(code)` wrapping the RPC.
+- [x] `app/src/components/templates/template-picker.tsx` — client grid of templates, apply button per card.
+- [x] `app/src/components/dashboard-nav.tsx` — "Sector template" nav item added.
+- [x] `tests/rls/sectoral-template-apply.test.ts` — 3 assertions: apply writes to caller's org (orgB untouched); unknown code rejected; picks latest published version when v1 is deprecated and v2 is current.
 
-**Status:** `[ ] planned — will confirm scope during Sprint 2.1 closeout`
+**Scope held line with the tentative plan.** The full 7-step onboarding wireframe wasn't built — only the template-picker step. Full onboarding is deferred (V2 backlog if ever). Settings-surface "Active sector template" (wireframe W10) is implicitly covered by the picker page showing the active template at the top.
+
+**Auto-materialisation into `public.purpose_definitions` stays deferred.** The ADR's "future DEPA sprint" caveat still applies — today the pointer is recorded; a DEPA sprint can walk it and fan the purposes out.
+
+**Status:** `[x] complete` — 2026-04-17
 
 ---
 

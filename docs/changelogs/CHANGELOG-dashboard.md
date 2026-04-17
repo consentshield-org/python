@@ -2,6 +2,24 @@
 
 Next.js UI changes.
 
+## ADR-0030 Sprint 3.1 — 2026-04-17
+
+**ADR:** ADR-0030 — Sectoral Templates
+**Sprint:** 3.1 — Customer-side template picker
+
+### Added
+- `app/src/app/(dashboard)/dashboard/template/page.tsx` — customer template picker. Reads caller org industry, calls `public.list_sectoral_templates_for_sector`, renders active template (if any) + available templates with Apply buttons.
+- `app/src/app/(dashboard)/dashboard/template/actions.ts` — `applyTemplate(code)` Server Action wrapping `public.apply_sectoral_template`.
+- `app/src/components/templates/template-picker.tsx` — client grid of template cards with Apply action.
+
+### Changed
+- `app/src/components/dashboard-nav.tsx` — "Sector template" nav item added between Data Inventory and Rights Requests.
+
+### Tested
+- [x] `cd app && bun run lint` — zero warnings.
+- [x] `cd app && bun run build` — customer routes compile (+ /dashboard/template).
+- [x] `bun run test:rls` (root, serial) — 147/147 (+3 new apply-template assertions; Terminal B's ADR-0023 contributed +5).
+
 ## ADR-0032 post-review follow-up — 2026-04-17
 
 **ADR:** ADR-0032 — Support Tickets

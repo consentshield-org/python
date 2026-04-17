@@ -2,6 +2,18 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-0030 Sprint 3.1] — 2026-04-17
+
+**ADR:** ADR-0030 — Sectoral Templates
+**Sprint:** 3.1 — customer-side template application
+
+### Added
+- `20260421000003_apply_sectoral_template.sql` — SECURITY DEFINER RPC `public.apply_sectoral_template(p_template_code text)` that writes `public.organisations.settings.sectoral_template = { code, version, applied_at, applied_by }` after picking the latest published version of the given template_code. Raises if no published version exists for the code. Granted EXECUTE to `authenticated`.
+
+### Tested
+- [x] `tests/rls/sectoral-template-apply.test.ts` — 3 assertions: apply writes to caller's org (orgB untouched); unknown code raises; picks latest published version when v1 is deprecated and v2 is current.
+- [x] `bun run test:rls` — 147/147.
+
 ## [ADR-0023 Sprint 1.1 + closeout] — 2026-04-17
 
 **ADR:** ADR-0023 — DEPA Expiry Pipeline
