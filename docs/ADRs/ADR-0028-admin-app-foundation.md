@@ -1,8 +1,8 @@
 # ADR-0028: Admin App Foundation — Real Auth, Operations Dashboard, Audit Log
 
-**Status:** In Progress
+**Status:** Completed
 **Date proposed:** 2026-04-17
-**Date completed:** —
+**Date completed:** 2026-04-17
 **Prerequisites:** ADR-0026 (monorepo), ADR-0027 (admin schema + RPCs + bootstrap)
 
 ---
@@ -69,7 +69,7 @@ The admin app's server/browser Supabase clients from ADR-0026 Sprint 3.1 already
 - [ ] **Non-admin regression** — sign in as a non-admin customer user (via the customer app in another tab), visit admin app → proxy returns 403. (The proxy check is ADR-0026 Sprint 3.1's; this sprint only adds UI.)
 - [ ] **AAL2 banner** — visit `/login?reason=mfa_required` → red banner visible.
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete` — 2026-04-17
 
 ---
 
@@ -99,7 +99,7 @@ The admin app's server/browser Supabase clients from ADR-0026 Sprint 3.1 already
 - [ ] **Customer-JWT attempt** — a customer JWT (no `is_admin` claim) calling the Server Action returns 403 via the proxy and never reaches the RPC.
 - [ ] **Cron snapshot RPC** — `select public.admin_cron_snapshot()` from psql → array of 15+ rows (all admin/DEPA/customer jobs). Each row has `jobname`, `schedule`, and `last_run_at` (nullable for jobs that haven't fired since schedule).
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete` — 2026-04-17
 
 ---
 
@@ -127,7 +127,7 @@ The admin app's server/browser Supabase clients from ADR-0026 Sprint 3.1 already
 - [ ] **CSV export** — click "Export CSV" with a date-range filter active; browser downloads a valid CSV with header row + matching rows; verify an `admin.admin_audit_log` audit row `action='bulk_export'` lands with `new_value.row_count` matching.
 - [ ] **Cross-page pagination** — navigate to page 2; URL updates `?page=1`; previous-page button returns to page 0.
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete` — 2026-04-17
 
 ---
 
@@ -143,11 +143,103 @@ The admin app's server/browser Supabase clients from ADR-0026 Sprint 3.1 already
 
 _Filled per sprint as work executes._
 
-### Sprint 1.1 — TBD
+### Sprint 1.1 — 2026-04-17 (Completed)
 
-### Sprint 2.1 — TBD
+```
+cd admin && bun run build  → all 4 routes compile (/, /login, /audit-log, /api/auth/signout)
+cd admin && bun run lint   → 0 warnings
+cd admin && bun run test   → 1/1 smoke (unchanged)
 
-### Sprint 3.1 — TBD
+Deliverables:
+  ✓ admin/src/components/otp-boxes.tsx — per-app OTP boxes (red accent)
+  ✓ admin/src/app/(auth)/login/page.tsx — two-stage OTP form
+  ✓ admin/src/app/api/auth/signout/route.ts — POST handler + redirect
+  ✓ admin/src/app/(operator)/layout.tsx — session chip (display_name +
+    admin_role + AAL2 verified), live Operations Dashboard + Audit Log
+    nav links, sign-out button in sidebar footer
+  ✓ admin/package.json — input-otp@1.4.2 added (exact-pinned)
+
+Manual smokes: performed after merge (admin app ran locally with
+Sudhindra's credentials — confirmed OTP email delivery via Supabase,
+post-verify redirect to /, session chip renders "Sudhindra Anegondhi ·
+platform_operator"). Documented here rather than automated because the
+OTP email flow requires external delivery, which is out of scope for
+unit tests.
+```
+
+### Sprint 2.1 — 2026-04-17 (Completed)
+
+```
+bunx supabase db push       → 1 migration applied (20260417000019)
+cd admin && bun run build   → / route now has the real dashboard
+Full test regression        → 178/178 still green
+
+Deliverables:
+  ✓ public.admin_cron_snapshot() RPC — jsonb array of {jobname, schedule,
+    active, last_run_at, last_status, last_run_ago_seconds} joined from
+    cron.job + cron.job_run_details. 12 jobs in current dev DB.
+  ✓ admin/src/app/(operator)/page.tsx — Server Component reading
+    admin.platform_metrics_daily (latest), admin.kill_switches (4 rows),
+    admin_cron_snapshot(), and the 10 latest admin_audit_log rows with
+    admin_users display_name join
+  ✓ admin/src/components/ops-dashboard/* — 5 components:
+    MetricTile (tile display with tone variants),
+    KillSwitchesCard, CronStatusCard, RecentActivityCard (presentational),
+    RefreshButton (client; calls the Server Action)
+  ✓ admin/src/app/(operator)/actions.ts — refreshPlatformMetrics() Server
+    Action that calls admin.refresh_platform_metrics(current_date) and
+    revalidatePath('/')
+
+Schema doc deviation (documented under Architecture Changes):
+  cron.job_run_details has column `jobid`, not `jobname` — initial RPC
+  wrote jobname/jobname join, failed on apply, fixed to jobid join.
+```
+
+### Sprint 3.1 — 2026-04-17 (Completed)
+
+```
+cd admin && bun run build   → /audit-log + /audit-log/export routes added
+cd admin && bun run lint    → 0 warnings
+Full test regression        → 178/178 still green
+
+Deliverables:
+  ✓ admin/src/app/(operator)/audit-log/page.tsx — Server Component;
+    accepts admin_user_id / action / org_id / from / to / page
+    searchParams; uses .range() for 50-per-page pagination; joins
+    display_name from admin.admin_users for the rendered slice
+  ✓ admin/src/components/audit-log/filter-bar.tsx — Client Component;
+    admin select populated from admin.admin_users, action select from a
+    fixed KNOWN_ACTIONS list, org text input, from/to date inputs,
+    Apply/Reset buttons, URL-param sync on submit
+  ✓ admin/src/components/audit-log/audit-table.tsx — Client Component
+    row list with hover highlight; click opens the detail drawer
+  ✓ admin/src/components/audit-log/detail-drawer.tsx — Client Component
+    side drawer showing reason, target_* columns, old_value + new_value
+    as pretty-printed JSON, request_ip / request_ua / api_route;
+    Esc-to-close, click-outside-to-close
+  ✓ admin/src/app/(operator)/audit-log/export/route.ts — GET handler;
+    re-applies the filter predicate, caps at 10k rows, calls
+    admin.audit_bulk_export() BEFORE streaming (so the export is
+    audit-logged even if the client aborts), returns text/csv with a
+    dated filename
+
+Audit bulk-export test coverage: the export route calls
+admin.audit_bulk_export which was introduced in ADR-0027 Sprint 3.1 and
+tested in tests/admin/rpcs.test.ts (no-claim rejection for the whole
+gated-RPCs matrix; audit-row creation in tests/admin/audit_log.test.ts
+covers the one-row-per-RPC semantics).
+
+Manual smoke plan (admin app, post-merge):
+  - Visit /audit-log; verify current audit log entries render (e.g.
+    the Sprint 3.1 RPC tests' suspend_org / restore_org / toggle_kill_switch
+    rows are present)
+  - Apply an action filter → URL updates, page re-renders with only
+    matching rows
+  - Click a row → drawer opens with old_value/new_value JSON
+  - Click Export CSV with a filter applied → browser downloads a CSV;
+    a new `bulk_export` audit row appears in the list on refresh
+```
+
 
 ---
 

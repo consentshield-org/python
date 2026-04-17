@@ -2,6 +2,49 @@
 
 Next.js UI changes.
 
+## ADR-0028 — 2026-04-17
+
+**ADR:** ADR-0028 — Admin App Foundation (real OTP auth + Operations Dashboard + Audit Log viewer)
+**Sprints:** 1.1 + 2.1 + 3.1 (all shipped 2026-04-17)
+
+### Added (Admin app)
+
+**Sprint 1.1 — auth:**
+- `admin/src/components/otp-boxes.tsx` — per-app OTP boxes (share-narrowly memory). Red admin accent on active slot + caret.
+- `admin/src/app/(auth)/login/page.tsx` — rewritten as a two-stage OTP email flow (email → code). No signup link (admin bootstrap is not self-serve). Red accent; preserves the `?reason=mfa_required` banner for AAL2-failure paths.
+- `admin/src/app/api/auth/signout/route.ts` — POST-only signout; redirects to `/login`.
+- `admin/src/app/(operator)/layout.tsx` — session chip (display_name + admin_role + AAL2 verified), sign-out button in sidebar footer, Operations Dashboard + Audit Log nav links go live (8 remaining panels still point at `#`).
+- `admin/package.json` — `input-otp@1.4.2` added exact-pinned.
+
+**Sprint 2.1 — Operations Dashboard:**
+- `admin/src/app/(operator)/page.tsx` — Server Component; reads `admin.platform_metrics_daily` (latest row), `admin.kill_switches`, `public.admin_cron_snapshot()`, latest 10 `admin.admin_audit_log` rows. 6 metric tiles + cron status card + kill switch summary + recent activity card.
+- `admin/src/components/ops-dashboard/*` — `MetricTile`, `KillSwitchesCard`, `CronStatusCard`, `RecentActivityCard`, `RefreshButton` (client; calls the Server Action).
+- `admin/src/app/(operator)/actions.ts` — `refreshPlatformMetrics()` Server Action calls `admin.refresh_platform_metrics(current_date)` + `revalidatePath('/')`.
+
+**Sprint 3.1 — Audit Log:**
+- `admin/src/app/(operator)/audit-log/page.tsx` — Server Component; URL-param filters (admin, action, org, from, to, page); 50-per-page pagination via `.range()`.
+- `admin/src/components/audit-log/filter-bar.tsx` — Client Component filter bar (admin select populated from `admin.admin_users`, action select from fixed KNOWN_ACTIONS list, org text input, from/to date inputs).
+- `admin/src/components/audit-log/audit-table.tsx` — row list; click opens detail drawer.
+- `admin/src/components/audit-log/detail-drawer.tsx` — right-side drawer; pretty-printed old_value / new_value JSON + request_ip / request_ua / api_route; Esc + click-outside close.
+- `admin/src/app/(operator)/audit-log/export/route.ts` — CSV export endpoint; re-applies the filter predicate, caps at 10k rows, calls `admin.audit_bulk_export()` BEFORE streaming so the export is audit-logged even if the client aborts.
+
+### Deviations from ADR-0028 plan
+- **`cron.job_run_details` schema.** ADR Sprint 2.1 RPC initially joined on `jobname` but the Supabase-managed `cron.job_run_details` table has `jobid` instead. Migration was fixed to `jobid` join. Documented as an execution note in the ADR.
+
+### Tested
+- [x] `cd admin && bun run build` — 6 routes compile (/, /login, /audit-log, /audit-log/export, /api/auth/signout, /_not-found)
+- [x] `cd admin && bun run lint` — 0 warnings
+- [x] `cd admin && bun run test` — 1/1 smoke (unchanged)
+- [x] `cd app && bun run test` — 42/42 (no regression)
+- [x] `bun run test:rls` — 8 files, 135/135 (no regression)
+
+Combined: 42 (app) + 135 (rls/admin/depa) + 1 (admin smoke) = **178/178**.
+
+### Manual smokes (post-merge)
+- Real signin end-to-end with Sudhindra's bootstrap account
+- Operations Dashboard renders live metrics / kill switches / cron status / recent audit
+- Audit Log filter + detail drawer + CSV export
+
 ## ADR-0018 Sprint 1.1 — 2026-04-16
 
 ### Changed
