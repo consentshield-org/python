@@ -4,6 +4,7 @@ import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createBrowserClient } from '@/lib/supabase/browser'
 import { OtpBoxes } from '@/components/otp-boxes'
+import { FullLogo } from '@/components/brand/logo'
 
 // ADR-0028 Sprint 1.1 — real admin sign-in.
 // OTP email flow (no password, no signup link — admin bootstrap is not
@@ -90,12 +91,15 @@ function AdminLoginForm() {
   if (stage === 'code') {
     return (
       <Shell>
-        <div className="space-y-2">
-          <h1 className="text-xl font-semibold">Enter your code</h1>
-          <p className="text-sm text-text-2">
-            We sent a verification code to <strong>{email}</strong>.
-          </p>
-        </div>
+        <header className="space-y-4">
+          <FullLogo iconSize={44} textSize={24} tagline="COMPLIANCE ENGINE" />
+          <div className="space-y-1">
+            <h1 className="text-xl font-semibold text-text">Enter your code</h1>
+            <p className="text-sm text-text-2">
+              We sent a verification code to <strong>{email}</strong>.
+            </p>
+          </div>
+        </header>
 
         <form onSubmit={handleVerify} className="space-y-4">
           <OtpBoxes value={code} onChange={setCode} autoFocus />
@@ -105,7 +109,7 @@ function AdminLoginForm() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded bg-red-700 px-4 py-2 text-sm font-medium text-white hover:bg-red-800 disabled:opacity-50"
+            className="w-full rounded bg-teal px-4 py-2 text-sm font-medium text-white hover:bg-teal-mid disabled:opacity-50"
           >
             {loading ? 'Verifying…' : 'Sign in'}
           </button>
@@ -130,15 +134,18 @@ function AdminLoginForm() {
 
   return (
     <Shell>
-      <header className="space-y-2">
-        <p className="text-xs font-mono uppercase tracking-wider text-red-700">
-          ConsentShield — Operator Console
-        </p>
-        <h1 className="text-xl font-semibold">Sign in</h1>
-        <p className="text-sm text-text-2">
-          No password. We&rsquo;ll email you a one-time code. Operator
-          access only.
-        </p>
+      <header className="space-y-4">
+        <FullLogo iconSize={44} textSize={24} tagline="COMPLIANCE ENGINE" />
+        <div className="space-y-1">
+          <p className="text-xs font-mono uppercase tracking-[0.12em] text-admin-accent">
+            Operator Console
+          </p>
+          <h1 className="text-xl font-semibold text-text">Sign in</h1>
+          <p className="text-sm text-text-2">
+            No password. We&rsquo;ll email you a one-time code. Operator
+            access only.
+          </p>
+        </div>
       </header>
 
       {reasonBanner}
@@ -164,7 +171,7 @@ function AdminLoginForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded bg-red-700 px-4 py-2 text-sm font-medium text-white hover:bg-red-800 disabled:opacity-50"
+          className="w-full rounded bg-teal px-4 py-2 text-sm font-medium text-white hover:bg-teal-mid disabled:opacity-50"
         >
           {loading ? 'Sending code…' : 'Send code'}
         </button>

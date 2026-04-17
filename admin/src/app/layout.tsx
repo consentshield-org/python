@@ -40,6 +40,16 @@ export default function RootLayout({
       lang="en"
       className={`${dmSans.variable} ${dmMono.variable} h-full antialiased`}
     >
+      <head>
+        {/* Satoshi wordmark font — Fontshare CDN. Brand PDF spec:
+            Satoshi Bold 700 letter-spacing -0.04em for the "ConsentShield"
+            wordmark. next/font/google doesn't include Satoshi. */}
+        <link rel="preconnect" href="https://api.fontshare.com" crossOrigin="" />
+        <link
+          rel="stylesheet"
+          href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap"
+        />
+      </head>
       <body className="min-h-full font-sans">{children}</body>
     </html>
   )

@@ -18,6 +18,7 @@
   --color-teal: #0D7A6B;
   --color-teal-light: #E0F4F1;
   --color-teal-mid: #14A090;
+  --color-teal-bright: #34D399;
 
   /* Amber (warning / drafts) */
   --color-amber-wf: #C97B00;
@@ -51,9 +52,12 @@
   --color-text-3: #94A3B8;
 
   /* Fonts — wired to next/font in layout.tsx. These --font-sans / --font-mono CSS vars let
-   * Tailwind utility classes (font-sans, font-mono) resolve to DM Sans / DM Mono. */
+   * Tailwind utility classes (font-sans, font-mono) resolve to DM Sans / DM Mono.
+   * --font-brand (Satoshi) is the brand-wordmark face; loaded via Fontshare <link> in the
+   * admin root layout since next/font/google doesn't include it. */
   --font-sans: var(--font-dm-sans), system-ui, sans-serif;
   --font-mono: var(--font-dm-mono), ui-monospace, monospace;
+  --font-brand: 'Satoshi', var(--font-dm-sans), system-ui, sans-serif;
 
   /* Radii */
   --radius-r: 8px;
@@ -73,6 +77,7 @@
   --teal: #0D7A6B;
   --teal-light: #E0F4F1;
   --teal-mid: #14A090;
+  --teal-bright: #34D399;
   --amber: #C97B00;
   --amber-light: #FEF3C7;
   --amber-mid: #F59E0B;

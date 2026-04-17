@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase/server'
 import { ActiveSessionBanner } from '@/components/impersonation/active-session-banner'
+import { LogoIcon, Wordmark } from '@/components/brand/logo'
 
 // Operator shell — visual spec: docs/admin/design/consentshield-admin-screens.html.
 //
@@ -90,22 +91,13 @@ export default async function OperatorLayout({
           className="flex w-60 flex-col border-r-[3px] border-admin-accent"
           style={{ background: 'var(--navy-dark)' }}
         >
-          {/* Logo */}
+          {/* Logo — brand icon + wordmark. Brand-PDF spec: navy rounded-sq + teal
+              shield + white check for primary contexts; on the navy sidebar we use
+              the gradient variant so the icon reads distinctly against navy-dark. */}
           <div className="border-b border-white/[.08] px-[18px] pb-[14px] pt-[18px]">
-            <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-admin-accent">
-                <svg viewBox="0 0 24 24" fill="white" className="h-4 w-4">
-                  <path d="M12 2L2 7v10l10 5 10-5V7l-10-5zm0 2.18L19.82 8 12 11.82 4.18 8 12 4.18zM4 9.82l7 3.5v6.36l-7-3.5V9.82zm9 9.86v-6.36l7-3.5v6.36l-7 3.5z" />
-                </svg>
-              </div>
-              <div>
-                <div className="text-[15px] font-semibold tracking-[-.01em] text-white">
-                  ConsentShield
-                </div>
-                <div className="mt-0.5 text-[10px] font-semibold uppercase tracking-[.04em] text-admin-accent-soft">
-                  Admin Console
-                </div>
-              </div>
+            <div className="flex items-center gap-[10px]">
+              <LogoIcon size={32} variant="gradient" />
+              <Wordmark theme="dark" size={16} tagline="Admin Console" />
             </div>
           </div>
 
