@@ -54,11 +54,10 @@ export function KillSwitchesCard({ switches }: { switches: KillSwitch[] }) {
           </div>
         ))}
         <Link
-          href="#"
-          className="pointer-events-none mt-2 block rounded border border-zinc-300 bg-white px-3 py-2 text-center text-xs text-zinc-400"
-          title="Ships in ADR-0036"
+          href="/flags?tab=kill-switches"
+          className="mt-2 block rounded border border-zinc-300 bg-white px-3 py-2 text-center text-xs text-zinc-700 hover:bg-zinc-50"
         >
-          Manage in Feature Flags &amp; Kill Switches · soon
+          Manage in Feature Flags &amp; Kill Switches →
         </Link>
       </div>
     </section>

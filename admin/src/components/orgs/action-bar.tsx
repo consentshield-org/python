@@ -8,6 +8,12 @@ import {
   restoreOrg,
 } from '../../app/(operator)/orgs/[orgId]/actions'
 import { StartImpersonationDrawer } from '../impersonation/start-drawer'
+import {
+  ModalShell,
+  Field,
+  ReasonField,
+  FormFooter,
+} from '../common/modal-form'
 
 interface Props {
   orgId: string
@@ -101,35 +107,6 @@ export function OrgActionBar({ orgId, orgName, status, currentAdminRole }: Props
         />
       ) : null}
     </>
-  )
-}
-
-function ModalShell({
-  title,
-  subtitle,
-  onClose,
-  children,
-}: {
-  title: string
-  subtitle: string
-  onClose: () => void
-  children: React.ReactNode
-}) {
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose()
-      }}
-    >
-      <div className="w-full max-w-lg rounded-lg bg-white shadow-xl">
-        <header className="border-b border-zinc-200 p-4">
-          <h3 className="text-base font-semibold">{title}</h3>
-          <p className="mt-0.5 text-xs text-zinc-600">{subtitle}</p>
-        </header>
-        {children}
-      </div>
-    </div>
   )
 }
 
@@ -340,72 +317,3 @@ function RestoreModal({
   )
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="flex flex-col gap-1">
-      <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-        {label}
-      </span>
-      {children}
-    </label>
-  )
-}
-
-function ReasonField({
-  reason,
-  onChange,
-}: {
-  reason: string
-  onChange: (s: string) => void
-}) {
-  const remaining = Math.max(0, 10 - reason.trim().length)
-  return (
-    <Field label={`Reason (≥ 10 chars — ${remaining} more needed)`}>
-      <textarea
-        value={reason}
-        onChange={(e) => onChange(e.target.value)}
-        rows={3}
-        required
-        placeholder="Why this action? Appears verbatim in the audit log."
-        className="rounded border border-zinc-300 px-3 py-2 text-sm"
-      />
-    </Field>
-  )
-}
-
-function FormFooter({
-  pending,
-  onClose,
-  submit,
-  submitDanger = false,
-  disabled = false,
-}: {
-  pending: boolean
-  onClose: () => void
-  submit: string
-  submitDanger?: boolean
-  disabled?: boolean
-}) {
-  return (
-    <div className="flex items-center justify-end gap-2 border-t border-zinc-200 pt-4">
-      <button
-        type="button"
-        onClick={onClose}
-        className="rounded border border-zinc-300 bg-white px-3 py-1.5 text-xs text-zinc-700 hover:bg-zinc-50"
-      >
-        Cancel
-      </button>
-      <button
-        type="submit"
-        disabled={pending || disabled}
-        className={
-          submitDanger
-            ? 'rounded bg-red-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-800 disabled:opacity-50'
-            : 'rounded bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-800 disabled:opacity-50'
-        }
-      >
-        {pending ? 'Submitting…' : submit}
-      </button>
-    </div>
-  )
-}

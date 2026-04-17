@@ -2,9 +2,9 @@
 
 (c) 2026 Sudhindra Anegondhi a.d.sudhindra@gmail.com
 
-**Status:** Proposed
+**Status:** Completed
 **Date proposed:** 2026-04-17
-**Date completed:** —
+**Date completed:** 2026-04-17
 
 ---
 
@@ -70,7 +70,7 @@ No customer-side changes — the customer app and Worker already consume flag/sw
 - [ ] Manual: engage `banner_delivery` kill switch → confirm audit_log row + `admin.kill_switches.engaged=true`. Disengage → confirm return to false.
 - [ ] Cross-role: sign in as support role → /flags loads read-only (all action buttons disabled or absent).
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete` — 2026-04-17
 
 ---
 
@@ -82,7 +82,26 @@ None. This ADR is pure UI over existing RPCs.
 
 ## Test Results
 
-_To be filled per sprint as the work executes._
+### Sprint 1.1 — 2026-04-17 (Completed)
+
+```
+cd admin && bun run lint   → $ eslint src/ ; exit 0 (zero warnings)
+cd admin && bun run build  → Next.js 16.2.3 Turbopack, 9 routes compiled:
+                              /, /_not-found, /api/auth/signout, /audit-log,
+                              /audit-log/export, /flags (new), /login, /orgs,
+                              /orgs/[orgId].  Compiled in ~2.0s.
+cd admin && bun run test   → 1/1 smoke passes
+bun run test:rls (root)    → 135/135 across 8 files (no regression)
+```
+
+**Execution notes (2026-04-17):**
+- Hoisted `ModalShell`, `Field`, `ReasonField`, `FormFooter` from `admin/src/components/orgs/action-bar.tsx` into a new `admin/src/components/common/modal-form.tsx`. Second real consumer justified the share (the flag modals reuse all four). `action-bar.tsx` now imports from `../common/modal-form`.
+- Feature-flag value types: `boolean`, `string`, `number`. JSON deferred per ADR Out-of-Scope.
+- Kill-switch Engage modal requires typing the exact `switch_key` to arm the submit button; Disengage only needs reason ≥ 10 chars.
+- Ops Dashboard's `KillSwitchesCard` "Manage in Feature Flags & Kill Switches" link is now live (was pointer-events-none stub); deep-links to `/flags?tab=kill-switches`.
+- Admin sidebar nav: Feature Flags & Kill Switches is now a live link.
+- No new RPC tests — the three RPCs (`set_feature_flag`, `delete_feature_flag`, `toggle_kill_switch`) are covered by `tests/admin/rpcs.test.ts` from ADR-0027 Sprint 3.1.
+- No schema changes in this sprint. Propagation to Worker + Edge Functions continues to ride the existing `admin-sync-config-to-kv` cron (ADR-0027 Sprint 3.2).
 
 ---
 

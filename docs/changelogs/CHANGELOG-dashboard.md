@@ -2,6 +2,30 @@
 
 Next.js UI changes.
 
+## ADR-0036 — 2026-04-17
+
+**ADR:** ADR-0036 — Feature Flags & Kill Switches (admin panel)
+**Sprint:** 1.1 — Single-sprint ADR, Completed 2026-04-17
+
+### Added
+- `admin/src/app/(operator)/flags/page.tsx` — Server Component. Parallel fetch of `admin.feature_flags` + `admin.kill_switches` + `admin.admin_users` (for set_by display) + `public.organisations` (for org-scope flag display / selector). `?tab=kill-switches` deep link honoured.
+- `admin/src/app/(operator)/flags/actions.ts` — three Server Actions: `setFeatureFlag` (upsert; boolean/string/number value types), `deleteFeatureFlag`, `toggleKillSwitch`. All wrap the existing ADR-0027 Sprint 3.1 RPCs.
+- `admin/src/components/flags/flags-tabs.tsx` — Client tab shell.
+- `admin/src/components/flags/feature-flags-tab.tsx` — flags table + Create/Edit/Delete modals. Value-type toggle (boolean/string/number) switches the value input. Edit disables key/scope/org (audit hygiene — changes happen as delete + create).
+- `admin/src/components/flags/kill-switches-tab.tsx` — four cards matching the wireframe. Engage button requires typing the exact switch_key to arm submit; Disengage only needs reason ≥ 10 chars.
+- `admin/src/components/common/modal-form.tsx` — hoisted `ModalShell`, `Field`, `ReasonField`, `FormFooter` out of `orgs/action-bar.tsx` for reuse.
+
+### Changed
+- `admin/src/app/(operator)/layout.tsx` — "Feature Flags & Kill Switches" nav item is now live (`href=/flags`).
+- `admin/src/components/ops-dashboard/kill-switches-card.tsx` — "Manage in Feature Flags & Kill Switches" footer link is live, deep-links to `/flags?tab=kill-switches`.
+- `admin/src/components/orgs/action-bar.tsx` — now imports `ModalShell`, `Field`, `ReasonField`, `FormFooter` from `../common/modal-form` instead of declaring them inline.
+
+### Tested
+- [x] `cd admin && bun run lint` — zero warnings
+- [x] `cd admin && bun run build` — 9 routes compile (+ /flags vs prior 8)
+- [x] `cd admin && bun run test` — 1/1 smoke
+- [x] `bun run test:rls` (root, serial) — 135/135 (no regression)
+
 ## ADR-0029 — 2026-04-17
 
 **ADR:** ADR-0029 — Admin Organisations (list + detail + actions + impersonation + customer-side cross-refs)
