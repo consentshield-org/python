@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 48" role="img" aria-label="ConsentShield Verified">
+  <!-- Standalone teal shield + white check, scaled to 40px -->
+  <g transform="translate(0 4) scale(0.3333)">
+    <path d="M60 28 Q 86 30 88 36 L 88 64 Q 88 84 60 97 Q 32 84 32 64 L 32 36 Q 34 30 60 28 Z" fill="#0D7A6B"/>
+    <path d="M46 62 L56 72 L76 52" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Wordmark: "ConsentShield" inline, Satoshi Bold 16px -->
+  <text x="48" y="24"
+        font-family="Satoshi, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif"
+        font-weight="700"
+        font-size="16"
+        letter-spacing="-0.64">
+    <tspan fill="#94A3B8">Consent</tspan><tspan fill="#34D399">Shield</tspan>
+  </text>
+
+  <!-- "VERIFIED" tag below, slate -->
+  <text x="48" y="38"
+        font-family="'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif"
+        font-weight="600"
+        font-size="9"
+        letter-spacing="2"
+        fill="#94A3B8">VERIFIED</text>
+</svg>
