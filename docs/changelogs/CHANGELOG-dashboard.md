@@ -2,6 +2,16 @@
 
 Next.js UI changes.
 
+## ADR-0044 Phase 2.2 — 2026-04-18
+
+**ADR:** ADR-0044 v2 — Customer RBAC
+**Sprint:** Phase 2.2 — invite-gated /signup
+
+### Changed
+- `app/src/app/(public)/signup/page.tsx` — walk-up signup removed. The page now requires `?invite=<token>`; hitting it without a token shows a "contact hello@consentshield.in" message. With a token, it previews the invite via `public.invitation_preview`, forces the email field to match the invited address, sends OTP on submit, and on verify calls `public.accept_invitation` which branches by invite shape (account-creating, account-member, or org-member). Successful accept redirects to /dashboard.
+- Invite preview UX — summarises the invitee's incoming role ("creating a new ConsentShield account", "joining as an organisation admin", etc.) with plan + default-org-name when applicable.
+- `rpc_signup_bootstrap_org` (legacy walk-up path in `/auth/callback`) unchanged — kept as a fallback for any signup that still arrives with `user_metadata.org_name` but no invite.
+
 ## ADR-0033 Sprints 1.2 + 2.2 — 2026-04-17
 
 **ADR:** ADR-0033 — Admin Ops + Security (Pipeline Operations + Abuse & Security panels)

@@ -2,6 +2,31 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-0044 Phase 2.1] — 2026-04-18
+
+**ADR:** ADR-0044 v2 — Customer RBAC
+**Sprint:** Phase 2.1 — invitation schema + create/accept RPCs
+
+### Added
+- `20260430000001_invitations.sql`:
+  - `public.invitations` — single table for all 5 invite shapes, discriminated by role + (account_id, org_id, plan_code) presence. `invitations_shape` check constraint enforces the valid shape permutations.
+  - Partial unique index on `(lower(invited_email), account_id, org_id)` where `accepted_at is null` — one pending invite per (email, scope).
+  - `public.invitation_preview(p_token)` — read-only public RPC for the /signup page; returns email + role + plan + default_org_name.
+  - `public.create_invitation(...)` — SECURITY DEFINER. Role-gated by inviter:
+    - account-creating invites → admin JWT only (marketing site / operator console).
+    - add-to-account invites → account_owner of target account.
+    - org-level invites → account_owner OR (for admin/viewer) org_admin of target org.
+  - `public.accept_invitation(p_token)` — polymorphic. Checks email match, branches by role:
+    - `account_owner` + no account_id → creates account + first org + both memberships atomically.
+    - `account_owner` / `account_viewer` (existing account) → adds account_memberships row.
+    - `org_admin` / `admin` / `viewer` → adds org_memberships row.
+  - Stamps invite as accepted in the same txn.
+- `20260430000002_invitations_role_gate_fix.sql` — coalesce NULL role reads to '' before comparing in `create_invitation` (an admin-tier user with no account_memberships row was slipping past the gate).
+
+### Tested
+- `tests/rbac/invitations.test.ts` — 9 tests covering: role gates (create_invitation denies non-authorised callers), happy path accept, email mismatch raises, double-accept raises.
+- `bun run test:rls` — 194/194 across 17 files.
+
 ## [ADR-0044 Phase 1] — 2026-04-18
 
 **ADR:** ADR-0044 v2 — Customer RBAC

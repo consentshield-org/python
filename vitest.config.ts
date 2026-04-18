@@ -12,6 +12,7 @@ export default defineConfig({
       'tests/rls/**/*.test.ts',
       'tests/admin/**/*.test.ts',
       'tests/depa/**/*.test.ts',
+      'tests/rbac/**/*.test.ts',
     ],
     // Serialise test files. Parallel execution across 7+ files fires
     // enough concurrent Supabase auth.admin.createUser calls to trip
