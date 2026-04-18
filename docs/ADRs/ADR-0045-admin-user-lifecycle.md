@@ -2,9 +2,12 @@
 
 (c) 2026 Sudhindra Anegondhi a.d.sudhindra@gmail.com
 
-**Status:** Proposed (stub — no sprint started)
-**Depends on:** ADR-0027 (admin schema), ADR-0044 (customer RBAC invitation primitives)
+**Status:** In Progress
+**Date proposed:** 2026-04-18
+**Depends on:** ADR-0027 (admin schema + `admin.admin_users` + `admin.admin_audit_log` + `admin.require_admin`), ADR-0044 (customer RBAC invitation primitives — informs the email-invite pattern)
 **Related:** V2-A1 in `docs/V2-BACKLOG.md`
+
+> The original stub proposed a parallel `admin.pending_admin_invites` table. The concrete plan below instead extends `admin.admin_users.status` with an `invited` value — one table, one status machine, fewer moving parts. Email delivery uses Supabase Auth's native invite flow (`auth.admin.generateLink({type:'invite'})` + Resend template rendering the generated link) rather than the customer-side `public.invitations` dispatcher — admin invites are platform-ops messages, not customer-facing ones.
 
 ## Context
 
@@ -98,15 +101,60 @@ returning:
 
 ## Implementation plan
 
-_Sprint breakdown TBD. Planned when the ADR is promoted from stub to
-active._
+### Sprint 1.1 — Schema + admin lifecycle RPCs + tests
 
-## Test plan (outline)
+**Deliverables:**
 
-- Platform-operator can invite; support cannot invite (403).
-- Invite accept sets `is_admin=true` + inserts `admin.admin_users`
-  row; duplicate accept fails.
-- Role change updates both sources; reflected in fresh JWT.
-- Cannot self-demote; cannot demote last platform_operator.
-- Disable flips JWT claim; next request from disabled admin's JWT
-  fails at the `proxy.ts` Rule 21 gate.
+- [x] Migration `20260503000001_admin_user_lifecycle.sql`:
+  - Extend `admin.admin_users.status` check constraint to include `'invited'` (values now: `active / invited / disabled / suspended`).
+  - `admin.admin_invite_create(p_user_id uuid, p_display_name text, p_admin_role text, p_reason text)` — SECURITY DEFINER, platform_operator only. Inserts an `admin.admin_users` row with `status='invited'`, `created_by=auth.uid()`. Writes audit-log row. The auth user is created first by the Route Handler (Sprint 1.2) via service-role key; this RPC only records the postgres-side row.
+  - `admin.admin_change_role(p_admin_id uuid, p_new_role text, p_reason text)` — platform_operator only. Refuses self-change (`p_admin_id = auth.uid()`). Refuses demoting the last active `platform_operator`. Updates `admin.admin_users.admin_role`. Writes audit-log row. Route Handler syncs `auth.users.raw_app_meta_data.admin_role` after.
+  - `admin.admin_disable(p_admin_id uuid, p_reason text)` — platform_operator only. Refuses self-disable. Refuses disabling the last active platform_operator. Sets `status='disabled' / disabled_at=now() / disabled_reason=p_reason`. Writes audit-log row. Route Handler flips `auth.users.raw_app_meta_data.is_admin=false` after.
+  - `admin.admin_list()` — platform_operator or support. Returns `(id, display_name, admin_role, status, bootstrap_admin, created_at, disabled_at, disabled_reason)` ordered by status then created_at.
+- [x] `tests/admin/admin-lifecycle-rpcs.test.ts` — 11 assertions. All green.
+
+**Status:** `[x] complete` — 2026-04-18
+
+### Sprint 1.2 — Route handlers + Auth-side sync
+
+**Deliverables:**
+
+- [ ] `admin/src/app/api/admin/users/invite/route.ts` — POST. Gate caller at `platform_operator` via proxy + defensive re-check in handler. Creates auth user via `supabase.auth.admin.createUser({ email, email_confirm: true, app_metadata: { is_admin: true, admin_role } })`. Calls `admin.admin_invite_create`. Generates + emails the password-setup link (Supabase `generateLink({ type: 'recovery' })` + Resend). Returns `{ adminId }`.
+- [ ] `admin/src/app/api/admin/users/[adminId]/role/route.ts` — PATCH. Calls `admin.admin_change_role`. On success, syncs `app_metadata.admin_role` via `auth.admin.updateUserById`. Response includes a note that the invitee must sign out + back in for the new JWT to carry the role.
+- [ ] `admin/src/app/api/admin/users/[adminId]/disable/route.ts` — POST. Calls `admin.admin_disable`. On success, syncs `app_metadata.is_admin=false`. Existing sessions fail at the next `proxy.ts` is_admin check after refresh.
+- [ ] Sync-drift tolerance: if the RPC succeeds but the subsequent Auth API call fails, the Route Handler surfaces a 500 with both sides' status so the operator can retry. The RPC side (postgres) is authoritative for RLS + audit; the JWT side follows on next refresh.
+
+**Status:** `[ ] planned`
+
+### Sprint 2.1 — Admin Users panel UI
+
+**Deliverables:**
+
+- [ ] `admin/src/app/(operator)/admins/page.tsx` — server component, fetches `admin.admin_list()` + caller role. Renders list with status pill + Disable / Role-change buttons per row.
+- [ ] `admin/src/app/(operator)/admins/admin-list.tsx` — client component; Invite modal, Role-change modal, Disable modal — same modal primitives used by `/billing`, `/security`.
+- [ ] `admin/src/app/(operator)/admins/actions.ts` — three server actions wrapping the three Route Handlers (client-to-server indirection so Zod validation lives server-side).
+- [ ] Nav flip: add `Admin Users` entry in `admin/src/app/(operator)/layout.tsx` between `Feature Flags` and `Audit Log`. ADR pointer = `ADR-0045`.
+
+**Status:** `[ ] planned`
+
+## Test plan
+
+- **Sprint 1.1 RPC tests:**
+  - Platform-operator can call `admin_invite_create`; support cannot (raises).
+  - `admin_change_role` happy path flips `admin_role` + writes audit row.
+  - `admin_change_role` refuses self-change (`p_admin_id = auth.uid()`).
+  - `admin_change_role` refuses demoting last `platform_operator` — simulate by trying to demote the only platform_operator with no other active platform_operators.
+  - `admin_disable` happy path sets `status='disabled' + disabled_at + disabled_reason`; audit row.
+  - `admin_disable` refuses self-disable.
+  - `admin_disable` refuses disabling last active platform_operator.
+  - `admin_list` returns rows for platform_operator + support; denies others.
+  - Status-constraint smoke: inserting a row with `status='invited'` no longer fails (the ADR-0045 migration extended the check).
+- **Sprint 1.2 Route Handler tests:** browser-smoke — invite flow creates auth user + admin_users row + sends email; role change updates both sources; disable flips both sources. Deferred to live smoke after migration + handlers are in place (no Next.js route-handler test harness in this repo today).
+- **Sprint 2.1 UI:** browser smoke — list renders; three modals operate end-to-end; self-disable attempt surfaces the server error.
+
+## Acceptance criteria
+
+- Every lifecycle action writes exactly one `admin.admin_audit_log` row with the operator's `admin_user_id`, the reason (≥10 chars), and a meaningful `old_value → new_value` diff.
+- No RPC can leave the admin platform with zero active platform_operators.
+- No RPC can mutate `auth.users` directly (the Route Handler does that with the service-role key, after the RPC succeeds; the RPC side is authoritative for postgres state).
+- Bootstrap flow (`scripts/bootstrap-admin.ts`) continues to work unchanged.
