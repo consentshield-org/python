@@ -49,6 +49,7 @@ All Architecture Decision Records for ConsentShield, in chronological order.
 | ADR-0043 | Customer App is Auth-Only (drop public landing; marketing site becomes www.consentshield.in) | Completed | 2026-04-17 | 1 | 1 |
 | ADR-0044 | Customer RBAC — 4-level hierarchy (account → orgs → web properties) + 5-role model + invitation-only signup | Completed | 2026-04-18 | 3 | 7 |
 | ADR-0045 | Admin user lifecycle (invite + role change) — stub pending second-operator need | Proposed | 2026-04-18 | — | — |
+| ADR-0046 | Significant Data Fiduciary foundation — sdf_status on organisations + DPIA records + auditor engagements | Proposed | 2026-04-18 | 4 | 5 |
 
 <!--
 When adding a new ADR:
