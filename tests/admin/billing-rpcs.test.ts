@@ -8,13 +8,23 @@ import {
 } from './helpers'
 import { cleanupTestOrg, createTestOrg, TestOrg } from '../rls/helpers'
 
-// ADR-0034 Sprint 1.1 — Billing Operations admin RPCs.
+// ADR-0034 Sprint 1.1 (post ADR-0044 Phase 0) — Billing RPCs on accounts.
 //
-// Covers the six admin.billing_* RPCs + public.org_effective_plan. Each
-// list RPC returns an array; each write RPC inserts both a domain row
-// and a matching admin.admin_audit_log entry in the same transaction.
-// Non-admins are denied; support-role is denied on platform_operator-
-// gated writes (upsert / revoke plan_adjustment).
+// Phase 0 moved plan + Razorpay identity from organisations to accounts.
+// The amendment migration 20260502000001 rewired refunds, plan_adjustments,
+// and all admin.billing_* RPCs onto account_id. These tests exercise:
+//
+//   * each list RPC returns an array
+//   * refund create+list+audit row against an account
+//   * validators (reason ≥ 10 chars, amount > 0)
+//   * upsert revokes prior active (account, kind) row
+//   * account_effective_plan: override > comp > accounts.plan_code
+//   * support role denied on platform_operator-gated RPCs
+//   * unknown plan code rejected (plans.is_active = true only)
+//   * non-admin authenticated user denied on every read
+//
+// TestOrg now carries `accountId` (ADR-0044 Phase 0 change to the RLS
+// helper); fixtures use it directly.
 
 let supportUser: AdminTestUser
 let platformOp: AdminTestUser
@@ -43,7 +53,7 @@ async function countAuditRows(action: string, adminUserId: string) {
   return count ?? 0
 }
 
-describe('ADR-0034 Sprint 1.1 — admin billing_* RPCs + org_effective_plan', () => {
+describe('ADR-0034 Sprint 1.1 (post-0044) — admin billing_* RPCs + account_effective_plan', () => {
   describe('billing_payment_failures_list', () => {
     it('support admin can call; returns an array', async () => {
       const { data, error } = await supportUser.client
@@ -77,7 +87,7 @@ describe('ADR-0034 Sprint 1.1 — admin billing_* RPCs + org_effective_plan', ()
       const { data: id, error } = await supportUser.client
         .schema('admin')
         .rpc('billing_create_refund', {
-          p_org_id: customer.orgId,
+          p_account_id: customer.accountId,
           p_razorpay_payment_id: 'pay_test_1a2b3c',
           p_amount_paise: 59900,
           p_reason: 'Cancellation within 7-day window',
@@ -92,6 +102,7 @@ describe('ADR-0034 Sprint 1.1 — admin billing_* RPCs + org_effective_plan', ()
       expect(rows).toHaveLength(1)
       expect(rows![0].status).toBe('pending')
       expect(rows![0].amount_paise).toBe(59900)
+      expect(rows![0].account_id).toBe(customer.accountId)
 
       const after = await countAuditRows('billing_create_refund', supportUser.userId)
       expect(after).toBe(before + 1)
@@ -103,8 +114,8 @@ describe('ADR-0034 Sprint 1.1 — admin billing_* RPCs + org_effective_plan', ()
         .rpc('billing_refunds_list', { p_limit: 20 })
       expect(error).toBeNull()
       expect(Array.isArray(data)).toBe(true)
-      const match = (data as Array<{ org_id: string; status: string }>).find(
-        (r) => r.org_id === customer.orgId,
+      const match = (data as Array<{ account_id: string; status: string }>).find(
+        (r) => r.account_id === customer.accountId,
       )
       expect(match).toBeDefined()
     })
@@ -113,7 +124,7 @@ describe('ADR-0034 Sprint 1.1 — admin billing_* RPCs + org_effective_plan', ()
       const { error } = await supportUser.client
         .schema('admin')
         .rpc('billing_create_refund', {
-          p_org_id: customer.orgId,
+          p_account_id: customer.accountId,
           p_razorpay_payment_id: 'pay_short',
           p_amount_paise: 100,
           p_reason: 'short',
@@ -125,7 +136,7 @@ describe('ADR-0034 Sprint 1.1 — admin billing_* RPCs + org_effective_plan', ()
       const { error } = await supportUser.client
         .schema('admin')
         .rpc('billing_create_refund', {
-          p_org_id: customer.orgId,
+          p_account_id: customer.accountId,
           p_razorpay_payment_id: 'pay_zero',
           p_amount_paise: 0,
           p_reason: 'zero-amount refund attempt test',
@@ -139,7 +150,7 @@ describe('ADR-0034 Sprint 1.1 — admin billing_* RPCs + org_effective_plan', ()
       const { data: id, error } = await platformOp.client
         .schema('admin')
         .rpc('billing_upsert_plan_adjustment', {
-          p_org_id: customer.orgId,
+          p_account_id: customer.accountId,
           p_kind: 'comp',
           p_plan: 'pro',
           p_expires_at: new Date(Date.now() + 90 * 24 * 3600 * 1000).toISOString(),
@@ -151,21 +162,18 @@ describe('ADR-0034 Sprint 1.1 — admin billing_* RPCs + org_effective_plan', ()
       const { data: list } = await platformOp.client
         .schema('admin')
         .rpc('billing_plan_adjustments_list', { p_kind: 'comp' })
-      const match = (list as Array<{ id: string; org_id: string; plan: string }>).find(
+      const match = (list as Array<{ id: string; account_id: string; plan: string }>).find(
         (r) => r.id === id,
       )
       expect(match?.plan).toBe('pro')
-      expect(match?.org_id).toBe(customer.orgId)
+      expect(match?.account_id).toBe(customer.accountId)
     })
 
-    it('upsert revokes the prior active (org, kind) row', async () => {
-      // First grant is still active from the previous test. Upsert a new
-      // comp for the same org — the partial-unique index would reject
-      // a second active row; the RPC must revoke the previous one first.
+    it('upsert revokes the prior active (account, kind) row', async () => {
       const { data: newId, error } = await platformOp.client
         .schema('admin')
         .rpc('billing_upsert_plan_adjustment', {
-          p_org_id: customer.orgId,
+          p_account_id: customer.accountId,
           p_kind: 'comp',
           p_plan: 'enterprise',
           p_expires_at: null,
@@ -176,27 +184,27 @@ describe('ADR-0034 Sprint 1.1 — admin billing_* RPCs + org_effective_plan', ()
       const { data: active } = await platformOp.client
         .schema('admin')
         .rpc('billing_plan_adjustments_list', { p_kind: 'comp' })
-      const forOrg = (active as Array<{ id: string; org_id: string; plan: string }>).filter(
-        (r) => r.org_id === customer.orgId,
+      const forAccount = (active as Array<{ id: string; account_id: string; plan: string }>).filter(
+        (r) => r.account_id === customer.accountId,
       )
-      expect(forOrg).toHaveLength(1)
-      expect(forOrg[0].id).toBe(newId)
-      expect(forOrg[0].plan).toBe('enterprise')
+      expect(forAccount).toHaveLength(1)
+      expect(forAccount[0].id).toBe(newId)
+      expect(forAccount[0].plan).toBe('enterprise')
     })
 
-    it('org_effective_plan returns the active comp plan', async () => {
-      const { data, error } = await service.rpc('org_effective_plan', {
-        p_org_id: customer.orgId,
+    it('account_effective_plan returns the active comp plan', async () => {
+      const { data, error } = await service.rpc('account_effective_plan', {
+        p_account_id: customer.accountId,
       })
       expect(error).toBeNull()
       expect(data).toBe('enterprise')
     })
 
-    it('override stacks on comp and wins in org_effective_plan', async () => {
+    it('override stacks on comp and wins in account_effective_plan', async () => {
       const { error } = await platformOp.client
         .schema('admin')
         .rpc('billing_upsert_plan_adjustment', {
-          p_org_id: customer.orgId,
+          p_account_id: customer.accountId,
           p_kind: 'override',
           p_plan: 'growth',
           p_expires_at: new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString(),
@@ -204,8 +212,8 @@ describe('ADR-0034 Sprint 1.1 — admin billing_* RPCs + org_effective_plan', ()
         })
       expect(error).toBeNull()
 
-      const { data: plan } = await service.rpc('org_effective_plan', {
-        p_org_id: customer.orgId,
+      const { data: plan } = await service.rpc('account_effective_plan', {
+        p_account_id: customer.accountId,
       })
       expect(plan).toBe('growth')
     })
@@ -214,7 +222,7 @@ describe('ADR-0034 Sprint 1.1 — admin billing_* RPCs + org_effective_plan', ()
       const { error } = await supportUser.client
         .schema('admin')
         .rpc('billing_upsert_plan_adjustment', {
-          p_org_id: customer.orgId,
+          p_account_id: customer.accountId,
           p_kind: 'comp',
           p_plan: 'pro',
           p_expires_at: null,
@@ -225,12 +233,11 @@ describe('ADR-0034 Sprint 1.1 — admin billing_* RPCs + org_effective_plan', ()
     })
 
     it('revoke marks the row revoked and falls back to the next tier', async () => {
-      // Revoke the active override. org_effective_plan should fall back to comp.
       const { data: active } = await platformOp.client
         .schema('admin')
         .rpc('billing_plan_adjustments_list', { p_kind: 'override' })
-      const target = (active as Array<{ id: string; org_id: string }>).find(
-        (r) => r.org_id === customer.orgId,
+      const target = (active as Array<{ id: string; account_id: string }>).find(
+        (r) => r.account_id === customer.accountId,
       )
       expect(target).toBeDefined()
 
@@ -242,20 +249,20 @@ describe('ADR-0034 Sprint 1.1 — admin billing_* RPCs + org_effective_plan', ()
         })
       expect(error).toBeNull()
 
-      const { data: plan } = await service.rpc('org_effective_plan', {
-        p_org_id: customer.orgId,
+      const { data: plan } = await service.rpc('account_effective_plan', {
+        p_account_id: customer.accountId,
       })
       // Comp is still enterprise from earlier.
       expect(plan).toBe('enterprise')
     })
 
-    it('rejects unknown plan code', async () => {
+    it('rejects an unknown / inactive plan code', async () => {
       const { error } = await platformOp.client
         .schema('admin')
         .rpc('billing_upsert_plan_adjustment', {
-          p_org_id: customer.orgId,
+          p_account_id: customer.accountId,
           p_kind: 'comp',
-          p_plan: 'platinum', // not in the enum
+          p_plan: 'platinum', // not in public.plans
           p_expires_at: null,
           p_reason: 'should fail — bogus plan code',
         })
@@ -263,16 +270,17 @@ describe('ADR-0034 Sprint 1.1 — admin billing_* RPCs + org_effective_plan', ()
     })
   })
 
-  describe('org_effective_plan fallback when no adjustments exist', () => {
-    it('returns organisations.plan when no active adjustments', async () => {
-      // Use a fresh org so no plan_adjustments rows exist.
+  describe('account_effective_plan fallback when no adjustments exist', () => {
+    it('returns accounts.plan_code when no active adjustments', async () => {
       const fresh = await createTestOrg('billing-eff')
       try {
-        const { data, error } = await service.rpc('org_effective_plan', {
-          p_org_id: fresh.orgId,
+        const { data, error } = await service.rpc('account_effective_plan', {
+          p_account_id: fresh.accountId,
         })
         expect(error).toBeNull()
-        expect(data).toBe('trial_starter') // default account plan for newly-created orgs (ADR-0044 Phase 0)
+        // createTestOrg seeds trial_starter; no adjustments → fallback
+        // to accounts.plan_code.
+        expect(data).toBe('trial_starter')
       } finally {
         await cleanupTestOrg(fresh)
       }

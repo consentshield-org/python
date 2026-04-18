@@ -2,14 +2,16 @@
 
 (c) 2026 Sudhindra Anegondhi a.d.sudhindra@gmail.com
 
-**Status:** Proposed
+**Status:** In Progress (Sprint 1.1 complete + amended for ADR-0044 Phase 0; Sprints 2.1 + 2.2 planned)
 **Date proposed:** 2026-04-17
+**Date amended:** 2026-04-18 — Sprint 1.1 artefacts rewired from `org_id` to `account_id` after ADR-0044 Phase 0 moved billing to the `accounts` layer (see Sprint 1.1 notes below).
 **Depends on:**
 - ADR-0014 (Razorpay webhook skeleton + `rpc_razorpay_apply_subscription`)
 - ADR-0027 (admin schema, `cs_admin` role, `admin.admin_audit_log`, `admin.require_admin`)
 - ADR-0028 (admin app foundation — OTP auth, operator layout)
 - ADR-0029 (admin Orgs panel — `admin.suspend_org` reused here for the Suspend-on-max-retries flow)
 - ADR-0033 (Ops + Security pattern — same admin RPC + Next.js tabbed-panel shape)
+- **ADR-0044 Phase 0** (accounts layer + billing relocation — source of truth for the plan/subscription subject)
 
 **Unblocks:** The last "soon" navbar stub in `admin/src/app/(operator)/layout.tsx`. When this ships, admin console is 11/11.
 
@@ -97,9 +99,20 @@ One migration. One `/billing` page with 4 tabs. One Razorpay API wrapper in the 
 
   - `public.org_effective_plan(p_org_id uuid) returns text` — SECURITY DEFINER. Returns the override plan if an active override exists, else the comp plan if an active comp exists, else `organisations.plan`. Granted EXECUTE to `authenticated`, `cs_orchestrator`, `cs_admin`.
 
-- [ ] `tests/admin/billing-rpcs.test.ts` — 12–15 assertions: (a) each list RPC returns array, (b) each write RPC inserts + writes audit-log row, (c) `billing_upsert_plan_adjustment` revokes prior active row (partial-uniq index proved), (d) `org_effective_plan` returns override > comp > organisations.plan, (e) non-admin denied on all 6 RPCs, (f) `billing_upsert_plan_adjustment` denies `support` role.
+- [x] `supabase/migrations/20260428000001_billing_operations.sql` — 2 tables + 6 admin RPCs + `public.org_effective_plan(uuid)` helper. Applied to remote.
+- [x] `tests/admin/billing-rpcs.test.ts` — 15/15 pass (on org_id subject).
+- [x] Index predicate nuance: `plan_adjustments_unrevoked_uniq` uses `revoked_at is null` only; the originally planned `expires_at > now()` clause was rejected because PG requires IMMUTABLE functions in partial-index predicates (`now()` is STABLE). Expiry filtering lives in the RPCs. Logged as `bug-250`.
 
-**Status:** `[ ] planned`
+**Amendment 2026-04-18 (post ADR-0044 Phase 0):**
+
+- [x] `supabase/migrations/20260502000001_billing_relocate_to_accounts.sql` — follow-up that:
+  - Adds `account_id uuid references accounts(id) on delete cascade` to `refunds` + `plan_adjustments`, backfills from `organisations.account_id`, drops `org_id`, and rebuilds the partial-unique index on `(account_id, kind) where revoked_at is null`.
+  - Drops `public.org_effective_plan(uuid)` and creates `public.account_effective_plan(uuid)` — override > comp > `accounts.plan_code` (was `organisations.plan`, which Phase 0 deleted).
+  - Rewrites all 6 `admin.billing_*` RPCs with `p_account_id` parameters and account-scoped joins. Signatures changed; old ones dropped first. Plan validation now checks `public.plans.is_active = true` (was an inline enum with the now-retired `trial` code — new plan codes are `trial_starter / starter / growth / pro / enterprise`).
+- [x] `tests/admin/billing-rpcs.test.ts` — fixtures switched to `customer.accountId`, all RPC args renamed, new plan-code assertions (`trial_starter` default). **15/15 PASS**.
+- [x] Full RLS suite regression: **212/212** across 20 files (baseline held). The rewrite is schema-compatible with ADR-0044 Phase 1 memberships + Phase 2 invitations.
+
+**Status:** `[x] complete (amended)` — 2026-04-18
 
 ---
 
