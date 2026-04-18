@@ -20,20 +20,27 @@ export const dynamic = 'force-dynamic'
 export default async function BillingPage() {
   const supabase = await createServerClient()
 
-  const [failures, refunds, comps, overrides, plans, user] = await Promise.all([
-    supabase.schema('admin').rpc('billing_payment_failures_list', {
-      p_window_days: 7,
-    }),
-    supabase.schema('admin').rpc('billing_refunds_list', { p_limit: 50 }),
-    supabase.schema('admin').rpc('billing_plan_adjustments_list', { p_kind: 'comp' }),
-    supabase.schema('admin').rpc('billing_plan_adjustments_list', { p_kind: 'override' }),
-    supabase
-      .from('plans')
-      .select('plan_code, display_name')
-      .eq('is_active', true)
-      .order('base_price_inr', { ascending: true, nullsFirst: true }),
-    supabase.auth.getUser(),
-  ])
+  const [failures, refunds, comps, overrides, plans, accounts, user] =
+    await Promise.all([
+      supabase.schema('admin').rpc('billing_payment_failures_list', {
+        p_window_days: 7,
+      }),
+      supabase.schema('admin').rpc('billing_refunds_list', { p_limit: 50 }),
+      supabase
+        .schema('admin')
+        .rpc('billing_plan_adjustments_list', { p_kind: 'comp' }),
+      supabase
+        .schema('admin')
+        .rpc('billing_plan_adjustments_list', { p_kind: 'override' }),
+      supabase
+        .from('plans')
+        .select('plan_code, display_name')
+        .eq('is_active', true)
+        .order('base_price_inr', { ascending: true, nullsFirst: true }),
+      // ADR-0048 Sprint 1.2 — feed the Adjustment modal's account picker.
+      supabase.schema('admin').rpc('accounts_list'),
+      supabase.auth.getUser(),
+    ])
 
   const errors = [
     failures.error?.message,
@@ -41,6 +48,7 @@ export default async function BillingPage() {
     comps.error?.message,
     overrides.error?.message,
     plans.error?.message,
+    accounts.error?.message,
   ].filter((e): e is string => !!e)
 
   const adminRole =
@@ -58,6 +66,11 @@ export default async function BillingPage() {
     comps: (comps.data ?? []) as BillingData['comps'],
     overrides: (overrides.data ?? []) as BillingData['overrides'],
     plans: (plans.data ?? []) as BillingData['plans'],
+    accounts: ((accounts.data ?? []) as Array<{
+      id: string
+      name: string
+      status: string
+    }>).map((a) => ({ id: a.id, name: a.name, status: a.status })),
   }
 
   return (

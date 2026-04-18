@@ -13,6 +13,7 @@ import {
   revokePlanAdjustment,
   upsertPlanAdjustment,
 } from './actions'
+import { suspendAccountAction } from '../accounts/actions'
 
 // ADR-0034 Sprint 2.1 — Billing tabs (client).
 
@@ -44,6 +45,7 @@ export interface BillingData {
   comps: Array<PlanAdjustment>
   overrides: Array<PlanAdjustment>
   plans: Array<{ plan_code: string; display_name: string }>
+  accounts: Array<{ id: string; name: string; status: string }>
 }
 
 interface PlanAdjustment {
@@ -64,6 +66,7 @@ type Modal =
   | { kind: 'refund'; accountId: string; accountName: string; paymentId?: string | null }
   | { kind: 'adjustment'; kind2: 'comp' | 'override' }
   | { kind: 'revoke'; id: string; summary: string }
+  | { kind: 'suspend'; accountId: string; accountName: string }
 
 export function BillingTabs({
   data,
@@ -124,12 +127,20 @@ export function BillingTabs({
         <PaymentFailuresTab
           rows={data.paymentFailures}
           canWriteRefunds={canWriteRefunds}
+          canWriteAdjustments={canWriteAdjustments}
           onOpenRefund={(f) =>
             setModal({
               kind: 'refund',
               accountId: f.account_id,
               accountName: f.account_name,
               paymentId: f.last_payment_id,
+            })
+          }
+          onOpenSuspend={(f) =>
+            setModal({
+              kind: 'suspend',
+              accountId: f.account_id,
+              accountName: f.account_name,
             })
           }
         />
@@ -168,6 +179,7 @@ export function BillingTabs({
         <AdjustmentModal
           kind={modal.kind2}
           plans={data.plans}
+          accounts={data.accounts}
           onClose={() => setModal(null)}
         />
       ) : null}
@@ -175,6 +187,13 @@ export function BillingTabs({
         <RevokeModal
           adjustmentId={modal.id}
           summary={modal.summary}
+          onClose={() => setModal(null)}
+        />
+      ) : null}
+      {modal?.kind === 'suspend' ? (
+        <SuspendAccountModal
+          accountId={modal.accountId}
+          accountName={modal.accountName}
           onClose={() => setModal(null)}
         />
       ) : null}
@@ -252,11 +271,15 @@ function razorpaySubscriptionUrl(subId: string): string {
 function PaymentFailuresTab({
   rows,
   canWriteRefunds,
+  canWriteAdjustments,
   onOpenRefund,
+  onOpenSuspend,
 }: {
   rows: BillingData['paymentFailures']
   canWriteRefunds: boolean
+  canWriteAdjustments: boolean
   onOpenRefund: (row: BillingData['paymentFailures'][number]) => void
+  onOpenSuspend: (row: BillingData['paymentFailures'][number]) => void
 }) {
   const pill =
     rows.length === 0 ? (
@@ -343,6 +366,21 @@ function PaymentFailuresTab({
                         className="rounded border border-[color:var(--border-mid)] bg-white px-2.5 py-1 text-[11px] hover:bg-bg disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         Refund
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onOpenSuspend(r)}
+                        disabled={!canWriteAdjustments || r.retries < 3}
+                        title={
+                          canWriteAdjustments
+                            ? r.retries >= 3
+                              ? 'Suspend account and all child orgs (use when retries are exhausted)'
+                              : 'Available after ≥3 retries'
+                            : 'platform_operator required'
+                        }
+                        className="rounded border border-red-200 bg-white px-2.5 py-1 text-[11px] text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Suspend
                       </button>
                     </div>
                   </td>
@@ -673,24 +711,23 @@ function RefundModal({
 function AdjustmentModal({
   kind,
   plans,
+  accounts,
   onClose,
 }: {
   kind: 'comp' | 'override'
   plans: BillingData['plans']
+  accounts: BillingData['accounts']
   onClose: () => void
 }) {
   const router = useRouter()
-  const [accountId, setAccountId] = useState('')
+  const [accountId, setAccountId] = useState(accounts[0]?.id ?? '')
   const [planCode, setPlanCode] = useState(plans[0]?.plan_code ?? '')
   const [expiresAt, setExpiresAt] = useState('')
   const [reason, setReason] = useState('')
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const ok =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(accountId) &&
-    planCode.length > 0 &&
-    reason.trim().length >= 10
+  const ok = accountId.length > 0 && planCode.length > 0 && reason.trim().length >= 10
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -723,13 +760,23 @@ function AdjustmentModal({
       onClose={onClose}
     >
       <form onSubmit={onSubmit} className="space-y-4 p-4">
-        <Field label="Account id (UUID)">
-          <input
+        <Field label="Account">
+          <select
             value={accountId}
             onChange={(e) => setAccountId(e.target.value)}
-            placeholder="00000000-0000-0000-0000-000000000000"
-            className="rounded border border-[color:var(--border-mid)] px-3 py-1.5 font-mono text-xs"
-          />
+            className="rounded border border-[color:var(--border-mid)] bg-white px-3 py-1.5 text-sm"
+          >
+            {accounts.length === 0 ? (
+              <option value="">(no accounts)</option>
+            ) : null}
+            {accounts.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name} · {a.status}
+                {' · '}
+                {a.id.slice(0, 8)}
+              </option>
+            ))}
+          </select>
         </Field>
         <Field label="Plan">
           <select
@@ -807,6 +854,82 @@ function RevokeModal({
           pending={pending}
           onClose={onClose}
           submit="Revoke"
+          submitDanger
+          disabled={!ok}
+        />
+      </form>
+    </ModalShell>
+  )
+}
+
+// ADR-0048 Sprint 1.2 — Suspend-account flow surfaced on Payment Failures.
+
+function SuspendAccountModal({
+  accountId,
+  accountName,
+  onClose,
+}: {
+  accountId: string
+  accountName: string
+  onClose: () => void
+}) {
+  const router = useRouter()
+  const [reason, setReason] = useState('')
+  const [pending, setPending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [outcome, setOutcome] = useState<null | { flippedOrgCount: number }>(null)
+  const ok = reason.trim().length >= 10
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setPending(true)
+    setError(null)
+    const r = await suspendAccountAction({ accountId, reason })
+    setPending(false)
+    if (!r.ok) {
+      setError(r.error)
+      return
+    }
+    setOutcome({ flippedOrgCount: r.data!.flippedOrgCount })
+    router.refresh()
+  }
+
+  if (outcome) {
+    return (
+      <ModalShell title={`Suspended — ${accountName}`} onClose={onClose}>
+        <div className="space-y-3 p-4 text-sm">
+          <div className="rounded border border-red-200 bg-red-50 p-3 text-red-900">
+            <p className="font-medium">Account suspended</p>
+            <p className="mt-1 text-xs">
+              {outcome.flippedOrgCount} child org(s) flipped to suspended. The
+              Worker stops serving the account&rsquo;s banner on the next KV
+              sync (~2 min). Restore from <code>/accounts/{accountId.slice(0, 8)}</code> when ready.
+            </p>
+          </div>
+          <FormFooter
+            pending={false}
+            onClose={onClose}
+            submit="Close"
+            disabled={false}
+          />
+        </div>
+      </ModalShell>
+    )
+  }
+
+  return (
+    <ModalShell
+      title={`Suspend — ${accountName}`}
+      subtitle="Use this when Razorpay retries are exhausted and the account should stop serving until payment is restored. Fans out to every active child org."
+      onClose={onClose}
+    >
+      <form onSubmit={onSubmit} className="space-y-4 p-4">
+        <ReasonField reason={reason} onChange={setReason} />
+        {error ? <p className="text-sm text-red-700">{error}</p> : null}
+        <FormFooter
+          pending={pending}
+          onClose={onClose}
+          submit="Suspend account"
           submitDanger
           disabled={!ok}
         />

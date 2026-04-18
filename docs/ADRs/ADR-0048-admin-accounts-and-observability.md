@@ -78,14 +78,15 @@ One ADR, two phases.
 
 **Deliverables:**
 
-- [ ] `admin/src/app/(operator)/accounts/page.tsx` + `account-list.tsx` — server+client pair, list with filters (status / plan / search), action column pointing to `/accounts/[accountId]`.
-- [ ] `admin/src/app/(operator)/accounts/[accountId]/page.tsx` + `account-detail.tsx` — detail view with org list, active adjustments, audit history. Suspend/restore actions gated on platform_operator.
-- [ ] `admin/src/app/(operator)/accounts/actions.ts` — `suspendAccount`, `restoreAccount` Server Actions.
-- [ ] Nav: `Accounts` inserted between `Organisations` and `Support Tickets` in `admin/src/app/(operator)/layout.tsx`.
-- [ ] Billing Adjustment modal upgrade (`admin/src/app/(operator)/billing/billing-tabs.tsx`) — UUID textbox replaced with combobox. Options loaded on modal open via `admin.accounts_list`.
-- [ ] Billing Payment Failures tab — `Suspend` button added next to `Retry at Razorpay ↗` / `Refund`, wired to a `suspendAccount` confirm modal.
+- [x] `admin/src/app/(operator)/accounts/page.tsx` — server component with filter bar (status / plan / search). Rows linked to detail.
+- [x] `admin/src/app/(operator)/accounts/[accountId]/page.tsx` + `action-bar.tsx` — detail envelope renders account, orgs, active adjustments, recent audit. Suspend/restore gated on platform_operator with reason-required modals.
+- [x] `admin/src/app/(operator)/accounts/actions.ts` — `suspendAccountAction` / `restoreAccountAction`. `revalidatePath` on `/accounts`, `/accounts/[id]`, `/billing` so the billing panel pill counts stay in sync.
+- [x] Nav: `Accounts` between `Organisations` and `Support Tickets`.
+- [x] Billing Adjustment modal — UUID textbox replaced with a select of active accounts (loaded once on page render via `admin.accounts_list`). Shows `name · status · id-prefix`.
+- [x] Billing Payment Failures tab — `Suspend` button added next to `Retry at Razorpay ↗` / `Refund`, gated on platform_operator AND retries ≥ 3. Confirm modal; post-success modal surfaces `N child orgs flipped` and points at `/accounts/<id>` for restore.
+- [x] Admin build + lint clean. `/accounts` + `/accounts/[accountId]` in route manifest.
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete` — 2026-04-18
 
 ### Phase 2 — Worker observability
 
