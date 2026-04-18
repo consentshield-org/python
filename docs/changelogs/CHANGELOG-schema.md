@@ -2,6 +2,27 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-0050 Sprint 2.1 — chunk 3] — 2026-04-18
+
+**ADR:** ADR-0050 — Admin account-aware billing
+**Sprint:** Sprint 2.1 — accounts billing-profile + public.invoices + verbatim Razorpay store
+
+### Added
+- `20260507000008_billing_accounts_invoices_webhooks.sql`:
+  - `public.accounts` nullable billing-profile columns: `billing_legal_name`, `billing_gstin`, `billing_state_code`, `billing_address`, `billing_email`, `billing_profile_updated_at`. Required at first invoice issuance (Sprint 2.2 RPC will enforce).
+  - `public.invoices` canonical invoice schema (issuer_entity_id / account_id / invoice_number / fy_year+sequence / period / dates / line_items jsonb / paise split: subtotal + CGST + SGST + IGST + total / status CHECK / Razorpay ids / pdf_r2_key+sha256 / issued_at / paid_at / voided_at+reason / email message id+delivered_at / notes). `on delete restrict` on both FKs. Indexes: (issuer, fy_year, fy_sequence) unique; (issuer, invoice_number) unique; (account_id, issue_date desc); (status) partial for unpaid/unvoid; (razorpay_invoice_id) partial.
+  - Invoice immutability: `public.invoices_enforce_immutability` BEFORE UPDATE trigger raises on any change to `id`, `issuer_entity_id`, `account_id`, `invoice_number`, `fy_year`, `fy_sequence`, `period_start`, `period_end`, `issue_date`, `due_date`, `currency`, `line_items`, `subtotal_paise`, `cgst_paise`, `sgst_paise`, `igst_paise`, `total_paise`, `created_at`. Auto-stamps `updated_at`.
+  - DELETE revoked from `public, authenticated, anon, cs_admin, cs_orchestrator, cs_delivery, cs_worker` — no role in app code can delete an invoice row. `cs_orchestrator` retains INSERT + UPDATE (status reconciliation path); `cs_admin` retains SELECT only.
+  - `billing.razorpay_webhook_events` verbatim store (event_id unique, event_type, signature_verified, signature, payload jsonb, account_id FK with `on delete set null`, received_at, processed_at, processed_outcome). Indexes: (event_type, received_at desc); (account_id, received_at desc) partial; (received_at desc) partial-on-unprocessed.
+  - `public.rpc_razorpay_webhook_insert_verbatim(event_id, event_type, signature, payload)` — anon-callable; SECURITY DEFINER; resolves `account_id` from payload subscription/customer ids against `public.accounts`; ON CONFLICT (event_id) DO NOTHING so Razorpay retries don't double-insert; returns `{id, account_id, duplicate}`.
+  - `public.rpc_razorpay_webhook_stamp_processed(event_id, outcome)` — anon-callable; SECURITY DEFINER; sets `processed_at = now()` + `processed_outcome` idempotently (only when `processed_at is null`).
+- `20260507000009_billing_webhook_event_detail_rpc.sql`: `admin.billing_webhook_event_detail(p_event_id)` — platform_operator+ read of the verbatim row as jsonb envelope. Used by tests today and by the dispute workspace (Sprint 3.2) tomorrow.
+
+### Tested
+- [x] `tests/admin/invoice-immutability.test.ts` **10/10 PASS** — UPDATEs to `total_paise`, `line_items`, `invoice_number`, `fy_sequence`, `issuer_entity_id` all raise via trigger; allow-list UPDATEs (`status`, `issued_at`, `paid_at`, `razorpay_invoice_id`, `notes`) succeed; DELETE as `authenticated` role raises permission error.
+- [x] `tests/admin/razorpay-verbatim.test.ts` **6/6 PASS** — verbatim insert with signature_verified=true; duplicate event_id returns `duplicate=true` without overwriting; account_id resolves from subscription.id; stamp_processed is idempotent; empty event_id raises; missing-event detail RPC raises.
+- [x] Full admin test suite **194/194 PASS** across 16 files (including regression on all prior sprints).
+
 ## [ADR-0050 Sprint 2.1 — chunk 2] — 2026-04-18
 
 **ADR:** ADR-0050 — Admin account-aware billing

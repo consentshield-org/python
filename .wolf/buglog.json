@@ -5501,6 +5501,22 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-04-18T15:10:11.520Z"
+    },
+    {
+      "id": "bug-344",
+      "timestamp": "2026-04-18T15:56:12.710Z",
+      "error_message": "Incorrect value in code",
+      "file": "docs/ADRs/ADR-0050-admin-account-aware-billing.md",
+      "root_cause": "Had `[~] in progress`",
+      "fix": "Changed to `[x] complete`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-18T15:56:12.710Z"
     }
   ]
 }

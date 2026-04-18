@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-18T15:11:56.019Z
-> Files: 694 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-18T15:56:12.701Z
+> Files: 699 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../tmp/
 
@@ -583,6 +583,10 @@
 
 - `route.ts` — Next.js API route: POST (~870 tok)
 
+## app/src/app/api/webhooks/razorpay/
+
+- `route.ts` — ADR-0050 Sprint 2.1 chunk 3 — verbatim Razorpay webhook preservation. (~1428 tok)
+
 ## app/src/app/api/webhooks/sentry/
 
 - `route.ts` — ADR-0049 Phase 2 Sprint 2.1 — Sentry webhook ingestion. (~1327 tok)
@@ -727,7 +731,7 @@
 - `ADR-0047-customer-membership-lifecycle.md` — ADR-0047 — Customer membership lifecycle (role change + remove) + single-account-per-identity invari (~3944 tok)
 - `ADR-0048-admin-accounts-and-observability.md` — ADR-0048: Admin Accounts panel + ADR-0033/34 deviation closeout (~2261 tok)
 - `ADR-0049-security-observability-ingestion.md` — ADR-0049: Security observability ingestion — rate_limit_events + sentry_events (~2365 tok)
-- `ADR-0050-admin-account-aware-billing.md` — ADR-0050: Admin account-aware billing — issuer entities, invoices, GST, dispute workspace (~11158 tok)
+- `ADR-0050-admin-account-aware-billing.md` — ADR-0050: Admin account-aware billing — issuer entities, invoices, GST, dispute workspace (~11197 tok)
 - `ADR-index.md` — ADR Index (~1718 tok)
 - `ADR-template.md` — ADR-NNNN: Title (~423 tok)
 - `adr-workflow.md` — ADR Workflow Rules (~557 tok)
@@ -753,11 +757,11 @@
 ## docs/changelogs/
 
 - `CHANGELOG-api.md` — Changelog — API (~4845 tok)
-- `CHANGELOG-dashboard.md` — Changelog — Dashboard (~11612 tok)
+- `CHANGELOG-dashboard.md` — Changelog — Dashboard (~11902 tok)
 - `CHANGELOG-docs.md` — Changelog — Documentation (~3064 tok)
 - `CHANGELOG-edge-functions.md` — Changelog — Edge Functions (~3003 tok)
 - `CHANGELOG-infra.md` — Changelog — Infrastructure (~3667 tok)
-- `CHANGELOG-schema.md` — Changelog — Schema (~18293 tok)
+- `CHANGELOG-schema.md` — Changelog — Schema (~19187 tok)
 - `CHANGELOG-worker.md` — Changelog — Worker (~1897 tok)
 
 ## docs/design/
@@ -1236,6 +1240,8 @@
 - `20260507000005_platform_owner_followup.sql` — ADR-0050 Sprint 2.1 — follow-up to 20260507000004_admin_role_platform_owner.sql. (~1277 tok)
 - `20260507000006_billing_issuer_entities.sql` — ADR-0050 Sprint 2.1 chunk 2 — billing.issuer_entities. (~5800 tok)
 - `20260507000007_billing_issuer_update_op_fix.sql` — ADR-0050 Sprint 2.1 chunk 2 — fix admin.billing_issuer_update parse error. (~890 tok)
+- `20260507000008_billing_accounts_invoices_webhooks.sql` — ADR-0050 Sprint 2.1 chunk 3 — accounts billing-profile + invoices + verbatim Razorpay store. (~3901 tok)
+- `20260507000009_billing_webhook_event_detail_rpc.sql` — ADR-0050 Sprint 2.1 chunk 3 follow-up — admin.billing_webhook_event_detail. (~397 tok)
 
 ## supabase/seed/
 
@@ -1280,9 +1286,11 @@
 - `billing-rpcs.test.ts` — service: countAuditRows, createPendingRefund (~4016 tok)
 - `foundation.test.ts` — Declares anon (~1516 tok)
 - `helpers.ts` — Helpers for admin-side tests. Reuses the Supabase project + env vars (~979 tok)
+- `invoice-immutability.test.ts` — service: nextGstin (~2176 tok)
 - `pipeline-rpcs.test.ts` — Declares row (~1753 tok)
 - `platform-owner-role.test.ts` — service: seedPlatformOwner (~2016 tok)
 - `rate-limit-rpcs.test.ts` — Declares service (~1008 tok)
+- `razorpay-verbatim.test.ts` — service: payloadFor, readEvent (~1967 tok)
 - `rls.test.ts` — Declares adminOnlyTables (~1952 tok)
 - `rpcs.test.ts` — service: rpc (~4104 tok)
 - `sdf-rpcs.test.ts` — service: countAuditRows (~1560 tok)

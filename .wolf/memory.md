@@ -2438,3 +2438,14 @@
 | 20:41 | Edited docs/changelogs/CHANGELOG-schema.md | expanded (+12 lines) | ~500 |
 | 20:41 | Edited docs/changelogs/CHANGELOG-dashboard.md | expanded (+19 lines) | ~422 |
 | 20:41 | Edited docs/ADRs/ADR-0050-admin-account-aware-billing.md | inline fix | ~87 |
+| 20:43 | Session end: 3 writes across 3 files (CHANGELOG-schema.md, CHANGELOG-dashboard.md, ADR-0050-admin-account-aware-billing.md) | 15 reads | ~83344 tok |
+| 20:52 | Session end: 3 writes across 3 files (CHANGELOG-schema.md, CHANGELOG-dashboard.md, ADR-0050-admin-account-aware-billing.md) | 43 reads | ~170082 tok |
+| 20:53 | Created supabase/migrations/20260507000008_billing_accounts_invoices_webhooks.sql | — | ~3901 |
+| 20:53 | Created app/src/app/api/webhooks/razorpay/route.ts | — | ~1428 |
+| 20:54 | Created tests/admin/invoice-immutability.test.ts | — | ~2176 |
+| 20:55 | Created tests/admin/razorpay-verbatim.test.ts | — | ~2039 |
+| 20:55 | Created supabase/migrations/20260507000009_billing_webhook_event_detail_rpc.sql | — | ~397 |
+| 20:56 | Created tests/admin/razorpay-verbatim.test.ts | — | ~1967 |
+| 21:25 | Edited docs/changelogs/CHANGELOG-schema.md | expanded (+21 lines) | ~967 |
+| 21:26 | Edited docs/changelogs/CHANGELOG-dashboard.md | expanded (+12 lines) | ~322 |
+| 21:26 | Edited docs/ADRs/ADR-0050-admin-account-aware-billing.md | "[~] in progress" → "[x] complete" | ~129 |

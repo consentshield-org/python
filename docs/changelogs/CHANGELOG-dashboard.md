@@ -2,6 +2,18 @@
 
 Next.js UI changes.
 
+## [ADR-0050 Sprint 2.1 — chunk 3] — 2026-04-18
+
+**ADR:** ADR-0050 — Admin account-aware billing
+**Sprint:** Sprint 2.1 — Razorpay webhook handler refactor (verbatim preservation)
+
+### Changed
+- `app/src/app/api/webhooks/razorpay/route.ts` — calls `public.rpc_razorpay_webhook_insert_verbatim` immediately after signature verification (before any state mutation), persisting every verified Razorpay webhook to `billing.razorpay_webhook_events`. Calls `public.rpc_razorpay_webhook_stamp_processed` on every terminal path (`not_handled`, `no_subscription_entity`, `duplicate_dropped`, `rpc_error:…`, `unresolved_org:…`, `ok`) so each row has a `processed_outcome` matching the handler's final response. Existing ADR-0034 subscription-state handling preserved verbatim; unhandled event types still persist (outcome `not_handled`) so `dispute.*` and `invoice.*` are captured ahead of the chunks that act on them.
+
+### Tested
+- [x] Customer app `bun run build` + `bun run lint` clean.
+- [x] End-to-end handler behaviour under the existing integration test (unchanged); verbatim-insert + stamp paths covered by `tests/admin/razorpay-verbatim.test.ts` (6/6 PASS).
+
 ## [ADR-0050 Sprint 2.1 — chunk 2] — 2026-04-18
 
 **ADR:** ADR-0050 — Admin account-aware billing

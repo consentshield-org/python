@@ -3,6 +3,19 @@ import { NextResponse } from 'next/server'
 import { verifyWebhookSignature } from '@/lib/billing/razorpay'
 import { PLANS, type PlanId } from '@/lib/billing/plans'
 
+// ADR-0050 Sprint 2.1 chunk 3 — verbatim Razorpay webhook preservation.
+//
+// Every signature-verified Razorpay webhook is persisted into
+// billing.razorpay_webhook_events BEFORE any state-mutation work runs,
+// and stamped with processed_at + processed_outcome AFTER. This gives
+// us a tamper-evident event log for chargeback defense (ADR-0052) and
+// a clean reconciliation source for invoice state transitions.
+//
+// Existing ADR-0034 subscription-state handling is preserved verbatim
+// for HANDLED_EVENTS; unhandled event types still get persisted (with
+// outcome 'not_handled') so dispute.* and invoice.* events are captured
+// ahead of the chunks that act on them.
+
 const HANDLED_EVENTS = [
   'subscription.activated',
   'subscription.charged',
@@ -25,29 +38,60 @@ export async function POST(request: Request) {
     event: string
     payload: {
       subscription?: {
-        entity: { id: string; plan_id: string; status: string; notes?: Record<string, string> }
+        entity: {
+          id: string
+          plan_id: string
+          status: string
+          notes?: Record<string, string>
+        }
       }
       payment?: { entity: { id: string; status: string } }
     }
   }
 
+  const anon = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  )
+
+  // Verbatim-insert first. Razorpay always sends x-razorpay-event-id on
+  // webhooks; if missing, fall back to a synthetic id so signed events
+  // don't get dropped, but the outcome records the synthetic fallback.
+  const effectiveEventId =
+    eventId.length > 0 ? eventId : `no-header-${Date.now()}`
+  const verbatim = await anon.rpc('rpc_razorpay_webhook_insert_verbatim', {
+    p_event_id: effectiveEventId,
+    p_event_type: event.event,
+    p_signature: signature,
+    p_payload: event as unknown as Record<string, unknown>,
+  })
+  if (verbatim.error) {
+    console.error('[razorpay] verbatim insert failed', verbatim.error)
+    // Don't 500 on logging failure — continue with existing flow.
+  }
+
+  const stamp = async (outcome: string) => {
+    const r = await anon.rpc('rpc_razorpay_webhook_stamp_processed', {
+      p_event_id: effectiveEventId,
+      p_outcome: outcome,
+    })
+    if (r.error) console.error('[razorpay] stamp processed failed', r.error)
+  }
+
   if (!HANDLED_EVENTS.includes(event.event)) {
+    await stamp('not_handled')
     return NextResponse.json({ received: true, handled: false })
   }
 
   const subscription = event.payload.subscription?.entity
   if (!subscription) {
+    await stamp('no_subscription_entity')
     return NextResponse.json({ received: true, handled: false })
   }
 
   const csPlanFromNotes = subscription.notes?.cs_plan as PlanId | undefined
   const csPlan = csPlanFromNotes && PLANS[csPlanFromNotes] ? csPlanFromNotes : null
   const orgIdHint = subscription.notes?.org_id ?? null
-
-  const anon = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  )
 
   // S-3: drop duplicate Razorpay retries of the same event ID.
   if (eventId) {
@@ -59,6 +103,7 @@ export async function POST(request: Request) {
     if (dedup.error) {
       console.error('[razorpay] dedup check failed', dedup.error)
     } else if (dedup.data === false) {
+      await stamp('duplicate_dropped')
       return NextResponse.json({ received: true, duplicate: true })
     }
   }
@@ -73,6 +118,7 @@ export async function POST(request: Request) {
 
   if (error) {
     console.error('[razorpay] rpc error', error)
+    await stamp(`rpc_error: ${error.message}`.slice(0, 250))
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
@@ -80,6 +126,9 @@ export async function POST(request: Request) {
   if (!envelope.ok) {
     // B-5: hard-fail on unresolved org. Razorpay retries on non-2xx.
     console.error('[razorpay] unresolved org for subscription', subscription.id)
+    await stamp(
+      `unresolved_org: ${envelope.error ?? 'unknown'}`.slice(0, 250),
+    )
     return NextResponse.json(
       {
         error: envelope.error ?? 'Failed to apply subscription event',
@@ -89,5 +138,10 @@ export async function POST(request: Request) {
     )
   }
 
-  return NextResponse.json({ received: true, handled: true, org_id: envelope.org_id })
+  await stamp('ok')
+  return NextResponse.json({
+    received: true,
+    handled: true,
+    org_id: envelope.org_id,
+  })
 }
