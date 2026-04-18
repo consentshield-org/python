@@ -245,6 +245,10 @@ function rupees(paise: number) {
 
 // ---------------- Tab bodies ----------------
 
+function razorpaySubscriptionUrl(subId: string): string {
+  return `https://dashboard.razorpay.com/app/subscriptions/${encodeURIComponent(subId)}`
+}
+
 function PaymentFailuresTab({
   rows,
   canWriteRefunds,
@@ -278,7 +282,7 @@ function PaymentFailuresTab({
                 <th className="px-4 py-2">Last failed</th>
                 <th className="px-4 py-2">Retries</th>
                 <th className="px-4 py-2">Subscription</th>
-                <th className="px-4 py-2"></th>
+                <th className="px-4 py-2 text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -312,22 +316,35 @@ function PaymentFailuresTab({
                   <td className="px-4 py-2 font-mono text-[11px] text-text-3">
                     {r.razorpay_subscription_id ?? '—'}
                   </td>
-                  <td className="px-4 py-2 text-right">
-                    <button
-                      type="button"
-                      onClick={() => onOpenRefund(r)}
-                      disabled={!canWriteRefunds || !r.last_payment_id}
-                      title={
-                        canWriteRefunds
-                          ? r.last_payment_id
-                            ? 'Open refund for the last failed payment id'
-                            : 'No payment id on the last failure — refund not applicable'
-                          : 'support or platform_operator required'
-                      }
-                      className="rounded border border-[color:var(--border-mid)] bg-white px-2.5 py-1 text-[11px] hover:bg-bg disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      Refund
-                    </button>
+                  <td className="px-4 py-2">
+                    <div className="flex items-center justify-end gap-2">
+                      {r.razorpay_subscription_id ? (
+                        <a
+                          href={razorpaySubscriptionUrl(r.razorpay_subscription_id)}
+                          target="_blank"
+                          rel="noreferrer noopener"
+                          className="rounded border border-[color:var(--border-mid)] bg-white px-2.5 py-1 text-[11px] hover:bg-bg"
+                          title="Razorpay handles subscription-charge retries automatically; this opens the dashboard for manual inspection"
+                        >
+                          Retry at Razorpay ↗
+                        </a>
+                      ) : null}
+                      <button
+                        type="button"
+                        onClick={() => onOpenRefund(r)}
+                        disabled={!canWriteRefunds || !r.last_payment_id}
+                        title={
+                          canWriteRefunds
+                            ? r.last_payment_id
+                              ? 'Open refund for the last failed payment id'
+                              : 'No payment id on the last failure — refund not applicable'
+                            : 'support or platform_operator required'
+                        }
+                        className="rounded border border-[color:var(--border-mid)] bg-white px-2.5 py-1 text-[11px] hover:bg-bg disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Refund
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -336,9 +353,12 @@ function PaymentFailuresTab({
         </div>
       )}
       <footer className="border-t border-[color:var(--border)] px-4 py-2 text-[11px] text-text-3">
-        Retry-charge + Razorpay round-trip land in Sprint 2.2. Today the
-        Refund button records a pending DB row; operator completes the
-        refund in the Razorpay dashboard.
+        Subscription-charge retries run on Razorpay&apos;s own automatic
+        retry policy — there is no first-class &ldquo;retry now&rdquo; API.
+        The button above deep-links to the dashboard so operators can
+        inspect state or manually trigger an invoice. Refunds use the
+        real Razorpay REST API; the row flips pending → issued or failed
+        based on the response.
       </footer>
     </Card>
   )
@@ -526,6 +546,15 @@ function RefundModal({
   const [reason, setReason] = useState('')
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [outcome, setOutcome] = useState<
+    | null
+    | {
+        status: 'issued' | 'failed' | 'pending'
+        razorpayRefundId?: string
+        failureReason?: string
+        warning?: string
+      }
+  >(null)
 
   const amountPaise = Math.round(Number(amountRupees) * 100)
   const ok =
@@ -548,14 +577,65 @@ function RefundModal({
       setError(r.error)
       return
     }
-    onClose()
+    // Keep the modal open long enough to show the round-trip outcome,
+    // then refresh the underlying tables. Operator dismisses manually.
+    setOutcome({
+      status: r.data!.status,
+      razorpayRefundId: r.data!.razorpayRefundId,
+      failureReason: r.data!.failureReason,
+      warning: r.data!.warning,
+    })
     router.refresh()
+  }
+
+  if (outcome) {
+    return (
+      <ModalShell
+        title={`Refund — ${accountName}`}
+        subtitle="Round-trip complete."
+        onClose={onClose}
+      >
+        <div className="space-y-3 p-4 text-sm">
+          {outcome.status === 'issued' ? (
+            <div className="rounded border border-green-200 bg-green-50 p-3 text-green-900">
+              <p className="font-medium">Issued ✓</p>
+              <p className="mt-1 text-xs">
+                Razorpay refund id:{' '}
+                <code className="font-mono">{outcome.razorpayRefundId}</code>
+              </p>
+            </div>
+          ) : null}
+          {outcome.status === 'failed' ? (
+            <div className="rounded border border-red-200 bg-red-50 p-3 text-red-900">
+              <p className="font-medium">Razorpay declined the refund</p>
+              <p className="mt-1 text-xs">{outcome.failureReason}</p>
+              <p className="mt-2 text-[11px] text-red-800/80">
+                The ledger row is marked <code>failed</code>; investigate in
+                the Razorpay dashboard or retry after fixing the input.
+              </p>
+            </div>
+          ) : null}
+          {outcome.status === 'pending' ? (
+            <div className="rounded border border-amber-200 bg-amber-50 p-3 text-amber-900">
+              <p className="font-medium">Pending — not sent to Razorpay</p>
+              <p className="mt-1 text-xs">{outcome.warning}</p>
+            </div>
+          ) : null}
+          <FormFooter
+            pending={false}
+            onClose={onClose}
+            submit="Close"
+            disabled={false}
+          />
+        </div>
+      </ModalShell>
+    )
   }
 
   return (
     <ModalShell
       title={`Refund — ${accountName}`}
-      subtitle="Writes a pending refund row. Razorpay round-trip lands in Sprint 2.2; until then complete the refund in the Razorpay dashboard after this row is in place."
+      subtitle="Creates a pending refunds row, then calls Razorpay. On success the row flips to issued + records the razorpay_refund_id; on failure it flips to failed + stores the error."
       onClose={onClose}
     >
       <form onSubmit={onSubmit} className="space-y-4 p-4">
@@ -582,7 +662,7 @@ function RefundModal({
         <FormFooter
           pending={pending}
           onClose={onClose}
-          submit="Create refund"
+          submit="Issue refund"
           disabled={!ok}
         />
       </form>

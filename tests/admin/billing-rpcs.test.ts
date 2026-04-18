@@ -286,4 +286,110 @@ describe('ADR-0034 Sprint 1.1 (post-0044) — admin billing_* RPCs + account_eff
       }
     })
   })
+
+  // ADR-0034 Sprint 2.2 — Razorpay round-trip outcome RPCs.
+  describe('billing_mark_refund_issued + billing_mark_refund_failed', () => {
+    async function createPendingRefund() {
+      const { data: id, error } = await supportUser.client
+        .schema('admin')
+        .rpc('billing_create_refund', {
+          p_account_id: customer.accountId,
+          p_razorpay_payment_id: 'pay_round_trip',
+          p_amount_paise: 1000,
+          p_reason: 'Sprint 2.2 round-trip test refund',
+        })
+      expect(error).toBeNull()
+      return id as string
+    }
+
+    it('mark_refund_issued flips pending → issued + writes audit row', async () => {
+      const refundId = await createPendingRefund()
+      const before = await countAuditRows(
+        'billing_mark_refund_issued',
+        supportUser.userId,
+      )
+
+      const { error } = await supportUser.client
+        .schema('admin')
+        .rpc('billing_mark_refund_issued', {
+          p_refund_id: refundId,
+          p_razorpay_refund_id: 'rfnd_test_abc',
+        })
+      expect(error).toBeNull()
+
+      const { data: row } = await service
+        .from('refunds')
+        .select('*')
+        .eq('id', refundId)
+        .maybeSingle()
+      expect(row?.status).toBe('issued')
+      expect(row?.razorpay_refund_id).toBe('rfnd_test_abc')
+      expect(row?.issued_at).toBeTruthy()
+
+      const after = await countAuditRows(
+        'billing_mark_refund_issued',
+        supportUser.userId,
+      )
+      expect(after).toBe(before + 1)
+    })
+
+    it('mark_refund_issued rejects already-terminal row', async () => {
+      const refundId = await createPendingRefund()
+      // Flip to issued first.
+      await supportUser.client.schema('admin').rpc('billing_mark_refund_issued', {
+        p_refund_id: refundId,
+        p_razorpay_refund_id: 'rfnd_first',
+      })
+      // Second call must fail.
+      const { error } = await supportUser.client
+        .schema('admin')
+        .rpc('billing_mark_refund_issued', {
+          p_refund_id: refundId,
+          p_razorpay_refund_id: 'rfnd_second',
+        })
+      expect(error).not.toBeNull()
+      expect(error?.message).toMatch(/already terminal/i)
+    })
+
+    it('mark_refund_failed flips pending → failed + stores reason + audit row', async () => {
+      const refundId = await createPendingRefund()
+      const before = await countAuditRows(
+        'billing_mark_refund_failed',
+        supportUser.userId,
+      )
+
+      const { error } = await supportUser.client
+        .schema('admin')
+        .rpc('billing_mark_refund_failed', {
+          p_refund_id: refundId,
+          p_failure_reason: 'Razorpay declined: insufficient balance on merchant',
+        })
+      expect(error).toBeNull()
+
+      const { data: row } = await service
+        .from('refunds')
+        .select('*')
+        .eq('id', refundId)
+        .maybeSingle()
+      expect(row?.status).toBe('failed')
+      expect(row?.failure_reason).toMatch(/insufficient balance/i)
+
+      const after = await countAuditRows(
+        'billing_mark_refund_failed',
+        supportUser.userId,
+      )
+      expect(after).toBe(before + 1)
+    })
+
+    it('mark_refund_failed requires a non-empty failure_reason', async () => {
+      const refundId = await createPendingRefund()
+      const { error } = await supportUser.client
+        .schema('admin')
+        .rpc('billing_mark_refund_failed', {
+          p_refund_id: refundId,
+          p_failure_reason: '',
+        })
+      expect(error).not.toBeNull()
+    })
+  })
 })

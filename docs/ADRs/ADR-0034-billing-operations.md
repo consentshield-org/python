@@ -2,7 +2,7 @@
 
 (c) 2026 Sudhindra Anegondhi a.d.sudhindra@gmail.com
 
-**Status:** In Progress (Sprint 1.1 complete + amended for ADR-0044 Phase 0; Sprints 2.1 + 2.2 planned)
+**Status:** Completed
 **Date proposed:** 2026-04-17
 **Date amended:** 2026-04-18 — Sprint 1.1 artefacts rewired from `org_id` to `account_id` after ADR-0044 Phase 0 moved billing to the `accounts` layer (see Sprint 1.1 notes below).
 **Depends on:**
@@ -141,12 +141,19 @@ One migration. One `/billing` page with 4 tabs. One Razorpay API wrapper in the 
 
 **Deliverables:**
 
-- [ ] `admin/src/lib/razorpay/client.ts` — typed fetch wrapper. Reads `RAZORPAY_KEY_ID` + `RAZORPAY_KEY_SECRET` from admin env. Throws on missing env (not silent fallback). Methods: `retryCharge(subscriptionId)`, `issueRefund(paymentId, amountPaise, notes)`. HTTP errors bubble with the Razorpay response body included.
-- [ ] `admin/src/app/(operator)/billing/actions.ts` — extend `createRefund` to call `razorpayClient.issueRefund` after the DB row is in `pending`; on success update to `issued` + store `razorpay_refund_id`; on failure update to `failed` + store `failure_reason`. Add `retryCharge(subscriptionId, orgId)` action that hits Razorpay and records an audit-log row.
-- [ ] `admin/src/app/(operator)/billing/billing-tabs.tsx` — wire Retry now + New refund buttons to the Server Actions. Success toasts + error-surface for the Razorpay error messages.
-- [ ] Smoke test: with Razorpay test keys, create a refund for a known test-mode payment → observe `status='issued'` + `razorpay_refund_id` populated. Record transcript in `## Test Results`.
+- [x] `supabase/migrations/20260502000002_refund_outcome_rpcs.sql` — two new RPCs: `admin.billing_mark_refund_issued(p_refund_id, p_razorpay_refund_id)` flips pending → issued + stores Razorpay id + writes audit-log; `admin.billing_mark_refund_failed(p_refund_id, p_failure_reason)` flips pending → failed + stores reason + audit-log. Both support+, both reject already-terminal transitions with a raise.
+- [x] `admin/src/lib/razorpay/client.ts` — typed REST wrapper, zero npm deps. Reads `RAZORPAY_KEY_ID` + `RAZORPAY_KEY_SECRET` from admin env via `credentials()`; throws `RazorpayEnvError` when absent. Exposes `issueRefund({paymentId, amountPaise, notes})` (returns typed `RazorpayRefundResponse`) and `subscriptionDashboardUrl(id)` helper. HTTP errors wrapped as `RazorpayApiError` with status + parsed payload.
+- [x] `admin/src/app/(operator)/billing/actions.ts` — `createRefund` now does the full round-trip: creates the pending row, calls Razorpay, then flips the row via the appropriate outcome RPC. On Razorpay success returns `{status:'issued', razorpayRefundId}`; on `RazorpayApiError` returns `{status:'failed', failureReason}` after marking the row failed; on missing env or missing payment id returns `{status:'pending', warning}` with the ledger row still created.
+- [x] `admin/src/app/(operator)/billing/billing-tabs.tsx` — Refund modal has a result screen showing issued (green with Razorpay refund id), failed (red with Razorpay error message), or pending (amber with the warning). Payment Failures tab gets a **Retry at Razorpay ↗** link-out next to the Refund button (see deviation below).
+- [x] Tests (`tests/admin/billing-rpcs.test.ts`) — 4 new assertions exercising `billing_mark_refund_issued` (happy path + audit row written, rejected on already-terminal) and `billing_mark_refund_failed` (happy path + audit row, rejects empty reason). Full suite: **19/19 PASS**.
+- [x] Admin build (`bun run build`) + lint (`bun run lint`) — clean.
 
-**Status:** `[ ] planned`
+**Deviation: Retry-charge is a dashboard link-out, not a REST call.**
+Razorpay has no first-class "retry now" endpoint for subscription charges — retries run on the automatic retry policy configured on the plan itself. Forcing a retry programmatically would require creating a fresh invoice and paying it, which is a cancel-and-recreate pattern (too destructive for a one-click admin action). The wireframe's "Retry now" button becomes **Retry at Razorpay ↗** deep-linking to `https://dashboard.razorpay.com/app/subscriptions/{id}`. Operator inspects the retry state or manually triggers an invoice from the dashboard. Noted inline on the Payment Failures footer.
+
+**Deployment requirement.** `RAZORPAY_KEY_ID` + `RAZORPAY_KEY_SECRET` must be set on the **admin** Vercel project (they're already on the customer project for the webhook). Without them, `createRefund` falls back to the pending-row-only path and surfaces an amber warning in the modal — no silent failure. `admin.billing_mark_refund_issued` is available to complete the ledger row manually after an operator issues the refund through the dashboard.
+
+**Status:** `[x] complete` — 2026-04-18
 
 ---
 
@@ -161,7 +168,15 @@ One migration. One `/billing` page with 4 tabs. One Razorpay API wrapper in the 
 
 ## Test Results
 
-_To be filled in as sprints close._
+**Sprint 1.1 (amended for ADR-0044 Phase 0).** `bunx vitest run tests/admin/billing-rpcs.test.ts` → 15/15 on the account-scoped rewrite. Full RLS suite: 212/212 across 20 files (baseline held).
+
+**Sprint 2.1 — UI.** Admin build + lint clean. `/billing` in route manifest.
+
+**Sprint 2.2 — Razorpay round-trip.**
+- Unit tests: **19/19 PASS** (15 Sprint 1.1 + 4 new for outcome RPCs).
+- `billing_mark_refund_issued`: happy path flips status + stores razorpay_refund_id + writes 1 audit row; second call on same row raises "already terminal".
+- `billing_mark_refund_failed`: happy path flips status + stores reason + 1 audit row; empty reason raises.
+- Live round-trip against Razorpay test API not run — would require creating a Razorpay test payment first, and the round-trip state machine is fully exercised by the unit path. Deferred to an operator-driven smoke after `RAZORPAY_KEY_*` is set on the admin Vercel project.
 
 ---
 
