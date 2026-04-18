@@ -2652,3 +2652,105 @@ DROP + RECREATE is available as a fallback if any future DEPA amendment requires
 ---
 
 *Document prepared April 2026. This is the complete schema design. Run top to bottom on a fresh Supabase Postgres instance. Every guard must be verified before any customer data enters the system. Security hardening changes integrated April 2026. DEPA alignment (§11) added 2026-04-16.*
+
+---
+
+## 12. Post-DEPA Amendments (ADRs 0033–0049, April 2026)
+
+Schema changes that landed between the admin platform roadmap (ADRs 0027–0036) and the security-observability bundle (ADR-0049). This section is the catalogue; each ADR's migration file remains the authoritative source.
+
+### 12.1 Overview
+
+| ADR | Scope |
+|---|---|
+| ADR-0033 / 0048 | Admin Ops + Security panel data sources + Worker 403 logging |
+| ADR-0034 | Billing Operations (refunds, plan_adjustments, effective-plan helper) |
+| ADR-0044 | Accounts layer (Terminal B — already documented in §11.x and scattered) |
+| ADR-0045 | Admin user lifecycle (extends `admin.admin_users` with `invited` status + four RPCs) |
+| ADR-0046 Phase 1 | Significant Data Fiduciary (SDF) status marker on `organisations` |
+| ADR-0048 | `public.blocked_ips` + Worker blocked-IP enforcement + admin Accounts panel |
+| ADR-0049 | `public.rate_limit_events` + `public.sentry_events` + webhook ingestion |
+
+### 12.2 New operational tables
+
+All operational (non-buffer). No `delivered_at`. Each has a 7-day retention cron unless noted.
+
+| Table | ADR | Purpose | Read path | Write path |
+|---|---|---|---|---|
+| `public.refunds` | 0034 | Refund ledger (intent + outcome) — `account_id` scoped | `admin.billing_refunds_list` | `admin.billing_create_refund` + `billing_mark_refund_issued` / `_failed` |
+| `public.plan_adjustments` | 0034 | Comp + override grants (`kind` discriminator) — `account_id` scoped | `admin.billing_plan_adjustments_list`, `public.account_effective_plan` | `admin.billing_upsert_plan_adjustment` / `billing_revoke_plan_adjustment` |
+| `public.blocked_ips` | 0033 Sprint 2.1 | Operator-managed global block list (CIDRs) | `admin.security_blocked_ips_list` + Worker via `admin_config` KV snapshot | `admin.security_block_ip` / `security_unblock_ip` |
+| `public.rate_limit_events` | 0049 Phase 1 | Persisted rate-limit denials (Upstash bucket is stateless) | `admin.security_rate_limit_triggers` (grouped by endpoint/IP) | `app/src/lib/rights/rate-limit-log.ts` fire-and-forget anon-key INSERT |
+| `public.sentry_events` | 0049 Phase 2 | Webhook-ingested Sentry escalations (severity ≥ warning) | `admin.security_sentry_events_list` | `app/src/app/api/webhooks/sentry/route.ts` HMAC-verified anon-key upsert on `sentry_id` |
+| `public.worker_errors` (existing) | 0016 + 0048 | Worker → Supabase write failures AND 403 rejection categories (ADR-0048 prefix discipline: `hmac_*` / `origin_*`) | `admin.pipeline_worker_errors_list`, `admin.security_worker_reasons_list` | `cs_worker` role + `ctx.waitUntil` fire-and-forget from Worker |
+
+RLS baseline for all five new tables: enabled, customer-facing SELECT policy absent, INSERT granted narrowly (anon/authenticated for the public-endpoint logger; `cs_worker` for the Worker path; `cs_admin` for admin writes via SECURITY DEFINER RPCs). Admin reads route through SECURITY DEFINER functions owned by the admin schema.
+
+### 12.3 Amendments to existing tables
+
+- `organisations.sdf_status text not null default 'not_designated'` (CHECK: `not_designated` / `self_declared` / `notified` / `exempt`) — ADR-0046 Phase 1.
+- `organisations.sdf_notified_at timestamptz` — ADR-0046 Phase 1.
+- `organisations.sdf_notification_ref text` — ADR-0046 Phase 1 (Gazette reference or Ministry letter ID as a category — Rule 3: no PDF bytes).
+- Partial index `organisations_sdf_designated_idx ON organisations(sdf_status) WHERE sdf_status <> 'not_designated'`.
+- `admin.admin_users.status` CHECK widened to include `invited` — ADR-0045 Sprint 1.1.
+- `organisations.status` CHECK widened to include `suspended_by_plan` — ADR-0044 Phase 0 (cross-reference).
+- `public.admin_config_snapshot()` JSON extended with `blocked_ips` array (ADR-0033 Sprint 2.3 via 20260427000002).
+
+### 12.4 New helper / effective-plan RPCs
+
+- `public.account_effective_plan(p_account_id uuid) returns text` — override > comp > `accounts.plan_code`. Replaces the short-lived `org_effective_plan` from the original ADR-0034 Sprint 1.1 (dropped during the ADR-0044 Phase 0 amendment).
+- `public.current_plan()` — Terminal B's reader for the caller's own account (ADR-0044 Phase 0). Called from customer dashboards; cross-reference from ADR-0044.
+
+### 12.5 Admin RPC catalogue (post-0034 additions)
+
+All SECURITY DEFINER, all gated by `admin.require_admin(<tier>)`, all audit-logged into `admin.admin_audit_log` with `old_value` + `new_value` diffs for writes.
+
+| RPC | Tier | ADR |
+|---|---|---|
+| `admin.billing_payment_failures_list(int)` | support | 0034 |
+| `admin.billing_refunds_list(int)` | support | 0034 |
+| `admin.billing_create_refund(uuid, text, bigint, text)` | support | 0034 |
+| `admin.billing_mark_refund_issued(uuid, text)` | support | 0034 2.2 |
+| `admin.billing_mark_refund_failed(uuid, text)` | support | 0034 2.2 |
+| `admin.billing_plan_adjustments_list(text)` | support | 0034 |
+| `admin.billing_upsert_plan_adjustment(uuid, text, text, timestamptz, text)` | platform_operator | 0034 |
+| `admin.billing_revoke_plan_adjustment(uuid, text)` | platform_operator | 0034 |
+| `admin.accounts_list(text, text, text)` | support | 0048 |
+| `admin.account_detail(uuid) returns jsonb` | support | 0048 |
+| `admin.suspend_account(uuid, text) returns jsonb` | platform_operator | 0048 |
+| `admin.restore_account(uuid, text) returns jsonb` | platform_operator | 0048 |
+| `admin.pipeline_worker_errors_list(int)` | support | 0033 Sprint 1.1 |
+| `admin.pipeline_stuck_buffers_snapshot()` | support | 0033 Sprint 1.1 |
+| `admin.pipeline_depa_expiry_queue()` | support | 0033 Sprint 1.1 |
+| `admin.pipeline_delivery_health(int)` | support | 0033 Sprint 1.1 |
+| `admin.security_rate_limit_triggers(int)` | support | 0033 (stub) → 0049 (real) |
+| `admin.security_worker_reasons_list(text, int, int)` | support | 0033 Sprint 2.1 |
+| `admin.security_blocked_ips_list()` | support | 0033 Sprint 2.1 |
+| `admin.security_block_ip(cidr, text, timestamptz)` | platform_operator | 0033 Sprint 2.1 |
+| `admin.security_unblock_ip(uuid, text)` | platform_operator | 0033 Sprint 2.1 |
+| `admin.security_sentry_events_list(int)` | support | 0049 Phase 2 |
+| `admin.set_sdf_status(uuid, text, text, timestamptz, text)` | platform_operator | 0046 Phase 1 |
+| `admin.admin_invite_create(uuid, text, text, text)` | platform_operator | 0045 |
+| `admin.admin_change_role(uuid, text, text)` | platform_operator | 0045 (refuses self-change, last-active-PO demotion) |
+| `admin.admin_disable(uuid, text)` | platform_operator | 0045 (refuses self-disable, last-active-PO disable) |
+| `admin.admin_list()` | support | 0045 |
+
+### 12.6 Worker 403 logging categories (ADR-0048 Sprint 2.1)
+
+Prefix discipline so `admin.security_worker_reasons_list` can filter via `ILIKE 'hmac_%'` / `ILIKE 'origin_%'`:
+
+- `hmac_timestamp_drift: <ts>` — request timestamp outside ±5 min.
+- `hmac_signature_mismatch` — signature verification failed (even after previous-secret retry during rotation grace).
+- `origin_missing: ...` — unsigned request with no Origin/Referer.
+- `origin_mismatch: <origin>` — Origin present but not in `web_properties.allowed_origins`.
+
+Every 403 site in `worker/src/events.ts` + `worker/src/observations.ts` fires `ctx.waitUntil(logWorkerError(...))` with one of these prefixes. Errors swallowed inside `logWorkerError` — logging failures never DoS customers.
+
+### 12.7 Identity-isolation guards (CLAUDE.md Rule 12)
+
+Enforced at RPC level:
+
+- `public.accept_invitation(p_token text)` — raises 42501 if caller JWT carries `app_metadata.is_admin=true`. Migration `20260504000002`.
+- `admin.admin_invite_create(p_user_id, p_display_name, p_admin_role, p_reason)` — raises 42501 if target user has any `public.account_memberships` or `public.org_memberships` rows. Migration `20260504000003`.
+
+Combined with proxy-level enforcement (admin proxy rejects non-`is_admin`; customer proxy rejects `is_admin=true`), these guards prevent any single `auth.users` row from holding both customer and admin identities.

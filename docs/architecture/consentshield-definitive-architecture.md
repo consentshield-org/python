@@ -966,3 +966,69 @@ If question 5 is yes, write it yourself. A day of work eliminates a permanent su
 ---
 
 *Document prepared April 2026. This is the definitive architecture reference. All development decisions defer to this document. Security hardening changes integrated April 2026.*
+
+---
+
+## Appendix A — Admin console panels (post-ADR-0048)
+
+`admin.consentshield.in` is a separate Next.js app behind `cs_admin` JWT + AAL2 gate (Rule 21). Thirteen operator surfaces as of ADR-0049:
+
+| Panel | Route | Primary data | ADR |
+|---|---|---|---|
+| Operations Dashboard | `/` | Metric tiles + health pills | 0028 |
+| Organisations | `/orgs`, `/orgs/[orgId]` | `public.organisations` + members + notes + impersonation | 0029 |
+| Accounts | `/accounts`, `/accounts/[accountId]` | `public.accounts` + orgs + active adjustments + audit | 0048 |
+| Support Tickets | `/support`, `/support/[ticketId]` | `admin.support_tickets` + internal notes | 0032 |
+| Sectoral Templates | `/templates` (+ new/edit) | `admin.sectoral_templates` | 0030 |
+| Connector Catalogue | `/connectors` (+ new/edit) | `admin.connector_catalogue` | 0031 |
+| Tracker Signatures | `/signatures` (+ new/edit/import) | `admin.tracker_signature_catalogue` | 0031 |
+| Pipeline Operations | `/pipeline` | 4 tabs: worker_errors · stuck_buffers · DEPA expiry · delivery health | 0033 |
+| Billing Operations | `/billing` | 4 tabs: payment_failures · refunds · comp · override (+ suspend-account + account picker) | 0034 + 0048 |
+| Abuse & Security | `/security` | 5 tabs: rate-limit · HMAC · origin · Sentry · blocked-IPs — all populated | 0033 + 0048 + 0049 |
+| Feature Flags | `/flags` | `admin.kill_switches` | 0036 |
+| Admin Users | `/admins` | `admin.admin_users` with invite / role-change / disable | 0045 |
+| Audit Log | `/audit-log` + `/audit-log/export` | `admin.admin_audit_log` partitioned monthly | 0028 |
+
+## Appendix B — Observability data model (post-ADR-0049)
+
+Four operational tables feed the admin Security + Pipeline surfaces. All 7-day retention, all append-only, all read via admin SECURITY DEFINER RPCs.
+
+```
+Worker request
+  ├─ 403 HMAC/Origin → cs_worker → public.worker_errors (prefixed category)
+  └─ 5xx upstream    → cs_worker → public.worker_errors
+
+Next.js rights endpoint
+  └─ 429 rate-limit  → anon INSERT → public.rate_limit_events
+
+Sentry SaaS
+  └─ webhook (HMAC-SHA256) → /api/webhooks/sentry → anon upsert on sentry_id
+                                                  → public.sentry_events
+
+Operator action (/security Block IP)
+  └─ admin.security_block_ip → public.blocked_ips → admin_config KV snapshot
+                             → Cloudflare Worker rejects on CIDR match
+```
+
+Cleanup crons run daily between 03:00 and 03:45 UTC and delete rows older than 7 days.
+
+## Appendix C — Identity isolation (CLAUDE.md Rule 12)
+
+A single `auth.users` row is either a customer identity or an admin identity, never both. Enforcement:
+
+- **Admin proxy** (`admin/src/proxy.ts`) — rejects any session without `app_metadata.is_admin=true` (+ AAL2).
+- **Customer proxy** (`app/src/proxy.ts`) — rejects any session with `app_metadata.is_admin=true` and redirects to the admin origin.
+- **`public.accept_invitation`** — raises if caller's JWT carries `is_admin=true` (customer invite cannot be accepted by an admin identity).
+- **`admin.admin_invite_create`** — raises if target has any `account_memberships` or `org_memberships` rows (customer cannot be elevated to admin).
+
+Combined, the four layers ensure no auth row holds overlapping memberships. Bootstrap admin is the sole exception, created by one-shot script.
+
+## Appendix D — Rule 5 service-role carve-out (ADR-0045)
+
+Admin Route Handlers under `admin/src/app/api/admin/*` may use `SUPABASE_SERVICE_ROLE_KEY` (or `SUPABASE_SECRET_KEY`) **solely** for `auth.admin.*` operations that have no scoped-role equivalent on Supabase (`auth.admin.createUser`, `updateUserById`, `deleteUser`, `getUserById`). Every such handler must:
+
+1. Sit behind the admin proxy's `is_admin` + AAL2 gate.
+2. Call an `admin.*` SECURITY DEFINER RPC that runs `admin.require_admin('platform_operator')` **before** the `auth.admin.*` call.
+3. Keep non-auth work (reads, joins, user-visible data) on the authed `cs_admin` client.
+
+Implemented via `admin/src/lib/supabase/service.ts` + `admin/src/lib/admin/lifecycle.ts` — Route Handlers and Server Actions both delegate to the shared lifecycle helper so the RPC-first-then-auth.admin ordering lives in one place.

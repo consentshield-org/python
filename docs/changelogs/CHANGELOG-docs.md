@@ -2,6 +2,19 @@
 
 Documentation changes.
 
+## [Architecture-doc refresh] — 2026-04-18
+
+### Changed
+
+- `docs/architecture/consentshield-complete-schema-design.md` — new §12 Post-DEPA Amendments catalogues every new table, column, and RPC shipped between ADRs 0033 and 0049: refunds + plan_adjustments (+ account_effective_plan), blocked_ips, rate_limit_events, sentry_events, worker_errors prefix discipline, organisations.sdf_* columns, admin.admin_users.status invited. Admin RPC roster added (§12.5). Rule 12 identity-isolation guards documented (§12.7).
+- `docs/architecture/consentshield-definitive-architecture.md` — four new appendices:
+  - Appendix A — Admin console panels (13 operator surfaces with route + data source + ADR pointer).
+  - Appendix B — Observability data model (flow diagram across worker_errors / rate_limit_events / sentry_events / blocked_ips).
+  - Appendix C — Identity isolation (four-layer enforcement summary).
+  - Appendix D — Rule 5 service-role carve-out (what, where, and under what preconditions).
+
+Source-of-truth docs now match the ADRs that shipped in the 2026-04-17/18 window.
+
 ## [ADR-0049 charter + closeout] — 2026-04-18
 
 **ADR:** ADR-0049 — Security observability ingestion (closes V2-S1 + V2-S2)
