@@ -2,6 +2,28 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-0047 Sprint 1.1] — 2026-04-18
+
+**ADR:** ADR-0047 — Customer membership lifecycle + single-account-per-identity invariant
+**Sprint:** Phase 1, Sprint 1.1 — migration + RPCs + tests
+
+### Added
+- `20260504000001_membership_lifecycle.sql`:
+  - `public.membership_audit_log` (append-only) — captures role changes + removes on `account_memberships` / `org_memberships`. RLS: SELECT for `account_owner` on the account; admin-JWT bypass. No INSERT/UPDATE/DELETE from `authenticated`/`anon`.
+  - `public.change_membership_role(p_user_id, p_scope, p_org_id, p_new_role, p_reason)` — account_owner (scope=account) or account_owner/org_admin of the org (scope=org); admin-JWT bypass; refuses self-change, last-account_owner demotion, reason <10 chars.
+  - `public.remove_membership(p_user_id, p_scope, p_org_id, p_reason)` — same gates. `scope='account'` cascade-deletes the target's `org_memberships` under the same account to prevent ghost access. `scope='org'` deletes a single org row.
+  - `public._conflicting_account_for_email(p_email, p_except_account_id)` helper — checks both `account_memberships` AND `org_memberships` (via `organisations.account_id`).
+
+### Changed
+- `public.create_invitation` — single-account-per-identity refusal (42501, message carries the conflicting account_id).
+- `public.create_invitation_from_marketing` — same refusal for the marketing path.
+- `public.accept_invitation` — accept-time race check for the same invariant.
+
+### Tested
+- `tests/rbac/membership-lifecycle.test.ts` — 10/10 pass.
+- `tests/rbac/single-account-invariant.test.ts` — 5/5 pass.
+- Full suite: `bun run test:rls` — **242/242** across 23 files.
+
 ## [ADR-0044 Phase 2.6] — 2026-04-18
 
 **ADR:** ADR-0044 v2 — Customer RBAC
