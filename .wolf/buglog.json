@@ -5485,6 +5485,22 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-04-18T14:50:01.053Z"
+    },
+    {
+      "id": "bug-343",
+      "timestamp": "2026-04-18T15:10:11.520Z",
+      "error_message": "CSS fix: label",
+      "file": "admin/src/app/(operator)/layout.tsx",
+      "root_cause": "label: 'Billing Operations', href: '/billing/operations', adr: 'ADR-0034', live: true → 'Issuer Entities', href: '/billing/issuers', adr: 'ADR-0050', live: true",
+      "fix": "Changed label: 'Billing Operations', href: '/billing/operations', adr: 'ADR-0034', live: true → 'Issuer Entities', href: '/billing/issuers', adr: 'ADR-0050', live: true",
+      "tags": [
+        "auto-detected",
+        "style-fix",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-18T15:10:11.520Z"
     }
   ]
 }

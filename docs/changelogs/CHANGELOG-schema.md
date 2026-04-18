@@ -2,6 +2,18 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-0050 Sprint 2.1 — chunk 2] — 2026-04-18
+
+**ADR:** ADR-0050 — Admin account-aware billing
+**Sprint:** Sprint 2.1 — billing.issuer_entities + CRUD RPCs
+
+### Added
+- `20260507000006_billing_issuer_entities.sql`: creates the `billing` schema + grants (cs_admin, cs_orchestrator); adds `billing.issuer_entities` (legal_name / gstin / pan / registered_state_code / registered_address / invoice_prefix / fy_start_month / logo_r2_key / signatory_name / signatory_designation / bank_account_masked / is_active / activated_at / retired_at / retired_reason). Single-active partial unique index; GSTIN unique. Identity-field immutability trigger refuses in-place changes to legal_name / gstin / pan / registered_state_code / invoice_prefix / fy_start_month. Seven RPCs: `billing_issuer_list` + `billing_issuer_detail` (platform_operator+ read), `billing_issuer_create` + `billing_issuer_update` + `billing_issuer_activate` + `billing_issuer_retire` + `billing_issuer_hard_delete` (platform_owner only). Update RPC validates a mutable-field allow-list and raises with a guiding error for immutable or unknown fields.
+- `20260507000007_billing_issuer_update_op_fix.sql`: rewrites the mutable-field check in `billing_issuer_update` from `v_key <> all(v_mutable)` (which PG parsed as `text <> text[]`) to `not (v_key = any(v_mutable))`.
+
+### Tested
+- [x] `tests/admin/billing-issuer-rpcs.test.ts` — **21/21 PASS**. Role gating (operator/support denied on writes, operator allowed on reads, support below operator tier), required-field validation on create, mutable vs immutable patch behaviour (address/signatory succeed; legal_name/gstin raise with retire-and-create guidance; unknown fields raise), single-active invariant with flip-previous-off, retire sets retired_at + blocks reactivation, hard_delete owner-gated + removes row.
+
 ## [ADR-0050 Sprint 2.1 — chunk 1] — 2026-04-18
 
 **ADR:** ADR-0050 — Admin account-aware billing

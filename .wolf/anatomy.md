@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-18T14:50:01.044Z
-> Files: 684 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-18T15:11:56.019Z
+> Files: 694 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../tmp/
 
@@ -123,7 +123,7 @@
 ## admin/src/app/(operator)/
 
 - `actions.ts` — Exports refreshPlatformMetrics (~167 tok)
-- `layout.tsx` — Operator shell — visual spec: docs/admin/design/consentshield-admin-screens.html. (~2166 tok)
+- `layout.tsx` — Operator shell — visual spec: docs/admin/design/consentshield-admin-screens.html. (~2190 tok)
 - `page.tsx` — ADR-0028 Sprint 2.1 — Operations Dashboard. (~1660 tok)
 
 ## admin/src/app/(operator)/accounts/
@@ -159,6 +159,25 @@
 ## admin/src/app/(operator)/billing/[accountId]/
 
 - `page.tsx` — ADR-0050 Sprint 1 — per-account billing detail. (~4292 tok)
+
+## admin/src/app/(operator)/billing/issuers/
+
+- `actions.ts` — Exports createIssuerAction, UpdateIssuerPatch, updateIssuerAction, activateIssuerAction + 2 more (~1279 tok)
+- `page.tsx` — ADR-0050 Sprint 2.1 chunk 2 — Issuers list. (~1858 tok)
+
+## admin/src/app/(operator)/billing/issuers/[accountId]/
+
+- `page.tsx` — Intentionally unused — Next 16 routes are segment-bound; /billing/issuers (~96 tok)
+
+## admin/src/app/(operator)/billing/issuers/[issuerId]/
+
+- `client.tsx` — IssuerDetailClient — renders form, modal (~3434 tok)
+- `page.tsx` — ADR-0050 Sprint 2.1 chunk 2 — Issuer detail + edit. (~1692 tok)
+
+## admin/src/app/(operator)/billing/issuers/new/
+
+- `form.tsx` — NewIssuerForm — renders form (~2112 tok)
+- `page.tsx` — ADR-0050 Sprint 2.1 chunk 2 — New issuer form (platform_owner only). (~550 tok)
 
 ## admin/src/app/(operator)/billing/operations/
 
@@ -708,7 +727,7 @@
 - `ADR-0047-customer-membership-lifecycle.md` — ADR-0047 — Customer membership lifecycle (role change + remove) + single-account-per-identity invari (~3944 tok)
 - `ADR-0048-admin-accounts-and-observability.md` — ADR-0048: Admin Accounts panel + ADR-0033/34 deviation closeout (~2261 tok)
 - `ADR-0049-security-observability-ingestion.md` — ADR-0049: Security observability ingestion — rate_limit_events + sentry_events (~2365 tok)
-- `ADR-0050-admin-account-aware-billing.md` — ADR-0050: Admin account-aware billing — issuer entities, invoices, GST, dispute workspace (~11134 tok)
+- `ADR-0050-admin-account-aware-billing.md` — ADR-0050: Admin account-aware billing — issuer entities, invoices, GST, dispute workspace (~11158 tok)
 - `ADR-index.md` — ADR Index (~1718 tok)
 - `ADR-template.md` — ADR-NNNN: Title (~423 tok)
 - `adr-workflow.md` — ADR Workflow Rules (~557 tok)
@@ -734,11 +753,11 @@
 ## docs/changelogs/
 
 - `CHANGELOG-api.md` — Changelog — API (~4845 tok)
-- `CHANGELOG-dashboard.md` — Changelog — Dashboard (~11229 tok)
+- `CHANGELOG-dashboard.md` — Changelog — Dashboard (~11612 tok)
 - `CHANGELOG-docs.md` — Changelog — Documentation (~3064 tok)
 - `CHANGELOG-edge-functions.md` — Changelog — Edge Functions (~3003 tok)
 - `CHANGELOG-infra.md` — Changelog — Infrastructure (~3667 tok)
-- `CHANGELOG-schema.md` — Changelog — Schema (~17836 tok)
+- `CHANGELOG-schema.md` — Changelog — Schema (~18293 tok)
 - `CHANGELOG-worker.md` — Changelog — Worker (~1897 tok)
 
 ## docs/design/
@@ -1215,6 +1234,8 @@
 - `20260507000002_sentry_events.sql` — ADR-0049 Phase 2 Sprint 2.1 — sentry_events ingestion. (~999 tok)
 - `20260507000004_admin_role_platform_owner.sql` — ADR-0050 Sprint 2.1 — admin_role platform_owner tier. (~3541 tok)
 - `20260507000005_platform_owner_followup.sql` — ADR-0050 Sprint 2.1 — follow-up to 20260507000004_admin_role_platform_owner.sql. (~1277 tok)
+- `20260507000006_billing_issuer_entities.sql` — ADR-0050 Sprint 2.1 chunk 2 — billing.issuer_entities. (~5800 tok)
+- `20260507000007_billing_issuer_update_op_fix.sql` — ADR-0050 Sprint 2.1 chunk 2 — fix admin.billing_issuer_update parse error. (~890 tok)
 
 ## supabase/seed/
 
@@ -1255,6 +1276,7 @@
 - `admin-lifecycle-rpcs.test.ts` — service: countAuditRows (~3812 tok)
 - `audit_log.test.ts` — service: countAuditRows (~1832 tok)
 - `billing-account-view.test.ts` — Declares env (~1374 tok)
+- `billing-issuer-rpcs.test.ts` — nextGstin: hardDelete, fetchIssuer, createIssuer (~3521 tok)
 - `billing-rpcs.test.ts` — service: countAuditRows, createPendingRefund (~4016 tok)
 - `foundation.test.ts` — Declares anon (~1516 tok)
 - `helpers.ts` — Helpers for admin-side tests. Reuses the Supabase project + env vars (~979 tok)

@@ -2,6 +2,25 @@
 
 Next.js UI changes.
 
+## [ADR-0050 Sprint 2.1 — chunk 2] — 2026-04-18
+
+**ADR:** ADR-0050 — Admin account-aware billing
+**Sprint:** Sprint 2.1 — Issuer entities admin UI
+
+### Added
+- `admin/src/app/(operator)/billing/issuers/page.tsx` — list (platform_operator+ read); status pill per row; "+ New issuer" enabled only for platform_owner; warning card when no issuer is active.
+- `admin/src/app/(operator)/billing/issuers/new/page.tsx` + `new/form.tsx` — create form; identity fields flagged as "immutable once saved"; operational fields flagged "editable later"; 403 fallback for non-owner.
+- `admin/src/app/(operator)/billing/issuers/[issuerId]/page.tsx` + `[issuerId]/client.tsx` — detail + inline edit form for operational fields; lifecycle card; `Activate` / `Retire` / `Hard delete` buttons with owner-gated tooltips. Retire / Delete modals require reason and surface RPC errors verbatim.
+- `admin/src/app/(operator)/billing/issuers/actions.ts` — server actions: `createIssuerAction`, `updateIssuerAction`, `activateIssuerAction`, `retireIssuerAction`, `hardDeleteIssuerAction`.
+
+### Changed
+- `admin/src/app/(operator)/layout.tsx` — new `Issuer Entities` nav entry (`/billing/issuers`, ADR-0050) added after `Billing Operations`.
+
+### Tested
+- [x] `bun run build` on `admin/` — compiles; `/billing/issuers`, `/billing/issuers/new`, `/billing/issuers/[issuerId]` in route manifest.
+- [x] `bun run lint` on `admin/` — clean.
+- [x] RPC behaviour coverage lives in `tests/admin/billing-issuer-rpcs.test.ts` (21/21 PASS); manual UI verification pending.
+
 ## [ADR-0050 Sprint 2.1 — chunk 1] — 2026-04-18
 
 **ADR:** ADR-0050 — Admin account-aware billing

@@ -39,6 +39,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Pipeline Operations', href: '/pipeline', adr: 'ADR-0033', live: true },
   { label: 'Billing', href: '/billing', adr: 'ADR-0050', live: true },
   { label: 'Billing Operations', href: '/billing/operations', adr: 'ADR-0034', live: true },
+  { label: 'Issuer Entities', href: '/billing/issuers', adr: 'ADR-0050', live: true },
   { label: 'Abuse & Security', href: '/security', adr: 'ADR-0033', live: true },
   { label: 'Feature Flags & Kill Switches', href: '/flags', adr: 'ADR-0036', live: true },
   { label: 'Admin Users', href: '/admins', adr: 'ADR-0045', live: true },

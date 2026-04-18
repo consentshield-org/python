@@ -2417,3 +2417,24 @@
 | 20:19 | Edited docs/changelogs/CHANGELOG-dashboard.md | expanded (+15 lines) | ~327 |
 | 20:19 | Edited docs/ADRs/ADR-0050-admin-account-aware-billing.md | 5→7 lines | ~281 |
 | 20:20 | Edited docs/ADRs/ADR-0050-admin-account-aware-billing.md | 3→3 lines | ~82 |
+| 20:20 | Session end: 71 writes across 22 files (ADR-0050-admin-account-aware-billing.md, ADR-index.md, CLAUDE.md, project_adr0050_proposed.md, MEMORY.md) | 47 reads | ~166459 tok |
+| 20:23 | Created supabase/migrations/20260507000006_billing_issuer_entities.sql | — | ~5800 |
+| 20:24 | Created tests/admin/billing-issuer-rpcs.test.ts | — | ~3625 |
+| 20:27 | Created tests/admin/billing-issuer-rpcs.test.ts | — | ~3521 |
+| 20:29 | Created supabase/migrations/20260507000007_billing_issuer_update_op_fix.sql | — | ~890 |
+| 20:30 | Created admin/src/app/(operator)/billing/issuers/actions.ts | — | ~1279 |
+| 20:30 | Created admin/src/app/(operator)/billing/issuers/page.tsx | — | ~1858 |
+| 20:30 | Created admin/src/app/(operator)/billing/issuers/new/page.tsx | — | ~550 |
+| 20:31 | Created admin/src/app/(operator)/billing/issuers/new/form.tsx | — | ~2112 |
+| 20:31 | Created admin/src/app/(operator)/billing/issuers/[accountId]/page.tsx | — | ~96 |
+| 20:39 | Created admin/src/app/(operator)/billing/issuers/[issuerId]/page.tsx | — | ~1692 |
+| 20:40 | Created admin/src/app/(operator)/billing/issuers/[issuerId]/client.tsx | — | ~3434 |
+| 20:40 | Edited admin/src/app/(operator)/layout.tsx | 2→3 lines | ~72 |
+
+## Session: 2026-04-18 20:41
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 20:41 | Edited docs/changelogs/CHANGELOG-schema.md | expanded (+12 lines) | ~500 |
+| 20:41 | Edited docs/changelogs/CHANGELOG-dashboard.md | expanded (+19 lines) | ~422 |
+| 20:41 | Edited docs/ADRs/ADR-0050-admin-account-aware-billing.md | inline fix | ~87 |

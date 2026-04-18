@@ -401,7 +401,7 @@ When ADR-0051 ships, the bundle assembler pulls evidence_ledger rows as well.
 - [ ] `tests/webhooks/razorpay-verbatim.test.ts` — happy path insert; duplicate-event-id upsert behaviour; signature-verification failure path does *not* write a verbatim row (we only persist signature-verified events).
 - [ ] Miniflare / fetch-mocked webhook test: replay one `invoice.paid` fixture, assert row lands with `processed_outcome='ok'` and `processed_at IS NOT NULL`.
 
-**Status:** `[~] in progress` — platform_owner tier landed 2026-04-18; remaining: issuer_entities schema + CRUD + admin panel, invoice schema + immutability triggers, razorpay_webhook_events verbatim store, webhook handler refactor.
+**Status:** `[~] in progress` — platform_owner tier + billing.issuer_entities schema + CRUD RPCs + admin UI panel landed 2026-04-18 (21/21 PASS). Remaining: `public.accounts` billing-profile columns, `public.invoices` schema + immutability triggers, `billing.razorpay_webhook_events` verbatim store, webhook handler refactor.
 
 #### Sprint 2.2 — Invoice PDF renderer + issuance RPC + GST computation
 
