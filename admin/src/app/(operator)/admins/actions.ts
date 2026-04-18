@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createServerClient } from '@/lib/supabase/server'
-import { getAdminServiceClient, ServiceClientEnvError } from '@/lib/supabase/service'
+import { ServiceClientEnvError } from '@/lib/supabase/service'
 import {
   AdminRole,
   changeAdminRole,
@@ -61,19 +61,16 @@ export async function inviteAdminAction(input: {
   const callerId = callerRes.user?.id
   if (!callerId) return { ok: false, error: 'Not signed in.' }
 
-  let inviterDisplayName = 'A ConsentShield operator'
-  try {
-    const service = getAdminServiceClient()
-    const { data: inviterRow } = await service
-      .schema('admin')
-      .from('admin_users')
-      .select('display_name')
-      .eq('id', callerId)
-      .maybeSingle()
-    inviterDisplayName = inviterRow?.display_name ?? inviterDisplayName
-  } catch (e) {
-    return { ok: false, error: normaliseError(e) }
-  }
+  // Rule 5 carve-out: inviter display_name read via the caller's JWT +
+  // cs_admin RLS. Service-role is reserved strictly for auth.admin.*
+  // calls inside inviteAdmin().
+  const { data: inviterRow } = await authed
+    .schema('admin')
+    .from('admin_users')
+    .select('display_name')
+    .eq('id', callerId)
+    .maybeSingle()
+  const inviterDisplayName = inviterRow?.display_name ?? 'A ConsentShield operator'
 
   try {
     const outcome = await inviteAdmin({

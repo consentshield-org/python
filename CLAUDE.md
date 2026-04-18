@@ -91,7 +91,7 @@ These are hard constraints. Do not work around them. Do not find creative interp
 
 ### Security rules
 
-5. **Three scoped database roles, not one service key.** The Cloudflare Worker uses `cs_worker` (can only INSERT into consent_events and tracker_observations). The delivery Edge Function uses `cs_delivery`. All other Edge Functions use `cs_orchestrator`. Never use SUPABASE_SERVICE_ROLE_KEY in running application code — it is for migrations only.
+5. **Three scoped database roles, not one service key.** The Cloudflare Worker uses `cs_worker` (can only INSERT into consent_events and tracker_observations). The delivery Edge Function uses `cs_delivery`. All other Edge Functions use `cs_orchestrator`. Never use SUPABASE_SERVICE_ROLE_KEY in running application code — it is for migrations only. **Carve-out (ADR-0045):** admin Route Handlers under `admin/src/app/api/admin/*` may use the service role **solely** for `auth.admin.*` operations (user create / update / delete), because Supabase exposes those APIs only to the service role. Every such handler MUST (a) live behind the admin proxy (`is_admin` + AAL2), and (b) call an `admin.*` SECURITY DEFINER RPC that runs `admin.require_admin('platform_operator')` **before** the `auth.admin.*` call. Non-auth work in those handlers (reads, joins, user-visible data) uses the authed `cs_admin` client like every other admin surface.
 
 6. **No secrets in client code.** Never put any database key, API secret, signing secret, or encryption key in a `NEXT_PUBLIC_` environment variable. Never import server-side env vars in a client component. Never log secrets in any error handler.
 
@@ -105,19 +105,21 @@ These are hard constraints. Do not work around them. Do not find creative interp
 
 11. **Encrypt credentials with per-org key derivation.** `org_key = HMAC-SHA256(MASTER_ENCRYPTION_KEY, org_id || encryption_salt)`. Never use the master key directly to encrypt anything.
 
+12. **Identity isolation between customer app and admin app.** A single auth.users row is either a customer identity or an admin identity — never both. Admin identities (`app_metadata.is_admin === true`) MUST NOT reach any surface of the customer app (`app/`). Customer identities (no `is_admin` claim) MUST NOT reach any surface of the admin app (`admin/`). Both proxies enforce this: admin proxy rejects non-`is_admin` with 403; customer proxy rejects `is_admin` sessions with 403 and hints at the admin origin. Any invite / elevation code path must refuse to mix the two identities (e.g., admin-invite refuses if the target has any `account_memberships` or `org_memberships` rows; customer-invite refuses if the target has `is_admin=true`).
+
 ### Code rules
 
-12. **RLS on every table.** If you create a new table, it must have `enable row level security` and at least one policy before any data can be written. No exceptions.
+13. **RLS on every table.** If you create a new table, it must have `enable row level security` and at least one policy before any data can be written. No exceptions.
 
-13. **org_id on every table.** Every table that holds per-customer data must have an `org_id` column with an RLS policy that filters by `current_org_id()`. If you create a table without org_id, justify why.
+14. **org_id on every table.** Every table that holds per-customer data must have an `org_id` column with an RLS policy that filters by `current_org_id()`. If you create a table without org_id, justify why.
 
-14. **No new npm dependencies without justification.** If the functionality can be implemented in 1 day of coding and testing, write it yourself. A day of work eliminates a permanent supply chain risk. State the justification in the PR description.
+15. **No new npm dependencies without justification.** If the functionality can be implemented in 1 day of coding and testing, write it yourself. A day of work eliminates a permanent supply chain risk. State the justification in the PR description.
 
-15. **Zero dependencies in the Cloudflare Worker.** The Worker is vanilla TypeScript. No npm packages. This is policy. Every dependency in the Worker runs on every page load of every customer's website.
+16. **Zero dependencies in the Cloudflare Worker.** The Worker is vanilla TypeScript. No npm packages. This is policy. Every dependency in the Worker runs on every page load of every customer's website.
 
-16. **Exact version pinning.** All package.json dependencies use exact versions. No `^`, no `~`.
+17. **Exact version pinning.** All package.json dependencies use exact versions. No `^`, no `~`.
 
-17. **Sentry captures no sensitive data.** All Sentry `beforeSend` hooks must strip request bodies, headers, cookies, and query parameters. Only stack traces and error messages reach Sentry.
+18. **Sentry captures no sensitive data.** All Sentry `beforeSend` hooks must strip request bodies, headers, cookies, and query parameters. Only stack traces and error messages reach Sentry.
 
 ## Development workflow — ADR-driven
 

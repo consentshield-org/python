@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
-import { getAdminServiceClient, ServiceClientEnvError } from '@/lib/supabase/service'
+import { ServiceClientEnvError } from '@/lib/supabase/service'
 import { inviteAdmin, LifecycleError } from '@/lib/admin/lifecycle'
 
 // ADR-0045 Sprint 1.2 — POST /api/admin/users/invite
+//
+// Policy (CLAUDE.md Rule 5 carve-out): this handler uses service-role
+// SOLELY for auth.admin.createUser inside inviteAdmin(). All non-auth
+// reads (inviter display_name) go through the caller's JWT + cs_admin
+// RLS policy on admin.admin_users.
 
 export const runtime = 'nodejs'
 
@@ -53,22 +58,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'not signed in' }, { status: 401 })
   }
 
-  let inviterDisplayName = 'A ConsentShield operator'
-  try {
-    const service = getAdminServiceClient()
-    const { data: inviterRow } = await service
-      .schema('admin')
-      .from('admin_users')
-      .select('display_name')
-      .eq('id', callerId)
-      .maybeSingle()
-    inviterDisplayName = inviterRow?.display_name ?? inviterDisplayName
-  } catch (e) {
-    if (e instanceof ServiceClientEnvError) {
-      return NextResponse.json({ error: e.message }, { status: 500 })
-    }
-    throw e
-  }
+  // Rule 5 carve-out: read the inviter's display_name via the caller's
+  // JWT + cs_admin RLS (admin_users_admin_only). No service-role key
+  // for this read — service-role is reserved for auth.admin.* calls
+  // inside inviteAdmin() where no alternative exists.
+  const { data: inviterRow } = await authed
+    .schema('admin')
+    .from('admin_users')
+    .select('display_name')
+    .eq('id', callerId)
+    .maybeSingle()
+  const inviterDisplayName = inviterRow?.display_name ?? 'A ConsentShield operator'
 
   try {
     const outcome = await inviteAdmin({
