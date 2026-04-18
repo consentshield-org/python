@@ -40,17 +40,14 @@ function SignupForm() {
   const token = params.get('invite') ?? ''
   const router = useRouter()
 
-  const [stage, setStage] = useState<Stage>('loading')
+  const [stage, setStage] = useState<Stage>(token ? 'loading' : 'no_invite')
   const [invite, setInvite] = useState<InvitePreview | null>(null)
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (!token) {
-      setStage('no_invite')
-      return
-    }
+    if (!token) return
     const supabase = createBrowserClient()
     supabase
       .rpc('invitation_preview', { p_token: token })
@@ -250,7 +247,7 @@ function InviteSummary({ invite }: { invite: InvitePreview }) {
   return (
     <div className="rounded border border-gray-200 bg-gray-50 p-3 text-xs text-gray-700">
       <p>
-        You were invited to ConsentShield for <strong>{invite.invited_email}</strong>. You'll be{' '}
+        You were invited to ConsentShield for <strong>{invite.invited_email}</strong>. You&apos;ll be{' '}
         <strong>{kind}</strong>.
       </p>
       {invite.plan_code ? (

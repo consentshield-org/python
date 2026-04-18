@@ -101,6 +101,7 @@ export default async function DashboardPage() {
       .from('consent_artefacts')
       .select('id', { count: 'exact', head: true })
       .eq('status', 'active')
+      // eslint-disable-next-line react-hooks/purity -- Server Component: Date.now() is intentional.
       .lt('expires_at', new Date(Date.now() + 30 * 86_400_000).toISOString()),
     supabase
       .from('consent_artefacts')
@@ -140,8 +141,8 @@ export default async function DashboardPage() {
   let depa: DepaScore
   if (depaCachedRes.data) {
     const d = depaCachedRes.data
-    const ageHours =
-      (Date.now() - new Date(d.computed_at).getTime()) / 3_600_000
+    // eslint-disable-next-line react-hooks/purity -- Server Component: Date.now() is intentional.
+    const ageHours = (Date.now() - new Date(d.computed_at).getTime()) / 3_600_000
     depa = {
       total: Number(d.total_score),
       coverage_score: Number(d.coverage_score),

@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useState } from 'react'
 import {
   addOrgNote,
@@ -46,6 +47,12 @@ export function OrgActionBar({ orgId, orgName, status, currentAdminRole }: Props
         >
           Extend trial
         </button>
+        <Link
+          href={`/orgs/${orgId}/new-invite`}
+          className="rounded border border-[color:var(--border-mid)] bg-white px-3 py-1.5 text-xs text-text hover:bg-bg"
+        >
+          + Invite org admin
+        </Link>
         {status === 'active' ? (
           <button
             type="button"

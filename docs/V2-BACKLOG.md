@@ -68,6 +68,31 @@ correctly from `/api/orgs/[orgId]/billing/checkout`).
 
 ---
 
+## Admin lifecycle
+
+### V2-A1. Admin user invite + role change  → see ADR-0045
+
+Only the one-shot `scripts/bootstrap-admin.ts` exists today. No
+runtime path can:
+
+- Invite a second admin operator.
+- Change an existing admin's `admin_role` (upgrade or downgrade).
+- Disable an admin in a way that immediately invalidates their JWT
+  claim (the existing `admin.disable_admin()` RPC touches only
+  `admin.admin_users`, not `auth.users.raw_app_meta_data`).
+
+**Why deferred.** One operator is enough for dev. ADR-0044 Phase 2.3
+(operator invite form for *customer* accounts) is not blocked — the
+bootstrap admin has `is_admin=true` already and can issue invites.
+
+**Shape of the v2 fix.** Promote ADR-0045 from stub to active when a
+second operator is needed. The two sources of truth (`auth.users`
+app_metadata + `admin.admin_users`) must be kept in sync via
+service-role Route Handlers; no SQL-only path exists because
+Supabase Auth gates `UPDATE auth.users` behind the service role.
+
+---
+
 ## Ops / platform
 
 ### V2-O1. Unbuilt Edge Functions (cron slots reserved)  *(origin: ADR-0011 cleanup)*

@@ -86,6 +86,12 @@ export default async function OrganisationsListPage({ searchParams }: PageProps)
             {total.toLocaleString()} {total === 1 ? 'organisation' : 'organisations'} · page {page + 1} of {totalPages}
           </p>
         </div>
+        <Link
+          href="/orgs/new-invite"
+          className="rounded bg-teal px-3 py-1.5 text-xs font-medium text-white hover:bg-teal-mid"
+        >
+          + New account invite
+        </Link>
       </header>
 
       <OrgsFilterBar

@@ -210,7 +210,7 @@ public.invitations            (id, token UNIQUE, invited_email citext,
   - Idempotency + existing-auth-user detection (don't recreate Supabase auth user if the invitee already has one).
 - [ ] `app/src/app/(public)/signup/page.tsx` — require `?invite=<token>`. Show email pre-filled (read-only). Invalid/expired/consumed → support-contact error page. Accept path branches by role.
 - [ ] Resend email templates, one per invite shape.
-- [ ] `admin/src/app/(operator)/orgs/[orgId]/new-invite/**` — operator-side form for account-creating invites (email + plan + trial_days + optional default_org_name) + org_admin-promotion invites.
+- [x] `admin/src/app/(operator)/orgs/new-invite/**` + `admin/src/app/(operator)/orgs/[orgId]/new-invite/**` — operator-side forms. Split into two routes (phase 2.3): top-level for account-creating invites (email + plan + trial_days + optional default_org_name), org-scoped for org_admin promotion. Wireframe added to `docs/admin/design/consentshield-admin-screens.html` panels 2a + 2b.
 - [ ] `app/src/app/(dashboard)/dashboard/settings/members/` — account_owner / org_admin invite forms (internal).
 - [ ] `app/src/app/api/internal/invites/route.ts` — HMAC-gated stub endpoint for the future marketing site. Test coverage; no live consumer yet.
 

@@ -161,7 +161,7 @@ async function runProbe(
     }
     try {
       parsed = JSON.parse(raw)
-    } catch (e) {
+    } catch {
       throw new Error(`sandbox stdout not JSON: ${raw.slice(0, 200)}`)
     }
 

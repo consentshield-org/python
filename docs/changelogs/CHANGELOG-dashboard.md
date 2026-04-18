@@ -2,6 +2,31 @@
 
 Next.js UI changes.
 
+## ADR-0044 Phase 2.3 — 2026-04-18
+
+**ADR:** ADR-0044 v2 — Customer RBAC
+**Sprint:** Phase 2.3 — operator invite forms (admin console)
+
+### Added
+- `admin/src/app/(operator)/orgs/new-invite/page.tsx` + `new-account-invite-form.tsx` + `actions.ts` — top-level operator form that creates an **account-creating** invite (`role='account_owner'`, `account_id=null`, `org_id=null`). Inputs: invitee email, plan (from `public.plans`), trial-days override, optional default org name, expiry (1–90 days, default 14). On submit, shows accept URL + invitation id + expiry; "Create another" resets the form. Gate is the `create_invitation` RPC's `is_admin` check, fronted by `admin/src/proxy.ts` Rule 21.
+- `admin/src/app/(operator)/orgs/[orgId]/new-invite/page.tsx` + `org-admin-invite-form.tsx` + `actions.ts` — org-scoped operator form that creates an **org_admin promotion** invite (`role='org_admin'`, `account_id` + `org_id` from URL). Role is fixed to `org_admin` in the UI; admin / viewer invites live in the customer dashboard.
+- `admin/src/components/orgs/invite-created-card.tsx` — shared success card with clipboard-copy of the accept URL + invitation id + expiry. Surfaces an amber "email dispatch pending — Phase 2.5" pill so operators know they still have to send the link by hand until the Resend wiring ships.
+- `admin/src/app/(operator)/orgs/page.tsx` — header now has a `+ New account invite` link.
+- `admin/src/components/orgs/action-bar.tsx` — org detail action bar now has a `+ Invite org admin` link.
+
+### Changed
+- `docs/admin/design/consentshield-admin-screens.html` — added panels `2a` (New account invite) and `2b` (Invite org admin) wireframes, plus the two trigger buttons. Spec-first discipline per ADR-0044 alignment.
+
+### Tested
+- [x] `cd admin && bun run lint` — zero warnings.
+- [x] `cd admin && bun run build` — 29 routes (up from 27 after Phase 2.1+2.2). Zero errors.
+- [x] `cd admin && bun run test` — 1/1 smoke.
+- [x] `bun run test:rls` — 194/194 across 17 files (no change — RPC behavior tested under `tests/rbac/invitations.test.ts` from Phase 2.1 covers the RPC; the admin-side wrappers only add URL building + input validation).
+
+### Notes
+- `NEXT_PUBLIC_APP_URL` is the new env var the accept-URL builder reads. Falls back to `NEXT_PUBLIC_CUSTOMER_APP_URL`, then hard-coded `https://app.consentshield.in`. Wire for dev before clicking "Copy".
+- Pre-existing customer-app lint errors in `signup/page.tsx` and `dashboard/page.tsx` (react-compiler warnings surfaced by the upgrade landed in 2.2) are untouched by this sprint.
+
 ## ADR-0044 Phase 2.2 — 2026-04-18
 
 **ADR:** ADR-0044 v2 — Customer RBAC

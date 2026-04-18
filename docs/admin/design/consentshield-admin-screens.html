@@ -535,6 +535,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
       <div class="topbar-actions">
         <input class="input" placeholder="Search by name, email, or org ID…" style="width:260px;font-size:12px">
         <button class="btn btn-secondary btn-sm">Export CSV</button>
+        <button class="btn btn-primary btn-sm" onclick="showPanel('orgs-new-invite')">+ New account invite</button>
       </div>
     </div>
     <div class="content-area">
@@ -627,6 +628,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
           <div class="topbar-actions">
             <button class="btn btn-secondary btn-sm">Add note</button>
             <button class="btn btn-secondary btn-sm">Extend trial</button>
+            <button class="btn btn-secondary btn-sm" onclick="showPanel('orgs-promote-org-admin')">+ Invite org admin</button>
             <button class="btn btn-danger btn-sm" onclick="openImpersonationDrawer()">Start impersonation</button>
           </div>
         </div>
@@ -684,6 +686,227 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
             <div class="event"><div class="event-dot amber"></div><div style="flex:1"><div>Impersonation 22m on Mar 14 — bug investigation (banner save 422); resolved in product fix.</div><div class="event-time">~1 month ago</div></div></div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────────── 2a. NEW ACCOUNT INVITE (account-creating) ────────── -->
+  <!-- Panel: /orgs/new-invite
+       Flow: operator issues an invitation whose accept path creates
+             a brand-new public.accounts + public.organisations +
+             public.account_memberships(account_owner) trio.
+       RPC : public.create_invitation(p_email, p_role='account_owner',
+             p_account_id=null, p_org_id=null, p_plan_code,
+             p_trial_days, p_default_org_name, p_expires_in_days)
+       Gate: auth.jwt().app_metadata.is_admin = true (operator only)  -->
+  <div id="panel-orgs-new-invite" class="panel">
+    <div class="topbar">
+      <div class="topbar-title">
+        <span style="color:var(--text-3);cursor:pointer" onclick="showPanel('orgs')">Organisations</span>
+        &nbsp;›&nbsp; New account invite
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-secondary btn-sm" onclick="showPanel('orgs')">Cancel</button>
+      </div>
+    </div>
+    <div class="content-area">
+      <div class="grid-2" style="grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:18px">
+
+        <!-- LEFT — form -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Invite a new customer account</div>
+            <span class="pill pill-navy" style="font-size:10px">operator-only</span>
+          </div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:14px">
+
+            <div>
+              <label class="label">Invitee email <span style="color:var(--red)">*</span></label>
+              <input class="input" type="email" placeholder="founder@acme.in" value="founder@acme.in">
+              <div style="font-size:11px;color:var(--text-3);margin-top:4px">
+                The invitee receives an OTP-gated /signup link. They become the <code>account_owner</code>.
+              </div>
+            </div>
+
+            <div class="grid-2">
+              <div>
+                <label class="label">Plan <span style="color:var(--red)">*</span></label>
+                <select class="input">
+                  <option value="free">Free — ₹0 / 1 org / 14d trial</option>
+                  <option value="growth" selected>Growth — ₹5,999 / 3 orgs / 14d trial</option>
+                  <option value="pro">Pro — ₹14,999 / 10 orgs / 30d trial</option>
+                  <option value="enterprise">Enterprise — custom / unlimited orgs</option>
+                </select>
+              </div>
+              <div>
+                <label class="label">Trial days (override)</label>
+                <input class="input" type="number" min="0" max="90" placeholder="14" value="14">
+                <div style="font-size:11px;color:var(--text-3);margin-top:4px">
+                  Leave blank to use the plan's default.
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label class="label">Default organisation name</label>
+              <input class="input" type="text" placeholder="Acme Technologies Pvt Ltd" value="Acme Technologies">
+              <div style="font-size:11px;color:var(--text-3);margin-top:4px">
+                Optional. When set, an <code>organisations</code> row with this name is created at accept time. When blank,
+                the invitee is prompted for an org name in /signup.
+              </div>
+            </div>
+
+            <div>
+              <label class="label">Invitation expires in (days)</label>
+              <input class="input" type="number" min="1" max="90" value="14" style="max-width:120px">
+            </div>
+
+            <div style="display:flex;gap:8px;padding-top:8px;border-top:1px solid var(--border)">
+              <button class="btn btn-primary">Create invite</button>
+              <button class="btn btn-secondary" onclick="showPanel('orgs')">Cancel</button>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- RIGHT — preview + post-submit state -->
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div class="card">
+            <div class="card-header"><div class="card-title">On accept, this creates</div></div>
+            <div class="card-body" style="font-size:12px;color:var(--text-2);line-height:1.6">
+              <div>1. <code>public.accounts</code> — plan=<strong>growth</strong>, trial=14d, razorpay=null</div>
+              <div>2. <code>public.organisations</code> — name=<strong>Acme Technologies</strong></div>
+              <div>3. <code>public.account_memberships</code> — role=<strong>account_owner</strong></div>
+              <div style="margin-top:8px;color:var(--text-3);font-size:11px">
+                The invitee sets a password via OTP; no walk-up signup path is possible without this token.
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="border-left:3px solid var(--teal)">
+            <div class="card-header"><div class="card-title">Invite created (example)</div></div>
+            <div class="card-body" style="font-size:12px;color:var(--text-2);display:flex;flex-direction:column;gap:8px">
+              <div>
+                <div class="card-sm-label" style="margin-bottom:4px">Accept URL</div>
+                <div style="display:flex;gap:6px;align-items:center">
+                  <code style="flex:1;font-size:11px;padding:6px;background:var(--bg);border-radius:var(--r);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">https://app.consentshield.in/signup?invite=4f2a…e81c</code>
+                  <button class="btn btn-secondary btn-sm">Copy</button>
+                </div>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:12px"><span>Expires</span><strong>May 2, 2026</strong></div>
+              <div style="display:flex;justify-content:space-between;font-size:12px"><span>Invitation id</span><code>inv_4f2a…</code></div>
+              <div style="padding-top:8px;border-top:1px solid var(--border);display:flex;gap:6px">
+                <button class="btn btn-primary btn-sm">Send via email</button>
+                <button class="btn btn-secondary btn-sm">Download .eml</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ────────── 2b. PROMOTE ORG ADMIN (org-scoped invite) ────────── -->
+  <!-- Panel: /orgs/[orgId]/new-invite
+       Flow: operator issues an org_admin invitation for an existing
+             org. Accept path inserts a public.org_memberships row
+             with role='org_admin' (and may create a new auth.users
+             row if the invitee doesn't have one yet).
+       RPC : public.create_invitation(p_email, p_role='org_admin',
+             p_account_id=<acct>, p_org_id=<org>, p_expires_in_days)
+       Gate: auth.jwt().app_metadata.is_admin = true  OR
+             caller is account_owner on the org's account.           -->
+  <div id="panel-orgs-promote-org-admin" class="panel">
+    <div class="topbar">
+      <div class="topbar-title">
+        <span style="color:var(--text-3);cursor:pointer" onclick="showPanel('orgs')">Organisations</span>
+        &nbsp;›&nbsp;
+        <span style="color:var(--text-3);cursor:pointer" onclick="showPanel('orgs')">Acme Technologies</span>
+        &nbsp;›&nbsp; Invite org admin
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-secondary btn-sm" onclick="showPanel('orgs')">Back to org</button>
+      </div>
+    </div>
+    <div class="content-area">
+      <div class="card" style="margin-bottom:14px;background:var(--bg);border-left:3px solid var(--navy)">
+        <div class="card-body" style="display:flex;gap:18px;align-items:center;padding:12px 14px">
+          <div>
+            <div class="card-sm-label">Target organisation</div>
+            <div style="font-size:14px;font-weight:600;margin-top:2px">Acme Technologies</div>
+            <code style="font-size:11px;color:var(--text-3)">org_4af2-6d19-4a2b-9e01-f7c234abc123</code>
+          </div>
+          <div style="flex:1"></div>
+          <div style="text-align:right">
+            <div class="card-sm-label">Account</div>
+            <div style="font-size:13px;margin-top:2px">Growth plan · 2 orgs · 4 members</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:18px">
+
+        <!-- LEFT — form -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Invite an org admin</div>
+            <span class="pill pill-navy" style="font-size:10px">operator / account_owner</span>
+          </div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:14px">
+
+            <div>
+              <label class="label">Invitee email <span style="color:var(--red)">*</span></label>
+              <input class="input" type="email" placeholder="admin@acme.in">
+              <div style="font-size:11px;color:var(--text-3);margin-top:4px">
+                If the invitee already has a ConsentShield login, accept skips OTP and only adds the membership row.
+              </div>
+            </div>
+
+            <div>
+              <label class="label">Role</label>
+              <div style="display:flex;gap:6px;align-items:center;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r);background:var(--bg)">
+                <span class="pill pill-navy" style="font-size:11px">org_admin</span>
+                <span style="font-size:11px;color:var(--text-3)">— fixed. Admin and viewer invites are issued from the customer dashboard by the org admin themselves.</span>
+              </div>
+            </div>
+
+            <div>
+              <label class="label">Invitation expires in (days)</label>
+              <input class="input" type="number" min="1" max="90" value="14" style="max-width:120px">
+            </div>
+
+            <div style="display:flex;gap:8px;padding-top:8px;border-top:1px solid var(--border)">
+              <button class="btn btn-primary">Create invite</button>
+              <button class="btn btn-secondary" onclick="showPanel('orgs')">Cancel</button>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- RIGHT — preview -->
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div class="card">
+            <div class="card-header"><div class="card-title">On accept, this creates</div></div>
+            <div class="card-body" style="font-size:12px;color:var(--text-2);line-height:1.6">
+              <div>1. <code>auth.users</code> — only if the invitee has no existing login (OTP-verified).</div>
+              <div>2. <code>public.org_memberships</code> — role=<strong>org_admin</strong> for org_4af2…</div>
+              <div style="margin-top:8px;color:var(--text-3);font-size:11px">
+                No new <code>accounts</code> row. The invitee joins Acme Technologies' existing account.
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="border-left:3px solid var(--amber)">
+            <div class="card-header"><div class="card-title">Audit footprint</div></div>
+            <div class="card-body" style="font-size:12px;color:var(--text-2);line-height:1.6">
+              Creates one <code>admin.admin_audit_log</code> entry with
+              <code>action='invite_created'</code>,
+              <code>target_org_id=org_4af2…</code>, and the operator's admin id.
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
