@@ -11,7 +11,7 @@ export default async function ProbesPage() {
   if (!user) redirect('/login')
 
   const { data: membership } = await supabase
-    .from('organisation_members')
+    .from('org_memberships')
     .select('org_id, role')
     .eq('user_id', user.id)
     .single()
@@ -22,7 +22,7 @@ export default async function ProbesPage() {
       </main>
     )
   }
-  const isAdmin = membership.role === 'admin' || membership.role === 'owner'
+  const isAdmin = membership.role === 'org_admin'
 
   const [probesRes, propertiesRes] = await Promise.all([
     supabase

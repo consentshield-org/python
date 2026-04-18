@@ -29,13 +29,13 @@ export async function GET(
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { data: membership } = await supabase
-    .from('organisation_members')
+    .from('org_memberships')
     .select('org_id, role')
     .eq('user_id', user.id)
     .single()
   if (!membership) return NextResponse.json({ error: 'No organisation' }, { status: 403 })
-  if (membership.role !== 'admin' && membership.role !== 'owner') {
-    return NextResponse.json({ error: 'Admin or owner role required' }, { status: 403 })
+  if (membership.role !== 'org_admin') {
+    return NextResponse.json({ error: 'org_admin role required' }, { status: 403 })
   }
 
   const state = randomBytes(24).toString('hex')

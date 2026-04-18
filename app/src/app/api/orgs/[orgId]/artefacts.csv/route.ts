@@ -39,7 +39,7 @@ export async function GET(
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { data: membership } = await supabase
-    .from('organisation_members')
+    .from('org_memberships')
     .select('role')
     .eq('user_id', user.id)
     .eq('org_id', orgId)

@@ -29,13 +29,13 @@ export async function saveR2Config(formData: FormData): Promise<ActionResult> {
   if (!user) return { error: 'Unauthorized' }
 
   const { data: membership } = await supabase
-    .from('organisation_members')
+    .from('org_memberships')
     .select('org_id, role')
     .eq('user_id', user.id)
     .single()
   if (!membership) return { error: 'No organisation' }
-  if (membership.role !== 'owner' && membership.role !== 'admin') {
-    return { error: 'Admin or owner role required' }
+  if (membership.role !== 'org_admin') {
+    return { error: 'org_admin role required' }
   }
 
   const bucket_name = trim(formData.get('bucket_name'))
@@ -89,7 +89,7 @@ export async function verifyR2Config(): Promise<ActionResult> {
   if (!user) return { error: 'Unauthorized' }
 
   const { data: membership } = await supabase
-    .from('organisation_members')
+    .from('org_memberships')
     .select('org_id')
     .eq('user_id', user.id)
     .single()
@@ -159,13 +159,13 @@ export async function deleteR2Config(): Promise<ActionResult> {
   if (!user) return { error: 'Unauthorized' }
 
   const { data: membership } = await supabase
-    .from('organisation_members')
+    .from('org_memberships')
     .select('org_id, role')
     .eq('user_id', user.id)
     .single()
   if (!membership) return { error: 'No organisation' }
-  if (membership.role !== 'owner' && membership.role !== 'admin') {
-    return { error: 'Admin or owner role required' }
+  if (membership.role !== 'org_admin') {
+    return { error: 'org_admin role required' }
   }
 
   const { error } = await supabase

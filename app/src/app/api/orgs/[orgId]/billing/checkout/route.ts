@@ -38,13 +38,13 @@ export async function POST(
 
   // Verify user is admin of this org
   const { data: membership } = await supabase
-    .from('organisation_members')
+    .from('org_memberships')
     .select('org_id, role')
     .eq('user_id', user.id)
     .eq('org_id', orgId)
     .single()
 
-  if (!membership || membership.role !== 'admin') {
+  if (!membership || membership.role !== 'org_admin') {
     return NextResponse.json(
       { error: 'Only org admins can change the subscription' },
       { status: 403 },

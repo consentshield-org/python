@@ -1,7 +1,7 @@
 // ADR-0042 — unit tests for ensureOrgBootstrap idempotency guard.
 //
 // Mocks only the tiny surface of SupabaseClient that ensureOrgBootstrap
-// touches: .from('organisation_members').select().eq().limit().maybeSingle()
+// touches: .from('org_memberships').select().eq().limit().maybeSingle()
 // and .rpc('rpc_signup_bootstrap_org', params).
 
 import { describe, it, expect, vi } from 'vitest'

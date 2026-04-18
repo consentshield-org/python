@@ -3,7 +3,7 @@
 //
 // Behaviour identical to the inline code previously in
 // app/src/app/auth/callback/route.ts:
-//   1. If the user has any organisation_members row → return skipped.
+//   1. If the user has any org_memberships row → return skipped.
 //   2. Else if user_metadata.org_name is present → call
 //      rpc_signup_bootstrap_org; return bootstrapped (or error).
 //   3. Else → return skipped ("/dashboard empty state handles it").
@@ -20,7 +20,7 @@ export async function ensureOrgBootstrap(
   user: User,
 ): Promise<BootstrapResult> {
   const { data: existing } = await supabase
-    .from('organisation_members')
+    .from('org_memberships')
     .select('org_id')
     .eq('user_id', user.id)
     .limit(1)

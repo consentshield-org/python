@@ -16,7 +16,7 @@ export default async function PurposesPage({
   if (!user) redirect('/login')
 
   const { data: membership } = await supabase
-    .from('organisation_members')
+    .from('org_memberships')
     .select('org_id, role')
     .eq('user_id', user.id)
     .single()
@@ -78,7 +78,7 @@ export default async function PurposesPage({
 
       <PurposesView
         initialTab={tab === 'connectors' ? 'connectors' : 'catalogue'}
-        isAdmin={membership.role === 'admin' || membership.role === 'owner'}
+        isAdmin={membership.role === 'org_admin'}
         purposes={purposes ?? []}
         mappings={mappings ?? []}
         connectors={connectors ?? []}

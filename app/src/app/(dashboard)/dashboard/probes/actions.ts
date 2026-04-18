@@ -38,13 +38,13 @@ async function requireAdmin() {
   if (!user) return { error: 'Unauthorized' as const }
 
   const { data: membership } = await supabase
-    .from('organisation_members')
+    .from('org_memberships')
     .select('org_id, role')
     .eq('user_id', user.id)
     .single()
   if (!membership) return { error: 'No organisation' as const }
-  if (membership.role !== 'admin' && membership.role !== 'owner') {
-    return { error: 'Admin or owner role required' as const }
+  if (membership.role !== 'org_admin') {
+    return { error: 'org_admin role required' as const }
   }
   return { supabase, orgId: membership.org_id as string }
 }

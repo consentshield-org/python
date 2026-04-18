@@ -20,7 +20,7 @@ export default async function ExportsPage() {
   if (!user) redirect('/login')
 
   const { data: membership } = await supabase
-    .from('organisation_members')
+    .from('org_memberships')
     .select('org_id')
     .eq('user_id', user.id)
     .single()

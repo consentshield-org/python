@@ -59,12 +59,19 @@ export async function createTestOrg(suffix?: string): Promise<TestOrg> {
     .single()
   if (orgError) throw new Error(`createOrg failed: ${orgError.message}`)
 
-  // Link user as admin (old organisation_members role taxonomy; Phase 1
-  // will rename table + migrate role values).
+  // Link user as org_admin (ADR-0044 Phase 1 role taxonomy: org_admin is
+  // the owner-tier of a specific org).
   const { error: memberError } = await admin
-    .from('organisation_members')
-    .insert({ org_id: org.id, user_id: userId, role: 'admin' })
+    .from('org_memberships')
+    .insert({ org_id: org.id, user_id: userId, role: 'org_admin' })
   if (memberError) throw new Error(`linkMember failed: ${memberError.message}`)
+
+  // And seed the account-tier membership so requireOrgAccess() sees the
+  // caller as account_owner when inheritance matters.
+  const { error: acctMemberError } = await admin
+    .from('account_memberships')
+    .insert({ account_id: account.id, user_id: userId, role: 'account_owner', accepted_at: new Date().toISOString() })
+  if (acctMemberError) throw new Error(`linkAccountMember failed: ${acctMemberError.message}`)
 
   // Sign in as the user to get an authenticated client
   const userClient = createClient(SUPABASE_URL, ANON_KEY)
@@ -79,7 +86,7 @@ export async function createTestOrg(suffix?: string): Promise<TestOrg> {
 
 export async function cleanupTestOrg(testOrg: TestOrg) {
   const admin = getServiceClient()
-  // Cascade delete handles organisation_members and all org-scoped data;
+  // Cascade delete handles org_memberships and all org-scoped data;
   // the account row is cleaned up after the org because the FK is
   // ON DELETE RESTRICT from org → account.
   await admin.from('organisations').delete().eq('id', testOrg.orgId)

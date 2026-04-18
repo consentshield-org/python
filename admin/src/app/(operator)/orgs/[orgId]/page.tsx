@@ -7,7 +7,7 @@ import { OrgActionBar } from '@/components/orgs/action-bar'
 //
 // Server Component. Fetches the org + peripheral data in parallel:
 //   * public.organisations row
-//   * organisation_members (for contact list)
+//   * org_memberships (for contact list)
 //   * web_properties count
 //   * integration_connectors count
 //   * admin.org_notes (most recent first)
@@ -35,7 +35,7 @@ export default async function OrganisationDetailPage({ params }: PageProps) {
         .eq('id', orgId)
         .maybeSingle(),
       supabase
-        .from('organisation_members')
+        .from('org_memberships')
         .select('user_id, role')
         .eq('org_id', orgId),
       supabase

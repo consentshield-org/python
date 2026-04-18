@@ -14,13 +14,13 @@ export async function DELETE(
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { data: membership } = await supabase
-    .from('organisation_members')
+    .from('org_memberships')
     .select('role')
     .eq('user_id', user.id)
     .eq('org_id', orgId)
     .single()
 
-  if (!membership || membership.role !== 'admin') {
+  if (!membership || membership.role !== 'org_admin') {
     return NextResponse.json(
       { error: 'Only org admins can delete connectors' },
       { status: 403 },

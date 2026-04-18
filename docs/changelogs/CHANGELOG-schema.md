@@ -2,6 +2,41 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-0044 Phase 1] — 2026-04-18
+
+**ADR:** ADR-0044 v2 — Customer RBAC
+**Sprint:** Phase 1 — memberships + role resolution + credential-column RLS
+
+### Added
+- `20260429000001_rbac_memberships.sql`:
+  - `public.account_memberships(account_id, user_id, role ∈ {account_owner, account_viewer})` with its own RLS (read-self + read-by-account-owner + admin-read-all).
+  - `public.current_account_role()`, `public.current_org_role()`, `public.effective_org_role(uuid)` SQL helpers. `effective_org_role` folds inheritance: account_owner → org_admin, account_viewer → viewer.
+  - Backfill: every existing org_admin row in `org_memberships` got a paired `account_owner` row in `account_memberships` for that org's account.
+  - Column-level REVOKE on credential columns — `web_properties.event_signing_secret`, `integration_connectors.config`, `export_configurations.write_credential_enc`. Reading via SECURITY DEFINER RPCs (account_owner / org_admin paths) unaffected.
+
+### Changed
+- `public.organisation_members` renamed to `public.org_memberships`. Role taxonomy remapped in place:
+  - `admin`    → `org_admin` (owner-tier of the org)
+  - `member`   → `admin` (operational)
+  - `readonly` → `viewer`
+  - `auditor`  → `viewer`
+  Check constraint tightened to the 3 new values only.
+- `public.custom_access_token_hook` — same body, new table name; emits new role values.
+- `public.is_org_admin()` — now true only when `org_role = 'org_admin'`. Stale JWTs (pre-rename) will need re-login.
+- RPCs rewritten against `org_memberships` + accounts: `rpc_signup_bootstrap_org`, `rpc_plan_limit_check`, `rpc_rights_event_append`, `rpc_audit_export_manifest`.
+- `rpc_signup_bootstrap_org` now also seeds an `account_memberships` row (`account_owner`) in the same txn.
+- `rpc_audit_export_manifest` — reads `plan_code` from `accounts` (post-Phase-0 column drop fix).
+- Admin-side `admins_select_all` policies re-installed including `org_memberships`, `accounts`, `account_memberships`, `plans`.
+
+### Tested
+- [x] `bun run test:rls` — 185/185 (16 files).
+- [x] `cd app && bunx vitest run` — 69 tests (11 files).
+- [x] `cd admin && bun run build` — 27 routes.
+- [x] `cd app && bun run build` — all routes compile.
+
+### Operator note
+Every active user session needs to sign out + back in to pick up the new `org_role` claim (`org_admin` instead of `admin`). Old JWTs will have `org_role='admin'` from before the hook update — those sessions now lose owner-tier rights until re-auth.
+
 ## [ADR-0044 Phase 0] — 2026-04-18
 
 **ADR:** ADR-0044 v2 — Customer RBAC + 4-level hierarchy

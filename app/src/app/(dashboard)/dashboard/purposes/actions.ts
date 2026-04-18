@@ -32,7 +32,7 @@ export async function createPurpose(formData: FormData): Promise<ActionResult> {
   if (!user) return { error: 'Unauthorized' }
 
   const { data: membership } = await supabase
-    .from('organisation_members')
+    .from('org_memberships')
     .select('org_id')
     .eq('user_id', user.id)
     .single()
@@ -138,7 +138,7 @@ export async function createMapping(formData: FormData): Promise<ActionResult> {
   if (!user) return { error: 'Unauthorized' }
 
   const { data: membership } = await supabase
-    .from('organisation_members')
+    .from('org_memberships')
     .select('org_id')
     .eq('user_id', user.id)
     .single()
