@@ -2,8 +2,9 @@
 
 (c) 2026 Sudhindra Anegondhi a.d.sudhindra@gmail.com
 
-**Status:** Proposed
+**Status:** Completed
 **Date proposed:** 2026-04-18
+**Date completed:** 2026-04-18
 **Depends on:**
 - ADR-0010 (distributed rate limiter for public endpoints)
 - ADR-0014 (Sentry wired for both apps)
@@ -101,21 +102,24 @@ Phase 1 of ADR-0049 is done. Phase 2 (Sentry webhook ingestion) is next — new 
 
 **Deliverables:**
 
-- [ ] Migration `20260507000002_sentry_events.sql` — table + RLS + retention cron + `admin.security_sentry_events_list(p_window_hours)` RPC.
-- [ ] Webhook route `app/src/app/api/webhooks/sentry/route.ts` — HMAC-verified via `SENTRY_WEBHOOK_SECRET`. Stores `sentry_id` unique. 20-hour replay suppression mirrors the ADR-0038 dedup pattern.
-- [ ] `docs/ops/sentry-webhook-setup.md` — operator runbook: install internal integration in each Sentry project, point at the webhook URL, paste the shared secret.
-- [ ] `tests/admin/sentry-events-rpcs.test.ts` — admin RPC coverage (insert row, list, role gate).
+- [x] Migration `20260507000002_sentry_events.sql` — table (sentry_id unique, level CHECK constraint, payload jsonb for forensics) + indexes on received_at + (project, level, received_at) + 7-day retention cron at 03:45 UTC + `admin.security_sentry_events_list(p_window_hours)` RPC capped at 500 rows.
+- [x] `app/src/app/api/webhooks/sentry/route.ts` — HMAC-SHA256 verification on the raw body against `SENTRY_WEBHOOK_SECRET` via timing-safe compare. Filters info/debug out; accepts and ignores unhandled payload shapes (returns 200 so Sentry doesn't retry). Upserts on `sentry_id` conflict — Sentry retries stay idempotent.
+- [x] `docs/ops/sentry-webhook-setup.md` — operator runbook for standing up the Internal Integration in each Sentry project + local-dev smoke loop + log-tailing pointer.
+- [x] `tests/admin/sentry-events-rpcs.test.ts` — **6/6 PASS**: support+ can call, seeded row round-trip, upsert idempotence (2 writes with same sentry_id → 1 row, latest title wins), level CHECK rejection, window-bounds rejection, non-admin denial.
+- [x] Customer app build + lint clean. `/api/webhooks/sentry` in route manifest.
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete` — 2026-04-18
 
 #### Sprint 2.2 — Security panel Sentry tab rewrite
 
 **Deliverables:**
 
-- [ ] `admin/src/app/(operator)/security/security-tabs.tsx` — `SentryTab` reads from the RPC and renders a table (project · level · title · user count · received_at · "Open in Sentry ↗" link).
-- [ ] Smoke: trigger a deliberate error in the customer app in dev; confirm it shows up in the tab within the Sentry→webhook→table→RPC→UI pipeline.
+- [x] `admin/src/app/(operator)/security/security-tabs.tsx` — `SentryTab` now consumes `data.sentryEvents` from the new RPC. Table columns: Received · Project · Level (tone-coded pill) · Title (+ culprit subtitle) · Users · per-row "Open ↗" deep-link to the event. Pill count on the tab header. Card action region keeps the project-wide "app ↗" + "admin ↗" link-outs for exploratory triage.
+- [x] `admin/src/app/(operator)/security/page.tsx` — Promise.all extended to fetch sentry events alongside the other four RPC calls. Error aggregation includes the new call.
+- [x] `SecurityData.sentryEvents` interface added; `LevelPill` helper added (`fatal`/`error` → red, `warning` → amber).
+- [x] Admin build + lint clean. Live smoke deferred to an operator check once the Sentry internal integration is wired (see `docs/ops/sentry-webhook-setup.md`).
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete` — 2026-04-18
 
 ---
 

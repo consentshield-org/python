@@ -19,7 +19,7 @@ export const dynamic = 'force-dynamic'
 export default async function SecurityPage() {
   const supabase = await createServerClient()
 
-  const [rateLimit, hmac, origin, blocked, user] = await Promise.all([
+  const [rateLimit, hmac, origin, blocked, sentry, user] = await Promise.all([
     supabase.schema('admin').rpc('security_rate_limit_triggers', {
       p_window_hours: 24,
     }),
@@ -34,6 +34,10 @@ export default async function SecurityPage() {
       p_limit: 100,
     }),
     supabase.schema('admin').rpc('security_blocked_ips_list'),
+    // ADR-0049 Phase 2 — Sentry events now read from the DB, not link-out only.
+    supabase.schema('admin').rpc('security_sentry_events_list', {
+      p_window_hours: 24,
+    }),
     supabase.auth.getUser(),
   ])
 
@@ -42,6 +46,7 @@ export default async function SecurityPage() {
     hmac.error?.message,
     origin.error?.message,
     blocked.error?.message,
+    sentry.error?.message,
   ].filter((e): e is string => !!e)
 
   const adminRole =
@@ -57,6 +62,7 @@ export default async function SecurityPage() {
     hmacFailures: (hmac.data ?? []) as SecurityData['hmacFailures'],
     originFailures: (origin.data ?? []) as SecurityData['originFailures'],
     blockedIps: (blocked.data ?? []) as SecurityData['blockedIps'],
+    sentryEvents: (sentry.data ?? []) as SecurityData['sentryEvents'],
   }
 
   const sentryOrg = process.env.NEXT_PUBLIC_SENTRY_ORG ?? ''

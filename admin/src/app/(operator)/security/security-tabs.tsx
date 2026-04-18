@@ -31,6 +31,17 @@ export interface SecurityData {
     blocked_at: string
     expires_at: string | null
   }>
+  sentryEvents: Array<{
+    id: string
+    sentry_id: string
+    project_slug: string
+    level: 'fatal' | 'error' | 'warning' | 'info' | 'debug'
+    title: string
+    culprit: string | null
+    event_url: string | null
+    user_count: number
+    received_at: string
+  }>
 }
 
 interface WorkerRow {
@@ -67,7 +78,7 @@ export function SecurityTabs({
     { key: 'rate', label: 'Rate-limit triggers', count: data.rateLimit.length },
     { key: 'hmac', label: 'HMAC failures', count: data.hmacFailures.length },
     { key: 'origin', label: 'Origin failures', count: data.originFailures.length },
-    { key: 'sentry', label: 'Sentry escalations' },
+    { key: 'sentry', label: 'Sentry escalations', count: data.sentryEvents.length },
     { key: 'blocked', label: 'Blocked IPs', count: data.blockedIps.length },
   ]
 
@@ -116,7 +127,9 @@ export function SecurityTabs({
           emptyHelp="No origin validation failures in the last 24 hours. Same logging caveat as HMAC — origin failures aren't written to worker_errors yet."
         />
       ) : null}
-      {tab === 'sentry' ? <SentryTab sentryOrg={sentryOrg} /> : null}
+      {tab === 'sentry' ? (
+        <SentryTab rows={data.sentryEvents} sentryOrg={sentryOrg} />
+      ) : null}
       {tab === 'blocked' ? (
         <BlockedIpsTab
           rows={data.blockedIps}
@@ -268,69 +281,135 @@ function WorkerReasonsTab({
   )
 }
 
-function SentryTab({ sentryOrg }: { sentryOrg: string }) {
+function SentryTab({
+  rows,
+  sentryOrg,
+}: {
+  rows: SecurityData['sentryEvents']
+  sentryOrg: string
+}) {
   const appUrl = sentryOrg
     ? `https://${sentryOrg}.sentry.io/issues/?project=consentshield-app&query=level%3Aerror+or+level%3Afatal`
     : null
   const adminUrl = sentryOrg
     ? `https://${sentryOrg}.sentry.io/issues/?project=consentshield-admin&query=level%3Aerror+or+level%3Afatal`
     : null
+
+  const pill =
+    rows.length === 0 ? (
+      <Pill tone="green">0 in window</Pill>
+    ) : (
+      <Pill tone="amber">{rows.length} events</Pill>
+    )
+
   return (
-    <Card title="Sentry escalations — link-out">
-      <div className="space-y-3 p-6">
-        <p className="text-sm text-text-2">
-          v1 surface: inline ingestion of Sentry events lives in V2-S1. For now
-          open the projects directly to triage severity ≥ error.
-        </p>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <SentryLink
-            label="consentshield-app"
-            href={appUrl}
-            disabled={!sentryOrg}
-          />
-          <SentryLink
-            label="consentshield-admin"
-            href={adminUrl}
-            disabled={!sentryOrg}
-          />
+    <Card
+      title="Sentry escalations (last 24h)"
+      pill={pill}
+      action={
+        <div className="flex gap-2">
+          {appUrl ? (
+            <a
+              href={appUrl}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="rounded border border-[color:var(--border-mid)] bg-white px-2.5 py-1 text-[11px] hover:bg-bg"
+            >
+              app ↗
+            </a>
+          ) : null}
+          {adminUrl ? (
+            <a
+              href={adminUrl}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="rounded border border-[color:var(--border-mid)] bg-white px-2.5 py-1 text-[11px] hover:bg-bg"
+            >
+              admin ↗
+            </a>
+          ) : null}
         </div>
-        {!sentryOrg ? (
-          <p className="rounded border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
-            Set <code>NEXT_PUBLIC_SENTRY_ORG</code> on the admin Vercel project
-            to enable direct links.
-          </p>
-        ) : null}
-      </div>
+      }
+    >
+      {!sentryOrg ? (
+        <p className="m-4 rounded border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+          Set <code>NEXT_PUBLIC_SENTRY_ORG</code> on the admin Vercel project
+          to enable per-row deep-links.
+        </p>
+      ) : null}
+      {rows.length === 0 ? (
+        <p className="p-6 text-sm text-text-3">
+          No Sentry events ≥ warning received in the last 24 hours. Events
+          arrive via the internal-integration webhook — see{' '}
+          <code>docs/ops/sentry-webhook-setup.md</code> if the integration
+          isn&rsquo;t wired yet.
+        </p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-bg text-left text-xs uppercase tracking-wider text-text-3">
+              <tr>
+                <th className="px-4 py-2">Received</th>
+                <th className="px-4 py-2">Project</th>
+                <th className="px-4 py-2">Level</th>
+                <th className="px-4 py-2">Title</th>
+                <th className="px-4 py-2">Users</th>
+                <th className="px-4 py-2"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.id} className="border-t border-[color:var(--border)]">
+                  <td className="px-4 py-2 font-mono text-[11px] text-text-3">
+                    {relative(r.received_at)}
+                  </td>
+                  <td className="px-4 py-2 text-xs">{r.project_slug}</td>
+                  <td className="px-4 py-2">
+                    <LevelPill level={r.level} />
+                  </td>
+                  <td className="px-4 py-2 text-[11px] text-text-2">
+                    <div className="font-medium text-text-1">{r.title}</div>
+                    {r.culprit ? (
+                      <div className="mt-0.5 font-mono text-[10px] text-text-3">
+                        {r.culprit}
+                      </div>
+                    ) : null}
+                  </td>
+                  <td className="px-4 py-2 text-xs">{r.user_count}</td>
+                  <td className="px-4 py-2 text-right">
+                    {r.event_url ? (
+                      <a
+                        href={r.event_url}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        className="text-xs text-red-700 hover:underline"
+                      >
+                        Open ↗
+                      </a>
+                    ) : (
+                      <span className="text-[11px] text-text-3">—</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </Card>
   )
 }
 
-function SentryLink({
-  label,
-  href,
-  disabled,
+function LevelPill({
+  level,
 }: {
-  label: string
-  href: string | null
-  disabled: boolean
+  level: SecurityData['sentryEvents'][number]['level']
 }) {
-  return (
-    <div className="flex items-center justify-between rounded border border-[color:var(--border)] bg-bg p-3">
-      <span className="text-sm font-medium">{label}</span>
-      {disabled || !href ? (
-        <span className="text-xs text-text-3">not configured</span>
-      ) : (
-        <a
-          href={href}
-          target="_blank"
-          rel="noreferrer noopener"
-          className="text-xs text-red-700 hover:underline"
-        >
-          Open in Sentry →
-        </a>
-      )}
-    </div>
-  )
+  // info/debug are filtered at the webhook route and never reach here;
+  // the fallback amber matches warning.
+  const tone: 'red' | 'amber' | 'green' =
+    level === 'fatal' || level === 'error' ? 'red' : 'amber'
+  return <Pill tone={tone}>{level}</Pill>
 }
 
 function BlockedIpsTab({
