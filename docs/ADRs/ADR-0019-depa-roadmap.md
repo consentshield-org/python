@@ -2,10 +2,12 @@
 
 (c) 2026 Sudhindra Anegondhi a.d.sudhindra@gmail.com
 
-**Status:** Proposed
+**Status:** Completed
 **Date proposed:** 2026-04-17
-**Date completed:** —
+**Date completed:** 2026-04-18 (all execution ADRs landed — see below)
 **Type:** Meta-ADR (no code, no sprints). Authors the plan that ADRs 0020–0025 execute.
+
+> **Closeout 2026-04-18:** the six execution ADRs chartered here all shipped Completed, plus ADR-0037 bundled the deferred DEPA follow-ups (expiry fan-out, per-requestor binding, CSV, audit DEPA, onboarding seed pack). Nothing outstanding from this charter. Closed.
 **Depends on:** Phase 2 closed (ADRs 0001–0018 Completed). Architecturally independent of ADR-0026 (monorepo) and ADR-0027 (admin schema) — they operate on disjoint code paths.
 
 ---
