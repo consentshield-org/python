@@ -58,8 +58,8 @@ export function InviteCreatedCard({
         <span>
           Invitation id: <code className="font-mono">{invitationId.slice(0, 8)}…</code>
         </span>
-        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-amber-800">
-          email dispatch pending — Phase 2.5
+        <span className="rounded-full bg-green-100 px-2 py-0.5 text-green-800">
+          email queued via Resend
         </span>
       </div>
     </div>

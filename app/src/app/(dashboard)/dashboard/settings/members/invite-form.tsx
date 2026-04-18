@@ -141,7 +141,7 @@ export function InviteForm({
               month: 'short',
               year: 'numeric',
             })}
-            . Email dispatch is Phase 2.5 — send by hand for now.
+            . Email has been queued via Resend — if it doesn&apos;t arrive, share the URL above manually.
           </div>
         </div>
       ) : null}

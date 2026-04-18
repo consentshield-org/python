@@ -2,6 +2,23 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-0044 Phase 2.5] — 2026-04-18
+
+**ADR:** ADR-0044 v2 — Customer RBAC
+**Sprint:** Phase 2.5 — invitation email dispatch (DB side)
+
+### Added
+- `20260501000003_invitations_email_dispatch.sql`:
+  - New columns on `public.invitations`: `email_dispatched_at`, `email_dispatch_attempts int default 0`, `email_last_error`.
+  - Partial index `invitations_dispatch_pending_idx (created_at) WHERE accepted_at IS NULL AND revoked_at IS NULL AND email_dispatched_at IS NULL AND email_dispatch_attempts < 5` — supports the cron scan.
+  - `public.dispatch_invitation_email(p_id uuid) RETURNS bigint` — SECURITY DEFINER. Reads the dispatcher URL + bearer from Vault (`cs_invitation_dispatch_url`, `cs_invitation_dispatch_secret`), fires `net.http_post` with `{invitation_id: <uuid>}`. Returns the pg_net request id. Soft-null return when Vault isn't configured (bootstrap window).
+  - AFTER-INSERT trigger `invitations_dispatch_after_insert` — calls `dispatch_invitation_email(NEW.id)` only for live invites (not revoked, not accepted).
+  - pg_cron `invitation-dispatch-retry` every 5 min — scans for un-dispatched invites > 1 minute old, < 1 hour old, attempts < 5, caps at 50 per run.
+
+### Tested
+- `tests/rbac/invitations-dispatch-trigger.test.ts` — 3 tests: defaults on fresh invites, simulated success-path column update, `dispatch_invitation_email` soft-null when Vault absent.
+- `bun run test:rls` — 207/207 across 19 files.
+
 ## [ADR-0044 Phase 2.4] — 2026-04-18
 
 **ADR:** ADR-0044 v2 — Customer RBAC

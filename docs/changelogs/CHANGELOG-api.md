@@ -2,6 +2,19 @@
 
 API route changes.
 
+## [ADR-0044 Phase 2.5] — 2026-04-18
+
+**ADR:** ADR-0044 v2 — Customer RBAC
+**Sprint:** Phase 2.5 — invitation email dispatch
+
+### Added
+- `app/src/app/api/internal/invitation-dispatch/route.ts` — POST handler. Called by the Postgres AFTER-INSERT trigger on `public.invitations` (via pg_net) and by the `invitation-dispatch-retry` pg_cron safety-net. Bearer-authenticated with `INVITATION_DISPATCH_SECRET` (the same value as the `cs_invitation_dispatch_secret` Vault secret). Idempotent: the first successful Resend call stamps `email_dispatched_at`; later calls skip. Failures record `email_last_error` + increment `email_dispatch_attempts` so stuck dispatches surface in the admin console.
+- `app/src/lib/invitations/dispatch-email.ts` — pure template builder. Role-switch yields subject + heading + body; single HTML shell with a CTA button + plain-text alternative.
+
+### Notes
+- Required env vars: `INVITATION_DISPATCH_SECRET`, `RESEND_API_KEY`, `RESEND_FROM`. Without `RESEND_API_KEY` the dispatcher returns 503 and records `email_last_error='RESEND_API_KEY not configured'` so the retry cron can pick it up once the key is set.
+- Required Vault secrets: `cs_invitation_dispatch_url` (the public URL of the route above), `cs_invitation_dispatch_secret` (same value as the env var). Both must be set before any invite-email will leave the DB; missing Vault secrets yield a soft-null return from `public.dispatch_invitation_email` so the pg_cron retry covers the bootstrap window.
+
 ## [ADR-0039] — 2026-04-17
 
 **ADR:** ADR-0039 — Connector OAuth (Mailchimp + HubSpot)

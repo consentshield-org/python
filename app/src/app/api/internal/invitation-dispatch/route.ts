@@ -1,0 +1,157 @@
+import { NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
+import {
+  buildDispatchEmail,
+  type InvitationRole,
+} from '@/lib/invitations/dispatch-email'
+
+// ADR-0044 Phase 2.5 — invitation email dispatcher.
+//
+// Called by:
+//   * AFTER INSERT trigger on public.invitations (via pg_net / Vault URL)
+//   * pg_cron safety-net `invitation-dispatch-retry`
+//
+// Auth: shared bearer token (INVITATION_DISPATCH_SECRET env + the
+// cs_invitation_dispatch_secret Vault secret — the migration reads
+// from Vault, the route reads from process.env, so both must be set
+// to the same value).
+//
+// Semantics: idempotent. First successful Resend call stamps
+// email_dispatched_at; subsequent calls are no-ops. Failed calls
+// increment email_dispatch_attempts and record email_last_error so
+// the operator can inspect stuck dispatches from the admin console.
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
+const DISPATCH_SECRET = process.env.INVITATION_DISPATCH_SECRET ?? ''
+const RESEND_API_KEY = process.env.RESEND_API_KEY ?? ''
+const RESEND_FROM = process.env.RESEND_FROM ?? 'noreply@consentshield.in'
+const APP_BASE_URL =
+  process.env.NEXT_PUBLIC_APP_URL ??
+  process.env.NEXT_PUBLIC_CUSTOMER_APP_URL ??
+  'https://app.consentshield.in'
+
+export async function POST(request: Request) {
+  if (!DISPATCH_SECRET) {
+    return NextResponse.json(
+      { error: 'dispatch secret not configured' },
+      { status: 500 },
+    )
+  }
+
+  const auth = request.headers.get('authorization') ?? ''
+  if (!auth.startsWith('Bearer ')) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+  }
+  const token = auth.slice('Bearer '.length).trim()
+  if (token !== DISPATCH_SECRET) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+  }
+
+  let body: { invitation_id?: string }
+  try {
+    body = (await request.json()) as { invitation_id?: string }
+  } catch {
+    return NextResponse.json({ error: 'invalid body' }, { status: 400 })
+  }
+  const invitationId = body.invitation_id
+  if (!invitationId || typeof invitationId !== 'string') {
+    return NextResponse.json({ error: 'invitation_id required' }, { status: 400 })
+  }
+
+  const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+    auth: { persistSession: false },
+  })
+
+  const { data: invite, error: readErr } = await supabase
+    .from('invitations')
+    .select(
+      'id, token, role, invited_email, account_id, org_id, plan_code, default_org_name, expires_at, accepted_at, revoked_at, email_dispatched_at, email_dispatch_attempts',
+    )
+    .eq('id', invitationId)
+    .maybeSingle()
+
+  if (readErr) {
+    return NextResponse.json({ error: readErr.message }, { status: 500 })
+  }
+  if (!invite) {
+    return NextResponse.json({ error: 'invitation not found' }, { status: 404 })
+  }
+  if (invite.accepted_at) {
+    return NextResponse.json({ status: 'already_accepted' })
+  }
+  if (invite.revoked_at) {
+    return NextResponse.json({ status: 'revoked' })
+  }
+  if (invite.email_dispatched_at) {
+    return NextResponse.json({ status: 'already_dispatched' })
+  }
+
+  const email = buildDispatchEmail({
+    role: invite.role as InvitationRole,
+    invitedEmail: invite.invited_email,
+    acceptUrl: `${APP_BASE_URL}/signup?invite=${invite.token}`,
+    planCode: invite.plan_code,
+    defaultOrgName: invite.default_org_name,
+    expiresAt: invite.expires_at,
+    hasExistingAccount: invite.account_id !== null,
+  })
+
+  if (!RESEND_API_KEY) {
+    // Dev / unconfigured environment — record the intent but don't
+    // mark dispatched. Operator can configure Resend later and the
+    // cron retry will pick this up.
+    await supabase
+      .from('invitations')
+      .update({
+        email_dispatch_attempts: (invite.email_dispatch_attempts ?? 0) + 1,
+        email_last_error: 'RESEND_API_KEY not configured',
+      })
+      .eq('id', invitationId)
+    return NextResponse.json(
+      { status: 'resend_not_configured' },
+      { status: 503 },
+    )
+  }
+
+  const resp = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${RESEND_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: `ConsentShield <${RESEND_FROM}>`,
+      to: [invite.invited_email],
+      subject: email.subject,
+      html: email.html,
+      text: email.text,
+    }),
+  })
+
+  if (!resp.ok) {
+    const errBody = await resp.text().catch(() => '')
+    await supabase
+      .from('invitations')
+      .update({
+        email_dispatch_attempts: (invite.email_dispatch_attempts ?? 0) + 1,
+        email_last_error: `resend ${resp.status}: ${errBody.slice(0, 500)}`,
+      })
+      .eq('id', invitationId)
+    return NextResponse.json(
+      { error: 'resend_failed', status: resp.status },
+      { status: 502 },
+    )
+  }
+
+  await supabase
+    .from('invitations')
+    .update({
+      email_dispatched_at: new Date().toISOString(),
+      email_dispatch_attempts: (invite.email_dispatch_attempts ?? 0) + 1,
+      email_last_error: null,
+    })
+    .eq('id', invitationId)
+
+  return NextResponse.json({ status: 'dispatched' })
+}

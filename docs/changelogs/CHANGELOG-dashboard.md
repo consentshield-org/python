@@ -2,6 +2,15 @@
 
 Next.js UI changes.
 
+## ADR-0044 Phase 2.5 — 2026-04-18
+
+**ADR:** ADR-0044 v2 — Customer RBAC
+**Sprint:** Phase 2.5 — dispatch pills + template
+
+### Changed
+- `admin/src/components/orgs/invite-created-card.tsx` — amber "email dispatch pending — Phase 2.5" pill replaced with a green "email queued via Resend" pill now that dispatch is wired.
+- `app/src/app/(dashboard)/dashboard/settings/members/invite-form.tsx` — success card reworded to "Email has been queued via Resend — if it doesn't arrive, share the URL above manually."
+
 ## ADR-0044 Phase 2.4 — 2026-04-18
 
 **ADR:** ADR-0044 v2 — Customer RBAC
