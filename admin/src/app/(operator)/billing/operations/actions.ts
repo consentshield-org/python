@@ -74,7 +74,7 @@ export async function createRefund(input: {
   // the Razorpay dashboard and either re-runs here once env is ready
   // or uses the mark-issued RPC directly.
   if (!isRazorpayEnvReady() || !paymentId) {
-    revalidatePath('/billing')
+    revalidatePath('/billing', 'layout')
     return {
       ok: true,
       data: {
@@ -103,13 +103,13 @@ export async function createRefund(input: {
     if (markError) {
       // Razorpay issued but we couldn't record the outcome — rare but
       // important to surface. The refund is real; the row is out of date.
-      revalidatePath('/billing')
+      revalidatePath('/billing', 'layout')
       return {
         ok: false,
         error: `Razorpay issued refund ${refund.id} but updating the ledger row failed: ${markError.message}`,
       }
     }
-    revalidatePath('/billing')
+    revalidatePath('/billing', 'layout')
     return {
       ok: true,
       data: { refundId, status: 'issued', razorpayRefundId: refund.id },
@@ -131,7 +131,7 @@ export async function createRefund(input: {
         p_refund_id: refundId,
         p_failure_reason: failureReason.slice(0, 500),
       })
-    revalidatePath('/billing')
+    revalidatePath('/billing', 'layout')
     return {
       ok: true,
       data: { refundId, status: 'failed', failureReason },
@@ -166,7 +166,7 @@ export async function upsertPlanAdjustment(input: {
     })
   if (error) return { ok: false, error: error.message }
 
-  revalidatePath('/billing')
+  revalidatePath('/billing', 'layout')
   return { ok: true, data: { adjustmentId: data as string } }
 }
 
@@ -188,6 +188,6 @@ export async function revokePlanAdjustment(input: {
     })
   if (error) return { ok: false, error: error.message }
 
-  revalidatePath('/billing')
+  revalidatePath('/billing', 'layout')
   return { ok: true }
 }

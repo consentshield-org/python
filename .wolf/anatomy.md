@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-17T14:53:30.591Z
-> Files: 511 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-18T12:43:33.885Z
+> Files: 679 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../tmp/
 
@@ -11,13 +11,16 @@
 ## ../../../.claude/plans/
 
 - `quiet-noodling-pond.md` — Plan — Merge DEPA package into `docs/architecture/` source of truth (~3175 tok)
+- `reactive-napping-cosmos.md` — Plan: ADR-0044 v2 — Customer RBAC with Account / Organisation / Web Property Hierarchy (~3738 tok)
 
 ## ../../../.claude/projects/-Users-sudhindra-projects-aiSpirit-consent-sheild/memory/
 
 - `feedback_bun_workspace_quirks.md` — Don't list non-existent dirs in root `package.json` `workspaces` (~517 tok)
 - `feedback_docs_vs_code_drift.md` (~534 tok)
 - `feedback_explicit_git_staging.md` (~479 tok)
+- `feedback_hook_modifies_between_read_edit.md` (~483 tok)
 - `feedback_hybrid_trigger_over_polling.md` (~654 tok)
+- `feedback_identity_isolation_invariant.md` (~452 tok)
 - `feedback_latest_versions.md` (~311 tok)
 - `feedback_no_ai_authorship.md` (~263 tok)
 - `feedback_no_auth_uid_in_scoped_rpcs.md` — Declares fails (~432 tok)
@@ -25,22 +28,43 @@
 - `feedback_openwolf_system.md` (~390 tok)
 - `feedback_otp_over_magic_link.md` (~439 tok)
 - `feedback_parallel_adrs.md` (~378 tok)
+- `feedback_session_fingerprint_server_only.md` (~694 tok)
 - `feedback_share_narrowly_not_broadly.md` (~1004 tok)
 - `feedback_supabase_aal_not_in_app_metadata.md` — Declares currentAal (~516 tok)
+- `feedback_supabase_default_function_grants.md` — Declares that (~419 tok)
 - `feedback_v2_backlog_pattern.md` (~479 tok)
 - `feedback_vitest_serial_for_supabase_auth.md` (~502 tok)
 - `feedback_wireframes_before_adrs.md` (~784 tok)
-- `MEMORY.md` (~1171 tok)
+- `MEMORY.md` (~1779 tok)
 - `project_admin_platform_2026-04-16.md` — What IS implemented as of 2026-04-16 (~1994 tok)
 - `project_admin_platform_2026-04-17.md` — What IS implemented as of 2026-04-17 (~2346 tok)
+- `project_admin_platform_2026-04-18.md` — State as of 2026-04-18 (~609 tok)
+- `project_adr0045_sprint12_done.md` — Shipped in commit 764952b (~596 tok)
+- `project_adr0047_done.md` — Commits (~783 tok)
+- `project_adr0050_proposed.md` (~1133 tok)
+- `project_customer_segment_enterprise.md` — The customer (~546 tok)
 - `project_dev_only_no_prod.md` (~347 tok)
+- `project_open_gap_admin_account_awareness.md` (~814 tok)
+- `project_pending_2026-04-18.md` — S-2 · "Remove member" RPC + UI (~887 tok)
+- `project_rbac_design_2026-04-18.md` — Why multi-layer (~1013 tok)
 - `project_status_2026-04-14.md` — ADR status (~693 tok)
 - `project_status_2026-04-15.md` — Live deployments (~680 tok)
 - `project_status_2026-04-16.md` — ADR state (~2188 tok)
+- `project_status_2026-04-17-phase2-complete.md` — ADR state (~1542 tok)
 - `project_status_2026-04-17.md` — ADR state at EOD (~3211 tok)
+- `project_status_2026-04-18-adr0044-done.md` (~707 tok)
+- `project_status_2026-04-18-bfsi.md` — ADR status (~648 tok)
+- `project_status_2026-04-18-final.md` — Shipped in the 2026-04-18 session (after the ADR-0044 RBAC + ADR-0047 membership-lifecycle work that (~1172 tok)
+- `project_status_2026-04-18-phase0-1.md` — End-of-2026-04-18 state (late) (~1175 tok)
+- `project_status_2026-04-18-phase2-3.md` (~518 tok)
+- `project_status_2026-04-18-phase2-4.md` (~566 tok)
+- `project_status_2026-04-18-phase2-5.md` (~662 tok)
+- `project_status_2026-04-18-phase2.md` — End-of-day 2026-04-18 state (~1017 tok)
+- `project_status_2026-04-18.md` — End of 2026-04-18 state (~986 tok)
 - `reference_email_deliverability.md` — Resend account (~907 tok)
 - `reference_infrastructure.md` (~628 tok)
 - `reference_supabase_platform_gotchas.md` — PG 16 GRANT ROLE split (migration role needs `WITH SET TRUE`) (~1631 tok)
+- `reference_vercel_sandbox.md` — Access (~906 tok)
 - `reference_vercel_setup.md` — Projects (~665 tok)
 - `user_role.md` (~306 tok)
 
@@ -48,17 +72,17 @@
 
 - `.gitignore` — Git ignore rules (~182 tok)
 - `.prettierrc` (~29 tok)
-- `CLAUDE.md` — OpenWolf (~4938 tok)
+- `CLAUDE.md` — OpenWolf (~5779 tok)
 - `package.json` — Node.js package manifest (~110 tok)
 - `sentry.client.config.ts` (~166 tok)
 - `sentry.server.config.ts` (~166 tok)
 - `tsconfig.base.json` (~110 tok)
 - `tsconfig.json` — TypeScript configuration (~206 tok)
-- `vitest.config.ts` — /*.test.ts', (~217 tok)
+- `vitest.config.ts` — /*.test.ts', (~226 tok)
 
 ## .claude/
 
-- `session-handoff.md` — Session Handoff (~1131 tok)
+- `session-handoff.md` — Session Handoff — 2026-04-18 (late afternoon close) (~895 tok)
 
 ## .github/workflows/
 
@@ -99,8 +123,24 @@
 ## admin/src/app/(operator)/
 
 - `actions.ts` — Exports refreshPlatformMetrics (~167 tok)
-- `layout.tsx` — Operator shell — visual spec: docs/admin/design/consentshield-admin-screens.html. (~2089 tok)
+- `layout.tsx` — Operator shell — visual spec: docs/admin/design/consentshield-admin-screens.html. (~2166 tok)
 - `page.tsx` — ADR-0028 Sprint 2.1 — Operations Dashboard. (~1660 tok)
+
+## admin/src/app/(operator)/accounts/
+
+- `actions.ts` — Exports suspendAccountAction, restoreAccountAction (~570 tok)
+- `page.tsx` — ADR-0048 Sprint 1.2 — Accounts list. (~1947 tok)
+
+## admin/src/app/(operator)/accounts/[accountId]/
+
+- `action-bar.tsx` — AccountActionBar — renders form, modal (~1248 tok)
+- `page.tsx` — ADR-0048 Sprint 1.2 — Account detail. (~2852 tok)
+
+## admin/src/app/(operator)/admins/
+
+- `actions.ts` — Exports inviteAdminAction, changeAdminRoleAction, disableAdminAction (~1311 tok)
+- `admin-list.tsx` — ROLE_LABEL — renders form, table, modal (~4558 tok)
+- `page.tsx` — ADR-0045 Sprint 2.1 — Admin Users panel. (~634 tok)
 
 ## admin/src/app/(operator)/audit-log/
 
@@ -110,6 +150,38 @@
 
 - `route.ts` — ADR-0028 Sprint 3.1 — CSV export of filtered audit log. (~1147 tok)
 
+## admin/src/app/(operator)/billing/
+
+- `actions.ts` — Exports createRefund, upsertPlanAdjustment, revokePlanAdjustment (~1866 tok)
+- `billing-tabs.tsx` — BillingTabs — renders table, modal (~8331 tok)
+- `page.tsx` — ADR-0050 Sprint 1 — Billing landing (account-indexed). (~2702 tok)
+
+## admin/src/app/(operator)/billing/[accountId]/
+
+- `page.tsx` — ADR-0050 Sprint 1 — per-account billing detail. (~4292 tok)
+
+## admin/src/app/(operator)/billing/operations/
+
+- `actions.ts` — Exports createRefund, upsertPlanAdjustment, revokePlanAdjustment (~1883 tok)
+- `billing-tabs.tsx` — BillingTabs — renders table, modal (~9004 tok)
+
+## admin/src/app/(operator)/connectors/
+
+- `actions.ts` — Exports createConnector, updateConnector, deprecateConnector, goToCloneConnector (~1760 tok)
+- `page.tsx` — ADR-0031 Sprint 1.1 — Connector Catalogue list. (~1876 tok)
+
+## admin/src/app/(operator)/connectors/[connectorId]/
+
+- `page.tsx` — ADR-0031 Sprint 1.1 — Connector detail page. (~2385 tok)
+
+## admin/src/app/(operator)/connectors/[connectorId]/edit/
+
+- `page.tsx` — ADR-0031 Sprint 1.2 — Connector editor. (~900 tok)
+
+## admin/src/app/(operator)/connectors/new/
+
+- `page.tsx` — dynamic (~671 tok)
+
 ## admin/src/app/(operator)/flags/
 
 - `actions.ts` — Exports setFeatureFlag, deleteFeatureFlag, toggleKillSwitch (~918 tok)
@@ -117,13 +189,59 @@
 
 ## admin/src/app/(operator)/orgs/
 
-- `page.tsx` — ADR-0029 Sprint 1.1 — Organisations list. (~2110 tok)
+- `page.tsx` — ADR-0029 Sprint 1.1 — Organisations list. (~2228 tok)
 
 ## admin/src/app/(operator)/orgs/[orgId]/
 
-- `actions.ts` — Exports addOrgNote, extendTrial, suspendOrg, restoreOrg (~822 tok)
+- `actions.ts` — Exports addOrgNote, extendTrial, suspendOrg, restoreOrg + 3 more (~1710 tok)
 - `impersonation-actions.ts` — Exports startImpersonation, endImpersonation, forceEndImpersonation (~1296 tok)
-- `page.tsx` — ADR-0029 Sprint 1.1 — Organisation detail page (read-only). (~2946 tok)
+- `members-section.tsx` — ORG_ROLES — renders table (~1683 tok)
+- `page.tsx` — ADR-0029 Sprint 1.1 — Organisation detail page (read-only). (~3322 tok)
+- `sdf-card.tsx` — STATUS_LABEL — renders form, modal (~2102 tok)
+
+## admin/src/app/(operator)/orgs/[orgId]/new-invite/
+
+- `actions.ts` — Exports CreateOrgAdminInviteInput, CreateInviteResult, createOrgAdminInvite (~607 tok)
+- `org-admin-invite-form.tsx` — OrgAdminInviteForm — renders form (~1300 tok)
+- `page.tsx` — ADR-0044 Phase 2.3 — org_admin promotion invite for an existing org. (~742 tok)
+
+## admin/src/app/(operator)/orgs/new-invite/
+
+- `actions.ts` — Exports CreateAccountInviteInput, CreateInviteResult, createAccountInvite (~754 tok)
+- `new-account-invite-form.tsx` — NewAccountInviteForm — renders form (~1778 tok)
+- `page.tsx` — ADR-0044 Phase 2.3 — operator-side form for account-creating invites. (~569 tok)
+
+## admin/src/app/(operator)/pipeline/
+
+- `page.tsx` — ADR-0033 Sprint 1.2 — Pipeline Operations panel. (~741 tok)
+- `pipeline-tabs.tsx` — PipelineTabs — renders table (~4310 tok)
+
+## admin/src/app/(operator)/security/
+
+- `actions.ts` — Exports blockIp, unblockIp (~614 tok)
+- `page.tsx` — ADR-0033 Sprint 2.2 — Abuse & Security panel. (~960 tok)
+- `security-tabs.tsx` — SecurityTabs — renders table (~5792 tok)
+
+## admin/src/app/(operator)/signatures/
+
+- `actions.ts` — Exports createSignature, updateSignature, deprecateSignature, importPack (~1706 tok)
+- `page.tsx` — ADR-0031 Sprint 2.1 — Tracker Signatures list. (~1848 tok)
+
+## admin/src/app/(operator)/signatures/[signatureId]/
+
+- `page.tsx` — ADR-0031 Sprint 2.1 — Tracker Signature detail page. (~1429 tok)
+
+## admin/src/app/(operator)/signatures/[signatureId]/edit/
+
+- `page.tsx` — ADR-0031 Sprint 2.2 — Tracker signature editor. (~744 tok)
+
+## admin/src/app/(operator)/signatures/import/
+
+- `page.tsx` — ADR-0031 Sprint 2.2 — Tracker signature pack import. (~490 tok)
+
+## admin/src/app/(operator)/signatures/new/
+
+- `page.tsx` — ADR-0031 Sprint 2.2 — New tracker signature. (~218 tok)
 
 ## admin/src/app/(operator)/support/
 
@@ -151,6 +269,18 @@
 
 - `page.tsx` — ADR-0030 Sprint 2.1 — New-draft form. (~952 tok)
 
+## admin/src/app/api/admin/users/[adminId]/disable/
+
+- `route.ts` — ADR-0045 Sprint 1.2 — POST /api/admin/users/[adminId]/disable (~410 tok)
+
+## admin/src/app/api/admin/users/[adminId]/role/
+
+- `route.ts` — ADR-0045 Sprint 1.2 — PATCH /api/admin/users/[adminId]/role (~505 tok)
+
+## admin/src/app/api/admin/users/invite/
+
+- `route.ts` — ADR-0045 Sprint 1.2 — POST /api/admin/users/invite (~884 tok)
+
 ## admin/src/app/api/auth/signout/
 
 - `route.ts` — ADR-0028 Sprint 1.1 — admin sign-out. (~141 tok)
@@ -172,6 +302,12 @@
 ## admin/src/components/common/
 
 - `modal-form.tsx` — ModalShell (~891 tok)
+
+## admin/src/components/connectors/
+
+- `connector-form.tsx` — DEFAULT_SCHEMA — renders form (~2315 tok)
+- `detail-actions.tsx` — ConnectorDetailActions — renders form, modal (~1528 tok)
+- `filter-bar.tsx` — ConnectorsFilterBar (~598 tok)
 
 ## admin/src/components/flags/
 
@@ -196,8 +332,16 @@
 
 ## admin/src/components/orgs/
 
-- `action-bar.tsx` — OrgActionBar — renders form, modal (~2513 tok)
+- `action-bar.tsx` — OrgActionBar — renders form, modal (~2608 tok)
 - `filter-bar.tsx` — PLANS — renders form (~898 tok)
+- `invite-created-card.tsx` — InviteCreatedCard (~649 tok)
+
+## admin/src/components/signatures/
+
+- `detail-actions.tsx` — SignatureDetailActions — renders form, modal (~796 tok)
+- `filter-bar.tsx` — CATEGORIES (~1003 tok)
+- `import-form.tsx` — ImportPackForm — renders form (~798 tok)
+- `signature-form.tsx` — SIG_TYPES — renders form (~2048 tok)
 
 ## admin/src/components/support/
 
@@ -210,14 +354,30 @@
 - `filter-bar.tsx` — TemplatesFilterBar (~586 tok)
 - `template-form.tsx` — FRAMEWORKS — renders form (~3740 tok)
 
+## admin/src/lib/admin-users/
+
+- `gate.ts` — ADR-0045 Sprint 1.2 — platform_operator re-check at the route-handler (~555 tok)
+- `invite-email.ts` — ADR-0045 Sprint 1.2 — admin invite email template. (~1318 tok)
+- `service-role.ts` — ADR-0045 Sprint 1.2 — admin-user lifecycle service-role client. (~432 tok)
+
+## admin/src/lib/admin/
+
+- `invite-email.ts` — ADR-0045 Sprint 1.2 — admin invite email dispatch via Resend. (~903 tok)
+- `lifecycle.ts` — ADR-0045 Sprint 1.2/2.1 — shared orchestration for the three admin (~1511 tok)
+
 ## admin/src/lib/impersonation/
 
 - `cookie.ts` — ADR-0029 Sprint 3.1 — impersonation cookie lifecycle. (~439 tok)
+
+## admin/src/lib/razorpay/
+
+- `client.ts` — Issue a refund against a captured Razorpay payment. Amount is in paise. (~1447 tok)
 
 ## admin/src/lib/supabase/
 
 - `browser.ts` — Admin Supabase browser client. Functionally identical to the customer (~153 tok)
 - `server.ts` — Admin Supabase server client. Uses the same auth.users pool as the (~328 tok)
+- `service.ts` — Construct a service-role Supabase client. Throws if the required env (~705 tok)
 
 ## admin/tests/
 
@@ -240,10 +400,15 @@
 
 - `vercel-should-build.sh` — (this workspace's own source) (~351 tok)
 
+## app/src/
+
+- `proxy.ts` — Customer-app proxy. (~910 tok)
+
 ## app/src/app/
 
 - `icon.svg` (~114 tok)
 - `layout.tsx` — geistSans (~270 tok)
+- `page.tsx` — ADR-0043 — The customer app is auth-only. The root path is an (~148 tok)
 - `robots.ts` — Pre-launch: customer app URLs are private. Disallow every crawler, (~326 tok)
 
 ## app/src/app/(dashboard)/
@@ -252,7 +417,7 @@
 
 ## app/src/app/(dashboard)/dashboard/
 
-- `page.tsx` — DashboardPage — renders table (~3736 tok)
+- `page.tsx` — DashboardPage — renders table (~4026 tok)
 
 ## app/src/app/(dashboard)/dashboard/artefacts/
 
@@ -265,7 +430,7 @@
 
 ## app/src/app/(dashboard)/dashboard/billing/
 
-- `page.tsx` — BillingPage (~1727 tok)
+- `page.tsx` — BillingPage (~1899 tok)
 
 ## app/src/app/(dashboard)/dashboard/enforcement/
 
@@ -273,13 +438,13 @@
 
 ## app/src/app/(dashboard)/dashboard/exports/
 
-- `actions.ts` — API routes: GET (6 endpoints) (~1660 tok)
+- `actions.ts` — API routes: GET (6 endpoints) (~1638 tok)
 - `export-button.tsx` — ExportButton (~579 tok)
 - `page.tsx` — ExportsPage — renders table (~1837 tok)
 
 ## app/src/app/(dashboard)/dashboard/exports/settings/
 
-- `page.tsx` — ExportStorageSettingsPage (~875 tok)
+- `page.tsx` — ExportStorageSettingsPage (~866 tok)
 - `r2-settings-form.tsx` — R2SettingsForm — renders form (~2069 tok)
 
 ## app/src/app/(dashboard)/dashboard/integrations/
@@ -289,14 +454,14 @@
 
 ## app/src/app/(dashboard)/dashboard/probes/
 
-- `actions.ts` — API routes: GET (7 endpoints) (~1228 tok)
-- `page.tsx` — ProbesPage (~816 tok)
+- `actions.ts` — API routes: GET (7 endpoints) (~1217 tok)
+- `page.tsx` — ProbesPage (~807 tok)
 - `probes-list.tsx` — ProbesList — renders form, table (~2658 tok)
 
 ## app/src/app/(dashboard)/dashboard/purposes/
 
 - `actions.ts` — API routes: GET (15 endpoints) (~1793 tok)
-- `page.tsx` — PurposesPage (~782 tok)
+- `page.tsx` — PurposesPage (~773 tok)
 - `purposes-view.tsx` — PurposesView — renders form, table (~6706 tok)
 
 ## app/src/app/(dashboard)/dashboard/rights/
@@ -306,6 +471,14 @@
 ## app/src/app/(dashboard)/dashboard/rights/[id]/
 
 - `page.tsx` — RightsRequestDetailPage — renders table (~5598 tok)
+
+## app/src/app/(dashboard)/dashboard/settings/members/
+
+- `actions.ts` — Exports InviteMemberInput, InviteResult, inviteMember, revokeInvitation + 4 more (~1464 tok)
+- `invite-form.tsx` — InviteForm — renders form (~1521 tok)
+- `member-row-actions.tsx` — ACCOUNT_ROLES (~1406 tok)
+- `page.tsx` — ADR-0044 Phase 2.4 — /dashboard/settings/members. (~3037 tok)
+- `revoke-button.tsx` — RevokeButton (~285 tok)
 
 ## app/src/app/(dashboard)/dashboard/support-sessions/
 
@@ -333,17 +506,29 @@
 
 - `page.tsx` — Public privacy notice page — no auth required. Backed by rpc_get_privacy_notice (~705 tok)
 
+## app/src/app/(public)/signup/
+
+- `page.tsx` — SignupPage — renders form (~2442 tok)
+
 ## app/src/app/api/integrations/oauth/[provider]/callback/
 
 - `route.ts` — ADR-0039 — OAuth callback landing. Validates state, exchanges code, (~1210 tok)
 
 ## app/src/app/api/integrations/oauth/[provider]/connect/
 
-- `route.ts` — ADR-0039 — start the OAuth handshake for a provider. (~536 tok)
+- `route.ts` — ADR-0039 — start the OAuth handshake for a provider. (~526 tok)
+
+## app/src/app/api/internal/invitation-dispatch/
+
+- `route.ts` — Next.js API route: POST (~1488 tok)
+
+## app/src/app/api/internal/invites/
+
+- `route.ts` — ADR-0044 Phase 2.6 — HMAC-gated invite creation for the marketing (~1304 tok)
 
 ## app/src/app/api/internal/run-probes/
 
-- `route.ts` — , runs Playwright scenario, collects stdout JSON, (~2259 tok)
+- `route.ts` — , runs Playwright scenario, collects stdout JSON, (~2258 tok)
 
 ## app/src/app/api/orgs/[orgId]/artefacts.csv/
 
@@ -353,6 +538,10 @@
 
 - `route.ts` — ADR-0017 Phase 1: authenticated users in an org can download an (~2755 tok)
 
+## app/src/app/api/orgs/[orgId]/billing/checkout/
+
+- `route.ts` — Next.js API route: POST (~723 tok)
+
 ## app/src/app/api/orgs/[orgId]/depa-score/
 
 - `route.ts` — ADR-0025 — DEPA score read endpoint. (~822 tok)
@@ -361,9 +550,21 @@
 
 - `route.ts` — Next.js API route: GET, POST (~1445 tok)
 
+## app/src/app/api/orgs/[orgId]/integrations/[id]/
+
+- `route.ts` — Next.js API route: DELETE (~302 tok)
+
 ## app/src/app/api/public/rights-request/
 
-- `route.ts` — Next.js API route: POST (~1013 tok)
+- `route.ts` — Next.js API route: POST (~1098 tok)
+
+## app/src/app/api/public/rights-request/verify-otp/
+
+- `route.ts` — Next.js API route: POST (~870 tok)
+
+## app/src/app/api/webhooks/sentry/
+
+- `route.ts` — ADR-0049 Phase 2 Sprint 2.1 — Sentry webhook ingestion. (~1327 tok)
 
 ## app/src/app/auth/callback/
 
@@ -371,7 +572,7 @@
 
 ## app/src/components/
 
-- `dashboard-nav.tsx` — navItems (~682 tok)
+- `dashboard-nav.tsx` — navItems (~701 tok)
 - `otp-boxes.tsx` — OtpBoxes (~345 tok)
 - `suspended-banner.tsx` — ADR-0029 Sprint 4.1 — customer-side suspension banner. (~537 tok)
 
@@ -387,6 +588,7 @@
 ## app/src/lib/auth/
 
 - `bootstrap-org.ts` — ADR-0042 — signup bootstrap extracted into a pure helper so the (~423 tok)
+- `require-org-role.ts` — ADR-0044 Phase 1 — Server-side role gate with account_owner inheritance. (~565 tok)
 
 ## app/src/lib/connectors/oauth/
 
@@ -394,6 +596,11 @@
 - `mailchimp.ts` — ADR-0039 — Mailchimp OAuth provider. (~720 tok)
 - `registry.ts` — Exports getOAuthProvider, listConfiguredOAuthProviders (~176 tok)
 - `types.ts` — ADR-0039 — shared OAuth provider types. (~234 tok)
+
+## app/src/lib/invitations/
+
+- `dispatch-email.ts` — ADR-0044 Phase 2.5 — invitation email templating. (~1424 tok)
+- `marketing-signature.ts` — ADR-0044 Phase 2.6 — HMAC signing for /api/internal/invites. (~540 tok)
 
 ## app/src/lib/probes/
 
@@ -403,11 +610,17 @@
 
 - `deletion-dispatch.ts` — Deletion orchestration — dispatches erasure to connectors and records (~3008 tok)
 - `fingerprint.ts` — ADR-0037 V2-D2 — session fingerprint derivation at rights-request submit time. (~526 tok)
+- `rate-limit-log.ts` — ADR-0049 Phase 1.1 — fire-and-forget rate-limit event logger. (~523 tok)
 
 ## app/src/lib/storage/
 
 - `sigv4.test.ts` — ADR-0040 Sprint 1.1 — sigv4 primitive tests. (~1062 tok)
 - `sigv4.ts` — ADR-0040 — hand-rolled AWS sigv4 for Cloudflare R2 S3 compatibility. (~1895 tok)
+
+## app/tests/
+
+- `invitation-dispatch.test.ts` — Declares InvitationRole (~695 tok)
+- `invitations-marketing-signature.test.ts` — ADR-0044 Phase 2.6 — HMAC sign/verify for /api/internal/invites. (~755 tok)
 
 ## app/tests/auth/
 
@@ -415,6 +628,7 @@
 
 ## app/tests/buffer/
 
+- `delivery.test.ts` — SUPABASE_URL: seedAuditRow (~1321 tok)
 - `lifecycle.test.ts` — Migration 011 (20260413000011) revokes UPDATE and DELETE on all buffer (~1002 tok)
 
 ## app/tests/probes/
@@ -427,13 +641,20 @@
 
 ## app/tests/worker/
 
+- `blocked-ip.test.ts` — ADR-0033 Sprint 2.3 — Worker-side blocked-IP enforcement. (~1445 tok)
+- `events.test.ts` — ORG_ID: postEvent (~1849 tok)
 - `harness.ts` — API routes: GET (2 endpoints) (~1828 tok)
+
+## app/tests/workflows/
+
+- `sla-timer.test.ts` — SUPABASE_URL: insertWithCreatedAt, addThirtyDaysMs, epoch (~1358 tok)
 
 ## docs/
 
+- `FEATURE-INVENTORY.md` — ConsentShield — Complete Feature Inventory (~9665 tok)
 - `ROADMAP-phase2.md` — ConsentShield — Phase 2 Roadmap (~3150 tok)
 - `STATUS.md` — ConsentShield Status (~2363 tok)
-- `V2-BACKLOG.md` — V2 Backlog — Deferred Items for Post-Phase-2 Review (~1131 tok)
+- `V2-BACKLOG.md` — V2 Backlog — Deferred Items for Post-Phase-2 Review (~1378 tok)
 
 ## docs/ADRs/
 
@@ -455,7 +676,7 @@
 - `ADR-0016-consent-probes.md` — ADR-0016: Consent Probes (Synthetic Compliance Testing) (~1518 tok)
 - `ADR-0017-audit-export-package.md` — ADR-0017: Audit Export Package (~1578 tok)
 - `ADR-0018-prebuilt-deletion-connectors.md` — ADR-0018: Pre-built Deletion Connectors (Mailchimp, HubSpot) (~1457 tok)
-- `ADR-0019-depa-roadmap.md` — ADR-0019: DEPA Roadmap — Charter & Sequencing of ADR-0020..0025 (~3286 tok)
+- `ADR-0019-depa-roadmap.md` — ADR-0019: DEPA Roadmap — Charter & Sequencing of ADR-0020..0025 (~3366 tok)
 - `ADR-0020-depa-schema-skeleton.md` — ADR-0020: DEPA Schema Skeleton (~5670 tok)
 - `ADR-0021-process-consent-event.md` — ADR-0021: `process-consent-event` Edge Function + Dispatch Trigger + Safety-Net Cron (~3927 tok)
 - `ADR-0022-artefact-revocation-pipeline.md` — ADR-0022: `process-artefact-revocation` Edge Function + Revocation Dispatch (~4937 tok)
@@ -467,7 +688,10 @@
 - `ADR-0028-admin-app-foundation.md` — ADR-0028: Admin App Foundation — Real Auth, Operations Dashboard, Audit Log (~4047 tok)
 - `ADR-0029-admin-organisations.md` — ADR-0029: Admin Organisations Panel — List, Detail, Actions, Impersonation (~3387 tok)
 - `ADR-0030-sectoral-templates.md` — ADR-0030: Sectoral Templates (Admin Panel + Customer-Side Read) (~2724 tok)
+- `ADR-0031-connector-tracker-catalogue.md` — ADR-0031: Connector Catalogue + Tracker Signature Catalogue (Admin Panels) (~2650 tok)
 - `ADR-0032-support-tickets.md` — ADR-0032: Support Tickets (Admin Panel + Customer-Side Submit) (~2749 tok)
+- `ADR-0033-ops-and-security.md` — ADR-0033: Admin Ops + Security — Pipeline Operations + Abuse & Security panels (~3662 tok)
+- `ADR-0034-billing-operations.md` — ADR-0034: Billing Operations admin panel (Razorpay failures · refunds · comps · plan overrides) (~4421 tok)
 - `ADR-0036-feature-flags-kill-switches.md` — ADR-0036: Feature Flags & Kill Switches (Admin Panel) (~2282 tok)
 - `ADR-0037-depa-completion.md` — ADR-0037: DEPA Completion — Expiry Fan-out, Per-Requestor Binding, CSV Export, Audit DEPA Section, O (~3945 tok)
 - `ADR-0038-operational-observability.md` — ADR-0038: Operational Observability — Cron Failure Watchdog + Stuck-Buffer Alerting (~2095 tok)
@@ -475,7 +699,15 @@
 - `ADR-0040-audit-r2-upload.md` — ADR-0040: Audit R2 Upload Pipeline — sigv4, `export_configurations` UI, delivery-target branch (~2243 tok)
 - `ADR-0041-probes-v2-sandbox.md` — ADR-0041: Probes v2 — Headless-Browser Runner via Vercel Sandbox + Probe CRUD UI (~2480 tok)
 - `ADR-0042-signup-idempotency-test.md` — ADR-0042: Signup Idempotency Regression Test (~635 tok)
-- `ADR-index.md` — ADR Index (~1290 tok)
+- `ADR-0043-customer-app-auth-only.md` — ADR-0043: Customer App is Auth-Only (Drop Public Landing) (~750 tok)
+- `ADR-0044-customer-rbac.md` — ADR-0044: Customer RBAC — 4-Level Hierarchy + 5-Role Model + Invitation-Only Signup (v2) (~5563 tok)
+- `ADR-0045-admin-user-lifecycle.md` — ADR-0045 — Admin user lifecycle (invite + role change) (~3049 tok)
+- `ADR-0046-significant-data-fiduciary.md` — ADR-0046: Significant Data Fiduciary (SDF) Foundation (~2341 tok)
+- `ADR-0047-customer-membership-lifecycle.md` — ADR-0047 — Customer membership lifecycle (role change + remove) + single-account-per-identity invari (~3944 tok)
+- `ADR-0048-admin-accounts-and-observability.md` — ADR-0048: Admin Accounts panel + ADR-0033/34 deviation closeout (~2261 tok)
+- `ADR-0049-security-observability-ingestion.md` — ADR-0049: Security observability ingestion — rate_limit_events + sentry_events (~2365 tok)
+- `ADR-0050-admin-account-aware-billing.md` — ADR-0050: Admin account-aware billing — issuer entities, invoices, GST, dispute workspace (~10972 tok)
+- `ADR-index.md` — ADR Index (~1718 tok)
 - `ADR-template.md` — ADR-NNNN: Title (~423 tok)
 - `adr-workflow.md` — ADR Workflow Rules (~557 tok)
 
@@ -487,8 +719,8 @@
 
 ## docs/admin/design/
 
-- `ARCHITECTURE-ALIGNMENT-2026-04-16.md` — Admin Platform — Architecture Alignment (~3423 tok)
-- `consentshield-admin-screens.html` — Admin wireframe spec: 11 panels (Operations Dashboard, Organisations, Support Tickets, Sectoral Templates, Connector Catalogue, Tracker Signatures, Pipeline Operations, Billing Operations, Abuse & Security, Feature Flags & Kill Switches, Audit Log) + Impersonation drawer. Red admin-mode strip + sidebar accent visually distinguish from customer app. (~26762 tok)
+- `ARCHITECTURE-ALIGNMENT-2026-04-16.md` — Admin Platform — Architecture Alignment (~3441 tok)
+- `consentshield-admin-screens.html` — ConsentShield — Admin Platform Wireframes (~29906 tok)
 
 ## docs/architecture/
 
@@ -499,13 +731,13 @@
 
 ## docs/changelogs/
 
-- `CHANGELOG-api.md` — Changelog — API (~3840 tok)
-- `CHANGELOG-dashboard.md` — Changelog — Dashboard (~7076 tok)
-- `CHANGELOG-docs.md` — Changelog — Documentation (~2104 tok)
+- `CHANGELOG-api.md` — Changelog — API (~4845 tok)
+- `CHANGELOG-dashboard.md` — Changelog — Dashboard (~10931 tok)
+- `CHANGELOG-docs.md` — Changelog — Documentation (~3064 tok)
 - `CHANGELOG-edge-functions.md` — Changelog — Edge Functions (~3003 tok)
 - `CHANGELOG-infra.md` — Changelog — Infrastructure (~3667 tok)
-- `CHANGELOG-schema.md` — Changelog — Schema (~12670 tok)
-- `CHANGELOG-worker.md` — Changelog — Worker (~1514 tok)
+- `CHANGELOG-schema.md` — Changelog — Schema (~17401 tok)
+- `CHANGELOG-worker.md` — Changelog — Worker (~1897 tok)
 
 ## docs/design/
 
@@ -536,10 +768,12 @@
 - `ARCHITECTURE-ALIGNMENT-2026-04-16.md` — Screen Designs — Architecture Alignment (~5513 tok)
 - `consentshield-mobile.html` — iOS wireframes spec, 3 flows (rights monitor, breach trigger, clinic ABDM Month 6+). M1/M2/M3 drift items deferred to ABDM/mobile/BFSI ADRs. (~17068 tok)
 - `consentshield-next-steps.md` — Strategic decisions log April 2026 + 2026-04-16 addendum noting DEPA architecture has moved on. (~2784 tok)
-- `consentshield-screens.html` — ConsentShield — Screen Designs & UX Flows (~28280 tok)
+- `consentshield-screens.html` — ConsentShield — Screen Designs & UX Flows (~30282 tok)
 
 ## docs/ops/
 
+- `invitation-email-setup.md` — Runbook — Invitation email + marketing endpoint setup (~2144 tok)
+- `sentry-webhook-setup.md` — Sentry → ConsentShield webhook setup (~694 tok)
 - `supabase-auth-templates.md` — Supabase Auth Email Templates (OTP form) (~943 tok)
 
 ## docs/reviews/
@@ -549,6 +783,7 @@
 - `2026-04-15-deferred-items-analysis.md` — Deferred Items — Analysis (~1954 tok)
 - `2026-04-16-depa-package-architecture-review.md` — DEPA Package Architecture Review — 2026-04-16 (~5618 tok)
 - `2026-04-16-phase2-completion-review.md` — Critical Codebase Review — Phase 2 Completion (~6107 tok)
+- `2026-04-18-adr-0044-customer-rbac-review.md` — Review — ADR-0044 Customer RBAC (Phase 0 + 1 + 2.1–2.6) (~3002 tok)
 
 ## packages/compliance/
 
@@ -598,6 +833,12 @@
 - `context-2026-04-16-21-55-13.md` — Session Context — 2026-04-16 21:55:13 (~7153 tok)
 - `context-2026-04-17-08-34-12.md` — Session Context — 2026-04-17 08:34:12 (Terminal B) (~3780 tok)
 - `context-2026-04-17-09-55-08.md` — Session Context — 2026-04-17 09:55:08 (Terminal A) (~5515 tok)
+- `context-2026-04-17-20-27-01.md` — Session Context — 2026-04-17 EOD (Phase-2 completion push) (~2828 tok)
+- `context-2026-04-18-06-29-46.md` — Session context — 2026-04-18 06:29 (~1599 tok)
+- `context-2026-04-18-08-54-11.md` — Session context — 2026-04-18 08:54 (~1693 tok)
+- `context-2026-04-18-09-34-45.md` — Session context — 2026-04-18 09:34 (~782 tok)
+- `context-2026-04-18-12-18-16.md` — Session context — 2026-04-18 12:18 (~2627 tok)
+- `context-2026-04-18-16-22-35.md` — Session Context — 2026-04-18 (afternoon/evening closing) (~2259 tok)
 
 ## src/
 
@@ -941,6 +1182,35 @@
 - `20260425000003_probe_cron_vercel.sql` — ADR-0041 Sprint 1.3 — swap consent-probes-hourly to the Vercel orchestrator. (~475 tok)
 - `20260425000004_oauth_states.sql` — ADR-0039 Sprint 1.1 — oauth_states table for OAuth handshake CSRF protection. (~651 tok)
 - `20260425000005_oauth_refresh_cron.sql` — ADR-0039 Sprint 1.3 — schedule the oauth-token-refresh cron. (~195 tok)
+- `20260426000001_ops_and_security_phase1.sql` — ADR-0033 Sprint 1.1 — Pipeline Operations admin RPCs. (~2856 tok)
+- `20260426000001_ops_and_security.sql` — ADR-0033 — Admin Ops + Security (Pipeline Operations + Abuse & Security). (~4180 tok)
+- `20260426000002_pipeline_delivery_health_cast_fix.sql` — ADR-0033 Sprint 1.1 — patch for 20260426000001. (~765 tok)
+- `20260427000001_ops_and_security_phase2.sql` — ADR-0033 Phase 2 — Abuse & Security schema + RPCs. (~2628 tok)
+- `20260427000002_admin_config_snapshot_blocked_ips.sql` — ADR-0033 Sprint 2.3 — extend public.admin_config_snapshot() with (~806 tok)
+- `20260428000001_billing_operations.sql` — ADR-0034 Sprint 1.1 — Billing Operations schema + admin RPCs. (~4317 tok)
+- `20260428000002_accounts_and_plans.sql` — ADR-0044 Phase 0 — Accounts layer + billing relocation. (~6123 tok)
+- `20260429000001_rbac_memberships.sql` — ADR-0044 Phase 1 — Memberships + role resolution + credential-column RLS. (~5594 tok)
+- `20260430000001_invitations.sql` — ADR-0044 Phase 2.1 — Invitation flow: schema + create/accept RPCs. (~3951 tok)
+- `20260430000002_invitations_role_gate_fix.sql` — ADR-0044 Phase 2.1 follow-up — fix NULL-compare bug in create_invitation. (~1194 tok)
+- `20260501000001_invitations_list_revoke.sql` — ADR-0044 Phase 2.4 — list + revoke primitives for customer-side (~2269 tok)
+- `20260501000002_invitations_list_members.sql` — ADR-0044 Phase 2.4 — list_members RPC. (~950 tok)
+- `20260501000003_invitations_email_dispatch.sql` — ADR-0044 Phase 2.5 — invitation email dispatch primitive. (~1409 tok)
+- `20260501000004_invitations_marketing_rpc.sql` — ADR-0044 Phase 2.6 — marketing-site invite creation. (~812 tok)
+- `20260501000005_marketing_rpc_grant_fix.sql` — ADR-0044 Phase 2.6 follow-up — tighten the grant on (~360 tok)
+- `20260502000001_bfsi_template_seed.sql` — BFSI Starter sectoral template — authored 2026-04-18. (~4050 tok)
+- `20260502000001_billing_relocate_to_accounts.sql` — ADR-0034 Sprint 1.1 amendment — follow-up to ADR-0044 Phase 0 (~4395 tok)
+- `20260502000002_bfsi_signatures_seed.sql` — BFSI tracker signature pack — seeded 2026-04-18. (~2099 tok)
+- `20260502000002_refund_outcome_rpcs.sql` — ADR-0034 Sprint 2.2 — refund outcome RPCs. (~951 tok)
+- `20260503000001_admin_user_lifecycle.sql` — ADR-0045 Sprint 1.1 — admin user lifecycle: invite + role change + disable. (~2343 tok)
+- `20260503000002_accept_invitation_reject_admin.sql` — CLAUDE.md Rule 12 — identity isolation hardening. (~1410 tok)
+- `20260504000001_membership_lifecycle.sql` — ADR-0047 Sprint 1.1 — customer membership lifecycle. (~7729 tok)
+- `20260504000002_accept_invitation_reject_admin.sql` — CLAUDE.md Rule 12 — identity isolation hardening. (~1375 tok)
+- `20260504000003_admin_invite_isolation.sql` — CLAUDE.md Rule 12 — identity isolation hardening for admin_invite_create. (~781 tok)
+- `20260505000001_sdf_foundation.sql` — ADR-0046 Phase 1 Sprint 1.1 — Significant Data Fiduciary (SDF) status (~1507 tok)
+- `20260506000001_admin_accounts.sql` — ADR-0048 Phase 1 Sprint 1.1 — Admin Accounts RPCs. (~2615 tok)
+- `20260507000001_billing_account_summary.sql` — ADR-0050 Sprint 1 — admin.billing_account_summary (~1061 tok)
+- `20260507000001_rate_limit_events.sql` — ADR-0049 Phase 1 Sprint 1.1 — rate_limit_events ingestion. (~1267 tok)
+- `20260507000002_sentry_events.sql` — ADR-0049 Phase 2 Sprint 2.1 — sentry_events ingestion. (~999 tok)
 
 ## supabase/seed/
 
@@ -977,11 +1247,19 @@
 
 ## tests/admin/
 
+- `account-rpcs.test.ts` — service: countAuditRows (~2208 tok)
+- `admin-lifecycle-rpcs.test.ts` — service: countAuditRows (~3812 tok)
 - `audit_log.test.ts` — service: countAuditRows (~1832 tok)
+- `billing-account-view.test.ts` — Declares env (~1374 tok)
+- `billing-rpcs.test.ts` — service: countAuditRows, createPendingRefund (~4016 tok)
 - `foundation.test.ts` — Declares anon (~1516 tok)
 - `helpers.ts` — Helpers for admin-side tests. Reuses the Supabase project + env vars (~969 tok)
+- `pipeline-rpcs.test.ts` — Declares row (~1753 tok)
+- `rate-limit-rpcs.test.ts` — Declares service (~1008 tok)
 - `rls.test.ts` — Declares adminOnlyTables (~1952 tok)
 - `rpcs.test.ts` — service: rpc (~4104 tok)
+- `sdf-rpcs.test.ts` — service: countAuditRows (~1560 tok)
+- `sentry-events-rpcs.test.ts` — Declares service (~1111 tok)
 
 ## tests/buffer/
 
@@ -999,6 +1277,15 @@
 
 - `banner-test.html` — ConsentShield Banner Test (~895 tok)
 
+## tests/rbac/
+
+- `invitations-dispatch-trigger.test.ts` — ADR-0044 Phase 2.5 — invitation email dispatch primitives. (~1239 tok)
+- `invitations-list-revoke.test.ts` — ADR-0044 Phase 2.4 — list_pending_invitations / revoke_invitation (~2202 tok)
+- `invitations-marketing-rpc.test.ts` — ADR-0044 Phase 2.6 — create_invitation_from_marketing gate. (~1153 tok)
+- `invitations.test.ts` — ADR-0044 Phase 2.1 — Invitation RPC coverage. (~2496 tok)
+- `membership-lifecycle.test.ts` — ADR-0047 Sprint 1.1 — change_membership_role + remove_membership. (~3687 tok)
+- `single-account-invariant.test.ts` — ADR-0047 Sprint 1.1 — single-account-per-identity invariant. (~1987 tok)
+
 ## tests/rights/
 
 - `connectors.test.ts` — ORG_ID: mockFetch, supabaseStub (~2065 tok)
@@ -1008,7 +1295,7 @@
 
 - `depa-isolation.test.ts` — ADR-0020 Sprint 1.1 — DEPA RLS isolation tests. (~3131 tok)
 - `depa-purpose-crud.test.ts` — ADR-0024 Sprint 1.4 — RLS cross-tenant isolation for Purpose Definitions (~1430 tok)
-- `helpers.ts` — Exports getServiceClient, getAnonClient, TestOrg, createTestOrg + 3 more (~951 tok)
+- `helpers.ts` — Exports getServiceClient, getAnonClient, TestOrg, createTestOrg + 3 more (~1275 tok)
 - `isolation.test.ts` — Declares admin (~2328 tok)
 - `sectoral-template-apply.test.ts` — ADR-0030 Sprint 3.1 — customer-side sectoral-template application. (~1784 tok)
 - `support-tickets.test.ts` — ADR-0032 Sprint 2.1 — customer-side support access isolation. (~1536 tok)
@@ -1032,12 +1319,13 @@
 
 ## worker/src/
 
-- `admin-config.ts` — Typed accessors over the admin config snapshot materialised to KV by (~1363 tok)
+- `admin-config.ts` — Typed accessors over the admin config snapshot materialised to KV by (~1547 tok)
 - `banner.ts` — API routes: GET (2 endpoints) (~4104 tok)
-- `events.ts` — API routes: GET (2 endpoints) (~1421 tok)
+- `blocked-ip.ts` — Convert a dotted-quad IPv4 string ("198.51.100.0") to a 32-bit (~1056 tok)
+- `events.ts` — API routes: GET (2 endpoints) (~1729 tok)
 - `hmac.ts` — HMAC-SHA256 utilities — Web Crypto API only, zero dependencies (~457 tok)
-- `index.ts` — Exports Env (~414 tok)
-- `observations.ts` — Exports handleObservation (~1123 tok)
+- `index.ts` — Exports Env (~597 tok)
+- `observations.ts` — Exports handleObservation (~1438 tok)
 - `origin.ts` — API routes: GET (3 endpoints) (~761 tok)
 - `signatures.ts` — Exports TrackerSignature, getTrackerSignatures, compactSignatures (~751 tok)
-- `worker-errors.ts` — N-S1 fix: persist Worker → Supabase write failures to the worker_errors (~422 tok)
+- `worker-errors.ts` — N-S1 fix: persist Worker → Supabase write failures to the worker_errors (~546 tok)

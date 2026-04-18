@@ -53,6 +53,7 @@ All Architecture Decision Records for ConsentShield, in chronological order.
 | ADR-0047 | Customer membership lifecycle (role change + remove) + membership_audit_log + single-account-per-identity invariant | Completed | 2026-04-18 | 1 | 2 |
 | ADR-0048 | Admin Accounts panel + ADR-0033/34 deviation closeout (suspend_account / account picker / Worker HMAC+Origin logging) | Completed | 2026-04-18 | 2 | 3 |
 | ADR-0049 | Security observability ingestion — rate_limit_events + sentry_events (closes V2-S1/S2) | Completed | 2026-04-18 | 2 | 4 |
+| ADR-0050 | Admin account-aware billing — issuer entities + invoices + GST + dispute workspace | In Progress | 2026-04-18 | 3 | 6 |
 
 <!--
 When adding a new ADR:

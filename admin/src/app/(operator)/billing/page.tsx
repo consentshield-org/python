@@ -1,91 +1,86 @@
+import Link from 'next/link'
 import { createServerClient } from '@/lib/supabase/server'
-import { BillingTabs, type BillingData } from './billing-tabs'
 
-// ADR-0034 Sprint 2.1 — Billing Operations panel.
+// ADR-0050 Sprint 1 — Billing landing (account-indexed).
 //
-// Four tabs:
-//   · Payment failures — audit_log events of event_type='payment_failed'
-//     rolled up per account
-//   · Refunds — public.refunds ledger (create-row today; Razorpay round-
-//     trip in Sprint 2.2)
-//   · Comp accounts — plan_adjustments where kind='comp'
-//   · Plan overrides — plan_adjustments where kind='override'
-//
-// All four RPCs are account-scoped after ADR-0044 Phase 0; the refund
-// and plan-adjustment modals take an account_id directly. Active plans
-// come from public.plans (is_active = true).
+// Primary operator entry point for anything billing-related. Reuses
+// admin.accounts_list as the row source (the existing envelope has plan,
+// status, effective_plan, subscription id, orgs, created). Invoice state
+// + outstanding balance are stubs until Sprint 2 lands the invoice
+// pipeline. A pill near the header links to /billing/operations when
+// there are open Razorpay payment failures.
 
 export const dynamic = 'force-dynamic'
 
-export default async function BillingPage() {
+interface AccountRow {
+  id: string
+  name: string
+  plan_code: string
+  status: string
+  razorpay_subscription_id: string | null
+  trial_ends_at: string | null
+  org_count: number
+  effective_plan: string | null
+  created_at: string
+}
+
+interface PaymentFailureRow {
+  account_id: string
+}
+
+interface PageProps {
+  searchParams: Promise<{ status?: string; plan?: string; q?: string }>
+}
+
+export default async function BillingLandingPage({ searchParams }: PageProps) {
+  const params = await searchParams
   const supabase = await createServerClient()
 
-  const [failures, refunds, comps, overrides, plans, accounts, user] =
-    await Promise.all([
-      supabase.schema('admin').rpc('billing_payment_failures_list', {
-        p_window_days: 7,
-      }),
-      supabase.schema('admin').rpc('billing_refunds_list', { p_limit: 50 }),
-      supabase
-        .schema('admin')
-        .rpc('billing_plan_adjustments_list', { p_kind: 'comp' }),
-      supabase
-        .schema('admin')
-        .rpc('billing_plan_adjustments_list', { p_kind: 'override' }),
-      supabase
-        .from('plans')
-        .select('plan_code, display_name')
-        .eq('is_active', true)
-        .order('base_price_inr', { ascending: true, nullsFirst: true }),
-      // ADR-0048 Sprint 1.2 — feed the Adjustment modal's account picker.
-      supabase.schema('admin').rpc('accounts_list'),
-      supabase.auth.getUser(),
-    ])
+  const nullable = (s: string | undefined) => (s && s.length > 0 ? s : null)
+  const [accountsRes, failuresRes] = await Promise.all([
+    supabase.schema('admin').rpc('accounts_list', {
+      p_status: nullable(params.status),
+      p_plan_code: nullable(params.plan),
+      p_q: nullable(params.q),
+    }),
+    supabase.schema('admin').rpc('billing_payment_failures_list', {
+      p_window_days: 7,
+    }),
+  ])
 
-  const errors = [
-    failures.error?.message,
-    refunds.error?.message,
-    comps.error?.message,
-    overrides.error?.message,
-    plans.error?.message,
-    accounts.error?.message,
-  ].filter((e): e is string => !!e)
-
-  const adminRole =
-    (user.data.user?.app_metadata?.admin_role as
-      | 'platform_operator'
-      | 'support'
-      | 'read_only'
-      | undefined) ?? 'read_only'
-  const canWriteRefunds = adminRole === 'support' || adminRole === 'platform_operator'
-  const canWriteAdjustments = adminRole === 'platform_operator'
-
-  const data: BillingData = {
-    paymentFailures: (failures.data ?? []) as BillingData['paymentFailures'],
-    refunds: (refunds.data ?? []) as BillingData['refunds'],
-    comps: (comps.data ?? []) as BillingData['comps'],
-    overrides: (overrides.data ?? []) as BillingData['overrides'],
-    plans: (plans.data ?? []) as BillingData['plans'],
-    accounts: ((accounts.data ?? []) as Array<{
-      id: string
-      name: string
-      status: string
-    }>).map((a) => ({ id: a.id, name: a.name, status: a.status })),
-  }
+  const rows = (accountsRes.data ?? []) as AccountRow[]
+  const failures = (failuresRes.data ?? []) as PaymentFailureRow[]
+  const failureAccountIds = new Set(failures.map((f) => f.account_id))
+  const errors = [accountsRes.error?.message, failuresRes.error?.message].filter(
+    (e): e is string => !!e,
+  )
 
   return (
     <div className="mx-auto max-w-6xl space-y-4">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold">Billing Operations</h1>
+          <h1 className="text-xl font-semibold">Billing</h1>
           <p className="text-sm text-text-2">
-            Razorpay failures, refund ledger, comp grants, and plan overrides.
-            Account-scoped after ADR-0044 Phase 0.
+            Subscriptions, invoices, and refunds — grouped by account. ADR-0050.
           </p>
         </div>
-        <span className="rounded-full border border-[color:var(--border)] bg-bg px-3 py-1 text-[11px] text-text-3">
-          Razorpay round-trip — ADR-0034 Sprint 2.2
-        </span>
+        <div className="flex items-center gap-2">
+          {failures.length > 0 ? (
+            <Link
+              href="/billing/operations"
+              className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-medium text-amber-800 hover:bg-amber-100"
+              title="Open Billing Operations — Razorpay payment failures in the last 7 days"
+            >
+              {failures.length} with payment failures
+            </Link>
+          ) : null}
+          <Link
+            href="/billing/operations"
+            className="rounded-full border border-[color:var(--border)] bg-white px-3 py-1 text-[11px] text-text-3 hover:bg-bg"
+          >
+            Operations →
+          </Link>
+        </div>
       </header>
 
       {errors.length > 0 ? (
@@ -96,11 +91,161 @@ export default async function BillingPage() {
         </div>
       ) : null}
 
-      <BillingTabs
-        data={data}
-        canWriteRefunds={canWriteRefunds}
-        canWriteAdjustments={canWriteAdjustments}
-      />
+      <FilterBar current={params} />
+
+      <section className="rounded-md border border-[color:var(--border)] bg-white shadow-sm">
+        <header className="flex items-center justify-between border-b border-[color:var(--border)] px-4 py-2.5">
+          <h2 className="text-sm font-semibold">All accounts</h2>
+          <span className="rounded-full bg-bg px-2 py-0.5 text-[11px] text-text-3">
+            {rows.length}
+          </span>
+        </header>
+        {rows.length === 0 ? (
+          <p className="p-8 text-center text-sm text-text-3">
+            No accounts match the current filters.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-bg text-left text-xs uppercase tracking-wider text-text-3">
+                <tr>
+                  <th className="px-4 py-2">Account</th>
+                  <th className="px-4 py-2">Plan</th>
+                  <th className="px-4 py-2">Status</th>
+                  <th className="px-4 py-2">Trial ends</th>
+                  <th className="px-4 py-2">Last invoice</th>
+                  <th className="px-4 py-2">Subscription</th>
+                  <th className="px-4 py-2">Orgs</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r.id} className="border-t border-[color:var(--border)]">
+                    <td className="px-4 py-2">
+                      <Link
+                        href={`/billing/${r.id}`}
+                        className="text-sm font-medium text-teal hover:underline"
+                      >
+                        {r.name}
+                      </Link>
+                      {failureAccountIds.has(r.id) ? (
+                        <span
+                          className="ml-2 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800"
+                          title="Razorpay payment failed in the last 7 days"
+                        >
+                          !
+                        </span>
+                      ) : null}
+                      <div className="font-mono text-[11px] text-text-3">
+                        {r.id.slice(0, 8)}
+                      </div>
+                    </td>
+                    <td className="px-4 py-2 text-xs">
+                      {r.plan_code}
+                      {r.effective_plan && r.effective_plan !== r.plan_code ? (
+                        <span className="ml-2 text-[10px] text-text-3">
+                          eff. {r.effective_plan}
+                        </span>
+                      ) : null}
+                    </td>
+                    <td className="px-4 py-2">
+                      <StatusPill status={r.status} />
+                    </td>
+                    <td className="px-4 py-2 font-mono text-[11px] text-text-3">
+                      {r.trial_ends_at
+                        ? new Date(r.trial_ends_at).toLocaleDateString()
+                        : '—'}
+                    </td>
+                    <td className="px-4 py-2 text-[11px] text-text-3">
+                      <span
+                        title="Invoice pipeline ships in ADR-0050 Sprint 2"
+                      >
+                        —
+                      </span>
+                    </td>
+                    <td className="px-4 py-2 font-mono text-[11px] text-text-3">
+                      {r.razorpay_subscription_id ?? '—'}
+                    </td>
+                    <td className="px-4 py-2 text-xs">{Number(r.org_count)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
     </div>
+  )
+}
+
+function FilterBar({
+  current,
+}: {
+  current: { status?: string; plan?: string; q?: string }
+}) {
+  return (
+    <form className="flex flex-wrap items-end gap-2 rounded-md border border-[color:var(--border)] bg-white px-3 py-2 shadow-sm">
+      <label className="flex flex-col text-[11px] text-text-3">
+        <span className="mb-1">Status</span>
+        <select
+          name="status"
+          defaultValue={current.status ?? ''}
+          className="rounded border border-[color:var(--border-mid)] bg-white px-2 py-1 text-sm"
+        >
+          <option value="">any</option>
+          <option value="trial">trial</option>
+          <option value="active">active</option>
+          <option value="past_due">past_due</option>
+          <option value="suspended">suspended</option>
+          <option value="cancelled">cancelled</option>
+        </select>
+      </label>
+      <label className="flex flex-col text-[11px] text-text-3">
+        <span className="mb-1">Plan</span>
+        <select
+          name="plan"
+          defaultValue={current.plan ?? ''}
+          className="rounded border border-[color:var(--border-mid)] bg-white px-2 py-1 text-sm"
+        >
+          <option value="">any</option>
+          <option value="trial_starter">trial_starter</option>
+          <option value="starter">starter</option>
+          <option value="growth">growth</option>
+          <option value="pro">pro</option>
+          <option value="enterprise">enterprise</option>
+        </select>
+      </label>
+      <label className="flex flex-1 flex-col text-[11px] text-text-3">
+        <span className="mb-1">Search (name)</span>
+        <input
+          name="q"
+          defaultValue={current.q ?? ''}
+          placeholder="account name prefix"
+          className="rounded border border-[color:var(--border-mid)] px-2 py-1 text-sm"
+        />
+      </label>
+      <button
+        type="submit"
+        className="rounded bg-teal px-3 py-1 text-xs font-medium text-white hover:bg-teal-dark"
+      >
+        Apply
+      </button>
+    </form>
+  )
+}
+
+function StatusPill({ status }: { status: string }) {
+  const tone =
+    status === 'active'
+      ? 'bg-green-100 text-green-700'
+      : status === 'trial'
+        ? 'bg-amber-100 text-amber-800'
+        : status === 'suspended' || status === 'suspended_by_plan'
+          ? 'bg-red-100 text-red-700'
+          : 'bg-bg text-text-3'
+  return (
+    <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${tone}`}>
+      {status}
+    </span>
   )
 }

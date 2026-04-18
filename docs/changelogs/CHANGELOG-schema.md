@@ -2,6 +2,17 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-0050 Sprint 1] — 2026-04-18
+
+**ADR:** ADR-0050 — Admin account-aware billing
+**Sprint:** Sprint 1 — `billing_account_summary` RPC
+
+### Added
+- `20260507000003_billing_account_summary.sql`: `admin.billing_account_summary(p_account_id uuid) returns jsonb` — SECURITY DEFINER, gated on `admin.require_admin('support')`. Returns a three-key envelope: `subscription_state` (plan + effective + display_name + base_price_inr + status + period/trial ends + Razorpay identity + next_charge_amount_paise stub), `plan_history` (base event at `account.created_at` + every `plan_adjustments` grant and revocation as separate chronological events with `source` ∈ `base|comp|override` and `action` ∈ `granted|revoked`), `outstanding_balance_paise` (0 until Sprint 2). Missing account raises `Account % not found` (SQLSTATE P0002).
+
+### Tested
+- [x] `tests/admin/billing-account-view.test.ts` 3/3 PASS — envelope shape validated; grant/revoke flow produces two distinct history events with the same `adjustment_id` and opposite `action` values.
+
 ## [ADR-0049 Phase 2.1] — 2026-04-18
 
 **ADR:** ADR-0049 — Security observability ingestion

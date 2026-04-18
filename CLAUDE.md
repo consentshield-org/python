@@ -121,6 +121,14 @@ These are hard constraints. Do not work around them. Do not find creative interp
 
 18. **Sentry captures no sensitive data.** All Sentry `beforeSend` hooks must strip request bodies, headers, cookies, and query parameters. Only stack traces and error messages reach Sentry.
 
+19. **Invoice issuance requires an active `billing.issuer_entities` row — and invoices are immutable.** No hard-coded issuer identity: legal name, GSTIN, PAN, registered state, invoice prefix, FY sequence origin, and signatory must be read from the currently-active issuer row at issuance time. If no row is active, invoice issuance RPCs must raise a clear error rather than emit an invoice. Retiring one issuer and activating another is an auditable admin action; invoices before the retirement keep their original issuer linkage.
+
+   **Immutable identity fields (issuer_entities).** `legal_name`, `gstin`, `pan`, `registered_state_code`, `invoice_prefix`, `fy_start_month` cannot be updated in place. To change any of them, retire the current issuer and create a new one. Only `registered_address`, `logo_r2_key`, `signatory_name`, `signatory_designation`, `bank_account_masked` may be patched on a live issuer.
+
+   **Immutable invoices (`public.invoices`).** No role in running application code has DELETE. UPDATE is trigger-constrained to the allow-list in ADR-0050 (`status` transitions, `paid_at`, `razorpay_invoice_id/order_id`, `pdf_r2_key`, `pdf_sha256`, `issued_at`, `voided_at/voided_reason`, `email_message_id`, `email_delivered_at`). Voiding is a status flip with reason, not deletion. Every issued PDF is content-hashed and stored in R2; the R2 key is never overwritten.
+
+   **`platform_owner` role.** Issuer-entity writes and all-issuer historical invoice visibility/export are restricted to the `platform_owner` admin tier. `platform_operator` retains operational visibility — list, search, view, and export invoices *scoped to the currently-active issuer*. Retired-issuer invoices are never visible to operators; they belong to the owner's historical lens. `admin_role` enum: `platform_owner > platform_operator > support > read_only`. `platform_owner` is seeded by migration onto the founder's `auth.users` row; it is never grantable via admin-invite. Recovery is via migration with service-role key. See ADR-0050.
+
 ## Development workflow — ADR-driven
 
 Every coding session follows a structured plan. No code is written without an ADR.

@@ -2,6 +2,24 @@
 
 Next.js UI changes.
 
+## [ADR-0050 Sprint 1] — 2026-04-18
+
+**ADR:** ADR-0050 — Admin account-aware billing
+**Sprint:** Sprint 1 — Account-shaped `/billing` panel
+
+### Added
+- `admin/src/app/(operator)/billing/page.tsx` — new account-indexed landing. Reuses `admin.accounts_list`; shows N-with-payment-failures pill linking to operations; stub "Last invoice" column pending Sprint 2.
+- `admin/src/app/(operator)/billing/[accountId]/page.tsx` — per-account detail. Composes `admin.account_detail` (ADR-0048), the new `admin.billing_account_summary`, and `admin.billing_refunds_list` (filtered client-side to the account). Renders Subscription / Razorpay / Balance cards, Latest-invoice stub, Plan history timeline, Active adjustments, Refunds table.
+
+### Changed
+- `admin/src/app/(operator)/billing/operations/page.tsx` + `billing-tabs.tsx` + `actions.ts` — existing ADR-0034 four-tab Billing Operations panel relocated verbatim from `/billing` to `/billing/operations`. `suspendAccountAction` import updated to `../../accounts/actions`. `revalidatePath('/billing')` calls now use `'layout'` scope so the landing + operations sub-route refresh together.
+- `admin/src/app/(operator)/layout.tsx` — nav item split: `Billing` (`/billing`, ADR-0050) + `Billing Operations` (`/billing/operations`, ADR-0034).
+
+### Tested
+- [x] Admin build compiles; `/billing`, `/billing/[accountId]`, `/billing/operations` present in the route manifest — PASS.
+- [x] `bun run lint` clean on `admin/` — PASS.
+- [x] `tests/admin/billing-account-view.test.ts` 3/3 PASS: base plan-history event present for a fresh account; missing-account raises; grant + revoke produce two distinct events sharing `adjustment_id` with opposite `action` values; `effective_plan_code` tracks grant/revoke correctly.
+
 ## [ADR-0049 Phase 2.2] — 2026-04-18
 
 **ADR:** ADR-0049 — Security observability ingestion

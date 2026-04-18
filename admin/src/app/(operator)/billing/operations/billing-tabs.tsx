@@ -13,7 +13,7 @@ import {
   revokePlanAdjustment,
   upsertPlanAdjustment,
 } from './actions'
-import { suspendAccountAction } from '../accounts/actions'
+import { suspendAccountAction } from '../../accounts/actions'
 
 // ADR-0034 Sprint 2.1 — Billing tabs (client).
 
