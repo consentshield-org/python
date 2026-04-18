@@ -2,9 +2,10 @@
 
 (c) 2026 Sudhindra Anegondhi a.d.sudhindra@gmail.com
 
-**Status:** Proposed
+**Status:** Completed
 **Date proposed:** 2026-04-18
-**Date completed:** —
+**Date completed:** 2026-04-18
+**Review:** `docs/reviews/2026-04-18-adr-0044-customer-rbac-review.md`
 
 **Depends on:**
 - ADR-0006 (Razorpay billing — will be rewired from org to account).

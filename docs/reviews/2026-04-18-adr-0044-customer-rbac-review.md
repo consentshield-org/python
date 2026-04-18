@@ -153,7 +153,7 @@ One-line per rule. "Verified" = I read the relevant code in this session, not ju
 
 ## 5. Closure for B-1
 
-Fix landed in commit `<computed post-commit>` of this review session:
+Fix landed in commit `2d80b6e` of this review session:
 
 - `app/src/app/api/internal/invitation-dispatch/route.ts` — `SUPABASE_SERVICE_ROLE_KEY` → `CS_ORCHESTRATOR_ROLE_KEY` on both the env read and the `createClient` call. No other behavioral change.
 - Env setup implications captured in the operator runbook (`docs/ops/invitation-email-setup.md`).
