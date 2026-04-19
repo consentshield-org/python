@@ -2,6 +2,24 @@
 
 Next.js UI changes.
 
+## [ADR-0050 Sprint 2.3] — 2026-04-19
+
+**ADR:** ADR-0050 — Admin account-aware billing
+**Sprint:** Sprint 2.3 — account detail invoice UI + landing last-invoice column
+
+### Changed
+- `admin/src/app/(operator)/billing/[accountId]/page.tsx`:
+  - "Balance" card: Sprint 1 stub ("always zero until Sprint 2") replaced with real `outstanding_balance_paise` sourced from `admin.billing_account_summary` (sum of `total_paise` across invoices in status `issued` / `partially_paid` / `overdue`).
+  - "Latest invoice" card: stub replaced with the newest-issue-date invoice — number, FY, issue/due dates, subtotal + CGST+SGST (intra-state) or IGST (inter-state), total, and a Download link to `/api/admin/billing/invoices/[invoiceId]/download` when the PDF is present.
+  - New "Invoice history" card: full scope-gated list (up to 50 rows) via `admin.billing_invoice_list`. Retired-issuer rows visible only to platform_owner and badged `retired`. Each row links to the download endpoint.
+  - New `InvoiceStatusPill` component alongside `StatusPill` / `SourcePill` / `RefundStatusPill`.
+- `admin/src/app/(operator)/billing/page.tsx`:
+  - Landing "Last invoice" column: Sprint 1 stub ("pipeline ships in ADR-0050 Sprint 2") replaced with real data via `admin.billing_accounts_invoice_snapshot`. Shows an `InvoiceSnapshotPill` (status-coloured) plus the invoice number; the whole cell links to the account's billing detail.
+
+### Tested
+- [x] Admin `bun run build` — compiles; `/api/admin/billing/invoices/[invoiceId]/download` in the route manifest; `/billing` and `/billing/[accountId]` render with new sections.
+- [x] Admin `bun run lint` — clean.
+
 ## [ADR-0050 Sprint 2.1 — chunk 3] — 2026-04-18
 
 **ADR:** ADR-0050 — Admin account-aware billing

@@ -2,6 +2,14 @@
 
 Documentation changes.
 
+## [ADR-0050 Sprint 2.3 status flip] — 2026-04-19
+
+**ADR:** ADR-0050 — Admin account-aware billing
+**Sprint:** Sprint 2.3 — invoice history + webhook reconciliation
+
+### Changed
+- `docs/ADRs/ADR-0050-admin-account-aware-billing.md` — Sprint 2.3 flipped `[ ] planned` → `[x] complete`; test results recorded (webhook-reconciliation 5/5, billing-invoice-list 14/14, issuer-immutability 10/10, repo 371/371). ADR-index status for ADR-0050 updated to reflect Sprint 2 complete.
+
 ## [ADR-0050 Sprint 2.2 status flip] — 2026-04-19
 
 **ADR:** ADR-0050 — Admin account-aware billing

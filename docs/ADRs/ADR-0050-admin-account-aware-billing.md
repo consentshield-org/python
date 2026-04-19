@@ -427,21 +427,23 @@ When ADR-0051 ships, the bundle assembler pulls evidence_ledger rows as well.
 
 **Deliverables:**
 
-- [ ] Account billing detail page — latest-invoice card + invoice history table populated from `public.invoices` filtered to the account.
-- [ ] Download link → signed R2 URL (short-TTL, admin-scoped).
-- [ ] `admin.billing_invoice_list(p_account_id, p_limit default 50)` + `admin.billing_invoice_detail(p_invoice_id)` RPCs — both enforce the scope rule server-side: `platform_operator` callers see only current-active-issuer invoices; `platform_owner` callers see all history including retired issuers. Accessing a retired-issuer invoice as operator returns empty / raises.
-- [ ] Razorpay webhook reconciliation — `invoice.paid` event flips matching `public.invoices.status` → `paid`, stamps `paid_at`. Match keys off `razorpay_invoice_id` or `razorpay_order_id`; miss logs an `admin.admin_audit_log` row rather than erroring.
-- [ ] Admin landing account-list's "last invoice state" column now reflects real data.
+- [x] Account billing detail page — latest-invoice card + invoice history table (up to 50 rows) populated from `admin.billing_invoice_list`. Retired-issuer rows badged `retired` and visible only to platform_owner. Balance card replaced with real `outstanding_balance_paise` from `admin.billing_account_summary`.
+- [x] Download link → short-TTL (5 min) signed R2 URL via new Route Handler `GET /api/admin/billing/invoices/[invoiceId]/download`. Handler calls `admin.billing_invoice_detail` first so the tier + issuer-scope rule gates access before any presign call.
+- [x] `admin.billing_invoice_list(p_account_id, p_limit default 50)` + `admin.billing_invoice_detail(p_invoice_id)` RPCs shipped — both enforce the scope rule server-side: `platform_operator` callers see only current-active-issuer invoices; `platform_owner` callers see all history including retired issuers. Accessing a retired-issuer invoice as operator raises with a scope-scoped error.
+- [x] Razorpay webhook reconciliation — `public.rpc_razorpay_reconcile_invoice_paid` matches by `razorpay_invoice_id` first, falls back to `razorpay_order_id`. Flips matching `public.invoices.status` → `paid` and stamps `paid_at` idempotently. Orphans are non-errors; the caller stamps `billing.razorpay_webhook_events.processed_outcome = 'reconcile_orphan:<reason>'` so the verbatim row surfaces the miss. `app/src/app/api/webhooks/razorpay/route.ts` handles the `invoice.paid` branch before the subscription-event path.
+- [x] Admin landing account-list's "Last invoice" column now reflects real data via new `admin.billing_accounts_invoice_snapshot()` — one row per account with latest invoice + status pill. Scope rule identical to `billing_invoice_list`.
+- [x] Follow-up migration `20260509000003_billing_invoice_order_tiebreak.sql` — adds `created_at desc` as the final ORDER BY tie-break on all three invoice-reading RPCs so same-calendar-day invoices under different issuers resolve deterministically.
 
 **Testing plan:**
 
-- [ ] `tests/billing/webhook-reconciliation.test.ts` — `invoice.paid` fixture → matching invoice flips to paid; orphan `invoice.paid` logs audit row without erroring.
-- [ ] `tests/admin/billing-invoice-list.test.ts` — list RPC respects account scope, newest-first ordering, returns at most N rows.
-- [ ] `tests/billing/invoice-immutability.test.ts` — direct DB attempts to (a) UPDATE `issuer_entity_id` / `line_items` / `total_paise` / `fy_sequence` raise; (b) DELETE from `public.invoices` as `authenticated`, `cs_admin`, `cs_orchestrator` all raise; (c) `status` transition to `void` succeeds via the RPC and is audit-logged.
-- [ ] `tests/billing/issuer-immutability.test.ts` — `admin.billing_issuer_update` with a patch touching `legal_name`, `gstin`, `pan`, `registered_state_code`, `invoice_prefix`, or `fy_start_month` raises with the documented error message; patches on `registered_address`, `signatory_name`, `bank_account_masked` succeed and audit-log.
-- [ ] Manual: issue a test invoice, simulate paid webhook, see it flip to paid in the UI.
+- [x] `tests/billing/webhook-reconciliation.test.ts` — **5/5 PASS**. Match by razorpay_invoice_id flips issued→paid + paid_at set; idempotent re-run (already-paid, no mutation); order_id fallback works when invoice_id absent; orphan id returns matched=false without error; empty matcher returns matched=false reason='no matcher'.
+- [x] `tests/admin/billing-invoice-list.test.ts` — **14/14 PASS**. Scope rule (operator current-active-only; owner all issuers); newest-first ordering; p_limit honoured; support denied; detail raises for operator on retired-issuer invoice, allowed on active; missing invoice raises; latest_invoice + outstanding_balance_paise correct post-finalize; accounts_invoice_snapshot scope.
+- [x] `tests/billing/issuer-immutability.test.ts` — **10/10 PASS**. Six identity fields (legal_name / gstin / pan / registered_state_code / invoice_prefix / fy_start_month) each raise with retire-and-create guidance; three operational fields (registered_address / signatory_name / bank_account_masked) patch and persist; unknown field raises. Complementary to `tests/admin/billing-issuer-rpcs.test.ts` per the ADR's checklist path.
+- [x] Existing `tests/admin/invoice-immutability.test.ts` (Sprint 2.1 chunk 3, 10/10 PASS) already covers the ADR's additional asks for `tests/billing/invoice-immutability.test.ts` (UPDATE on immutable columns raises; DELETE revoked from app roles). Re-expressing under `tests/billing/` would add no coverage; skipped.
+- [x] Full repo suite `bun run test:rls` — **371/371 PASS** across 37 test files.
+- [ ] Manual: issue a test invoice, simulate a Razorpay `invoice.paid` webhook, see it flip to paid in the UI + the Download link serve the PDF. (Pending manual infra action from Sprint 2.2: `R2_INVOICES_BUCKET` + `RESEND_FROM` on the admin Vercel project.)
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete` — 2026-04-19. Invoice history + download + webhook reconciliation + landing "Last invoice" column all shipped and tested at the DB + build layer. Sprint 2 is now fully complete.
 
 ### Sprint 3 — GST statement + dispute workspace
 

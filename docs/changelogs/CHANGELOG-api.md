@@ -2,6 +2,21 @@
 
 API route changes.
 
+## [ADR-0050 Sprint 2.3] — 2026-04-19
+
+**ADR:** ADR-0050 — Admin account-aware billing
+**Sprint:** Sprint 2.3 — invoice history + download + webhook reconciliation
+
+### Added
+- `admin/src/app/api/admin/billing/invoices/[invoiceId]/download/route.ts` — GET. Admin proxy enforces `is_admin` + AAL2 before the handler runs. Calls `admin.billing_invoice_detail` first (which enforces the tier + issuer-scope rule and raises for a retired-issuer invoice viewed by a platform_operator). On success, 307-redirects to a 5-minute presigned R2 URL via `presignInvoicePdfUrl`. Returns 409 if the row has no PDF yet (still draft).
+
+### Changed
+- `app/src/app/api/webhooks/razorpay/route.ts` — handles `invoice.paid` events. Verbatim-insert already happens (unchanged); the new branch calls `public.rpc_razorpay_reconcile_invoice_paid` with payload `invoice.id` + `invoice.order_id` + `invoice.paid_at` (unix seconds → ISO), then stamps `processed_outcome` as `reconciled:<previous_status>→<new_status>` on match or `reconcile_orphan:<reason>` otherwise. Subscription-event path (ADR-0034) unchanged.
+
+### Tested
+- [x] Admin + customer app `bun run build` + `bun run lint` — clean.
+- [x] Reconciliation behaviour covered by `tests/billing/webhook-reconciliation.test.ts` (5/5 PASS).
+
 ## [ADR-0050 Sprint 2.2] — 2026-04-19
 
 **ADR:** ADR-0050 — Admin account-aware billing

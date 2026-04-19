@@ -25,6 +25,8 @@ const HANDLED_EVENTS = [
   'payment.failed',
 ]
 
+const INVOICE_PAID_EVENT = 'invoice.paid'
+
 export async function POST(request: Request) {
   const raw = await request.text()
   const signature = request.headers.get('x-razorpay-signature') ?? ''
@@ -46,6 +48,14 @@ export async function POST(request: Request) {
         }
       }
       payment?: { entity: { id: string; status: string } }
+      invoice?: {
+        entity: {
+          id: string
+          order_id?: string | null
+          status?: string
+          paid_at?: number | null
+        }
+      }
     }
   }
 
@@ -76,6 +86,43 @@ export async function POST(request: Request) {
       p_outcome: outcome,
     })
     if (r.error) console.error('[razorpay] stamp processed failed', r.error)
+  }
+
+  // ADR-0050 Sprint 2.3 — invoice.paid reconciliation. Verbatim row is
+  // already stored above; reconcile updates public.invoices.status → paid
+  // and records the outcome. Orphans are non-errors.
+  if (event.event === INVOICE_PAID_EVENT) {
+    const invoice = event.payload.invoice?.entity
+    const paidAtIso = invoice?.paid_at
+      ? new Date(invoice.paid_at * 1000).toISOString()
+      : null
+    const reconcile = await anon.rpc('rpc_razorpay_reconcile_invoice_paid', {
+      p_razorpay_invoice_id: invoice?.id ?? null,
+      p_razorpay_order_id: invoice?.order_id ?? null,
+      p_paid_at: paidAtIso,
+    })
+    if (reconcile.error) {
+      console.error('[razorpay] invoice.paid reconcile failed', reconcile.error)
+      await stamp(`reconcile_error: ${reconcile.error.message}`.slice(0, 250))
+      return NextResponse.json({ error: reconcile.error.message }, { status: 500 })
+    }
+    const envelope = reconcile.data as {
+      matched: boolean
+      invoice_id: string | null
+      invoice_number: string | null
+      previous_status: string | null
+      new_status: string | null
+      reason: string
+    }
+    const outcome = envelope.matched
+      ? `reconciled:${envelope.previous_status ?? 'unknown'}→${envelope.new_status ?? 'paid'}`
+      : `reconcile_orphan:${envelope.reason}`
+    await stamp(outcome.slice(0, 250))
+    return NextResponse.json({
+      received: true,
+      handled: true,
+      reconciled: envelope,
+    })
   }
 
   if (!HANDLED_EVENTS.includes(event.event)) {

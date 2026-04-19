@@ -28,6 +28,16 @@ interface PaymentFailureRow {
   account_id: string
 }
 
+interface InvoiceSnapshotRow {
+  account_id: string
+  invoice_id: string
+  invoice_number: string
+  status: 'draft' | 'issued' | 'paid' | 'partially_paid' | 'overdue' | 'void' | 'refunded'
+  total_paise: number
+  issue_date: string
+  issuer_is_active: boolean
+}
+
 interface PageProps {
   searchParams: Promise<{ status?: string; plan?: string; q?: string }>
 }
@@ -37,7 +47,7 @@ export default async function BillingLandingPage({ searchParams }: PageProps) {
   const supabase = await createServerClient()
 
   const nullable = (s: string | undefined) => (s && s.length > 0 ? s : null)
-  const [accountsRes, failuresRes] = await Promise.all([
+  const [accountsRes, failuresRes, invoicesRes] = await Promise.all([
     supabase.schema('admin').rpc('accounts_list', {
       p_status: nullable(params.status),
       p_plan_code: nullable(params.plan),
@@ -46,14 +56,21 @@ export default async function BillingLandingPage({ searchParams }: PageProps) {
     supabase.schema('admin').rpc('billing_payment_failures_list', {
       p_window_days: 7,
     }),
+    supabase.schema('admin').rpc('billing_accounts_invoice_snapshot'),
   ])
 
   const rows = (accountsRes.data ?? []) as AccountRow[]
   const failures = (failuresRes.data ?? []) as PaymentFailureRow[]
   const failureAccountIds = new Set(failures.map((f) => f.account_id))
-  const errors = [accountsRes.error?.message, failuresRes.error?.message].filter(
-    (e): e is string => !!e,
+  const invoiceSnapshots = (invoicesRes.data ?? []) as InvoiceSnapshotRow[]
+  const invoiceByAccount = new Map(
+    invoiceSnapshots.map((s) => [s.account_id, s]),
   )
+  const errors = [
+    accountsRes.error?.message,
+    failuresRes.error?.message,
+    invoicesRes.error?.message,
+  ].filter((e): e is string => !!e)
 
   return (
     <div className="mx-auto max-w-6xl space-y-4">
@@ -156,12 +173,24 @@ export default async function BillingLandingPage({ searchParams }: PageProps) {
                         ? new Date(r.trial_ends_at).toLocaleDateString()
                         : '—'}
                     </td>
-                    <td className="px-4 py-2 text-[11px] text-text-3">
-                      <span
-                        title="Invoice pipeline ships in ADR-0050 Sprint 2"
-                      >
-                        —
-                      </span>
+                    <td className="px-4 py-2 text-[11px]">
+                      {(() => {
+                        const snap = invoiceByAccount.get(r.id)
+                        if (!snap) {
+                          return <span className="text-text-3">—</span>
+                        }
+                        return (
+                          <Link
+                            href={`/billing/${r.id}`}
+                            className="flex flex-col gap-0.5 hover:underline"
+                          >
+                            <InvoiceSnapshotPill status={snap.status} />
+                            <span className="font-mono text-[10px] text-text-3">
+                              {snap.invoice_number}
+                            </span>
+                          </Link>
+                        )
+                      })()}
                     </td>
                     <td className="px-4 py-2 font-mono text-[11px] text-text-3">
                       {r.razorpay_subscription_id ?? '—'}
@@ -231,6 +260,32 @@ function FilterBar({
         Apply
       </button>
     </form>
+  )
+}
+
+function InvoiceSnapshotPill({
+  status,
+}: {
+  status: InvoiceSnapshotRow['status']
+}) {
+  const tone =
+    status === 'paid'
+      ? 'bg-green-100 text-green-700'
+      : status === 'issued'
+        ? 'bg-amber-100 text-amber-800'
+        : status === 'overdue'
+          ? 'bg-red-100 text-red-700'
+          : status === 'partially_paid'
+            ? 'bg-amber-100 text-amber-800'
+            : status === 'void' || status === 'refunded'
+              ? 'bg-bg text-text-3'
+              : 'bg-slate-100 text-slate-700'
+  return (
+    <span
+      className={`inline-block w-fit rounded-full px-2 py-0.5 text-[10px] font-medium ${tone}`}
+    >
+      {status}
+    </span>
   )
 }
 

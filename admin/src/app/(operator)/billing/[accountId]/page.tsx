@@ -2,16 +2,18 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase/server'
 
-// ADR-0050 Sprint 1 — per-account billing detail.
+// ADR-0050 Sprint 2.3 — per-account billing detail.
 //
-// Composes three RPCs:
+// Composes four RPCs:
 //   · admin.account_detail              (ADR-0048; account + orgs + adj + audit)
-//   · admin.billing_account_summary     (this ADR; plan history + stub balance)
+//   · admin.billing_account_summary     (this ADR; plan history + latest_invoice + outstanding_balance_paise)
+//   · admin.billing_invoice_list        (this ADR; scope-gated invoice history)
 //   · admin.billing_refunds_list        (ADR-0034; filtered to this account client-side)
 //
-// The invoice history + latest-invoice cards are intentional stubs until
-// Sprint 2. Plan history is rendered as a chronological timeline off
-// the summary envelope.
+// Sprint 2.3 replaced the Sprint 1 stubs for latest-invoice and balance
+// with real data. Invoice PDFs are served through
+// /api/admin/billing/invoices/[invoiceId]/download, which presigns an
+// R2 URL behind the admin proxy.
 
 export const dynamic = 'force-dynamic'
 
@@ -71,7 +73,53 @@ interface BillingSummary {
     actor_user_id: string | null
     reason: string | null
   }>
+  latest_invoice: LatestInvoiceStub | null
   outstanding_balance_paise: number
+}
+
+interface LatestInvoiceStub {
+  id: string
+  invoice_number: string
+  issue_date: string
+  due_date: string
+  status: InvoiceStatus
+  total_paise: number
+  issuer_entity_id: string
+}
+
+type InvoiceStatus =
+  | 'draft'
+  | 'issued'
+  | 'paid'
+  | 'partially_paid'
+  | 'overdue'
+  | 'void'
+  | 'refunded'
+
+interface InvoiceListRow {
+  id: string
+  invoice_number: string
+  fy_year: string
+  fy_sequence: number
+  issue_date: string
+  due_date: string
+  period_start: string
+  period_end: string
+  currency: string
+  subtotal_paise: number
+  cgst_paise: number
+  sgst_paise: number
+  igst_paise: number
+  total_paise: number
+  status: InvoiceStatus
+  issuer_entity_id: string
+  issuer_is_active: boolean
+  pdf_r2_key: string | null
+  pdf_sha256: string | null
+  issued_at: string | null
+  paid_at: string | null
+  email_message_id: string | null
+  email_delivered_at: string | null
 }
 
 interface RefundRow {
@@ -101,10 +149,14 @@ export default async function BillingAccountDetailPage({ params }: PageProps) {
   if (!UUID_RE.test(accountId)) notFound()
   const supabase = await createServerClient()
 
-  const [detailRes, summaryRes, refundsRes] = await Promise.all([
+  const [detailRes, summaryRes, invoicesRes, refundsRes] = await Promise.all([
     supabase.schema('admin').rpc('account_detail', { p_account_id: accountId }),
     supabase.schema('admin').rpc('billing_account_summary', {
       p_account_id: accountId,
+    }),
+    supabase.schema('admin').rpc('billing_invoice_list', {
+      p_account_id: accountId,
+      p_limit: 50,
     }),
     supabase.schema('admin').rpc('billing_refunds_list', { p_limit: 200 }),
   ])
@@ -122,6 +174,8 @@ export default async function BillingAccountDetailPage({ params }: PageProps) {
 
   const envelope = detailRes.data as AccountEnvelope
   const summary = summaryRes.data as BillingSummary | null
+  const invoices = (invoicesRes.data ?? []) as InvoiceListRow[]
+  const latest = invoices[0] ?? null
   const allRefunds = (refundsRes.data ?? []) as RefundRow[]
   const refunds = allRefunds.filter((r) => r.account_id === accountId)
   const { account, active_adjustments } = envelope
@@ -215,22 +269,142 @@ export default async function BillingAccountDetailPage({ params }: PageProps) {
           </KV>
         </Card>
 
-        <Card title="Balance" pill="stub — Sprint 2">
+        <Card title="Balance">
           <KV label="Outstanding">
             {summary ? rupees(summary.outstanding_balance_paise) : '—'}
           </KV>
           <p className="pt-2 text-[11px] leading-relaxed text-text-3">
-            Invoice pipeline ships in ADR-0050 Sprint 2. Until then the
-            balance is always zero and the invoice list below is empty.
+            Sum of total_paise across invoices in status issued,
+            partially_paid, or overdue.
           </p>
         </Card>
       </section>
 
-      <Card title="Latest invoice" pill="stub — Sprint 2">
-        <p className="p-3 text-sm text-text-3">
-          No invoice emitted yet. The first invoice will land once Sprint 2
-          wires <code>admin.billing_issue_invoice</code> + R2 PDF storage.
-        </p>
+      <Card
+        title="Latest invoice"
+        pill={latest ? <InvoiceStatusPill status={latest.status} /> : 'no invoices'}
+      >
+        {!latest ? (
+          <p className="p-3 text-sm text-text-3">
+            No invoice issued for this account yet.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 p-1 md:grid-cols-2">
+            <div className="space-y-1.5">
+              <KV label="Number">
+                <code className="font-mono text-xs">{latest.invoice_number}</code>
+              </KV>
+              <KV label="FY">
+                <span className="font-mono text-xs">{latest.fy_year}</span>
+              </KV>
+              <KV label="Issue date">
+                {new Date(latest.issue_date).toLocaleDateString()}
+              </KV>
+              <KV label="Due date">
+                {new Date(latest.due_date).toLocaleDateString()}
+              </KV>
+            </div>
+            <div className="space-y-1.5">
+              <KV label="Subtotal">{rupees(latest.subtotal_paise)}</KV>
+              {latest.cgst_paise > 0 || latest.sgst_paise > 0 ? (
+                <>
+                  <KV label="CGST">{rupees(latest.cgst_paise)}</KV>
+                  <KV label="SGST">{rupees(latest.sgst_paise)}</KV>
+                </>
+              ) : (
+                <KV label="IGST">{rupees(latest.igst_paise)}</KV>
+              )}
+              <KV label="Total">
+                <strong>{rupees(latest.total_paise)}</strong>
+              </KV>
+              <div className="flex items-baseline justify-between text-sm">
+                <span className="text-xs text-text-3">PDF</span>
+                {latest.pdf_r2_key ? (
+                  <a
+                    href={`/api/admin/billing/invoices/${latest.id}/download`}
+                    className="text-xs text-teal hover:underline"
+                  >
+                    Download ↓
+                  </a>
+                ) : (
+                  <span className="text-xs text-text-3">
+                    pending (draft — issue to finalise)
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </Card>
+
+      <Card
+        title="Invoice history"
+        pill={`${invoices.length}${invoices.length === 50 ? '+' : ''}`}
+      >
+        {invoices.length === 0 ? (
+          <p className="p-6 text-sm text-text-3">
+            No invoices on file for this account.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-bg text-left text-xs uppercase tracking-wider text-text-3">
+                <tr>
+                  <th className="px-4 py-2">Number</th>
+                  <th className="px-4 py-2">Issued</th>
+                  <th className="px-4 py-2">Period</th>
+                  <th className="px-4 py-2 text-right">Total</th>
+                  <th className="px-4 py-2">Status</th>
+                  <th className="px-4 py-2">PDF</th>
+                </tr>
+              </thead>
+              <tbody>
+                {invoices.map((inv) => (
+                  <tr
+                    key={inv.id}
+                    className="border-t border-[color:var(--border)]"
+                  >
+                    <td className="px-4 py-2 font-mono text-[11px]">
+                      {inv.invoice_number}
+                      {!inv.issuer_is_active ? (
+                        <span
+                          className="ml-2 rounded-full bg-bg px-2 py-0.5 text-[10px] text-text-3"
+                          title="Issued under a retired issuer"
+                        >
+                          retired
+                        </span>
+                      ) : null}
+                    </td>
+                    <td className="px-4 py-2 font-mono text-[11px]">
+                      {new Date(inv.issue_date).toLocaleDateString()}
+                    </td>
+                    <td className="px-4 py-2 font-mono text-[11px] text-text-3">
+                      {inv.period_start} → {inv.period_end}
+                    </td>
+                    <td className="px-4 py-2 text-right font-mono text-xs">
+                      {rupees(inv.total_paise)}
+                    </td>
+                    <td className="px-4 py-2">
+                      <InvoiceStatusPill status={inv.status} />
+                    </td>
+                    <td className="px-4 py-2">
+                      {inv.pdf_r2_key ? (
+                        <a
+                          href={`/api/admin/billing/invoices/${inv.id}/download`}
+                          className="text-xs text-teal hover:underline"
+                        >
+                          Download ↓
+                        </a>
+                      ) : (
+                        <span className="text-[11px] text-text-3">—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Card>
 
       <Card
@@ -381,6 +555,28 @@ function KV({ label, children }: { label: string; children: React.ReactNode }) {
       <span className="text-xs text-text-3">{label}</span>
       <span className="text-xs text-text-1">{children}</span>
     </div>
+  )
+}
+
+function InvoiceStatusPill({ status }: { status: InvoiceStatus }) {
+  const tone =
+    status === 'paid'
+      ? 'bg-green-100 text-green-700'
+      : status === 'issued'
+        ? 'bg-amber-100 text-amber-800'
+        : status === 'overdue'
+          ? 'bg-red-100 text-red-700'
+          : status === 'partially_paid'
+            ? 'bg-amber-100 text-amber-800'
+            : status === 'void' || status === 'refunded'
+              ? 'bg-bg text-text-3'
+              : 'bg-slate-100 text-slate-700'
+  return (
+    <span
+      className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${tone}`}
+    >
+      {status}
+    </span>
   )
 }
 

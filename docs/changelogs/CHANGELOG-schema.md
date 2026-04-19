@@ -2,6 +2,29 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-0050 Sprint 2.3] — 2026-04-19
+
+**ADR:** ADR-0050 — Admin account-aware billing
+**Sprint:** Sprint 2.3 — invoice history RPCs + Razorpay invoice.paid reconciliation
+
+### Added
+- `20260509000001_billing_invoice_list_detail.sql`:
+  - Helper `admin._billing_active_issuer_id()` — stable lookup of the current single-active issuer row; shared by every scope-rule site in this sprint.
+  - `admin.billing_invoice_list(p_account_id uuid, p_limit int default 50)` → jsonb array. SECURITY DEFINER, platform_operator+. Scope rule: `platform_operator` sees only invoices under the currently-active issuer; `platform_owner` sees all issuers (active + retired). Newest-first by `(issue_date desc, fy_sequence desc)`. p_limit clamped to 1–500 (defaults on out-of-range).
+  - `admin.billing_invoice_detail(p_invoice_id uuid)` → jsonb envelope (invoice + denormalised issuer + account billing profile). Same tier + scope rule; retired-issuer invoices accessed by `platform_operator` raise with a scope-scoped error.
+  - Extended `admin.billing_account_summary(p_account_id)` — adds `latest_invoice` envelope (id / invoice_number / issue_date / due_date / status / total_paise / issuer_entity_id) and replaces the Sprint 1 stub `outstanding_balance_paise: 0` with a real computation: `sum(total_paise)` across invoices in status `issued`, `partially_paid`, or `overdue`. All Sprint 1 keys retained — backward compatible.
+  - `admin.billing_accounts_invoice_snapshot()` → jsonb array with one row per account (their latest invoice). Backs the "Last invoice" column on the `/billing` landing. Respects the same scope rule as `billing_invoice_list`.
+- `20260509000002_razorpay_reconcile_invoice_paid.sql`:
+  - `public.rpc_razorpay_reconcile_invoice_paid(p_razorpay_invoice_id, p_razorpay_order_id, p_paid_at default null)` → jsonb. SECURITY DEFINER, anon-callable (like the existing verbatim-insert + stamp RPCs). Matches `public.invoices` by `razorpay_invoice_id` first, then `razorpay_order_id`. On match: flips `status='paid'` and stamps `paid_at=coalesce(input,now())`. Idempotent — already-paid returns `matched=true, reason='already paid'` with no mutation. No match → `matched=false, reason='no matching invoice'` (no error — the webhook handler stamps the outcome on `billing.razorpay_webhook_events`).
+- `20260509000003_billing_invoice_order_tiebreak.sql`:
+  - Follow-up: adds `created_at desc` as the final ORDER BY tie-break on all three invoice-reading RPCs. Two invoices on the same calendar day under different issuers could share `issue_date` and `fy_sequence=1`; `created_at` is the truest "newest" signal across issuers.
+
+### Tested
+- [x] `tests/billing/webhook-reconciliation.test.ts` — **5/5 PASS**. Match by razorpay_invoice_id flips issued→paid + paid_at set; idempotent re-run (already-paid reason); order_id fallback; orphan id returns matched=false without error; empty matcher returns matched=false reason='no matcher'.
+- [x] `tests/admin/billing-invoice-list.test.ts` — **14/14 PASS**. platform_operator sees only active-issuer invoices; platform_owner sees retired too; newest-first ordering; p_limit honoured; support denied; detail raises for operator on retired-issuer invoice; operator allowed on active; missing invoice raises; support denied; latest_invoice + outstanding_balance_paise correct post-finalize; accounts_invoice_snapshot scope.
+- [x] `tests/billing/issuer-immutability.test.ts` — **10/10 PASS**. Six identity fields each raise with retire-and-create guidance; three operational fields (address, signatory, bank) patch and persist; unknown field raises.
+- [x] Full repo suite `bun run test:rls` — **371/371 PASS** across 37 test files.
+
 ## [ADR-0050 Sprint 2.2] — 2026-04-19
 
 **ADR:** ADR-0050 — Admin account-aware billing
