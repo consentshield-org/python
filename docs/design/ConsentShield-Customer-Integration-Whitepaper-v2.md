@@ -44,6 +44,8 @@ The short answer on integration surfaces is unchanged from v1.0. A typical SaaS 
 
 **The architectural claim that matters most:** when the Data Protection Board examines a BFSI customer and asks *"on 10 March 2026, when Mrs. Sharma withdrew her insurance marketing consent, what was deleted from which system with what confirmation, and what was retained under which statute?"* — the customer's answer is a single artefact ID, a single revocation record, a single deletion receipt with a timestamp, and a statutory-exemption ledger. Every piece of that answer lives in an append-only table linked by foreign keys. There is no forensic reconstruction, no email thread between compliance officers, no spreadsheet of "what we think happened." This is what the DEPA-native artefact model produces, and why it is the only viable architecture for regulated Indian enterprise.
 
+**A note on capability status.** Every capability referenced in this document carries one of three states — *Shipping* (live in production), *Beta* (production code path with a known narrow limit), or *Roadmap* (scoped in an ADR with a target quarter). **Appendix E** is the authoritative, line-by-line status inventory and is the first place a technical buyer should go to reconcile any claim in this document against the current reality of the product. If Appendix E conflicts with a paragraph in the body, Appendix E wins.
+
 ---
 
 ## 1. Architectural Identity
@@ -1131,6 +1133,170 @@ Callback URL is HMAC-signed by ConsentShield; the customer does not need to add 
 **Status semantics.** *Shipping today* means the OAuth flow, deletion API call, token refresh, and integration-test coverage against a real partner test account are all live in production. *Q3 2026* and *Q4 2026* mean the connector has scoped acceptance criteria in the identified ADR sprint; delivery order within a quarter follows customer-pipeline signal rather than alphabet. Customers on the BFSI Enterprise tier that need a specific connector ahead of its target quarter can request acceleration under their engagement.
 
 Custom connectors for bank-specific partners (bancassurance APIs, co-lending fintech APIs, bureau APIs) are built on request as part of the BFSI Enterprise engagement and are not tracked in this catalogue.
+
+---
+
+## Appendix E — Operational Maturity (Capability Status)
+
+This appendix is the authoritative status inventory for every capability claimed in Sections 1 through 14. It is maintained as part of the whitepaper-closure ADR sequence (ADR-1001 through ADR-1008) and is regenerated whenever a gap closes. If this appendix conflicts with any paragraph in the body of this document, this appendix wins.
+
+**Status semantics.**
+- **Shipping** — production code path is live, exercised by integration tests, and available to customers today.
+- **Beta** — production code path exists but has limited customer exposure, partial coverage, or a known gap flagged in the acceptance criteria of its owning ADR. Usable, but narrow.
+- **Roadmap** — scoped in an ADR with a target quarter; not yet in production.
+
+Target quarters are as of 2026-04-19 and reflect the solo-execution schedule of the closure plan (`docs/plans/ConsentShield-V2-Whitepaper-Closure-Plan.md`). Contractor capacity after G-013 closes may compress them.
+
+### Architectural identity (§1)
+
+| Capability | Status | Target | Notes |
+|---|---|---|---|
+| Stateless compliance oracle architecture | Shipping | — | Foundational; ADR-0001 onwards |
+| Process → deliver → delete pipeline | Shipping | — | ADR-0007, ADR-0017, ADR-0040 |
+| Customer holds canonical compliance record (R2 upload) | Shipping | — | ADR-0040 |
+| Processor-not-Fiduciary posture | Shipping (architectural) | — | Structural; runtime enforcement matures with G-041 |
+
+### Processing modes (§2)
+
+| Capability | Status | Target | Notes |
+|---|---|---|---|
+| Standard mode | Shipping | — | Default for Starter tier |
+| Insulated mode (BYOS) — data-plane | Beta | Q2 2026 (ADR-1003 Phase 2) | SigV4 upload live (ADR-0040); credential-validation UX is Roadmap (G-006) |
+| Insulated mode — scoped-credential validation UX | Roadmap | Q2 2026 | G-006 (ADR-1003 Sprint 2.1) |
+| Zero-Storage mode | Roadmap | Q2 2026 | G-005 + G-041 (ADR-1003 Phases 1, 3); mandatory for FHIR |
+| `storage_mode` runtime enforcement | Roadmap | Q2 2026 | G-041 (ADR-1003 Phase 1); column exists today, enforcement does not |
+| Mode migration (Standard → Insulated → Zero-Storage) | Beta | — | Manual/managed in v1; self-serve deferred (V2 backlog) |
+
+### Consent artefact model (§3)
+
+| Capability | Status | Target | Notes |
+|---|---|---|---|
+| One consent event → N artefacts fan-out | Shipping | — | ADR-0021 |
+| Purpose Definition Registry | Shipping | — | ADR-0020; BFSI seed ADR-0030 |
+| Trigger + safety-net cron fan-out pipeline | Shipping | — | ADR-0021 |
+| `consent_artefact_index` validity cache | Shipping | — | ADR-0021 |
+| Artefact lifecycle (active / revoked / expired / replaced) | Shipping | — | ADR-0022, ADR-0023 |
+| Append-only artefacts (Security Rule 19) | Shipping | — | ADR-0020 |
+| Mandatory expiry (Security Rule 20) | Shipping | — | ADR-0023 |
+| `coverage_score` metric | Shipping | — | ADR-0025, ADR-0037 |
+| `orphan_consent_events` metric + alert | Roadmap | Q3 2026 | G-048 (ADR-1004 Phase 3) |
+
+### Surface 1 — Consent capture (§4)
+
+| Capability | Status | Target | Notes |
+|---|---|---|---|
+| Mode A — Web banner (script tag) | Shipping | — | ADR-0003 |
+| Mode B — `POST /v1/consent/record` | Roadmap | Q2 2026 | G-038 (ADR-1002 Phase 2); critical for mobile/branch/kiosk/call-centre |
+| Notice versioning + material-change re-consent | Beta | Q3 2026 | `consent_banners.version` today; full `notices` table + workflow is G-012 (ADR-1004 Phase 2) |
+| WordPress plugin | Roadmap | Q3 2026 | G-022 (ADR-1007 Sprint 2.1) |
+| Shopify App Store app | Roadmap | Q3 2026 | G-023 (ADR-1007 Sprint 2.2) |
+| Webflow / Wix / Framer / Squarespace plugins | Roadmap | Decision Q3 2026 | G-029 — build vs. instructions vs. remove decision per platform |
+| React Native SDK | Roadmap | Q4 2026+ | G-028; conditional on ABDM-phase demand |
+
+### Surface 2 — Consent verification (§5)
+
+| Capability | Status | Target | Notes |
+|---|---|---|---|
+| `GET /v1/consent/verify` | Roadmap | Q2 2026 | G-037 (ADR-1002 Phase 1) |
+| `POST /v1/consent/verify/batch` | Roadmap | Q2 2026 | G-037 (ADR-1002 Phase 1) |
+| Sub-50ms p99 latency SLO (measured) | Roadmap | Q3 2026 | One-shot baseline in ADR-1002; continuous measurement in G-027 (ADR-1008 Phase 1) |
+| Client libraries: Node.js, Python | Roadmap | Q3 2026 | G-002 + G-003 (ADR-1006) |
+| Client libraries: Java, Go | Roadmap | Q3 2026 | G-024 (ADR-1006 Phase 4) |
+| Fail-closed default + `CONSENT_VERIFY_FAIL_OPEN` override | Roadmap | Q3 2026 | Lives in client libraries (ADR-1006); server returns deterministic status |
+
+### Surface 3 — Deletion orchestration (§6)
+
+| Capability | Status | Target | Notes |
+|---|---|---|---|
+| Generic webhook protocol (HMAC-signed both directions) | Shipping | — | ADR-0007, ADR-0022; single-table `deletion_receipts` model |
+| `purpose_connector_mappings` routing | Shipping | — | ADR-0020 |
+| Artefact-scoped deletion | Shipping | — | ADR-0022 |
+| Pre-built OAuth connectors — Mailchimp, HubSpot | Shipping | — | ADR-0018, ADR-0039 |
+| Pre-built connector catalogue — CleverTap, Razorpay, WebEngage, MoEngage, Intercom, Freshdesk, Shopify, WooCommerce, Segment | Roadmap | Q3 2026 | G-016 – G-021 (ADR-1007 Phase 1) |
+| Pre-built connector catalogue — Zoho, Freshworks, Zendesk, Campaign Monitor, Mixpanel | Roadmap | Q4 2026 | G-030 (ADR-1007 Phase 3) |
+| Regulatory Exemption Engine (statutory-retention suppression) | Roadmap | Q3 2026 | G-007 + G-008 (ADR-1004 Phase 1); legal review in parallel |
+| Reference webhook partner (case study) | Roadmap | Q3 2026 | G-011 (ADR-1005 Phase 1) |
+| `test_delete` endpoint | Roadmap | Q3 2026 | G-035 (ADR-1005 Phase 2) |
+| HMAC secret rotation (dual-window) | Roadmap | Q4 2026 | G-032 (ADR-1008 Phase 3) |
+| Retry + timeout + overdue handling | Shipping | — | ADR-0011 |
+
+### Surface 4 — Operational notifications (§7)
+
+| Capability | Status | Target | Notes |
+|---|---|---|---|
+| Email channel (Resend) | Shipping | — | ADR-0014 |
+| Slack, Teams, Discord, PagerDuty, custom-webhook channels | Roadmap | Q3 2026 | G-043 (ADR-1005 Phase 6); `notification_channels` schema already exists |
+| Alert-type catalogue (base set) | Shipping | — | ADR-0038 |
+| Alert-type — orphan event | Roadmap | Q3 2026 | G-048 |
+| Alert-type — artefact expiry warning (30d) | Shipping | — | ADR-0023 |
+| Per-severity channel routing | Roadmap | Q3 2026 | G-043 Sprint 6.4 |
+
+### Zero-persistence for regulated content (§8)
+
+| Capability | Status | Target | Notes |
+|---|---|---|---|
+| Category labels, never content values (Security Rule 3) | Shipping (structural) | — | DDL contains no column accepting regulated content |
+| Banking identifiers enumeration | Shipping (documentation) | — | 2026-04-16 broadening |
+| FHIR clinical records excluded | Shipping (structural) | — | Same |
+| Runtime enforcement under Zero-Storage | Roadmap | Q2 2026 | G-041 |
+
+### Reference architectures (§9)
+
+| Capability | Status | Target | Notes |
+|---|---|---|---|
+| 9.1 Pure Web SaaS (Standard / Insulated) | Shipping | — | Banner + 2 connectors + portal executable today |
+| 9.2 Mobile-first NBFC | Roadmap | Q2 2026 | Depends on G-037 + G-038 |
+| 9.3 Private Bank (Zero-Storage) | Roadmap | Q3 2026 | Depends on G-037 + G-038 + G-041 + G-007 |
+| 9.4 Healthcare clinic (ABDM) | Roadmap | Q3 2026 | Depends on G-038 + G-041 + G-042 |
+
+### Testing + validation (§12)
+
+| Capability | Status | Target | Notes |
+|---|---|---|---|
+| Sandbox organisations (`org_test_*`) | Roadmap | Q2 2026 | G-046 (ADR-1003 Phase 5) |
+| Consent probes (headless browser, scheduled) | Shipping | — | ADR-0041 (Vercel Sandbox runner + probe CRUD UI) |
+| Tracker signature coverage (≥ 200 fingerprints) | Beta | Q4 2026 | Catalogue framework shipped (ADR-0031); corpus expansion is G-047 (ADR-1008 Phase 2) |
+| DPB-format audit export (CSV + manifest) | Beta | Q4 2026 | JSON-sectioned ZIP ships today (ADR-0017 / ADR-0040); CSV alignment is G-044 + G-026 (ADR-1008 Phase 2) |
+| `test_delete` smoke-test endpoint | Roadmap | Q3 2026 | G-035 |
+
+### Public compliance API (§Appendix A)
+
+| Capability | Status | Target | Notes |
+|---|---|---|---|
+| `cs_live_*` bearer-token API keys | Roadmap | Q2 2026 | G-036 (ADR-1001 Phase 2) — precondition for every `/v1/*` endpoint |
+| Rate-tier enforcement per plan | Roadmap | Q2 2026 | G-036 Sprint 2.4 |
+| `/v1/consent/{verify, verify/batch, record}` | Roadmap | Q2 2026 | G-037 + G-038 (ADR-1002) |
+| `/v1/consent/artefacts` + revoke + events | Roadmap | Q2 2026 | G-039 (ADR-1002 Phase 3) |
+| `/v1/deletion/trigger` + receipts list | Roadmap | Q2 2026 | G-040 (ADR-1002 Phase 4) |
+| `/v1/rights/requests` (list + create) | Roadmap | Q3 2026 | G-049 (ADR-1005 Phase 5); public portal + OTP path is Shipping |
+| `/v1/deletion-receipts/{id}` callback | Shipping | — | ADR-0022 (HMAC-signed customer callback) |
+| Public OpenAPI spec + CI drift check against Appendix A | Roadmap | Q3 2026 | G-045 (ADR-1006 Phase 3); once landed, Appendix A is regenerated from `openapi.yaml` |
+
+### Operations + support (§13 FAQ, §14)
+
+| Capability | Status | Target | Notes |
+|---|---|---|---|
+| Written SLA per tier | Roadmap | Q3 2026 | G-014 (ADR-1005 Phase 3) |
+| Severity matrix + on-call rotation | Roadmap | Q3 2026 | G-014 |
+| Public status page (`status.consentshield.in`) | Roadmap | Q3 2026 | G-015 (ADR-1005 Phase 4) |
+| Solutions-engineer support (BFSI Enterprise) | Roadmap | Q3 2026 | G-013 (ADR-1005 Phase 3) — hire vs. contract decision pending |
+| SOC 2 Type I | Roadmap | Q4 2026 | Not yet available |
+| SOC 2 Type II | Roadmap | H1 2027 (realistic) | G-033 (ADR-1008 Phase 3) — observation-period start being confirmed; original Q4 2026 target softened |
+| Separate admin console (admin.consentshield.in) | Shipping | — | ADR-0028 through ADR-0050 |
+| Identity isolation (customer vs operator — Security Rule 12) | Shipping | — | ADR-0043, ADR-0044, ADR-0045, ADR-0047 |
+| Consent Manager registration (via partner company) | Shipping (commercial) | — | See Partnership Overview v3 |
+
+### Sector templates
+
+| Capability | Status | Target | Notes |
+|---|---|---|---|
+| BFSI sector template | Shipping | — | ADR-0030; seed in `20260502000003_bfsi_template_seed.sql` |
+| Healthcare sector template (ABDM + DISHA) | Roadmap | Q3 2026 | G-042 (ADR-1003 Phase 4) |
+| E-commerce / SaaS / Edtech / Insurance seeds | Roadmap | Demand-driven | Added when first customer in sector signs |
+
+---
+
+*This appendix is regenerated when any gap in the closure plan closes. Last refreshed: 2026-04-19 (ADR-1001 Sprint 1.2).*
 
 ---
 

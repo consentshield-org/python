@@ -2,6 +2,27 @@
 
 Documentation changes.
 
+## [ADR-1001 Sprint 1.2] — 2026-04-19
+
+**ADR:** ADR-1001 — v2 Whitepaper Phase 1 (Truth-in-marketing + Public API foundation)
+**Sprint:** Sprint 1.2 — Operational Maturity appendix (G-004)
+
+### Added
+- `docs/design/ConsentShield-Customer-Integration-Whitepaper-v2.md` — new Appendix E *Operational Maturity (Capability Status)*: authoritative inventory of 78 capabilities across 11 sections, each flagged Shipping / Beta / Roadmap. Every Roadmap row carries a target quarter and cites its owning ADR-1001..1008 sprint. The public `/v1/*` compliance API is explicitly Roadmap (resolved by end of ADR-1002). Appendix E wins any conflict with body paragraphs.
+- Executive Summary paragraph added pointing readers to Appendix E as the first place to reconcile claims against product reality.
+
+### Changed
+- Status semantics formalised: Shipping means live in production; Beta means live but narrow; Roadmap means scoped in an ADR with a target quarter. Two Shipping variants — `Shipping (structural)` for DDL-enforced claims (e.g. Category-label rule) and `Shipping (architectural)` / `Shipping (commercial)` for non-code claims — distinguish them from code-backed Shipping entries.
+
+### Deferred
+- Mirror Appendix E into security-review sales deck — no deck exists in the repo today; defers until a deck is authored. Appendix E itself is authoritative wherever it lives.
+
+### Tested
+- [x] Test 1: row count ≥ 30 — PASS (78 rows)
+- [x] Test 2: every Shipping row backed by landed ADR or structural-schema constraint — PASS (all 31 rows verified)
+- [x] Test 3: every Roadmap row carries target quarter — PASS (zero exceptions)
+- [x] Test 4: public `/v1/*` surface flagged Roadmap — PASS (7 Roadmap, 1 Shipping for existing callback)
+
 ## [ADR-1001 Sprint 1.1] — 2026-04-19
 
 **ADR:** ADR-1001 — v2 Whitepaper Phase 1 (Truth-in-marketing + Public API foundation)
