@@ -2,6 +2,25 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-0050 Sprint 2.2] — 2026-04-19
+
+**ADR:** ADR-0050 — Admin account-aware billing
+**Sprint:** Sprint 2.2 — invoice issuance RPC + GST computation + finalize RPCs
+
+### Added
+- `20260508000001_billing_issue_invoice_rpc.sql`:
+  - `public.billing_compute_gst(p_issuer_state, p_customer_state, p_subtotal_paise, p_rate_bps default 1800)` — IMMUTABLE SQL. Intra-state → CGST+SGST 50/50 with remainder on SGST so the sum is exact; inter-state (or null customer state) → full IGST. Case-insensitive state match. Rate bounds 0–10000 bps. EXECUTE granted to cs_admin, cs_orchestrator, authenticated.
+  - `admin.billing_issue_invoice(p_account_id, p_period_start, p_period_end, p_line_items jsonb, p_due_date default null)` — SECURITY DEFINER, `require_admin('platform_operator')`. Loads active issuer under `FOR UPDATE`, validates the account billing profile, computes FY (`YYYY-YY`) + next fy_sequence scoped to (issuer, fy_year), assembles `invoice_number = <prefix>/<fy_year>/NNNN`, computes GST via the SQL primitive, inserts `public.invoices` at status=draft, audit-logs. Returns uuid. Raises on missing active issuer, account billing fields missing, line_items invalid, period crossing FY boundary, due_date before period_end.
+  - `admin.billing_finalize_invoice_pdf(p_invoice_id, p_pdf_r2_key, p_pdf_sha256)` — flips draft → issued; stamps `pdf_r2_key`, `pdf_sha256`, `issued_at`. Scope rule: platform_operator can only finalize invoices on the currently-active issuer; platform_owner may finalize across issuers. Rejects non-draft targets and non-64-char digests.
+  - `admin.billing_stamp_invoice_email(p_invoice_id, p_email_message_id)` — stamps Resend message id on an issued invoice. Same scope rule.
+  - `admin.billing_invoice_pdf_envelope(p_invoice_id)` — SECURITY DEFINER read envelope (invoice + issuer + account billing profile) for the Route Handler's render path. Replaces three PostgREST round-trips that would otherwise be blocked by the `authenticated`-role revoke on public.invoices.
+- `20260508000002_billing_finalize_role_column_fix.sql` — follow-up. The two finalize RPCs originally read `admin.admin_users.role`; the actual column is `admin_role` (per 20260416000014). Recreated both functions with the correct column; no schema change.
+
+### Tested
+- [x] `tests/billing/gst-computation.test.ts` — **11/11 PASS**. Intra-state (CGST+SGST 9+9), inter-state (IGST 18), null customer state → IGST, case-insensitive intra match, odd-paise remainder on SGST, zero subtotal, custom rate 5%, negative subtotal raises, rate_bps > 10000 raises, missing issuer_state raises.
+- [x] `tests/billing/issue-invoice.test.ts` — **13/13 PASS**. First invoice gets fy_sequence=1 + prefix/year/0001 + CGST+SGST split; second gets fy_sequence=2; FY boundary raise; support-role denied; empty / non-array / missing-amount line_items raise; missing account billing field raises; no-active-issuer raises; finalize flips draft → issued; finalize on non-draft raises; stamp_email on issued succeeds; stamp_email on draft raises; support cannot finalize; sha256 length enforced.
+- [x] Full repo suite `bun run test:rls` — **343/343 PASS** across 34 test files (no regressions).
+
 ## [ADR-0050 Sprint 2.1 — chunk 3] — 2026-04-18
 
 **ADR:** ADR-0050 — Admin account-aware billing

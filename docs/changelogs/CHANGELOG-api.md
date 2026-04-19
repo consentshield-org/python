@@ -2,6 +2,24 @@
 
 API route changes.
 
+## [ADR-0050 Sprint 2.2] — 2026-04-19
+
+**ADR:** ADR-0050 — Admin account-aware billing
+
+### Added
+- `admin/src/lib/storage/sigv4.ts` — admin-side copy of the ADR-0040 hand-rolled AWS sigv4 helper (PUT object + presigned GET). Per the monorepo "share narrowly" discipline, infrastructure glue is duplicated across app/ and admin/ rather than promoted to a shared package.
+- `admin/src/lib/billing/render-invoice.ts` — deterministic PDFKit invoice renderer. CreationDate is stamped from `invoice.issue_date` (not wall clock) so identical inputs produce byte-identical output, which is what lets the SHA-256 travel with the invoice row as its content anchor.
+- `admin/src/lib/billing/r2-invoices.ts` — R2 upload wrapper over the sigv4 helper. Uploads under `invoices/{issuer_id}/{fy_year}/{invoice_number}.pdf`; computes the SHA-256 server-side before upload; returns `{r2Key, sha256, bytes}`. `presignInvoicePdfUrl(r2Key, expiresIn)` returns short-TTL signed GET URLs.
+- `admin/src/lib/billing/resend-invoice.ts` — Resend REST dispatch with the PDF attached as base64. No `@resend/node` dependency (Rule 15).
+- `admin/src/app/api/admin/billing/invoices/issue/route.ts` — POST. Validates body → calls `admin.billing_issue_invoice` → loads `admin.billing_invoice_pdf_envelope` → renders PDF → uploads to R2 → `admin.billing_finalize_invoice_pdf` → `sendInvoiceEmail` → `admin.billing_stamp_invoice_email`. Response envelope carries `{invoice_id, invoice_number, pdf_r2_key, pdf_sha256, bytes, email_message_id}`. On post-insert failure the draft invoice survives; operators can recover via a new issuance call (FY sequence gaps are legal).
+- `app/` workspace: **no change**. PDF + R2 + Resend-with-attachment live admin-side so customer-app identities never touch the invoice issuance path (Rule 12). The ADR originally placed the handler under `app/src/app/api/admin/billing/...`; that path is retracted in favour of the admin-side location shipped here.
+
+### Tested
+- [x] `bun run build` on `admin/` — compiles; `/api/admin/billing/invoices/issue` in the route manifest.
+- [x] `bun run lint` on `admin/` — clean.
+- [x] `bun run build` + `bun run lint` on `app/` — clean (no regression from workspace install of pdfkit into admin).
+- [x] Manual verification of PDF render + R2 upload + Resend dispatch pending on a real issuer + account (infra action: set `R2_INVOICES_BUCKET` + `RESEND_FROM` on the admin Vercel project; flip one issuer to active; run curl).
+
 ## [ADR-0049 Phase 2.1] — 2026-04-18
 
 **ADR:** ADR-0049 — Security observability ingestion

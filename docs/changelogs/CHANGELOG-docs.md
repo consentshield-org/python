@@ -2,6 +2,14 @@
 
 Documentation changes.
 
+## [ADR-0050 Sprint 2.2 status flip] — 2026-04-19
+
+**ADR:** ADR-0050 — Admin account-aware billing
+**Sprint:** Sprint 2.2 — invoice issuance RPC + GST computation + finalize RPCs
+
+### Changed
+- `docs/ADRs/ADR-0050-admin-account-aware-billing.md` — Sprint 2.2 flipped `[ ] planned` → `[x] complete`; test results recorded (GST 11/11, issue-invoice 13/13, repo 343/343). Noted the Route Handler relocation from `app/` to `admin/` (Rule 12 isolation).
+
 ## [Architecture-doc refresh] — 2026-04-18
 
 ### Changed

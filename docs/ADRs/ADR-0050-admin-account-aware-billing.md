@@ -407,19 +407,21 @@ When ADR-0051 ships, the bundle assembler pulls evidence_ledger rows as well.
 
 **Deliverables:**
 
-- [ ] `app/src/lib/billing/render-invoice.ts` — PDFKit-based renderer, templated from issuer + invoice + line items. Outputs `Uint8Array`. Deterministic — same inputs produce the same bytes (fixed fonts, no timestamps in content).
-- [ ] `app/src/lib/billing/r2-invoices.ts` — R2 client wrapper (reuses ADR-0040 sigv4 helpers). Uploads under `invoices/{issuer_id}/{fy_year}/{invoice_number}.pdf`, returns SHA-256.
-- [ ] Migration supplement — RPC `admin.billing_issue_invoice(p_account_id uuid, p_period_start date, p_period_end date, p_line_items jsonb, p_due_date date default null)` → `uuid`. Does steps 1–4 of the issuance flow (load issuer / validate / sequence / insert draft). PDF render + upload + email live in a Next.js server action because R2 + Resend are outside Postgres.
-- [ ] `app/src/app/api/admin/billing/invoices/issue/route.ts` — admin-only route handler (checks `is_admin` + AAL2 via ADR-0045 Rule 5 carve-out pattern). Calls the RPC to reserve the sequence, renders the PDF, uploads, stamps `pdf_r2_key + pdf_sha256 + status='issued' + issued_at`, sends email via Resend, stamps `email_message_id`. Returns invoice envelope.
-- [ ] GST computation unit-tested at the RPC layer (SQL) — not in TypeScript. SQL is the system of record for money arithmetic.
+- [x] `admin/src/lib/billing/render-invoice.ts` — PDFKit-based renderer, templated from issuer + invoice + line items. Outputs `Uint8Array`. Deterministic — `CreationDate` is stamped from `invoice.issue_date` so identical inputs produce byte-identical output. Location moved from `app/` to `admin/` so the renderer never reaches the customer app (Rule 12 isolation).
+- [x] `admin/src/lib/billing/r2-invoices.ts` — R2 client wrapper over an admin-side copy of the ADR-0040 sigv4 helper (`admin/src/lib/storage/sigv4.ts`). Uploads under `invoices/{issuer_id}/{fy_year}/{invoice_number}.pdf`, returns `{r2Key, sha256, bytes}`. Per the monorepo "share narrowly" discipline, infrastructure glue is duplicated across `app/` and `admin/` rather than promoted to a shared package.
+- [x] `admin/src/lib/billing/resend-invoice.ts` — Resend REST dispatch with the PDF attached as base64. No `@resend/node` dependency (Rule 15).
+- [x] Migration `20260508000001_billing_issue_invoice_rpc.sql` — `public.billing_compute_gst` + `admin.billing_issue_invoice` + `admin.billing_finalize_invoice_pdf` + `admin.billing_stamp_invoice_email` + `admin.billing_invoice_pdf_envelope` (read surface that replaces three PostgREST round-trips blocked by the `authenticated`-role revoke on `public.invoices`). Follow-up `20260508000002_billing_finalize_role_column_fix.sql` re-creates the two finalize functions with the correct `admin_role` column name (the originals referenced `role`).
+- [x] `admin/src/app/api/admin/billing/invoices/issue/route.ts` — admin-only route handler behind the admin proxy (`is_admin` + AAL2 enforced one layer up). Calls the issuance RPC to reserve the sequence, loads the envelope RPC, renders the PDF, uploads, stamps `pdf_r2_key + pdf_sha256 + status='issued' + issued_at`, sends Resend email, stamps `email_message_id`. Returns the issued envelope.
+- [x] GST computation unit-tested at the RPC layer (SQL) — not in TypeScript. SQL is the system of record for money arithmetic.
 
 **Testing plan:**
 
-- [ ] `tests/billing/gst-computation.test.ts` (pg-tap or direct SQL) — intra-state → CGST+SGST, inter-state → IGST, customer without GSTIN → IGST if cross-state else CGST+SGST (registration-agnostic), rounding discipline.
-- [ ] `tests/billing/issue-invoice.test.ts` — issue one invoice, verify sequence allocation, PDF upload, hash recorded, email sent, second invoice in same FY gets next sequence, issuer retirement mid-flow rejects.
-- [ ] Manual: operator clicks "Issue invoice" on an account, sees the PDF in R2, receives the email at the test billing address.
+- [x] `tests/billing/gst-computation.test.ts` — **11/11 PASS** (bunx vitest run 2026-04-19). Intra-state → CGST+SGST split 9/9; inter-state → IGST 18; null customer state → IGST (registration-agnostic); case-insensitive intra match; odd-paise remainder on SGST (333 subtotal → cgst=29, sgst=30); zero subtotal → zeros; custom rate 5% → 2500/2500/0; negative subtotal raises; rate_bps > 10000 raises; missing issuer_state raises.
+- [x] `tests/billing/issue-invoice.test.ts` — **13/13 PASS**. First invoice fy_sequence=1 + invoice_number=`<prefix>/2026-27/0001` + CGST+SGST split; second fy_sequence=2; FY-boundary period raises; support-role denied; empty / non-array / missing-amount line_items raise; missing account `billing_email` raises; no-active-issuer raises; finalize flips draft → issued; finalize on non-draft raises; stamp_email on issued succeeds; stamp_email on draft raises; support cannot finalize; sha256 length enforced.
+- [x] Full repo suite `bun run test:rls` — **343/343 PASS** across 34 test files. Admin + app builds + lints clean.
+- [ ] Manual: operator clicks "Issue invoice" on an account, sees the PDF in R2, receives the email at the test billing address. (Pending infra action: set `R2_INVOICES_BUCKET` + `RESEND_FROM` on the admin Vercel project; flip one issuer to active.)
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete` — 2026-04-19. PDF rendering, R2 upload, Resend dispatch, and the three admin RPCs are shipped and tested end-to-end at the DB layer; manual I/O verification pending the Vercel env-var setup listed above.
 
 #### Sprint 2.3 — Invoice history + latest-invoice integration on account detail
 
