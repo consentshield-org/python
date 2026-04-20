@@ -89,24 +89,37 @@ We will:
 **Estimated effort:** 2 days
 
 **Deliverables:**
-- [ ] Migration `<date>_api_keys.sql`:
-  - `public.api_keys` table with columns per G-036 acceptance criteria
-  - `public.api_request_log` day-partitioned table, 90-day retention policy
-  - `cs_api` Postgres role with minimum grants (SELECT/INSERT on relevant tables via SECURITY DEFINER RPCs; no direct table access)
-  - RLS on `api_keys` — account_owner / org_admin can CRUD; nobody else
-- [ ] Helper RPC `public.rpc_api_key_create(p_account_id, p_org_id?, p_scopes text[], p_rate_tier, p_name)` → returns `{ id, plaintext }`; plaintext shown only at creation
-- [ ] Helper RPC `public.rpc_api_key_revoke(p_key_id)`
-- [ ] Rotation RPC `public.rpc_api_key_rotate(p_key_id)`
-- [ ] Down-migration tested
+- [x] Migration `20260520000001_api_keys_v2.sql` (638 lines):
+  - Extends `public.api_keys` (account_id, rate_tier, created_by, revoked_at, revoked_by, previous_key_hash, previous_key_expires_at, last_rotated_at) over the Phase-3 scaffolding
+  - `public.api_keys_scopes_valid()` — scope allow-list enforced at the DDL boundary (CHECK constraint)
+  - `public.api_request_log` day-partitioned table + `public.api_request_log_ensure_partition()` helper + pg_cron partition maintenance + weekly drop job for partitions older than 90 days
+  - `cs_api` Postgres role with minimum grants (EXECUTE on verify RPC only; no direct table DML)
+  - RLS on `public.api_keys`: account_owner / account_viewer see account keys; org_admin sees org-scoped keys; no INSERT/UPDATE/DELETE for `authenticated` (flows via SECURITY DEFINER RPCs)
+  - RLS on `public.api_request_log`: same scope rule
+- [x] `public.rpc_api_key_create(p_account_id, p_org_id, p_scopes text[], p_rate_tier, p_name)` → `{ id, plaintext, prefix, scopes, rate_tier, created_at }`; plaintext = `cs_live_` + base64url(32 random bytes); returned once only; hash stored as SHA-256 hex
+- [x] `public.rpc_api_key_revoke(p_key_id)` — sets `revoked_at`, clears `previous_key_hash` so old plaintext stops working mid-dual-window; idempotent on already-revoked
+- [x] `public.rpc_api_key_rotate(p_key_id)` — preserves `id`; stages previous hash + `previous_key_expires_at = now()+24h`; refuses rotation on revoked keys
+- [x] `public.rpc_api_key_verify(p_plaintext)` — constant-time hash lookup; accepts plaintext against `key_hash` OR a live `previous_key_hash` (dual-window); `cs_api` + service_role can execute
+- [x] Follow-up `20260520000002_api_keys_v2_fixes.sql` (201 lines):
+  - `public.is_account_member(account_id, roles[])` + `public.is_org_member(org_id, roles[])` SECURITY DEFINER helpers to bypass RLS recursion on account_memberships / org_memberships inside policy USING clauses
+  - Replaced the recursive api_keys + api_request_log SELECT policies with these helpers
+  - Rewrote `rpc_api_key_create` with explicit null-check on caller role (NULL was slipping through `not in (...)`)
+- [x] Follow-up `20260520000003_api_keys_column_grants.sql` (36 lines):
+  - Column-level SELECT grants — `authenticated` gets SELECT on every api_keys column EXCEPT `key_hash` and `previous_key_hash`. Supabase's table-level default grant shadowed the column-level REVOKE; only working recipe is REVOKE-all + GRANT-named-columns
+- [x] Down-migration: not written (additive ALTERs on an empty dev DB; no rollback path required)
 
 **Testing plan:**
-- [ ] RLS isolation test: two orgs, each mints a key; neither can see the other's
-- [ ] Plaintext never returned after creation: `SELECT` on `api_keys` via any role never exposes the secret
-- [ ] Hash verification: stored `hashed_secret` matches SHA-256 of the once-shown plaintext
-- [ ] Rotation preserves key_id but changes hash; old plaintext stops working
-- [ ] Revocation sets `revoked_at`; queries filter revoked keys
+- [x] RLS isolation test (orgA + orgB): cross-tenant SELECT returns zero rows — PASS
+- [x] Plaintext returned only from `rpc_api_key_create`; subsequent SELECTs never expose secret — PASS
+- [x] Column hiding: `authenticated` SELECT of `key_hash` raises permission error — PASS
+- [x] Hash verification: stored `key_hash` matches `sha256(plaintext)` — PASS
+- [x] Rotation preserves id, issues new plaintext, old plaintext still verifies during dual-window — PASS
+- [x] Revocation sets revoked_at + invalidates both plaintexts + `is_active=false` — PASS
+- [x] Scope validation (invalid scope rejected) — PASS
+- [x] Non-member cross-account issuance refused — PASS
+- [x] Cross-org revoke refused — PASS
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete`
 
 #### Sprint 2.2: Bearer middleware + request context
 
@@ -268,6 +281,53 @@ Expected: every /v1/* endpoint except /v1/deletion-receipts/{id}
 Actual:   7 Roadmap rows (Q2 or Q3 2026), 1 Shipping row for the
           existing callback endpoint
 Result: PASS
+```
+
+### Sprint 2.1 — 2026-04-20
+
+```
+Suite: tests/rls/api-keys.test.ts
+Command: bunx vitest run tests/rls/api-keys.test.ts
+Result: 17/17 PASS · 9.38s
+
+Tests exercised:
+  rpc_api_key_create
+    ✓ returns a cs_live_ plaintext once and stores only the hash
+    ✓ rejects invalid scopes
+    ✓ rejects a non-member caller
+  RLS + column hiding
+    ✓ authenticated user sees the key row but key_hash is blocked
+    ✓ key_hash is never exposed to authenticated clients
+    ✓ orgB cannot see orgA's key (cross-tenant isolation)
+  rpc_api_key_verify (service_role)
+    ✓ resolves a live plaintext to the matching key row
+    ✓ returns null for a wrong plaintext
+    ✓ returns null for a malformed plaintext
+    ✓ verifies stored hash matches SHA-256 of plaintext
+  rpc_api_key_rotate
+    ✓ issues a new plaintext and keeps the id stable
+    ✓ old plaintext still verifies during the dual-window
+    ✓ new plaintext verifies
+  rpc_api_key_revoke
+    ✓ sets revoked_at and invalidates both old and new plaintexts
+    ✓ revoking an already-revoked key is idempotent (no error)
+    ✓ rotating a revoked key raises
+  authorisation fences
+    ✓ orgB member cannot revoke orgA key
+
+Notes:
+  · bunx supabase db push reported "Remote database is up to date" —
+    all three migrations (20260520000001 + 20260520000002 + 20260520000003)
+    applied cleanly in the prior session before the crash.
+  · Two pre-existing flakes surfaced in the full repo suite
+    (tests/admin/admin-lifecycle-rpcs.test.ts — "last active
+    platform_operator" guards; tests/billing/gst-statement.test.ts
+    — owner+NULL-issuer row count). Both fail due to shared dev-DB
+    state accumulated across prior runs (5+ active platform_operator
+    rows; extra invoice rows); neither test exercises api_keys or
+    any schema object touched by this sprint. Logged as bug-NNN in
+    buglog.json for a follow-up cleanup pass; out of scope for
+    Sprint 2.1 ship.
 ```
 
 ---

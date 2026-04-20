@@ -2,6 +2,41 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-1001 Sprint 2.1] — 2026-04-20
+
+**ADR:** ADR-1001 — Truth-in-marketing + Public API foundation
+**Sprint:** Sprint 2.1 — `cs_live_*` API key schema + issuance RPCs (G-036)
+
+### Added
+- `20260520000001_api_keys_v2.sql`:
+  - Extends `public.api_keys` with v2 lifecycle columns — `account_id` (FK → `public.accounts`, cascade), `rate_tier` (CHECK enum: `starter|growth|pro|enterprise|sandbox`, default `starter`), `created_by`, `revoked_at`, `revoked_by`, `previous_key_hash`, `previous_key_expires_at`, `last_rotated_at`. `org_id` made nullable so an account-scoped key can span every org under the owning account.
+  - `public.api_keys_scopes_valid(text[])` — immutable SQL scope allow-list (`read:consent|write:consent|read:artefacts|write:artefacts|read:rights|write:rights|read:deletion|write:deletion|read:tracker|read:audit|read:security|read:probes|read:score`), enforced via CHECK constraint so invalid scopes cannot be stored even by a compromised SECURITY DEFINER path.
+  - `public.api_keys_sync_is_active()` BEFORE-trigger keeps legacy `is_active` boolean in sync with canonical `revoked_at` timestamp.
+  - Indexes: `api_keys_account_idx`, `api_keys_revoked_idx` (partial `WHERE revoked_at IS NULL`), `api_keys_prefix_idx`.
+  - `public.api_request_log` day-partitioned table for audit (id, key_id, account_id, org_id, method, path, status_code, latency_ms, bytes_in, bytes_out, occurred_at); `api_request_log_ensure_partition(date)` helper; daily pg_cron job creates tomorrow's partition; weekly pg_cron drops partitions older than 90 days.
+  - `cs_api` minimum-privilege Postgres role (EXECUTE on `rpc_api_key_verify` only; no direct table DML). Will run the middleware's per-request Supabase client in ADR-1002.
+  - RLS on `public.api_keys`: account_owner / account_viewer see account keys; org_admin sees org-scoped keys. REVOKE INSERT/UPDATE/DELETE from `authenticated` — writes flow exclusively through SECURITY DEFINER RPCs.
+  - RLS on `public.api_request_log`: same scope rule (no direct writes from `authenticated`).
+  - Column-level REVOKE SELECT on `key_hash` + `previous_key_hash` (superseded by migration 003 because Supabase default grants shadow column-level REVOKE — see below).
+  - `rpc_api_key_create(p_account_id, p_org_id, p_scopes, p_rate_tier, p_name)` — SECURITY DEFINER; caller must be `account_owner` of the target account OR `org_admin` of a target org under that account. Generates `cs_live_` + base64url(32 random bytes); returns plaintext once only; stores SHA-256 hex hash; writes an `api_key.created` row to `public.audit_log`. Returns `{ id, plaintext, prefix, scopes, rate_tier, created_at }`.
+  - `rpc_api_key_rotate(p_key_id)` — preserves `id`; stages previous hash + `previous_key_expires_at = now()+24h` so the old plaintext continues to verify for 24h; refuses rotation on revoked keys.
+  - `rpc_api_key_revoke(p_key_id)` — sets `revoked_at` + `revoked_by`, clears `previous_key_hash` so both plaintexts stop verifying mid-dual-window; idempotent on already-revoked.
+  - `rpc_api_key_verify(p_plaintext)` — hash lookup against `key_hash` OR a live `previous_key_hash` (dual-window); rejects revoked + expired; EXECUTE granted to `cs_api` + `service_role` only.
+- `20260520000002_api_keys_v2_fixes.sql` — two fixes surfaced by the RLS test:
+  - `public.is_account_member(account_id, roles[])` + `public.is_org_member(org_id, roles[])` SECURITY DEFINER helpers. The original api_keys RLS policies queried `account_memberships` / `org_memberships` directly inside `USING`, which triggered RLS recursion (those tables have their own RLS). Helpers bypass it cleanly.
+  - Rewrote `rpc_api_key_create` with an explicit null-check on caller role — the previous `v_caller_role not in ('account_owner')` gate let a NULL (non-member caller) slip through because NULL compared to any value via `not in` returns NULL, which plpgsql treated as false.
+- `20260520000003_api_keys_column_grants.sql` — follow-up on column hiding:
+  - Postgres column-level `REVOKE SELECT` is shadowed by Supabase's default table-wide GRANT to `authenticated`. The only working recipe is `REVOKE SELECT ON TABLE` + `GRANT SELECT (col1, col2, …)` for the allow-listed columns.
+  - `authenticated` receives SELECT on every api_keys column EXCEPT `key_hash` and `previous_key_hash`. Those columns are reachable only via `rpc_api_key_verify` (service_role / cs_api). PostgREST raises `permission denied for table api_keys` when a customer session selects a redacted column, exactly as intended.
+
+### Tested
+- [x] `tests/rls/api-keys.test.ts` — **17/17 PASS** in isolation (9.38s). Covers: cs_live_ plaintext generation + SHA-256 hash; invalid-scope rejection; non-member refusal; RLS cross-tenant isolation; column-level `key_hash` hiding; `rpc_api_key_verify` positive + wrong-plaintext + malformed + hash-match; rotation dual-window (old + new both verify); revoke invalidates both + idempotent second-call; rotate-after-revoke raises; cross-org revoke refused.
+- [x] Migrations pushed via `bunx supabase db push` — "Remote database is up to date".
+
+### Known pre-existing flakes (not introduced by this sprint)
+- `tests/admin/admin-lifecycle-rpcs.test.ts` — two "last active platform_operator" guards fail/time-out due to 5+ active `platform_operator` rows accumulated in the shared dev DB from prior test runs. Tests suspend non-opA POs but RPC's count query evaluates stale state. Unrelated to api_keys schema.
+- `tests/billing/gst-statement.test.ts` — "owner + NULL issuer returns all three invoices across both issuers" fails with `expected 4 to be 3` (extra invoice row leaked from a prior run). Uncommitted test file from earlier ADR-0050 Sprint 3.1 work; separate cleanup.
+
 ## [ADR-0050 Sprint 2.3] — 2026-04-19
 
 **ADR:** ADR-0050 — Admin account-aware billing

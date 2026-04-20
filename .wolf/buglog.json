@@ -5517,6 +5517,410 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-04-18T15:56:12.710Z"
+    },
+    {
+      "id": "bug-345",
+      "timestamp": "2026-04-19T04:56:02.538Z",
+      "error_message": "Wrong reference: role should be admin_role",
+      "file": "supabase/migrations/20260508000001_billing_issue_invoice_rpc.sql",
+      "root_cause": "Used \"role\" instead of \"admin_role\"",
+      "fix": "Changed role → admin_role",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "sql"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-19T04:56:02.538Z"
+    },
+    {
+      "id": "bug-346",
+      "timestamp": "2026-04-19T04:56:06.625Z",
+      "error_message": "Significant refactor of ",
+      "file": "tests/billing/gst-computation.test.ts",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 6→7 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-19T04:56:06.625Z"
+    },
+    {
+      "id": "bug-347",
+      "timestamp": "2026-04-19T05:05:20.772Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/ADRs/ADR-0050-admin-account-aware-billing.md",
+      "root_cause": "9 lines replaced/restructured",
+      "fix": "Rewrote 17→19 lines (9 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-19T05:05:20.772Z"
+    },
+    {
+      "id": "bug-348",
+      "timestamp": "2026-04-19T05:56:27.261Z",
+      "error_message": "Significant refactor of ",
+      "file": ".claude/session-handoff.md",
+      "root_cause": "42 lines replaced/restructured",
+      "fix": "Rewrote 63→175 lines (42 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-19T05:56:27.261Z"
+    },
+    {
+      "id": "bug-349",
+      "timestamp": "2026-04-19T11:28:29.770Z",
+      "error_message": "Null/undefined access in ",
+      "file": "app/src/app/api/webhooks/razorpay/route.ts",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check)",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-19T11:28:29.770Z"
+    },
+    {
+      "id": "bug-350",
+      "timestamp": "2026-04-19T11:29:10.034Z",
+      "error_message": "CSS fix: status",
+      "file": "admin/src/app/(operator)/billing/[accountId]/page.tsx",
+      "root_cause": "status: string → InvoiceStatus",
+      "fix": "Changed status: string → InvoiceStatus",
+      "tags": [
+        "auto-detected",
+        "style-fix",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-04-19T11:30:00.815Z"
+    },
+    {
+      "id": "bug-351",
+      "timestamp": "2026-04-19T11:29:36.881Z",
+      "error_message": "Significant refactor of ",
+      "file": "admin/src/app/(operator)/billing/[accountId]/page.tsx",
+      "root_cause": "6 lines replaced/restructured",
+      "fix": "Rewrote 17→137 lines (6 removed) | Also: const [accountsRes, failuresRes] = await Promise.a; const errors = [accountsRes.error?.message, failur | Also: <td className=\"px-4 py-2 text-[11px] text-text-3\">; <span",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 3,
+      "last_seen": "2026-04-19T11:30:09.663Z"
+    },
+    {
+      "id": "bug-352",
+      "timestamp": "2026-04-19T11:55:14.064Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/ADRs/ADR-0050-admin-account-aware-billing.md",
+      "root_cause": "11 lines replaced/restructured",
+      "fix": "Rewrote 19→21 lines (11 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-19T11:55:14.064Z"
+    },
+    {
+      "id": "bug-353",
+      "timestamp": "2026-04-19T15:03:33.748Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/design/ConsentShield-Customer-Integration-Whitepaper-v2.md",
+      "root_cause": "19 lines replaced/restructured",
+      "fix": "Rewrote 20→22 lines (19 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-19T15:03:33.748Z"
+    },
+    {
+      "id": "bug-354",
+      "timestamp": "2026-04-19T15:04:03.183Z",
+      "error_message": "Missing error handling in function",
+      "file": "admin/src/lib/storage/sigv4.ts",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-19T15:04:03.183Z"
+    },
+    {
+      "id": "bug-355",
+      "timestamp": "2026-04-19T15:04:09.099Z",
+      "error_message": "Function not marked async",
+      "file": "admin/src/lib/billing/r2-invoices.ts",
+      "root_cause": "Function uses await but wasn't declared async",
+      "fix": "Added async modifier",
+      "tags": [
+        "auto-detected",
+        "async-fix",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-19T15:04:09.099Z"
+    },
+    {
+      "id": "bug-356",
+      "timestamp": "2026-04-19T15:04:10.726Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/design/screen designs and ux/consentshield-site.html",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 3→3 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "html"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-19T15:04:10.726Z"
+    },
+    {
+      "id": "bug-357",
+      "timestamp": "2026-04-19T15:04:27.399Z",
+      "error_message": "CSS fix: label",
+      "file": "admin/src/app/(operator)/layout.tsx",
+      "root_cause": "label: 'Issuer Entities', href: '/billing/issuers', adr: 'ADR-0050', live: true → 'Invoice Export', href: '/billing/export', adr: 'ADR-0050', live: true",
+      "fix": "Changed label: 'Issuer Entities', href: '/billing/issuers', adr: 'ADR-0050', live: true → 'Invoice Export', href: '/billing/export', adr: 'ADR-0050', live: true",
+      "tags": [
+        "auto-detected",
+        "style-fix",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-19T15:04:27.399Z"
+    },
+    {
+      "id": "bug-358",
+      "timestamp": "2026-04-19T15:04:49.479Z",
+      "error_message": "Wrong return value",
+      "file": "docs/design/screen designs and ux/consentshield-site.html",
+      "root_cause": "Was returning: a signed receipt. When an artefact is revoked, the",
+      "fix": "Now returns: a signed receipt. When an artefact is revoked, the",
+      "tags": [
+        "auto-detected",
+        "return-value",
+        "html"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-19T15:04:49.479Z"
+    },
+    {
+      "id": "bug-359",
+      "timestamp": "2026-04-19T15:06:24.541Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/ADRs/ADR-1001-truth-in-marketing-and-public-api-foundation.md",
+      "root_cause": "8 lines replaced/restructured",
+      "fix": "Rewrote 16→18 lines (8 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-19T15:06:24.541Z"
+    },
+    {
+      "id": "bug-360",
+      "timestamp": "2026-04-19T15:09:20.311Z",
+      "error_message": "Significant refactor of ",
+      "file": "tests/billing/invoice-export-authz.test.ts",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 21→34 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-19T15:09:20.311Z"
+    },
+    {
+      "id": "bug-361",
+      "timestamp": "2026-04-19T15:09:21.563Z",
+      "error_message": "Wrong reference: issue should be issueAndFinalize",
+      "file": "tests/billing/invoice-export-authz.test.ts",
+      "root_cause": "Used \"issue\" instead of \"issueAndFinalize\"",
+      "fix": "Changed issue → issueAndFinalize",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-04-19T15:09:23.140Z"
+    },
+    {
+      "id": "bug-362",
+      "timestamp": "2026-04-19T15:24:57.775Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/ADRs/ADR-1001-truth-in-marketing-and-public-api-foundation.md",
+      "root_cause": "10 lines replaced/restructured",
+      "fix": "Rewrote 18→20 lines (10 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-19T15:24:57.775Z"
+    },
+    {
+      "id": "bug-363",
+      "timestamp": "2026-04-19T15:34:52.673Z",
+      "error_message": "Incorrect value in code",
+      "file": "supabase/migrations/20260520000001_api_keys_v2.sql",
+      "root_cause": "Had 'active'",
+      "fix": "Changed to 'org_admin'",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "sql"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-19T15:34:52.673Z"
+    },
+    {
+      "id": "bug-364",
+      "timestamp": "2026-04-19T15:39:09.706Z",
+      "error_message": "Null/undefined access in ",
+      "file": "tests/rls/api-keys.test.ts",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check)",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-19T15:39:09.706Z"
+    },
+    {
+      "id": "bug-365",
+      "timestamp": "2026-04-20T00:27:39.912Z",
+      "error_message": "Incorrect value in code",
+      "file": "package.json",
+      "root_cause": "Had \"prettier\"",
+      "fix": "Changed to \"jszip\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "json"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-20T00:27:39.912Z"
+    },
+    {
+      "id": "bug-366",
+      "timestamp": "2026-04-20T00:28:14.396Z",
+      "error_message": "Incorrect value in code",
+      "file": "tests/billing/invoice-export-contents.test.ts",
+      "root_cause": "Had 'created_at'",
+      "fix": "Changed to 'occurred_at'",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-20T00:28:14.396Z"
+    },
+    {
+      "id": "bug-367",
+      "timestamp": "2026-04-20T00:49:31.413Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/ADRs/ADR-1001-truth-in-marketing-and-public-api-foundation.md",
+      "root_cause": "15 lines replaced/restructured",
+      "fix": "Rewrote 23→36 lines (15 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-20T00:49:31.413Z"
+    },
+    {
+      "id": "bug-368",
+      "timestamp": "2026-04-20T00:55:00.000Z",
+      "error_message": "admin-lifecycle-rpcs.test.ts — 'last active platform_operator' guards fail / 60s timeout in shared dev DB",
+      "file": "tests/admin/admin-lifecycle-rpcs.test.ts",
+      "root_cause": "5+ active platform_operator rows accumulated in shared dev DB from prior test runs. Test suspend-loop handles non-opA POs but the RPC count query inside admin_change_role / admin_disable either sees stale data or deadlocks. Unrelated to ADR-1001 Sprint 2.1 (api_keys does not touch admin schema).",
+      "fix": "Not fixed in this session — out of scope for ADR-1001 Sprint 2.1. Proposed cleanup: the test should suspend ALL admin_role rows whose tier ≥ platform_operator (captures orphans) and restore in finally, or a dedicated clean-DB step should precede the admin-lifecycle suite.",
+      "tags": [
+        "test-flake",
+        "shared-db-state",
+        "admin-lifecycle",
+        "platform-operator",
+        "deferred"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-20T00:55:00.000Z"
+    },
+    {
+      "id": "bug-369",
+      "timestamp": "2026-04-20T00:55:00.000Z",
+      "error_message": "gst-statement.test.ts — 'owner + NULL issuer returns all three invoices across both issuers' expected 4 to be 3",
+      "file": "tests/billing/gst-statement.test.ts",
+      "root_cause": "Shared dev DB has orphan invoice rows from prior runs. Test filters owner-scope + NULL issuer and expects exactly the three invoices it created; found 4. Same shape as billing_test_isolation memory entry.",
+      "fix": "Not fixed in this session — test file is uncommitted from earlier ADR-0050 Sprint 3.1 work, not part of ADR-1001 Sprint 2.1 ship. Proposed: change exact-count assertions to .toContain(id) per created invoice, or filter the RPC result by account_id before counting.",
+      "tags": [
+        "test-flake",
+        "shared-db-state",
+        "billing",
+        "gst-statement",
+        "deferred"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-20T00:55:00.000Z"
     }
   ]
 }
