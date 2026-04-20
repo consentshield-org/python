@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-20T11:13:45.354Z
-> Files: 854 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-20T12:36:42.013Z
+> Files: 876 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../tmp/
 
@@ -76,7 +76,7 @@
 - `.prettierrc` (~29 tok)
 - `CLAUDE.md` — OpenWolf (~5779 tok)
 - `debug_rpc.ts` — Declares main (~218 tok)
-- `package.json` — Node.js package manifest (~117 tok)
+- `package.json` — Node.js package manifest (~120 tok)
 - `sentry.client.config.ts` (~166 tok)
 - `sentry.server.config.ts` (~166 tok)
 - `tsconfig.base.json` (~110 tok)
@@ -234,7 +234,7 @@
 ## admin/src/app/(operator)/flags/
 
 - `actions.ts` — Exports setFeatureFlag, deleteFeatureFlag, toggleKillSwitch (~1084 tok)
-- `page.tsx` — ADR-0036 Sprint 1.1 — Feature Flags & Kill Switches panel. (~1110 tok)
+- `page.tsx` — ADR-0036 Sprint 1.1 — Feature Flags & Kill Switches panel. (~1266 tok)
 
 ## admin/src/app/(operator)/orgs/
 
@@ -368,8 +368,8 @@
 
 ## admin/src/components/flags/
 
-- `feature-flags-tab.tsx` — FeatureFlagsTab — renders form, table, modal (~4124 tok)
-- `flags-tabs.tsx` — FlagsTabs (~469 tok)
+- `feature-flags-tab.tsx` — FeatureFlagsTab — renders form, table, modal (~4642 tok)
+- `flags-tabs.tsx` — FlagsTabs (~508 tok)
 - `kill-switches-tab.tsx` — KillSwitchesTab — renders form, modal (~2312 tok)
 
 ## admin/src/components/impersonation/
@@ -463,7 +463,7 @@
 
 ## app/public/
 
-- `openapi.yaml` (~6858 tok)
+- `openapi.yaml` (~7814 tok)
 
 ## app/sandbox-scripts/
 
@@ -705,6 +705,10 @@
 
 - `route.ts` — ADR-1002 Sprint 3.1 — GET /v1/consent/artefacts/{id} (~482 tok)
 
+## app/src/app/api/v1/consent/artefacts/[id]/revoke/
+
+- `route.ts` — ADR-1002 Sprint 3.2 — POST /v1/consent/artefacts/{id}/revoke (~1240 tok)
+
 ## app/src/app/api/v1/consent/events/
 
 - `route.ts` — ADR-1002 Sprint 3.1 — GET /v1/consent/events (~832 tok)
@@ -781,6 +785,7 @@
 
 - `read.ts` — ADR-1002 Sprint 3.1 — server-side helpers for artefact + event read endpoints. (~1401 tok)
 - `record.ts` — ADR-1002 Sprint 2.1 — server-side helper for /v1/consent/record. (~790 tok)
+- `revoke.ts` — ADR-1002 Sprint 3.2 — revoke helper. (~532 tok)
 - `verify.ts` — ADR-1002 Sprint 1.2 — server-side helper for /v1/consent/verify. (~1147 tok)
 
 ## app/src/lib/invitations/
@@ -839,7 +844,7 @@
 
 - `FEATURE-INVENTORY.md` — ConsentShield — Complete Feature Inventory (~9665 tok)
 - `ROADMAP-phase2.md` — ConsentShield — Phase 2 Roadmap (~3150 tok)
-- `STATUS.md` — ConsentShield Status (~3570 tok)
+- `STATUS.md` — ConsentShield Status (~3762 tok)
 - `V2-BACKLOG.md` — V2 Backlog — Deferred Items for Post-Phase-2 Review (~1378 tok)
 - `WHITEPAPER-AUDIT.md` — ConsentShield Integration Whitepaper — Critical Audit vs. Implementation (~4878 tok)
 
@@ -899,17 +904,18 @@
 - `ADR-0053-gstr1-json-export.md` — ADR-0053 — GSTR-1 JSON export for monthly filing (~1864 tok)
 - `ADR-0054-customer-billing-portal.md` — ADR-0054 — Customer-facing billing portal (invoice history + billing profile) (~3086 tok)
 - `ADR-0055-account-scoped-impersonation.md` — ADR-0055 — Account-scoped impersonation (~1701 tok)
-- `ADR-0056-account-scoped-feature-flags.md` — ADR-0056 — Per-account feature-flag targeting (~1347 tok)
+- `ADR-0056-account-scoped-feature-flags.md` — ADR-0056 — Per-account feature-flag targeting (~1570 tok)
 - `ADR-0057-sectoral-template-switcher.md` — ADR-0057 — Customer-facing sectoral template switcher (Settings → Account) (~1395 tok)
+- `ADR-0501-marketing-site-scaffold.md` — ADR-0501 — ConsentShield marketing site (`marketing/`) (~2242 tok)
 - `ADR-1001-truth-in-marketing-and-public-api-foundation.md` — ADR-1001: Truth-in-Marketing + Public API Foundation (~5650 tok)
-- `ADR-1002-dpdp-section6-runtime-enforcement.md` — ADR-1002: DPDP §6 Runtime Enforcement — Verify, Record, Artefact Ops, Deletion API (~5619 tok)
+- `ADR-1002-dpdp-section6-runtime-enforcement.md` — ADR-1002: DPDP §6 Runtime Enforcement — Verify, Record, Artefact Ops, Deletion API (~6072 tok)
 - `ADR-1003-processor-posture-and-healthcare-unlock.md` — ADR-1003: Processor Posture + Healthcare Category Unlock (~3365 tok)
 - `ADR-1004-statutory-retention-material-change-silent-failure.md` — ADR-1004: Statutory Retention + Material-Change Re-consent + Silent-Failure Detection (~3856 tok)
 - `ADR-1005-operations-maturity.md` — ADR-1005: Operations Maturity — Webhook Reference, Support Model, Status Page, Multi-channel Alerts, (~3575 tok)
 - `ADR-1006-developer-experience-and-openapi.md` — ADR-1006: Developer Experience — Client Libraries + OpenAPI Spec + CI Drift Check (~2658 tok)
 - `ADR-1007-connector-ecosystem-expansion.md` — ADR-1007: Connector Ecosystem Expansion + Platform Plugins (~2738 tok)
 - `ADR-1008-scale-audit-polish-and-p3-hardening.md` — ADR-1008: Scale + Audit Polish + P3 Hardening (~3065 tok)
-- `ADR-index.md` — ADR Index (~2355 tok)
+- `ADR-index.md` — ADR Index (~2437 tok)
 - `ADR-template.md` — ADR-NNNN: Title (~423 tok)
 - `adr-workflow.md` — ADR Workflow Rules (~557 tok)
 
@@ -933,12 +939,13 @@
 
 ## docs/changelogs/
 
-- `CHANGELOG-api.md` — Changelog — API (~8961 tok)
-- `CHANGELOG-dashboard.md` — Changelog — Dashboard (~13819 tok)
+- `CHANGELOG-api.md` — Changelog — API (~9241 tok)
+- `CHANGELOG-dashboard.md` — Changelog — Dashboard (~16200 tok)
 - `CHANGELOG-docs.md` — Changelog — Documentation (~4378 tok)
 - `CHANGELOG-edge-functions.md` — Changelog — Edge Functions (~3148 tok)
 - `CHANGELOG-infra.md` — Changelog — Infrastructure (~3667 tok)
-- `CHANGELOG-schema.md` — Changelog — Schema (~27921 tok)
+- `CHANGELOG-marketing.md` — Changelog — Marketing (~600 tok)
+- `CHANGELOG-schema.md` — Changelog — Schema (~28296 tok)
 - `CHANGELOG-worker.md` — Changelog — Worker (~1897 tok)
 
 ## docs/design/
@@ -996,6 +1003,37 @@
 - `2026-04-18-adr-0044-customer-rbac-review.md` — Review — ADR-0044 Customer RBAC (Phase 0 + 1 + 2.1–2.6) (~3002 tok)
 - `2026-04-18-comprehensive-project-review.md` — ConsentShield — Comprehensive Review as of 2026-04-18 (~3553 tok)
 - `2026-04-20-api-key-security-review.md` — Security Review — API Key Surface (ADR-1001 Sprint 3.1) (~1833 tok)
+
+## marketing/
+
+- `.gitignore` — Git ignore rules (~19 tok)
+- `eslint.config.mjs` — ', 'out/**', 'build/**', 'next-env.d.ts']), (~91 tok)
+- `next.config.ts` — Marketing site (consentshield.in) — the only public surface. (~85 tok)
+- `package.json` — Node.js package manifest (~172 tok)
+- `postcss.config.mjs` — Declares config (~25 tok)
+- `tsconfig.json` — TypeScript configuration (~102 tok)
+- `vercel.json` (~17 tok)
+
+## marketing/public/downloads/
+
+- `.gitkeep` (~0 tok)
+
+## marketing/src/app/
+
+- `globals.css` — Styles: 2 rules, 2 vars (~70 tok)
+- `layout.tsx` — dmSans (~430 tok)
+- `page.tsx` — Home (~117 tok)
+- `robots.ts` — Marketing site — fully crawlable. Contrast with admin/src/app/robots.ts, (~95 tok)
+
+## marketing/src/components/
+
+- `footer.tsx` — Footer (~1119 tok)
+- `logo.tsx` — Logo (shield icon + "ConsentShield" wordmark) — used by nav and footer. (~483 tok)
+- `nav.tsx` — Nav (~511 tok)
+
+## marketing/src/lib/
+
+- `routes.ts` — Shared route definitions for <Nav/> + <Footer/>. (~387 tok)
 
 ## packages/compliance/
 
@@ -1465,6 +1503,7 @@
 - `20260722000003_fix_gstr1_b2cs_agg.sql` — Migration: ADR-0053 Sprint 1.1 follow-up 2 — fix nested-aggregate in B2CS (~2761 tok)
 - `20260725000001_account_scoped_impersonation.sql` — Migration: ADR-0055 Sprint 1.1 — account-scoped impersonation. (~1943 tok)
 - `20260730000001_account_scoped_feature_flags.sql` — Migration: ADR-0056 Sprint 1.1 — per-account feature-flag targeting. (~2550 tok)
+- `20260801000002_rpc_artefact_revoke.sql` — ADR-1002 Sprint 3.2 — rpc_artefact_revoke RPC. (~1093 tok)
 
 ## supabase/seed/
 
@@ -1565,6 +1604,7 @@
 - `api-middleware.test.ts` — Declares TestOrg (~946 tok)
 - `artefact-event-read.test.ts` — ADR-1002 Sprint 3.1 — integration tests for the three read endpoints. (~3593 tok)
 - `consent-record.test.ts` — ADR-1002 Sprint 2.1 — /v1/consent/record integration tests. (~3288 tok)
+- `consent-revoke.test.ts` — ADR-1002 Sprint 3.2 — revoke endpoint integration tests. (~2726 tok)
 - `consent-verify-batch.test.ts` — ADR-1002 Sprint 1.3 — /v1/consent/verify/batch integration tests. (~3283 tok)
 - `consent-verify.test.ts` — ADR-1002 Sprint 1.2 — /v1/consent/verify integration tests. (~3716 tok)
 

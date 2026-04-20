@@ -2983,3 +2983,69 @@
 |------|--------|---------|---------|--------|
 | 16:43 | Edited docs/changelogs/CHANGELOG-api.md | expanded (+19 lines) | ~499 |
 | 16:43 | Session end: 1 writes across 1 files (CHANGELOG-api.md) | 1 reads | ~5011 tok |
+| 16:44 | Session end: 1 writes across 1 files (CHANGELOG-api.md) | 1 reads | ~5011 tok |
+| 16:45 | Edited admin/src/components/flags/feature-flags-tab.tsx | CSS: account_id, account_name | ~98 |
+| 16:46 | Edited admin/src/components/flags/feature-flags-tab.tsx | CSS: accounts | ~64 |
+| 16:46 | Edited admin/src/components/flags/feature-flags-tab.tsx | 3→3 lines | ~47 |
+| 16:46 | Edited admin/src/components/flags/feature-flags-tab.tsx | CSS: account_id | ~123 |
+| 16:46 | Edited admin/src/components/flags/feature-flags-tab.tsx | 15→17 lines | ~123 |
+| 16:46 | Edited admin/src/components/flags/feature-flags-tab.tsx | CSS: scope, color | ~124 |
+| 16:46 | Edited admin/src/components/flags/feature-flags-tab.tsx | CSS: accounts | ~209 |
+| 16:46 | Edited admin/src/components/flags/feature-flags-tab.tsx | CSS: true | ~65 |
+| 16:46 | Edited admin/src/components/flags/feature-flags-tab.tsx | 11→9 lines | ~68 |
+| 16:46 | Edited admin/src/components/flags/feature-flags-tab.tsx | added 1 condition(s) | ~604 |
+| 16:47 | Edited admin/src/components/flags/feature-flags-tab.tsx | 7→7 lines | ~50 |
+| 16:47 | Edited admin/src/components/flags/feature-flags-tab.tsx | expanded (+6 lines) | ~94 |
+| 16:47 | Edited admin/src/components/flags/flags-tabs.tsx | CSS: accounts | ~88 |
+| 16:47 | Edited admin/src/components/flags/flags-tabs.tsx | 5→10 lines | ~75 |
+| 16:47 | Edited admin/src/app/(operator)/flags/page.tsx | CSS: account_id, account_name | ~96 |
+| 16:47 | Edited admin/src/app/(operator)/flags/page.tsx | 14→17 lines | ~199 |
+| 16:47 | Edited admin/src/app/(operator)/flags/page.tsx | CSS: accounts, account_id, account_name | ~273 |
+| 16:47 | Edited admin/src/app/(operator)/flags/page.tsx | 7→8 lines | ~53 |
+| 16:49 | Edited docs/ADRs/ADR-0056-account-scoped-feature-flags.md | 2→2 lines | ~15 |
+| 16:49 | Edited docs/ADRs/ADR-0056-account-scoped-feature-flags.md | 11→15 lines | ~391 |
+| 16:50 | Edited docs/ADRs/ADR-index.md | inline fix | ~46 |
+| 16:50 | Edited docs/changelogs/CHANGELOG-dashboard.md | expanded (+17 lines) | ~384 |
+| 16:52 | Edited docs/STATUS.md | modified feat() | ~76 |
+| 16:52 | Edited docs/STATUS.md | inline fix | ~157 |
+| 16:52 | Edited docs/STATUS.md | 3→3 lines | ~12 |
+| 16:52 | Edited docs/STATUS.md | 4→6 lines | ~194 |
+| 16:53 | Edited docs/STATUS.md | 7→5 lines | ~50 |
+| 16:53 | Edited docs/STATUS.md | 8→3 lines | ~26 |
+| 16:53 | Edited docs/STATUS.md | 157 → 158 | ~16 |
+| 16:53 | Edited docs/STATUS.md | modified Late() | ~350 |
+| 16:53 | Session end: 31 writes across 8 files (CHANGELOG-api.md, feature-flags-tab.tsx, flags-tabs.tsx, page.tsx, ADR-0056-account-scoped-feature-flags.md) | 12 reads | ~49758 tok |
+| 16:57 | Created supabase/migrations/20260801000002_rpc_artefact_revoke.sql | — | ~1093 |
+| 16:58 | Created app/src/lib/consent/revoke.ts | — | ~532 |
+| 17:20 | Created app/src/app/api/v1/consent/artefacts/[id]/revoke/route.ts | — | ~1240 |
+| 17:21 | Created tests/integration/consent-revoke.test.ts | — | ~2726 |
+| 17:23 | Session end: 35 writes across 12 files (CHANGELOG-api.md, feature-flags-tab.tsx, flags-tabs.tsx, page.tsx, ADR-0056-account-scoped-feature-flags.md) | 12 reads | ~55427 tok |
+| 17:24 | Edited app/public/openapi.yaml | expanded (+28 lines) | ~417 |
+| 17:24 | Edited app/public/openapi.yaml | expanded (+55 lines) | ~623 |
+| 17:24 | Edited docs/ADRs/ADR-1002-dpdp-section6-runtime-enforcement.md | expanded (+19 lines) | ~700 |
+| 17:25 | Edited docs/changelogs/CHANGELOG-schema.md | expanded (+14 lines) | ~427 |
+| 17:25 | Edited docs/changelogs/CHANGELOG-api.md | expanded (+16 lines) | ~319 |
+| 17:28 | Created docs/ADRs/ADR-0501-marketing-site-scaffold.md | — | ~2248 |
+| 17:28 | Edited docs/ADRs/ADR-index.md | modified ranges() | ~284 |
+| 17:28 | Created marketing/package.json | — | ~172 |
+| 17:28 | Created marketing/next.config.ts | — | ~85 |
+| 17:28 | Created marketing/tsconfig.json | — | ~102 |
+| 17:28 | Created marketing/postcss.config.mjs | — | ~25 |
+| 17:28 | Created marketing/eslint.config.mjs | — | ~91 |
+| 17:28 | Created marketing/vercel.json | — | ~17 |
+| 17:28 | Created marketing/.gitignore | — | ~19 |
+| 17:29 | Created marketing/src/app/layout.tsx | — | ~430 |
+| 17:29 | Created marketing/src/app/globals.css | — | ~70 |
+| 17:29 | Created marketing/src/app/page.tsx | — | ~117 |
+| 17:29 | Created marketing/src/app/robots.ts | — | ~95 |
+| 17:29 | Created marketing/public/downloads/.gitkeep | — | ~0 |
+| 17:29 | Edited package.json | inline fix | ~20 |
+| 17:34 | Created docs/changelogs/CHANGELOG-marketing.md | — | ~640 |
+| 17:34 | Edited docs/ADRs/ADR-0501-marketing-site-scaffold.md | 2→2 lines | ~29 |
+| 17:34 | Edited docs/ADRs/ADR-0501-marketing-site-scaffold.md | expanded (+7 lines) | ~546 |
+| 17:35 | Session end: 58 writes across 28 files (CHANGELOG-api.md, feature-flags-tab.tsx, flags-tabs.tsx, page.tsx, ADR-0056-account-scoped-feature-flags.md) | 17 reads | ~64802 tok |
+| 17:46 | Session end: 58 writes across 28 files (CHANGELOG-api.md, feature-flags-tab.tsx, flags-tabs.tsx, page.tsx, ADR-0056-account-scoped-feature-flags.md) | 18 reads | ~64802 tok |
+| 18:06 | Created marketing/src/lib/routes.ts | — | ~387 |
+| 18:06 | Created marketing/src/components/logo.tsx | — | ~483 |
+| 18:06 | Created marketing/src/components/nav.tsx | — | ~511 |
+| 18:06 | Created marketing/src/components/footer.tsx | — | ~1119 |

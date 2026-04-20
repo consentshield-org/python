@@ -252,19 +252,38 @@ bun run lint — PASS (0 errors, 0 warnings)
 **Estimated effort:** 2 days
 
 **Deliverables:**
-- [ ] `POST /v1/consent/artefacts/{id}/revoke`
-- [ ] Body: `{ reason_code, reason_notes?, actor_type: "user" | "operator" | "system" }`
-- [ ] Re-uses existing `artefact_revocations` INSERT path (ADR-0022 cascade)
-- [ ] Idempotency: already-revoked → 200 with existing `revocation_record_id`, not 409
-- [ ] Scope: `write:artefacts`
+- [x] `POST /v1/consent/artefacts/{id}/revoke` — handler reads body `{ reason_code, reason_notes?, actor_type: "user" | "operator" | "system", actor_ref? }`. Scope `write:artefacts`. 422 for missing/unknown fields; 404 for cross-org or nonexistent; 409 for terminal states; 200 for both new and idempotent-replay.
+- [x] `rpc_artefact_revoke(org, artefact_id, reason_code, reason_notes, actor_type, actor_ref)` SECURITY DEFINER — migration 20260801000002. Validates artefact ownership, short-circuits for already-revoked, rejects terminal states (expired/replaced), maps API `actor_type` → DB `revoked_by_type` (user→data_principal; operator→organisation; system→system), inserts `artefact_revocations` row. The ADR-0022 cascade + ADR-1002 Sprint 1.1 index-preservation fix handle the rest of the state transition.
+- [x] `revokeArtefact()` helper + typed `RevokeEnvelope` / `RevokeError` kinds.
+- [x] OpenAPI: `RevokeRequest` + `RevokeResponse` schemas + `/consent/artefacts/{id}/revoke` POST path.
 
 **Testing plan:**
-- [ ] Revoke active artefact → status transitions to `revoked`; cascade trigger fires; deletion receipts created per `purpose_connector_mappings`
-- [ ] Idempotent replay: same artefact → 200 with same `revocation_record_id`
-- [ ] Revoke already-expired artefact → 409 (expired is terminal)
-- [ ] Revoke replaced artefact → 409 (replaced is terminal)
+- [x] Revoke active artefact → `consent_artefacts.status='revoked'`; `consent_artefact_index.validity_state='revoked'` + `revoked_at` + `revocation_record_id` all populated (cascade trigger verified end-to-end).
+- [x] Post-revoke `verify` returns `status=revoked` with the same `revocation_record_id` pointer (closes read/revoke loop).
+- [x] Operator actor → DB `revoked_by_type='organisation'`; `actor_ref` persisted on the revocation row; `reason_code` persisted as `reason`.
+- [x] Idempotent replay: second call returns `idempotent_replay=true` with the original `revocation_record_id` — no new `artefact_revocations` row.
+- [x] Revoke already-expired → 409 `artefact_terminal_state: expired`.
+- [x] Revoke already-replaced → 409 `artefact_terminal_state: replaced`.
+- [x] Nonexistent artefact_id → 404 `artefact_not_found`.
+- [x] Cross-org artefact → 404 `artefact_not_found` (not leaked as terminal).
+- [x] Empty reason_code → `reason_code_missing`.
+- [x] Unknown `actor_type` (e.g. `regulator`) → `unknown_actor_type`.
+- [ ] Deletion-receipts fan-out observation — deferred to Sprint 4.1 when the deletion-trigger route lands and the connector fixture is in place.
 
-**Status:** `[ ] planned`
+### Test Results — 2026-04-20
+
+```
+bunx vitest run tests/integration/consent-revoke.test.ts
+10/10 PASS (11.85s)
+
+bunx vitest run tests/integration/ tests/depa/
+97/97 PASS (118.40s) — no regressions
+
+cd app && bun run build — PASS; /api/v1/consent/artefacts/[id]/revoke in route manifest
+bun run lint — PASS
+```
+
+**Status:** `[x] complete — 2026-04-20`
 
 ### Phase 4: Deletion API (G-040)
 

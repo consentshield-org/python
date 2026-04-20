@@ -321,6 +321,34 @@ components:
           type: string
           nullable: true
 
+    RevokeRequest:
+      type: object
+      required: [reason_code, actor_type]
+      properties:
+        reason_code:
+          type: string
+          description: "Machine-readable reason tag, e.g. user_withdrawal, user_preference_change, business_withdrawal, data_breach, regulatory_instruction."
+        reason_notes:
+          type: string
+          description: Optional free-text notes preserved on the revocation row.
+        actor_type:
+          type: string
+          enum: [user, operator, system]
+        actor_ref:
+          type: string
+          description: "Optional caller-supplied reference (user_id, operator_email, system task id). Stored on the revocation row for §11 audit."
+
+    RevokeResponse:
+      type: object
+      required: [artefact_id, status, revocation_record_id, idempotent_replay]
+      properties:
+        artefact_id:          { type: string }
+        status:               { type: string, enum: [revoked] }
+        revocation_record_id: { type: string, format: uuid }
+        idempotent_replay:
+          type: boolean
+          description: true when the artefact was already revoked and this response is a replay of the original revocation.
+
   responses:
     Unauthorized:
       description: Missing, malformed, or invalid API key.
@@ -539,6 +567,61 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "410": { $ref: "#/components/responses/Gone" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /consent/artefacts/{id}/revoke:
+    post:
+      operationId: consentArtefactRevoke
+      summary: Revoke a consent artefact
+      description: >
+        Records a revocation event for the artefact. The ADR-0022 cascade
+        trigger flips consent_artefacts.status to `revoked` and updates the
+        consent_artefact_index. Idempotent — calling revoke on an already-
+        revoked artefact returns 200 with the existing revocation_record_id.
+        Terminal states (`expired`, `replaced`) cannot be revoked and return 409.
+      tags: [Consent]
+      security:
+        - bearerAuth: [write:artefacts]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RevokeRequest"
+      responses:
+        "200":
+          description: Revoked (new or idempotent replay).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevokeResponse"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403":
+          description: Key is valid but lacks write:artefacts scope.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "404":
+          description: No artefact with that id belongs to the key's org.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "409":
+          description: Artefact is in a terminal state (expired or replaced) and cannot be revoked.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "410": { $ref: "#/components/responses/Gone" }
+        "422":
+          description: Missing reason_code, malformed body, or unknown actor_type.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /consent/events:

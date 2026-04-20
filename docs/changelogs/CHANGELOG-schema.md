@@ -2,6 +2,20 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-1002 Sprint 3.2] — 2026-04-20
+
+**ADR:** ADR-1002 — DPDP §6 runtime enforcement
+**Sprint:** Sprint 3.2 — Revoke artefact RPC
+
+### Added
+- `20260801000002_rpc_artefact_revoke.sql`:
+  - `public.rpc_artefact_revoke(p_org_id, p_artefact_id, p_reason_code, p_reason_notes, p_actor_type, p_actor_ref) returns jsonb` — SECURITY DEFINER. Validates artefact ownership (P0001 `artefact_not_found`); short-circuits for already-revoked artefacts with `idempotent_replay=true` and returns the existing `revocation_record_id` (from `consent_artefact_index`, falling back to the most recent `artefact_revocations` row for pre-Sprint-1.1 data); rejects terminal states with 22023 `artefact_terminal_state: <state>`; maps API `actor_type` → DB `revoked_by_type` (user→data_principal, operator→organisation, system→system); inserts `artefact_revocations` row. The ADR-0022 cascade trigger + ADR-1002 Sprint 1.1 index-preservation fix handle state transitions atomically.
+  - Grant: `service_role` only.
+
+### Tested
+- [x] 10/10 PASS — `tests/integration/consent-revoke.test.ts`: revoke active → cascade verified on both consent_artefacts and consent_artefact_index; post-revoke verify returns `revoked` with pointer; operator actor persisted correctly; idempotent replay returns same id; terminal states (expired + replaced) → artefact_terminal_state; nonexistent + cross-org → artefact_not_found (not leaked); empty reason_code; unknown actor_type.
+- [x] 97/97 full integration + DEPA suite — no regressions.
+
 ## [ADR-1002 Sprint 3.1] — 2026-04-20
 
 **ADR:** ADR-1002 — DPDP §6 runtime enforcement

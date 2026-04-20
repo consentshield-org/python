@@ -6,6 +6,96 @@
       "count": 1,
       "tokens": 4476,
       "first_read": "2026-04-20T11:13:45.323Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/admin/src/app/(operator)/flags/page.tsx": {
+      "count": 1,
+      "tokens": 1110,
+      "first_read": "2026-04-20T11:14:37.932Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/admin/src/components/flags/feature-flags-tab.tsx": {
+      "count": 1,
+      "tokens": 4124,
+      "first_read": "2026-04-20T11:14:41.128Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/admin/src/app/(operator)/flags/actions.ts": {
+      "count": 1,
+      "tokens": 1084,
+      "first_read": "2026-04-20T11:14:44.329Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/admin/src/components/flags/flags-tabs.tsx": {
+      "count": 1,
+      "tokens": 469,
+      "first_read": "2026-04-20T11:14:47.732Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/supabase/migrations/20260730000001_account_scoped_feature_flags.sql": {
+      "count": 1,
+      "tokens": 2550,
+      "first_read": "2026-04-20T11:14:51.898Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/admin/src/app/(operator)/billing/disputes/actions.ts": {
+      "count": 1,
+      "tokens": 3905,
+      "first_read": "2026-04-20T11:15:35.550Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/supabase/migrations/20260428000002_accounts_and_plans.sql": {
+      "count": 1,
+      "tokens": 6123,
+      "first_read": "2026-04-20T11:15:49.192Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-0056-account-scoped-feature-flags.md": {
+      "count": 1,
+      "tokens": 1347,
+      "first_read": "2026-04-20T11:19:24.263Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-index.md": {
+      "count": 3,
+      "tokens": 2355,
+      "first_read": "2026-04-20T11:19:55.941Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/changelogs/CHANGELOG-dashboard.md": {
+      "count": 1,
+      "tokens": 13819,
+      "first_read": "2026-04-20T11:20:17.459Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/STATUS.md": {
+      "count": 4,
+      "tokens": 3570,
+      "first_read": "2026-04-20T11:20:37.105Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/package.json": {
+      "count": 1,
+      "tokens": 117,
+      "first_read": "2026-04-20T11:56:12.962Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/admin/package.json": {
+      "count": 1,
+      "tokens": 117,
+      "first_read": "2026-04-20T11:56:15.646Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/admin/next.config.ts": {
+      "count": 1,
+      "tokens": 548,
+      "first_read": "2026-04-20T11:56:23.283Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/admin/tsconfig.json": {
+      "count": 1,
+      "tokens": 206,
+      "first_read": "2026-04-20T11:56:26.179Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/admin/src/app/layout.tsx": {
+      "count": 1,
+      "tokens": 529,
+      "first_read": "2026-04-20T11:56:59.759Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/design/screen designs and ux/marketing-site/consentshield-site-v2.html": {
+      "count": 5,
+      "tokens": 0,
+      "first_read": "2026-04-20T12:15:29.790Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/admin/public/brand/app-icon-primary.svg": {
+      "count": 1,
+      "tokens": 0,
+      "first_read": "2026-04-20T12:22:39.332Z"
     }
   },
   "files_written": [
@@ -14,14 +104,413 @@
       "action": "edit",
       "tokens": 535,
       "at": "2026-04-20T11:13:45.363Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/admin/src/components/flags/feature-flags-tab.tsx",
+      "action": "edit",
+      "tokens": 98,
+      "at": "2026-04-20T11:15:58.909Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/admin/src/components/flags/feature-flags-tab.tsx",
+      "action": "edit",
+      "tokens": 64,
+      "at": "2026-04-20T11:16:02.994Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/admin/src/components/flags/feature-flags-tab.tsx",
+      "action": "edit",
+      "tokens": 47,
+      "at": "2026-04-20T11:16:07.910Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/admin/src/components/flags/feature-flags-tab.tsx",
+      "action": "edit",
+      "tokens": 123,
+      "at": "2026-04-20T11:16:13.364Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/admin/src/components/flags/feature-flags-tab.tsx",
+      "action": "edit",
+      "tokens": 123,
+      "at": "2026-04-20T11:16:19.783Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/admin/src/components/flags/feature-flags-tab.tsx",
+      "action": "edit",
+      "tokens": 124,
+      "at": "2026-04-20T11:16:25.192Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/admin/src/components/flags/feature-flags-tab.tsx",
+      "action": "edit",
+      "tokens": 209,
+      "at": "2026-04-20T11:16:35.917Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/admin/src/components/flags/feature-flags-tab.tsx",
+      "action": "edit",
+      "tokens": 65,
+      "at": "2026-04-20T11:16:40.710Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/admin/src/components/flags/feature-flags-tab.tsx",
+      "action": "edit",
+      "tokens": 68,
+      "at": "2026-04-20T11:16:47.050Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/admin/src/components/flags/feature-flags-tab.tsx",
+      "action": "edit",
+      "tokens": 604,
+      "at": "2026-04-20T11:16:59.326Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/admin/src/components/flags/feature-flags-tab.tsx",
+      "action": "edit",
+      "tokens": 50,
+      "at": "2026-04-20T11:17:05.136Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/admin/src/components/flags/feature-flags-tab.tsx",
+      "action": "edit",
+      "tokens": 94,
+      "at": "2026-04-20T11:17:10.378Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/admin/src/components/flags/flags-tabs.tsx",
+      "action": "edit",
+      "tokens": 88,
+      "at": "2026-04-20T11:17:20.577Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/admin/src/components/flags/flags-tabs.tsx",
+      "action": "edit",
+      "tokens": 75,
+      "at": "2026-04-20T11:17:25.035Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/admin/src/app/(operator)/flags/page.tsx",
+      "action": "edit",
+      "tokens": 96,
+      "at": "2026-04-20T11:17:30.428Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/admin/src/app/(operator)/flags/page.tsx",
+      "action": "edit",
+      "tokens": 199,
+      "at": "2026-04-20T11:17:37.384Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/admin/src/app/(operator)/flags/page.tsx",
+      "action": "edit",
+      "tokens": 273,
+      "at": "2026-04-20T11:17:46.937Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/admin/src/app/(operator)/flags/page.tsx",
+      "action": "edit",
+      "tokens": 53,
+      "at": "2026-04-20T11:17:51.154Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-0056-account-scoped-feature-flags.md",
+      "action": "edit",
+      "tokens": 16,
+      "at": "2026-04-20T11:19:29.063Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-0056-account-scoped-feature-flags.md",
+      "action": "edit",
+      "tokens": 419,
+      "at": "2026-04-20T11:19:42.535Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-index.md",
+      "action": "edit",
+      "tokens": 49,
+      "at": "2026-04-20T11:20:00.360Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/changelogs/CHANGELOG-dashboard.md",
+      "action": "edit",
+      "tokens": 412,
+      "at": "2026-04-20T11:20:31.603Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/STATUS.md",
+      "action": "edit",
+      "tokens": 81,
+      "at": "2026-04-20T11:22:22.619Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/STATUS.md",
+      "action": "edit",
+      "tokens": 168,
+      "at": "2026-04-20T11:22:32.435Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/STATUS.md",
+      "action": "edit",
+      "tokens": 12,
+      "at": "2026-04-20T11:22:36.435Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/STATUS.md",
+      "action": "edit",
+      "tokens": 208,
+      "at": "2026-04-20T11:22:55.538Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/STATUS.md",
+      "action": "edit",
+      "tokens": 53,
+      "at": "2026-04-20T11:23:01.077Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/STATUS.md",
+      "action": "edit",
+      "tokens": 28,
+      "at": "2026-04-20T11:23:09.307Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/STATUS.md",
+      "action": "edit",
+      "tokens": 17,
+      "at": "2026-04-20T11:23:20.356Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/STATUS.md",
+      "action": "edit",
+      "tokens": 375,
+      "at": "2026-04-20T11:23:37.064Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/supabase/migrations/20260801000002_rpc_artefact_revoke.sql",
+      "action": "create",
+      "tokens": 1171,
+      "at": "2026-04-20T11:27:55.356Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/src/lib/consent/revoke.ts",
+      "action": "create",
+      "tokens": 532,
+      "at": "2026-04-20T11:28:16.647Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/src/app/api/v1/consent/artefacts/[id]/revoke/route.ts",
+      "action": "create",
+      "tokens": 1240,
+      "at": "2026-04-20T11:50:32.213Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/tests/integration/consent-revoke.test.ts",
+      "action": "create",
+      "tokens": 2726,
+      "at": "2026-04-20T11:51:13.117Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/public/openapi.yaml",
+      "action": "edit",
+      "tokens": 417,
+      "at": "2026-04-20T11:54:13.994Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/public/openapi.yaml",
+      "action": "edit",
+      "tokens": 623,
+      "at": "2026-04-20T11:54:26.591Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-1002-dpdp-section6-runtime-enforcement.md",
+      "action": "edit",
+      "tokens": 750,
+      "at": "2026-04-20T11:54:52.698Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/changelogs/CHANGELOG-schema.md",
+      "action": "edit",
+      "tokens": 458,
+      "at": "2026-04-20T11:55:05.788Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/changelogs/CHANGELOG-api.md",
+      "action": "edit",
+      "tokens": 342,
+      "at": "2026-04-20T11:55:16.898Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-0501-marketing-site-scaffold.md",
+      "action": "create",
+      "tokens": 2409,
+      "at": "2026-04-20T11:58:06.239Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-index.md",
+      "action": "edit",
+      "tokens": 304,
+      "at": "2026-04-20T11:58:22.500Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/package.json",
+      "action": "create",
+      "tokens": 172,
+      "at": "2026-04-20T11:58:32.800Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/next.config.ts",
+      "action": "create",
+      "tokens": 85,
+      "at": "2026-04-20T11:58:37.799Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/tsconfig.json",
+      "action": "create",
+      "tokens": 102,
+      "at": "2026-04-20T11:58:42.695Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/postcss.config.mjs",
+      "action": "create",
+      "tokens": 27,
+      "at": "2026-04-20T11:58:46.087Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/eslint.config.mjs",
+      "action": "create",
+      "tokens": 98,
+      "at": "2026-04-20T11:58:50.604Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/vercel.json",
+      "action": "create",
+      "tokens": 17,
+      "at": "2026-04-20T11:58:53.754Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/.gitignore",
+      "action": "create",
+      "tokens": 20,
+      "at": "2026-04-20T11:58:57.171Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/src/app/layout.tsx",
+      "action": "create",
+      "tokens": 430,
+      "at": "2026-04-20T11:59:06.562Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/src/app/globals.css",
+      "action": "create",
+      "tokens": 70,
+      "at": "2026-04-20T11:59:11.976Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/src/app/page.tsx",
+      "action": "create",
+      "tokens": 117,
+      "at": "2026-04-20T11:59:16.878Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/src/app/robots.ts",
+      "action": "create",
+      "tokens": 95,
+      "at": "2026-04-20T11:59:21.520Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/public/downloads/.gitkeep",
+      "action": "create",
+      "tokens": 0,
+      "at": "2026-04-20T11:59:24.915Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/package.json",
+      "action": "edit",
+      "tokens": 20,
+      "at": "2026-04-20T11:59:31.911Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/changelogs/CHANGELOG-marketing.md",
+      "action": "create",
+      "tokens": 686,
+      "at": "2026-04-20T12:04:31.319Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-0501-marketing-site-scaffold.md",
+      "action": "edit",
+      "tokens": 31,
+      "at": "2026-04-20T12:04:35.787Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-0501-marketing-site-scaffold.md",
+      "action": "edit",
+      "tokens": 585,
+      "at": "2026-04-20T12:04:54.471Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/src/lib/routes.ts",
+      "action": "create",
+      "tokens": 387,
+      "at": "2026-04-20T12:36:01.818Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/src/components/logo.tsx",
+      "action": "create",
+      "tokens": 483,
+      "at": "2026-04-20T12:36:13.200Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/src/components/nav.tsx",
+      "action": "create",
+      "tokens": 511,
+      "at": "2026-04-20T12:36:23.196Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/src/components/footer.tsx",
+      "action": "create",
+      "tokens": 1119,
+      "at": "2026-04-20T12:36:42.020Z"
     }
   ],
   "edit_counts": {
-    "docs/changelogs/CHANGELOG-api.md": 1
+    "docs/changelogs/CHANGELOG-api.md": 2,
+    "admin/src/components/flags/feature-flags-tab.tsx": 12,
+    "admin/src/components/flags/flags-tabs.tsx": 2,
+    "admin/src/app/(operator)/flags/page.tsx": 4,
+    "docs/ADRs/ADR-0056-account-scoped-feature-flags.md": 2,
+    "docs/ADRs/ADR-index.md": 2,
+    "docs/changelogs/CHANGELOG-dashboard.md": 1,
+    "docs/STATUS.md": 8,
+    "supabase/migrations/20260801000002_rpc_artefact_revoke.sql": 1,
+    "app/src/lib/consent/revoke.ts": 1,
+    "app/src/app/api/v1/consent/artefacts/[id]/revoke/route.ts": 1,
+    "tests/integration/consent-revoke.test.ts": 1,
+    "app/public/openapi.yaml": 2,
+    "docs/ADRs/ADR-1002-dpdp-section6-runtime-enforcement.md": 1,
+    "docs/changelogs/CHANGELOG-schema.md": 1,
+    "docs/ADRs/ADR-0501-marketing-site-scaffold.md": 3,
+    "marketing/package.json": 1,
+    "marketing/next.config.ts": 1,
+    "marketing/tsconfig.json": 1,
+    "marketing/postcss.config.mjs": 1,
+    "marketing/eslint.config.mjs": 1,
+    "marketing/vercel.json": 1,
+    "marketing/.gitignore": 1,
+    "marketing/src/app/layout.tsx": 1,
+    "marketing/src/app/globals.css": 1,
+    "marketing/src/app/page.tsx": 1,
+    "marketing/src/app/robots.ts": 1,
+    "marketing/public/downloads/.gitkeep": 1,
+    "package.json": 1,
+    "docs/changelogs/CHANGELOG-marketing.md": 1,
+    "marketing/src/lib/routes.ts": 1,
+    "marketing/src/components/logo.tsx": 1,
+    "marketing/src/components/nav.tsx": 1,
+    "marketing/src/components/footer.tsx": 1
   },
-  "anatomy_hits": 1,
-  "anatomy_misses": 0,
-  "repeated_reads_warned": 0,
+  "anatomy_hits": 17,
+  "anatomy_misses": 2,
+  "repeated_reads_warned": 9,
   "cerebrum_warnings": 0,
-  "stop_count": 1
+  "stop_count": 6
 }

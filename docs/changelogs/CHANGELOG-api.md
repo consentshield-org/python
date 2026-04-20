@@ -2,6 +2,22 @@
 
 API route changes.
 
+## [ADR-1002 Sprint 3.2] — 2026-04-20
+
+**ADR:** ADR-1002 — DPDP §6 runtime enforcement
+**Sprint:** Sprint 3.2 — Revoke artefact (`POST /v1/consent/artefacts/{id}/revoke`)
+
+### Added
+- `app/src/app/api/v1/consent/artefacts/[id]/revoke/route.ts` — POST handler. Scope `write:artefacts` (403), 400 for account-scoped keys, JSON+shape validation (422: missing reason_code; actor_type not in user|operator|system; non-string reason_notes/actor_ref), maps RPC errors to 404 (`artefact_not_found`) / 409 (`artefact_terminal_state`) / 422 (`reason_code_missing`, `unknown_actor_type`).
+- `app/src/lib/consent/revoke.ts` — `revokeArtefact(...)` helper + typed `RevokeEnvelope` / `RevokeError`. Service-role client.
+- `app/public/openapi.yaml` — `RevokeRequest` + `RevokeResponse` schemas + `/consent/artefacts/{id}/revoke` POST path with 200/401/403/404/409/410/422/429 matrix.
+
+### Tested
+- [x] 10/10 PASS — `tests/integration/consent-revoke.test.ts`
+- [x] 97/97 full integration + DEPA suite — no regressions
+- [x] `cd app && bun run build` — PASS; revoke route in manifest
+- [x] `bun run lint` — PASS (0 errors, 0 warnings)
+
 ## [ADR-1002 Sprint 3.1] — 2026-04-20
 
 **ADR:** ADR-1002 — DPDP §6 runtime enforcement
