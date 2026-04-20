@@ -2,7 +2,7 @@
 
 (c) 2026 Sudhindra Anegondhi a.d.sudhindra@gmail.com
 
-**Status:** In Progress (Sprints 1.1 + 2.1 + 2.2 shipped 2026-04-21; Sprints 2.3–2.5 + Phases 3–4 pending)
+**Status:** In Progress (Sprints 1.1 + 2.1 + 2.2 + 2.3 shipped 2026-04-21; Sprints 2.4–2.5 + Phases 3–4 pending)
 **Date:** 2026-04-21
 **Phases:** 4
 **Sprints:** 4+ (Phase 1 has one sprint; later phases sized once content + formats land)
@@ -123,10 +123,18 @@ Sprint breakdown:
 
 **Status:** `[x] complete — 2026-04-21`
 
-#### Sprint 2.3 — DEPA + Solutions (pending)
+#### Sprint 2.3 — DEPA + Solutions (shipped 2026-04-21)
 
-- DEPA: depa-hero (with shield SVG), depa-compare table, cta-band with brief download.
-- Solutions: sol-hero, sol-tabs (client component — SaaS/Edtech/D2C/Healthcare/BFSI), 5 sol-panels.
+**Deliverables:**
+
+- [x] `marketing/src/components/sections/depa-hero.tsx` — hero + inlined 340x340 radial shield SVG with 5 orbiting principle dots (P01–P05).
+- [x] `marketing/src/components/sections/depa-compare.tsx` — 7-row capability comparison table (GDPR-adapted vs DEPA-native); rows inlined as typed `Row[]` with rich pos/neg copy.
+- [x] `marketing/src/app/depa/page.tsx` — composes DepaHero + DepaCompare + CtaBand with PDF + DOCX + MD download links + PDF size/page-count meta row.
+- [x] `marketing/src/components/sections/cta-band.tsx` — extended with optional `meta` slot (DEPA uses it for "PDF · 30 pages · 476 KB" + alternate-format links under the primary action row).
+- [x] `marketing/src/components/sections/solutions-tabs.tsx` — client component; renders tab bar + active panel; 5 sectors inlined with full data (tab label, priority, heading, description, 2 stats, 3 features with SVG icons). Active-tab state via `useState`; ARIA roles `tablist` / `tab` / `tabpanel`.
+- [x] `marketing/src/app/solutions/page.tsx` — composes sol-hero + SolutionsTabs + CtaBand.
+
+**Status:** `[x] complete — 2026-04-21`
 
 #### Sprint 2.4 — Pricing + Contact + Legal (pending)
 

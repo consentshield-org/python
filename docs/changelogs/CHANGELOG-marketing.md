@@ -2,6 +2,25 @@
 
 Public marketing site (`marketing/` workspace → `consentshield.in`). New in 2026-04-21.
 
+## [ADR-0501 Sprint 2.3] — 2026-04-21
+
+**ADR:** ADR-0501 — ConsentShield marketing site
+**Sprint:** Phase 2 Sprint 2.3 — DEPA + Solutions
+
+### Added
+- `marketing/src/components/sections/depa-hero.tsx` — DEPA hero + inlined 340x340 radial shield SVG with 5 orbiting principle dots (P01–P05). Port is pixel-faithful to the HTML spec.
+- `marketing/src/components/sections/depa-compare.tsx` — 7-row DEPA-native vs GDPR-adapted capability table. Rows inlined as typed `Row[]` with rich pos/neg copy including nested `<strong>` emphasis.
+- `marketing/src/components/sections/solutions-tabs.tsx` — **client component**. Renders tab bar + active panel for 5 sectors (SaaS, Edtech, D2C, Healthcare, BFSI). Each sector carries tab label, priority badge, scenario heading, description, 2 stats, and 3 features with inline SVG icons. Active-tab state via `useState`; ARIA `tablist` / `tab` / `tabpanel` roles added. Only interactive surface on the site so far.
+- `marketing/src/app/depa/page.tsx` — composes DepaHero + DepaCompare + CtaBand (PDF primary + DOCX + MD alternate links + size/page-count meta row).
+- `marketing/src/app/solutions/page.tsx` — composes sol-hero + SolutionsTabs + CtaBand ("tell us about your vertical").
+
+### Changed
+- `marketing/src/components/sections/cta-band.tsx` — added optional `meta` slot rendered below the action row. Used on the DEPA page for the PDF size + alternate-format links strip.
+
+### Tested
+- [x] `cd marketing && bun run build` — 12 static routes; solutions now statically prerenders despite being a client component on the tabs (only the shell is server-rendered; tab state hydrates client-side).
+- [x] `cd marketing && bun run lint` — 0 errors, 0 warnings.
+
 ## [ADR-0501 Sprint 2.2] — 2026-04-21
 
 **ADR:** ADR-0501 — ConsentShield marketing site
