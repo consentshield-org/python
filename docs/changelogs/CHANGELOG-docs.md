@@ -274,3 +274,12 @@ Source-of-truth docs now match the ADRs that shipped in the 2026-04-17/18 window
 
 ### Changed
 - `docs/ADRs/ADR-index.md` — ADR-0019 added as Proposed (charter, no sprints); ADR-0020 added as Completed (Phase 1 / Sprint 1.1). Reserved-range comment updated.
+
+## [ADR-0050 Sprint 3.2 close + STATUS refresh] — 2026-04-20
+
+**ADR:** ADR-0050 — Admin account-aware billing (close-out)
+
+### Changed
+- `docs/STATUS.md` — Full rewrite to 2026-04-20 snapshot: 50 ADRs completed, both apps inventoried, test suite counts, immediate next steps.
+- `docs/ADRs/ADR-index.md` — ADR-0050 status updated from In Progress → Completed.
+- `docs/ADRs/ADR-0050-admin-account-aware-billing.md` — Sprint 3.1 and 3.2 statuses flipped to complete; search-scope test skip rationale and account_id best-effort note appended.
