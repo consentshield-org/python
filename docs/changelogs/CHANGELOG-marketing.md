@@ -2,6 +2,32 @@
 
 Public marketing site (`marketing/` workspace → `consentshield.in`). New in 2026-04-21.
 
+## [ADR-0501 Sprint 2.4] — 2026-04-21
+
+**ADR:** ADR-0501 — ConsentShield marketing site
+**Sprint:** Phase 2 Sprint 2.4 — Pricing + Contact + Legal (Terms, Privacy, DPA, EU Addendum)
+
+### Added
+- `marketing/src/components/sections/price-toggle.tsx` — client Monthly/Annual pill. Cosmetic per HTML spec.
+- `marketing/src/components/sections/price-table.tsx` — 4-column × 4-group feature grid. Typed `Row[]` → `PriceCell` helper renders `'✓'` / `'—'` / free text.
+- `marketing/src/components/sections/bfsi-callout.tsx` — BFSI specialist-track pricing callout.
+- `marketing/src/app/pricing/page.tsx` — full Pricing page content.
+- `marketing/src/components/sections/contact-form.tsx` — client; uncontrolled inputs; `preventDefault` + local acknowledgement state. Real submit wiring (Resend + Turnstile + BotID) deferred to Phase 4.
+- `marketing/src/app/contact/page.tsx` — contact options grid (5 cards including Architecture Brief download link) + ContactForm.
+- `marketing/src/components/sections/legal-layout.tsx` — shared hero + TOC-on-left + article-on-right layout for Terms/Privacy/DPA.
+- `marketing/src/app/terms/page.tsx` — full 12-section Terms of Service content.
+- `marketing/src/app/privacy/page.tsx` — full 12-section Privacy Policy content with Grievance Officer block.
+- `marketing/src/components/sections/dpa-signing-card.tsx` — client Execute Digitally card; uncontrolled inputs + required checkbox; preventDefault + acknowledgement state.
+- `marketing/src/app/dpa/page.tsx` — full DPA (12 sections + Annexes 1–3) + EU Addendum (9 sections, with SCC election table via `SccRow` helper) + DpaSigningCard + final CtaBand. Annex 3 sub-processor table rendered via `SubprocRow` helper.
+
+### Tested
+- [x] `cd marketing && bun run build` — 12 static routes, clean (1.6s cold). All 4 new pages (pricing/contact/terms/privacy/dpa) prerender as static content; client components (PriceToggle, ContactForm, DpaSigningCard) hydrate client-side.
+- [x] `cd marketing && bun run lint` — 0 errors, 0 warnings.
+
+### Deferred (Phase 4)
+- Contact form backend + Turnstile + BotID.
+- DPA signing record persistence (signatory + IP + timestamp + DPA version → admin/billing).
+
 ## [ADR-0501 Sprint 2.3] — 2026-04-21
 
 **ADR:** ADR-0501 — ConsentShield marketing site

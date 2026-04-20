@@ -2,7 +2,7 @@
 
 (c) 2026 Sudhindra Anegondhi a.d.sudhindra@gmail.com
 
-**Status:** In Progress (Sprints 1.1 + 2.1 + 2.2 + 2.3 shipped 2026-04-21; Sprints 2.4–2.5 + Phases 3–4 pending)
+**Status:** In Progress (Sprints 1.1 + 2.1 + 2.2 + 2.3 + 2.4 shipped 2026-04-21; Sprint 2.5 + Phases 3–4 pending)
 **Date:** 2026-04-21
 **Phases:** 4
 **Sprints:** 4+ (Phase 1 has one sprint; later phases sized once content + formats land)
@@ -136,11 +136,23 @@ Sprint breakdown:
 
 **Status:** `[x] complete — 2026-04-21`
 
-#### Sprint 2.4 — Pricing + Contact + Legal (pending)
+#### Sprint 2.4 — Pricing + Contact + Legal (shipped 2026-04-21)
 
-- Pricing: price-hero with monthly/annual toggle (client component), 4-tier price-table, BFSI callout.
-- Contact: contact options grid + contact form (form submission itself deferred to Phase 4 with Turnstile + BotID).
-- Legal: terms, privacy, dpa (dpa includes the digital-execution signing card).
+**Deliverables:**
+
+- [x] `marketing/src/components/sections/price-toggle.tsx` — client Monthly/Annual pill (cosmetic per HTML spec; table shows both ranges in every row).
+- [x] `marketing/src/components/sections/price-table.tsx` — 4-column feature grid across 4 groups (Compliance foundation, Enforcement depth, Multi-framework + ecosystem, Enterprise-only). Typed `Row[]` cells accept `'✓'`, `'—'`, or free text; rendered via `PriceCell` helper.
+- [x] `marketing/src/components/sections/bfsi-callout.tsx` — specialist track callout with range pricing.
+- [x] `marketing/src/app/pricing/page.tsx` — composes PriceHero + PriceToggle + PriceTable + BfsiCallout + add-ons note + CtaBand.
+- [x] `marketing/src/components/sections/contact-form.tsx` — client; uncontrolled inputs; preventDefaults on submit and shows acknowledgement state. Real submit wiring (Resend + Turnstile + BotID) deferred to Phase 4.
+- [x] `marketing/src/app/contact/page.tsx` — contact-hero with 5 options (Book demo / Partner / CA&Legal / Technical walkthrough / Architecture Brief download link) + contact form.
+- [x] `marketing/src/components/sections/legal-layout.tsx` — shared hero + TOC-on-left + article-on-right. Used by terms/privacy/dpa. Auto-numbered section counter inherited from `.legal-content` CSS.
+- [x] `marketing/src/app/terms/page.tsx` — full Terms content, 12 sections. All `data-nav` jumps converted to `<Link>`.
+- [x] `marketing/src/app/privacy/page.tsx` — full Privacy Policy, 12 sections, grievance officer contact block.
+- [x] `marketing/src/components/sections/dpa-signing-card.tsx` — client; Execute Digitally card; uncontrolled inputs + required checkbox; preventDefault + acknowledgement state.
+- [x] `marketing/src/app/dpa/page.tsx` — DPA (12 sections + 3 annexes) + divider + EU Addendum (9 sections, with SCC election table) + DpaSigningCard + final CtaBand. Annex 3 sub-processor table + SCC clause table rendered via typed `SubprocRow` / `SccRow` helpers.
+
+**Status:** `[x] complete — 2026-04-21`
 
 #### Sprint 2.5 — How-it-works demo modal (pending)
 
