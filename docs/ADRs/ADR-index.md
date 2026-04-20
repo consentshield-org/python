@@ -53,7 +53,7 @@ All Architecture Decision Records for ConsentShield, in chronological order.
 | ADR-0047 | Customer membership lifecycle (role change + remove) + membership_audit_log + single-account-per-identity invariant | Completed | 2026-04-18 | 1 | 2 |
 | ADR-0048 | Admin Accounts panel + ADR-0033/34 deviation closeout (suspend_account / account picker / Worker HMAC+Origin logging) | Completed | 2026-04-18 | 2 | 3 |
 | ADR-0049 | Security observability ingestion — rate_limit_events + sentry_events (closes V2-S1/S2) | Completed | 2026-04-18 | 2 | 4 |
-| ADR-0050 | Admin account-aware billing — issuer entities + invoices + GST + dispute workspace | In Progress | 2026-04-18 | 3 | 6 |
+| ADR-0050 | Admin account-aware billing — issuer entities + invoices + GST + dispute workspace | Completed | 2026-04-20 | 3 | 6 |
 | ADR-1001 | v2 Whitepaper Phase 1 — Truth-in-marketing + Public API foundation (`cs_live_*` keys + Bearer middleware) | In Progress | 2026-04-19 | 3 | 7 |
 | ADR-1002 | v2 Whitepaper Phase 2 — DPDP §6 runtime enforcement (`/v1/consent/verify` + `record` + artefact ops + deletion API) | Proposed | 2026-04-19 | 5 | 7 |
 | ADR-1003 | v2 Whitepaper Phase 3 — Processor posture (`storage_mode` enforcement + BYOS + Zero-Storage + Healthcare seed + sandbox) | Proposed | 2026-04-19 | 5 | 8 |
