@@ -2,6 +2,19 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-1002 Sprint 1.3] — 2026-04-20
+
+**ADR:** ADR-1002 — DPDP §6 runtime enforcement
+**Sprint:** Sprint 1.3 — `rpc_consent_verify_batch` RPC for `/v1/consent/verify/batch`
+
+### Added
+- `20260720000001_rpc_consent_verify_batch.sql`:
+  - `public.rpc_consent_verify_batch(p_org_id, p_property_id, p_identifier_type, p_purpose_code, p_identifiers text[]) returns jsonb` — SECURITY DEFINER. Hashes the full input array via `unnest WITH ORDINALITY`, then a single LATERAL `LIMIT 1` per element against the hot-path partial index `(org_id, property_id, identifier_hash, purpose_code) WHERE validity_state='active' AND identifier_hash IS NOT NULL`. Response rows preserve input order via the ORDINALITY tag. Server-stamped `evaluated_at` applies to every row in the batch. Defense-in-depth: raises `identifiers_too_large` at > 10,000 elements (the route handler caps at the same limit).
+  - Grant: `service_role` only.
+
+### Tested
+- [x] 8/8 PASS — `tests/integration/consent-verify-batch.test.ts`: ordered 5-element mixed fixture; 25-element interleaved ordering; 10,001 → identifiers_too_large; 0 → identifiers_empty; cross-org property_not_found; unknown type → invalid_identifier; all-or-nothing on malformed mid-batch; 1,000-element perf < 5 s.
+
 ## [ADR-1002 Sprint 1.2] — 2026-04-20
 
 **ADR:** ADR-1002 — DPDP §6 runtime enforcement

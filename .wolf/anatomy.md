@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-20T05:38:40.191Z
-> Files: 822 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-20T06:07:06.034Z
+> Files: 828 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../tmp/
 
@@ -163,13 +163,13 @@
 
 ## admin/src/app/(operator)/billing/disputes/
 
-- `actions.ts` — Exports DisputeRow, listDisputes, LedgerEventRow, getDisputeDetail + 2 more (~2339 tok)
+- `actions.ts` — Exports DisputeRow, listDisputes, LedgerEventRow, getDisputeDetail + 4 more (~2778 tok)
 - `page.tsx` — statusBadge — renders table (~1350 tok)
 
 ## admin/src/app/(operator)/billing/disputes/[disputeId]/
 
-- `dispute-actions.tsx` — STATE_OPTIONS (~1283 tok)
-- `page.tsx` — inr — renders table (~2637 tok)
+- `dispute-actions.tsx` — STATE_OPTIONS (~2794 tok)
+- `page.tsx` — inr — renders table (~2685 tok)
 
 ## admin/src/app/(operator)/billing/export/
 
@@ -461,7 +461,7 @@
 
 ## app/public/
 
-- `openapi.yaml` — Declares required (~2003 tok)
+- `openapi.yaml` — Declares required (~3100 tok)
 
 ## app/sandbox-scripts/
 
@@ -699,6 +699,10 @@
 
 - `route.ts` — ADR-1002 Sprint 1.2 — GET /v1/consent/verify (~1134 tok)
 
+## app/src/app/api/v1/consent/verify/batch/
+
+- `route.ts` — ADR-1002 Sprint 1.3 — POST /v1/consent/verify/batch (~1676 tok)
+
 ## app/src/app/api/webhooks/razorpay/
 
 - `route.ts` — ADR-0050 Sprint 2.1 chunk 3 — verbatim Razorpay webhook preservation. (~2417 tok)
@@ -756,7 +760,7 @@
 
 ## app/src/lib/consent/
 
-- `verify.ts` — ADR-1002 Sprint 1.2 — server-side helper for /v1/consent/verify. (~586 tok)
+- `verify.ts` — ADR-1002 Sprint 1.2 — server-side helper for /v1/consent/verify. (~1147 tok)
 
 ## app/src/lib/invitations/
 
@@ -814,7 +818,7 @@
 
 - `FEATURE-INVENTORY.md` — ConsentShield — Complete Feature Inventory (~9665 tok)
 - `ROADMAP-phase2.md` — ConsentShield — Phase 2 Roadmap (~3150 tok)
-- `STATUS.md` — ConsentShield Status (~3201 tok)
+- `STATUS.md` — ConsentShield Status (~3446 tok)
 - `V2-BACKLOG.md` — V2 Backlog — Deferred Items for Post-Phase-2 Review (~1378 tok)
 - `WHITEPAPER-AUDIT.md` — ConsentShield Integration Whitepaper — Critical Audit vs. Implementation (~4878 tok)
 
@@ -870,17 +874,18 @@
 - `ADR-0049-security-observability-ingestion.md` — ADR-0049: Security observability ingestion — rate_limit_events + sentry_events (~2365 tok)
 - `ADR-0050-admin-account-aware-billing.md` — ADR-0050: Admin account-aware billing — issuer entities, invoices, GST, dispute workspace (~12228 tok)
 - `ADR-0051-billing-evidence-ledger.md` — ADR-0051 — Billing evidence ledger (chargeback-defense capture points) (~1937 tok)
+- `ADR-0052-razorpay-dispute-contest.md` — ADR-0052 — Razorpay dispute contest submission (~1278 tok)
 - `ADR-0054-customer-billing-portal.md` — ADR-0054 — Customer-facing billing portal (invoice history + billing profile) (~3086 tok)
 - `ADR-0057-sectoral-template-switcher.md` — ADR-0057 — Customer-facing sectoral template switcher (Settings → Account) (~1395 tok)
 - `ADR-1001-truth-in-marketing-and-public-api-foundation.md` — ADR-1001: Truth-in-Marketing + Public API Foundation (~5650 tok)
-- `ADR-1002-dpdp-section6-runtime-enforcement.md` — ADR-1002: DPDP §6 Runtime Enforcement — Verify, Record, Artefact Ops, Deletion API (~4009 tok)
+- `ADR-1002-dpdp-section6-runtime-enforcement.md` — ADR-1002: DPDP §6 Runtime Enforcement — Verify, Record, Artefact Ops, Deletion API (~4446 tok)
 - `ADR-1003-processor-posture-and-healthcare-unlock.md` — ADR-1003: Processor Posture + Healthcare Category Unlock (~3365 tok)
 - `ADR-1004-statutory-retention-material-change-silent-failure.md` — ADR-1004: Statutory Retention + Material-Change Re-consent + Silent-Failure Detection (~3856 tok)
 - `ADR-1005-operations-maturity.md` — ADR-1005: Operations Maturity — Webhook Reference, Support Model, Status Page, Multi-channel Alerts, (~3575 tok)
 - `ADR-1006-developer-experience-and-openapi.md` — ADR-1006: Developer Experience — Client Libraries + OpenAPI Spec + CI Drift Check (~2658 tok)
 - `ADR-1007-connector-ecosystem-expansion.md` — ADR-1007: Connector Ecosystem Expansion + Platform Plugins (~2738 tok)
 - `ADR-1008-scale-audit-polish-and-p3-hardening.md` — ADR-1008: Scale + Audit Polish + P3 Hardening (~3065 tok)
-- `ADR-index.md` — ADR Index (~2191 tok)
+- `ADR-index.md` — ADR Index (~2230 tok)
 - `ADR-template.md` — ADR-NNNN: Title (~423 tok)
 - `adr-workflow.md` — ADR Workflow Rules (~557 tok)
 
@@ -904,12 +909,12 @@
 
 ## docs/changelogs/
 
-- `CHANGELOG-api.md` — Changelog — API (~7641 tok)
+- `CHANGELOG-api.md` — Changelog — API (~7924 tok)
 - `CHANGELOG-dashboard.md` — Changelog — Dashboard (~13819 tok)
 - `CHANGELOG-docs.md` — Changelog — Documentation (~4378 tok)
 - `CHANGELOG-edge-functions.md` — Changelog — Edge Functions (~3148 tok)
 - `CHANGELOG-infra.md` — Changelog — Infrastructure (~3667 tok)
-- `CHANGELOG-schema.md` — Changelog — Schema (~25685 tok)
+- `CHANGELOG-schema.md` — Changelog — Schema (~26159 tok)
 - `CHANGELOG-worker.md` — Changelog — Worker (~1897 tok)
 
 ## docs/design/
@@ -1426,6 +1431,8 @@
 - `20260630000003_fix_invoice_issued_trigger.sql` — Migration: ADR-0051 Sprint 1.1 follow-up — fix invoice_issued trigger to (~667 tok)
 - `20260701000001_evidence_ledger_sprint_1_2.sql` — Migration: ADR-0051 Sprint 1.2 — additional evidence capture points. (~1716 tok)
 - `20260701000002_rpc_consent_verify.sql` — ADR-1002 Sprint 1.2 — rpc_consent_verify RPC. (~1082 tok)
+- `20260710000001_dispute_contest_fields.sql` — Migration: ADR-0052 Sprint 1.1 — dispute contest-submission fields + RPCs. (~1538 tok)
+- `20260710000002_rpc_consent_verify_batch.sql` — ADR-1002 Sprint 1.3 — rpc_consent_verify_batch RPC. (~1397 tok)
 
 ## supabase/seed/
 
@@ -1485,6 +1492,7 @@
 
 - `customer-billing-profile-update.test.ts` — ADR-0054 Sprint 1.2 — public.update_account_billing_profile. (~1794 tok)
 - `customer-invoice-reads.test.ts` — service: nextGstin, setAccountBilling, createIssuer + 3 more (~2618 tok)
+- `dispute-contest.test.ts` — service: seedDispute (~2395 tok)
 - `dispute-webhook.test.ts` — Declares service (~1896 tok)
 - `dpia-records.test.ts` — ADR-0046 Phase 2 Sprint 2.1 — DPIA records schema + RPCs. (~1912 tok)
 - `evidence-bundle.test.ts` — EvidenceInput: buildInput (~2240 tok)
@@ -1519,6 +1527,7 @@
 
 - `api-keys.e2e.test.ts` — Declares TestOrg (~2521 tok)
 - `api-middleware.test.ts` — Declares TestOrg (~946 tok)
+- `consent-verify-batch.test.ts` — ADR-1002 Sprint 1.3 — /v1/consent/verify/batch integration tests. (~3283 tok)
 - `consent-verify.test.ts` — ADR-1002 Sprint 1.2 — /v1/consent/verify integration tests. (~3716 tok)
 
 ## tests/rbac/

@@ -2,6 +2,21 @@
 
 API route changes.
 
+## [ADR-1002 Sprint 1.3] — 2026-04-20
+
+**ADR:** ADR-1002 — DPDP §6 runtime enforcement
+**Sprint:** Sprint 1.3 — `POST /v1/consent/verify/batch` route + helper + OpenAPI
+
+### Added
+- `app/src/app/api/v1/consent/verify/batch/route.ts` — POST handler. Reads proxy-injected API context, enforces `read:consent` scope (403), 400 for account-scoped keys, JSON-parse / shape / per-element validation (422 with precise detail), cap of 10,000 identifiers at route layer (413), maps RPC errors to 404 / 413 / 422 / 500.
+- `app/src/lib/consent/verify.ts` — `verifyConsentBatch(...)` helper + `VerifyBatchEnvelope` / `VerifyBatchResultRow` / `VerifyBatchError` types. Shares the service-role client factory with the single-verify helper.
+- `app/public/openapi.yaml` — added `VerifyBatchRequest`, `VerifyBatchResponse`, `VerifyBatchResultRow` schemas + `/consent/verify/batch` POST path with 200/401/403/404/410/413/422/429.
+
+### Tested
+- [x] 8/8 PASS — `tests/integration/consent-verify-batch.test.ts`
+- [x] `cd app && bun run build` — PASS; `/api/v1/consent/verify/batch` in route manifest
+- [x] `bun run lint` — PASS (0 errors, 0 warnings)
+
 ## [ADR-1002 Sprint 1.2] — 2026-04-20
 
 **ADR:** ADR-1002 — DPDP §6 runtime enforcement
