@@ -2,6 +2,25 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-1002 Sprint 2.1] — 2026-04-20
+
+**ADR:** ADR-1002 — DPDP §6 runtime enforcement
+**Sprint:** Sprint 2.1 — Mode B consent record (`/v1/consent/record`)
+
+### Added
+- `20260720000002_consent_record_columns.sql`:
+  - `consent_events` relaxed: `banner_id`, `banner_version`, `session_fingerprint` are now nullable. Existing web rows unaffected.
+  - `consent_events` gains: `source text not null default 'web'` (check: `web|api|sdk`), `data_principal_identifier_hash text`, `identifier_type text` (email|phone|pan|aadhaar|custom), `client_request_id text`.
+  - CHECK `consent_events_shape_by_source_check`: `source='web'` requires (banner_id, session_fingerprint); `source='api'` requires (data_principal_identifier_hash, identifier_type); `source='sdk'` TBD.
+  - Partial unique index `consent_events_client_request_uniq` on `(org_id, client_request_id) WHERE client_request_id IS NOT NULL` — idempotency key.
+  - `consent_artefacts` relaxed: same three browser-only columns nullable (Mode B artefacts don't carry banner or fingerprint).
+  - `public.rpc_consent_record(p_org_id, p_property_id, p_identifier, p_identifier_type, p_purpose_definition_ids uuid[], p_rejected_purpose_definition_ids uuid[], p_captured_at timestamptz, p_client_request_id text) returns jsonb` — SECURITY DEFINER. Validates property ownership (P0001 property_not_found), captured_at within ±15 min (22023), every accepted + rejected purpose_definition_id belongs to the org (22023 with echoed ids), hashes the identifier, inserts consent_events + consent_artefacts + consent_artefact_index for every granted purpose in a single transaction. Idempotency: replay returns prior envelope with `idempotent_replay=true`.
+  - Grant: `service_role` only.
+
+### Tested
+- [x] 10/10 PASS — `tests/integration/consent-record.test.ts`: 5-grant / 5-grant+2-rejected / record→verify round-trip / client_request_id idempotency / stale + future captured_at / cross-org purpose id / empty purposes / cross-org property / empty identifier.
+- [x] 70/70 full integration + DEPA suite — no regression from the `consent_events` / `consent_artefacts` nullability changes.
+
 ## [ADR-1002 Sprint 1.3] — 2026-04-20
 
 **ADR:** ADR-1002 — DPDP §6 runtime enforcement

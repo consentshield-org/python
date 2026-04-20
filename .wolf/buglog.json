@@ -6545,6 +6545,22 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-04-20T06:06:38.030Z"
+    },
+    {
+      "id": "bug-409",
+      "timestamp": "2026-04-20T06:18:48.671Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/ADRs/ADR-1002-dpdp-section6-runtime-enforcement.md",
+      "root_cause": "12 lines replaced/restructured",
+      "fix": "Rewrote 16→41 lines (12 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-20T06:18:48.671Z"
     }
   ]
 }

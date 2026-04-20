@@ -198,8 +198,8 @@
       "first_read": "2026-04-20T04:51:54.611Z"
     },
     "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-1002-dpdp-section6-runtime-enforcement.md": {
-      "count": 2,
-      "tokens": 4009,
+      "count": 3,
+      "tokens": 4446,
       "first_read": "2026-04-20T04:58:30.185Z"
     },
     "/Users/sudhindra/projects/aiSpirit/consent-sheild/tests/depa/revocation-pipeline.test.ts": {
@@ -1341,6 +1341,60 @@
       "action": "edit",
       "tokens": 345,
       "at": "2026-04-20T06:07:06.042Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/supabase/migrations/20260720000002_consent_record_columns.sql",
+      "action": "create",
+      "tokens": 3167,
+      "at": "2026-04-20T06:13:32.512Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/src/lib/consent/record.ts",
+      "action": "create",
+      "tokens": 790,
+      "at": "2026-04-20T06:13:54.563Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/src/app/api/v1/consent/record/route.ts",
+      "action": "create",
+      "tokens": 2031,
+      "at": "2026-04-20T06:14:28.562Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/tests/integration/consent-record.test.ts",
+      "action": "create",
+      "tokens": 3288,
+      "at": "2026-04-20T06:15:20.204Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/public/openapi.yaml",
+      "action": "edit",
+      "tokens": 852,
+      "at": "2026-04-20T06:17:55.279Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/public/openapi.yaml",
+      "action": "edit",
+      "tokens": 577,
+      "at": "2026-04-20T06:18:08.406Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-1002-dpdp-section6-runtime-enforcement.md",
+      "action": "edit",
+      "tokens": 1014,
+      "at": "2026-04-20T06:18:48.669Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/changelogs/CHANGELOG-schema.md",
+      "action": "edit",
+      "tokens": 636,
+      "at": "2026-04-20T06:19:04.459Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/changelogs/CHANGELOG-api.md",
+      "action": "edit",
+      "tokens": 395,
+      "at": "2026-04-20T06:19:16.858Z"
     }
   ],
   "edit_counts": {
@@ -1367,7 +1421,7 @@
     "app/src/app/(dashboard)/dashboard/settings/billing/page.tsx": 4,
     "tests/billing/customer-invoice-reads.test.ts": 3,
     "app/src/app/(dashboard)/dashboard/settings/api-keys/[id]/usage/page.tsx": 1,
-    "app/public/openapi.yaml": 5,
+    "app/public/openapi.yaml": 7,
     "supabase/migrations/20260610000002_customer_billing_portal_writes.sql": 1,
     "app/src/app/(dashboard)/dashboard/settings/billing/profile-form.tsx": 1,
     "app/src/app/(dashboard)/dashboard/settings/billing/actions.ts": 1,
@@ -1382,8 +1436,8 @@
     "app/src/app/(dashboard)/dashboard/dpia/[dpiaId]/page.tsx": 1,
     "app/src/app/(dashboard)/dashboard/dpia/[dpiaId]/detail-actions.tsx": 1,
     "docs/architecture/consentshield-definitive-architecture.md": 2,
-    "docs/changelogs/CHANGELOG-api.md": 4,
-    "docs/changelogs/CHANGELOG-schema.md": 4,
+    "docs/changelogs/CHANGELOG-api.md": 5,
+    "docs/changelogs/CHANGELOG-schema.md": 5,
     "supabase/migrations/20260620000002_data_auditor_engagements.sql": 1,
     "tests/rls/auditor-engagements.test.ts": 1,
     "app/src/app/(dashboard)/dashboard/auditors/actions.ts": 1,
@@ -1408,7 +1462,7 @@
     "supabase/migrations/20260620000005_assert_org_not_suspended.sql": 1,
     "app/src/components/suspended-banner.tsx": 1,
     "tests/rls/org-suspension-gate.test.ts": 1,
-    "docs/ADRs/ADR-1002-dpdp-section6-runtime-enforcement.md": 5,
+    "docs/ADRs/ADR-1002-dpdp-section6-runtime-enforcement.md": 6,
     "supabase/migrations/20260601000002_consent_artefact_index_identifier.sql": 1,
     "supabase/functions/process-consent-event/index.ts": 1,
     "tests/depa/artefact-index-identifier.test.ts": 2,
@@ -1434,11 +1488,15 @@
     "docs/ADRs/ADR-0052-razorpay-dispute-contest.md": 1,
     "supabase/migrations/20260710000002_rpc_consent_verify_batch.sql": 1,
     "app/src/app/api/v1/consent/verify/batch/route.ts": 1,
-    "tests/integration/consent-verify-batch.test.ts": 1
+    "tests/integration/consent-verify-batch.test.ts": 1,
+    "supabase/migrations/20260720000002_consent_record_columns.sql": 1,
+    "app/src/lib/consent/record.ts": 1,
+    "app/src/app/api/v1/consent/record/route.ts": 1,
+    "tests/integration/consent-record.test.ts": 1
   },
   "anatomy_hits": 47,
   "anatomy_misses": 0,
-  "repeated_reads_warned": 44,
+  "repeated_reads_warned": 45,
   "cerebrum_warnings": 0,
-  "stop_count": 27
+  "stop_count": 28
 }

@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-20T06:07:06.034Z
-> Files: 828 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-20T06:19:16.850Z
+> Files: 832 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../tmp/
 
@@ -461,7 +461,7 @@
 
 ## app/public/
 
-- `openapi.yaml` — Declares required (~3100 tok)
+- `openapi.yaml` — Declares required (~4380 tok)
 
 ## app/sandbox-scripts/
 
@@ -695,6 +695,10 @@
 
 - `route.ts` — ADR-1001 Sprint 2.2 — Canary endpoint to exercise the Bearer middleware. (~324 tok)
 
+## app/src/app/api/v1/consent/record/
+
+- `route.ts` — ADR-1002 Sprint 2.1 — POST /v1/consent/record (~2031 tok)
+
 ## app/src/app/api/v1/consent/verify/
 
 - `route.ts` — ADR-1002 Sprint 1.2 — GET /v1/consent/verify (~1134 tok)
@@ -760,6 +764,7 @@
 
 ## app/src/lib/consent/
 
+- `record.ts` — ADR-1002 Sprint 2.1 — server-side helper for /v1/consent/record. (~790 tok)
 - `verify.ts` — ADR-1002 Sprint 1.2 — server-side helper for /v1/consent/verify. (~1147 tok)
 
 ## app/src/lib/invitations/
@@ -878,7 +883,7 @@
 - `ADR-0054-customer-billing-portal.md` — ADR-0054 — Customer-facing billing portal (invoice history + billing profile) (~3086 tok)
 - `ADR-0057-sectoral-template-switcher.md` — ADR-0057 — Customer-facing sectoral template switcher (Settings → Account) (~1395 tok)
 - `ADR-1001-truth-in-marketing-and-public-api-foundation.md` — ADR-1001: Truth-in-Marketing + Public API Foundation (~5650 tok)
-- `ADR-1002-dpdp-section6-runtime-enforcement.md` — ADR-1002: DPDP §6 Runtime Enforcement — Verify, Record, Artefact Ops, Deletion API (~4446 tok)
+- `ADR-1002-dpdp-section6-runtime-enforcement.md` — ADR-1002: DPDP §6 Runtime Enforcement — Verify, Record, Artefact Ops, Deletion API (~5052 tok)
 - `ADR-1003-processor-posture-and-healthcare-unlock.md` — ADR-1003: Processor Posture + Healthcare Category Unlock (~3365 tok)
 - `ADR-1004-statutory-retention-material-change-silent-failure.md` — ADR-1004: Statutory Retention + Material-Change Re-consent + Silent-Failure Detection (~3856 tok)
 - `ADR-1005-operations-maturity.md` — ADR-1005: Operations Maturity — Webhook Reference, Support Model, Status Page, Multi-channel Alerts, (~3575 tok)
@@ -909,12 +914,12 @@
 
 ## docs/changelogs/
 
-- `CHANGELOG-api.md` — Changelog — API (~7924 tok)
+- `CHANGELOG-api.md` — Changelog — API (~8250 tok)
 - `CHANGELOG-dashboard.md` — Changelog — Dashboard (~13819 tok)
 - `CHANGELOG-docs.md` — Changelog — Documentation (~4378 tok)
 - `CHANGELOG-edge-functions.md` — Changelog — Edge Functions (~3148 tok)
 - `CHANGELOG-infra.md` — Changelog — Infrastructure (~3667 tok)
-- `CHANGELOG-schema.md` — Changelog — Schema (~26159 tok)
+- `CHANGELOG-schema.md` — Changelog — Schema (~26690 tok)
 - `CHANGELOG-worker.md` — Changelog — Worker (~1897 tok)
 
 ## docs/design/
@@ -1433,6 +1438,7 @@
 - `20260701000002_rpc_consent_verify.sql` — ADR-1002 Sprint 1.2 — rpc_consent_verify RPC. (~1082 tok)
 - `20260710000001_dispute_contest_fields.sql` — Migration: ADR-0052 Sprint 1.1 — dispute contest-submission fields + RPCs. (~1538 tok)
 - `20260710000002_rpc_consent_verify_batch.sql` — ADR-1002 Sprint 1.3 — rpc_consent_verify_batch RPC. (~1397 tok)
+- `20260720000002_consent_record_columns.sql` — ADR-1002 Sprint 2.1 — Mode B server-to-server consent capture. (~2956 tok)
 
 ## supabase/seed/
 
@@ -1527,6 +1533,7 @@
 
 - `api-keys.e2e.test.ts` — Declares TestOrg (~2521 tok)
 - `api-middleware.test.ts` — Declares TestOrg (~946 tok)
+- `consent-record.test.ts` — ADR-1002 Sprint 2.1 — /v1/consent/record integration tests. (~3288 tok)
 - `consent-verify-batch.test.ts` — ADR-1002 Sprint 1.3 — /v1/consent/verify/batch integration tests. (~3283 tok)
 - `consent-verify.test.ts` — ADR-1002 Sprint 1.2 — /v1/consent/verify integration tests. (~3716 tok)
 

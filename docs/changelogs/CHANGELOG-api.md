@@ -2,6 +2,21 @@
 
 API route changes.
 
+## [ADR-1002 Sprint 2.1] — 2026-04-20
+
+**ADR:** ADR-1002 — DPDP §6 runtime enforcement
+**Sprint:** Sprint 2.1 — Mode B consent record (`POST /v1/consent/record`)
+
+### Added
+- `app/src/app/api/v1/consent/record/route.ts` — POST handler. Reads proxy-injected API context, enforces `write:consent` scope (403), 400 for account-scoped keys, JSON-parse + per-field shape validation (422 with precise detail; per-array-element type checks), captured_at ISO 8601 parse-check, maps RPC errors to 404 / 422 / 500. 201 for new records, 200 for idempotent replay.
+- `app/src/lib/consent/record.ts` — `recordConsent(...)` helper + `RecordEnvelope` / `RecordedArtefact` / `RecordError` types. Service-role client (same carve-out as verify + Bearer auth). Typed error kinds: `property_not_found` / `captured_at_stale` / `captured_at_missing` / `purposes_empty` / `invalid_purpose_ids` / `invalid_identifier` / `unknown`.
+- `app/public/openapi.yaml` — `RecordRequest`, `RecordResponse`, `RecordedArtefact` schemas + `/consent/record` POST path entry with full response matrix (200/201/401/403/404/410/422/429).
+
+### Tested
+- [x] 10/10 PASS — `tests/integration/consent-record.test.ts`
+- [x] `cd app && bun run build` — PASS; `/api/v1/consent/record` in route manifest
+- [x] `bun run lint` — PASS (0 errors, 0 warnings)
+
 ## [ADR-1002 Sprint 1.3] — 2026-04-20
 
 **ADR:** ADR-1002 — DPDP §6 runtime enforcement

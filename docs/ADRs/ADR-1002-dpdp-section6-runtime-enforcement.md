@@ -159,21 +159,46 @@ bun run lint — PASS (0 errors, 0 warnings)
 **Estimated effort:** 3 days
 
 **Deliverables:**
-- [ ] `app/src/app/api/v1/consent/record/route.ts`
-- [ ] Body validation: property_id belongs to org, every `purpose_definition_id` resolves and belongs to org, `captured_at` within ±15 min of server
-- [ ] Transactional write of `consent_events` row with `source='api'`
-- [ ] Inline synchronous call to `process-consent-event` (bypasses the trigger → `net.http_post` path for this invocation; trigger + safety-net path remains for all other writers and for idempotency)
-- [ ] Response: `{ event_id, artefact_ids: [{ purpose_code, artefact_id, status }], created_at }`
-- [ ] Scope: `write:consent`
+- [x] `app/src/app/api/v1/consent/record/route.ts` — POST handler. Scope gate (write:consent, 403), 400 for account-scoped keys, JSON-parse + per-field shape validation (422 with precise detail), maps RPC errors.
+- [x] Body validation: property ownership, every `purpose_definition_id` belongs to the key's org (422 with echoed id list), `captured_at` within ±15 min of server (both stale and future-dated rejected).
+- [x] Single-transaction write inside `rpc_consent_record` — consent_events + consent_artefacts + consent_artefact_index for every granted purpose, all or nothing. No Edge Function roundtrip; the dispatch trigger still fires but the Edge Function's 23505 idempotency absorbs the duplicate safely.
+- [x] Response: `{ event_id, created_at, artefact_ids: [{ purpose_definition_id, purpose_code, artefact_id, status }], idempotent_replay }`. `201` for new records, `200` for replays.
+- [x] Idempotency: optional `client_request_id`; replay via a partial unique index `(org_id, client_request_id) WHERE client_request_id IS NOT NULL`. Returns the prior envelope with `idempotent_replay=true`.
+- [x] Scope: `write:consent`.
+- [x] OpenAPI stub: `RecordRequest`, `RecordResponse`, `RecordedArtefact` schemas + `/consent/record` POST path.
+
+### Architecture Changes
+
+- `consent_events` relaxed: `banner_id`, `banner_version`, `session_fingerprint` are now nullable. New CHECK `consent_events_shape_by_source_check` enforces: `source='web' → (banner_id, session_fingerprint) not null`; `source='api' → (data_principal_identifier_hash, identifier_type) not null`.
+- `consent_events` gains: `source` (web|api|sdk), `data_principal_identifier_hash`, `identifier_type`, `client_request_id`.
+- `consent_artefacts` relaxed: same three browser-only columns nullable. Mode B artefacts carry the identifier via `consent_artefact_index.identifier_hash` (ADR-1002 Sprint 1.1); the DEPA artefact row itself no longer requires a banner or fingerprint.
 
 **Testing plan:**
-- [ ] 5-grant + 2-deny fixture (the §4.2 call-centre scenario) returns 5 artefact IDs (only granted purposes create artefacts)
-- [ ] Missing / invalid `purpose_definition_id` → 422 with list of offending IDs
-- [ ] `captured_at` more than 15 min stale → 422
-- [ ] Idempotency: replaying the exact same body (same `event_id` if supplied) returns existing artefact IDs, not new ones
-- [ ] Audit trail: `audit_log` row written with `captured_via` and `captured_by`
+- [x] 5-grant fixture creates 5 artefacts; every returned artefact_id resolves in `consent_artefacts` with `status='active'` and the same `consent_event_id`.
+- [x] 5-grant + 2-rejected: 3 artefacts created (granted subset); rejected ids land in `consent_events.purposes_rejected` for §11 audit.
+- [x] End-to-end loop: record → verify with the same (identifier, property, purpose) returns `granted` with the recorded `artefact_id` (closes the read/write contract).
+- [x] Idempotency: replay with same `client_request_id` returns `idempotent_replay=true` + the same `event_id` + the same artefact IDs.
+- [x] `captured_at` > 15 min stale AND > 15 min future both → `captured_at_stale` (422).
+- [x] Cross-org `purpose_definition_id` → `invalid_purpose_definition_ids` (422) with the offending id echoed in the error.
+- [x] Empty accepted purposes → `purposes_empty` (422).
+- [x] Cross-org property → `property_not_found` (404).
+- [x] Empty identifier → `invalid_identifier` (422).
+- [ ] Audit-log trigger row (`captured_via` / `captured_by`) — deferred to a later sprint (the `consent_events` row itself is the §11-compliant audit record; `audit_log` is buffer-tier and is not the persistent audit surface).
 
-**Status:** `[ ] planned`
+### Test Results — 2026-04-20
+
+```
+bunx vitest run tests/integration/consent-record.test.ts
+10/10 PASS (10.90s)
+
+bunx vitest run tests/integration/ tests/depa/
+70/70 PASS (93.91s) — no regressions
+
+cd app && bun run build — PASS; /api/v1/consent/record in route manifest
+bun run lint — PASS (0 errors, 0 warnings)
+```
+
+**Status:** `[x] complete — 2026-04-20`
 
 ### Phase 3: Artefact + event ops (G-039)
 
