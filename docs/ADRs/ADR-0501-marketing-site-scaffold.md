@@ -2,7 +2,7 @@
 
 (c) 2026 Sudhindra Anegondhi a.d.sudhindra@gmail.com
 
-**Status:** In Progress (Phase 1 + Phase 2 complete 2026-04-21; Phases 3–4 pending)
+**Status:** In Progress (Phases 1 + 2 complete 2026-04-21; Phase 3 Sprint 3.1 complete 2026-04-21; Phase 3 Sprint 3.2 + Phase 4 pending)
 **Date:** 2026-04-21
 **Phases:** 4
 **Sprints:** 4+ (Phase 1 has one sprint; later phases sized once content + formats land)
@@ -166,17 +166,40 @@ Sprint breakdown:
 
 **Status:** `[x] complete — 2026-04-21`
 
-### Phase 3 — Download pipeline
+### Phase 3 — Downloadable legal documents (MD / PDF / DOCX)
 
-Each content page emits three artefacts with identical content in PDF, DOCX, and Markdown. Sprint scoping decisions at design time:
+Scope narrowed on user direction: **legal pages only** (terms, privacy, dpa). Marketing pages are for browsing; only legal artefacts travel offline. Architecture Brief already ships as a manually-authored three-format packet and is out of Phase 3 scope.
 
-- **Generation trigger:** build-time (preferred; cacheable, zero runtime cost) vs on-demand (flexible but requires Vercel Function budget).
-- **Source of truth:** author MD and generate PDF + DOCX from it (simpler), or author in JSX and extract content server-side (richer formatting).
-- **Tooling:** pandoc (system dep — incompatible with Vercel build unless via a custom runtime) vs `pdfkit` + `html-to-docx` npm combo (all-Node, Vercel-compatible).
+**Source of truth + tooling decisions (locked in Sprint 3.1):**
 
-The decision is non-trivial and gets its own sprint when Phase 2 content is stable enough to know what fidelity the downloads need.
+- Content lives in typed TS modules under `marketing/src/content/legal/*.ts` — one `LegalDocument` per legal page. The document is authored *once*; the web renderer and the downloads generator consume the same source. No JSX-extraction, no HTML coupling.
+- Inline formatting uses a constrained Markdown subset (`**bold**`, `*em*`, `[text](url)`) parsed by a 40-line `md-inline.ts` shared between the React renderer and the serializers. Zero dependencies.
+- Generation happens build-time via a Bun script (`scripts/generate-downloads.ts`) wired into `prebuild`. No Vercel Function budget required.
 
-**Status:** `[ ] deferred`
+#### Sprint 3.1 — Structured legal content model (shipped 2026-04-21)
+
+**Deliverables:**
+
+- [x] `marketing/src/content/legal/types.ts` — typed content model: `LegalBlock` (h3 / p / ul / note / contact / subprocTable / sccTable), `LegalSection`, `LegalDocument` with optional `intro` and `addendum`.
+- [x] `marketing/src/content/legal/md-inline.ts` — 40-line inline MD parser + React renderer. Shared with serializers in Sprint 3.2.
+- [x] `marketing/src/content/legal/terms.ts` — full Terms migrated (12 sections).
+- [x] `marketing/src/content/legal/privacy.ts` — full Privacy Policy migrated (12 sections + grievance contact block with an external link to meity.gov.in).
+- [x] `marketing/src/content/legal/dpa.ts` — full DPA migrated (12 sections + 3 annexes including the sub-processor table) plus EU Addendum as `LegalDocument.addendum` (9 sections + SCC election table).
+- [x] `marketing/src/components/sections/legal-document.tsx` — `LegalDocumentView` renderer; consumes `LegalDocument` and emits the same JSX the hand-written pages produced before. Handles `intro`, `sections`, `addendum.intro`, `addendum.sections`, plus `subprocTable` + `sccTable` block renderers inlined.
+- [x] `marketing/src/app/terms/page.tsx`, `/privacy/page.tsx`, `/dpa/page.tsx` — thin composition: `<LegalDocumentView doc={...}/>`. DPA page retains `DpaSigningCard` + final `CtaBand` as bespoke sections alongside the rendered document.
+
+**Status:** `[x] complete — 2026-04-21`
+
+#### Sprint 3.2 — Serializers + downloads generator (pending)
+
+- `scripts/generate-downloads.ts` — iterates the 3 `LegalDocument` sources; emits `terms.md` / `privacy.md` / `dpa.md` into `marketing/public/downloads/`; emits corresponding PDF (`pdfkit`) + DOCX (`docx` npm package) artefacts. Wired into `marketing/package.json` `prebuild`.
+- `marketing/src/content/legal/serialize-md.ts` — structured `LegalDocument` → Markdown string. Paragraphs, lists, notes, tables.
+- `marketing/src/content/legal/serialize-pdf.ts` — document → `pdfkit` stream.
+- `marketing/src/content/legal/serialize-docx.ts` — document → `docx` `Packer` buffer.
+- Update `src/lib/routes.ts` + footer + legal-page heroes to link to `/downloads/{terms,privacy,dpa}.{md,pdf,docx}`.
+- Tests: round-trip check (authored inline syntax in each block type renders correctly in each serializer).
+
+**Status:** `[ ] planned`
 
 ### Phase 4 — Security hardening
 

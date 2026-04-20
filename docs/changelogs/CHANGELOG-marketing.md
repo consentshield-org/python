@@ -2,6 +2,31 @@
 
 Public marketing site (`marketing/` workspace → `consentshield.in`). New in 2026-04-21.
 
+## [ADR-0501 Sprint 3.1] — 2026-04-21
+
+**ADR:** ADR-0501 — ConsentShield marketing site
+**Sprint:** Phase 3 Sprint 3.1 — Structured legal content model
+
+Also includes a non-ADR fix (same commit batch): `/solutions` stripped of internal PRIORITY badges + TAM/ICP stats (not customer-facing).
+
+### Added
+- `marketing/src/content/legal/types.ts` — typed content model: `LegalBlock` union (h3 / p / ul / note / contact / subprocTable / sccTable), `LegalSection`, `LegalDocument` with optional `intro` + `addendum`.
+- `marketing/src/content/legal/md-inline.ts` — 40-line inline Markdown parser (`**bold**` / `*em*` / `[text](url)`) shared between the React renderer and (Sprint 3.2) serializers. Zero dependencies.
+- `marketing/src/content/legal/terms.ts` — canonical Terms of Service (12 sections).
+- `marketing/src/content/legal/privacy.ts` — canonical Privacy Policy (12 sections, grievance-officer contact block with external link).
+- `marketing/src/content/legal/dpa.ts` — canonical DPA (12 sections + 3 annexes, inc. sub-processors table) + EU Addendum as `LegalDocument.addendum` (9 sections + SCC election table).
+- `marketing/src/components/sections/legal-document.tsx` — `LegalDocumentView` consumes `LegalDocument` and renders through the existing `LegalLayout`. Inline sub-renderers for `subprocTable` + `sccTable`.
+
+### Changed
+- `marketing/src/app/terms/page.tsx`, `/privacy/page.tsx`, `/dpa/page.tsx` — now thin composition: `<LegalDocumentView doc={...}/>`. DPA page keeps `DpaSigningCard` + final `CtaBand` bespoke, appended after the rendered document.
+
+### Tested
+- [x] `cd marketing && bun run build` — 12 static routes; clean.
+- [x] `cd marketing && bun run lint` — clean.
+
+### Deferred (Sprint 3.2)
+- `scripts/generate-downloads.ts` + MD/PDF/DOCX serializers + prebuild wiring + download-link integration in footer/legal-page heroes.
+
 ## [ADR-0501 Sprint 2.5] — 2026-04-21
 
 **ADR:** ADR-0501 — ConsentShield marketing site
