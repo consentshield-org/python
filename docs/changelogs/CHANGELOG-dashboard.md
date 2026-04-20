@@ -793,3 +793,15 @@ Combined: 42 (app) + 135 (rls/admin/depa) + 1 (admin smoke) = **178/178**.
 
 ### Changed
 - `app/src/app/(dashboard)/dashboard/support-sessions/page.tsx` — rewritten to call the new `list_org_support_sessions` RPC. Adds operator display name (replaces raw UUID), duration column ("12 min"), status filter chips, KPI strip (total / active-now / completed), action-count hint per session, and a footer note explaining full action logs are available via support request.
+
+## [ADR-0057 Sprint 1.1] — 2026-04-20
+
+**ADR:** ADR-0057 — Customer-facing sectoral template switcher
+
+### Added
+- `app/src/app/(dashboard)/dashboard/settings/account/page.tsx` — org details + industry editor + applied sector template read-only chip.
+- `app/src/app/(dashboard)/dashboard/settings/account/industry-editor.tsx` — client component with view / edit / save / cancel flow; post-save hint deep-links to /dashboard/template.
+- `app/src/app/(dashboard)/dashboard/settings/account/actions.ts` — server action wrapping the RPC.
+
+### Changed
+- `app/src/components/dashboard-nav.tsx` — "Account settings" nav entry before Team & invites.

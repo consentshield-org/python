@@ -1184,3 +1184,14 @@ Closes four blocking findings from the 2026-04-14 review.
 
 ### Added
 - `20260620000003_enrich_support_sessions.sql` — `public.list_org_support_sessions(status, limit)` SECURITY DEFINER RPC that joins `admin.admin_users.display_name` into the customer-visible session list and computes `duration_seconds` server-side. Replaces direct queries to `public.org_support_sessions` view so customers see the operator's human-readable name instead of a raw UUID.
+
+## [ADR-0057 Sprint 1.1] — 2026-04-20
+
+**ADR:** ADR-0057 — Customer-facing sectoral template switcher
+**Sprint:** Phase 1, Sprint 1.1
+
+### Added
+- `20260620000004_update_org_industry.sql` — `public.update_org_industry(p_org_id, p_industry)` SECURITY DEFINER RPC. Role gate via `effective_org_role` (org_admin / admin). 8-value industry whitelist (saas / edtech / healthcare / ecommerce / hrtech / fintech / bfsi / general).
+
+### Tested
+- [x] `tests/rls/update-org-industry.test.ts` — 5/5 PASS (happy path, cross-org denied, invalid code rejected, null rejected, all 8 sectors accepted)
