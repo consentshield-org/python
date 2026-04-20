@@ -4,11 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev --port 3002",
-    "prebuild": "bun scripts/generate-downloads.ts",
+    "prebuild": "bun scripts/check-env-isolation.ts && bun scripts/generate-downloads.ts",
     "build": "next build",
     "start": "next start --port 3002",
     "lint": "eslint src/",
-    "downloads": "bun scripts/generate-downloads.ts"
+    "downloads": "bun scripts/generate-downloads.ts",
+    "check-env": "bun scripts/check-env-isolation.ts"
   },
   "dependencies": {
     "docx": "9.6.1",

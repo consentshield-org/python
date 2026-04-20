@@ -2,6 +2,29 @@
 
 Public marketing site (`marketing/` workspace → `consentshield.in`). New in 2026-04-21.
 
+## [ADR-0501 Sprint 4.1] — 2026-04-21
+
+**ADR:** ADR-0501 — ConsentShield marketing site
+**Sprint:** Phase 4 Sprint 4.1 — Security headers + env isolation
+
+### Added
+- `marketing/next.config.ts` — security headers on every response: `Strict-Transport-Security` (2y + includeSubDomains + preload), `X-Content-Type-Options`, `Referrer-Policy` (strict-origin-when-cross-origin), `Permissions-Policy` (camera/mic/geo/interest-cohort denied), `X-Frame-Options: DENY`. CSP ships as `Content-Security-Policy-Report-Only` with a hardened policy allowing self + Fontshare (Satoshi) + data: images; frame-ancestors/form-action locked down; upgrade-insecure-requests. Enforce-mode cutover is a follow-up sprint after report-only catalogues Next.js inline-script violations.
+- `marketing/scripts/check-env-isolation.ts` — mirrors the repo-root script. Refuses marketing builds that carry `ADMIN_*` vars or customer-app-only secrets (`MASTER_ENCRYPTION_KEY`, `DELETION_CALLBACK_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `RAZORPAY_KEY_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET`). Names printed on violation; values never logged.
+- `marketing/.env.example` — documents the 5 optional marketing env vars (Turnstile site/secret, Resend API key, Contact inbox, Sentry DSN) + the block-list pointer.
+
+### Changed
+- `marketing/package.json` — `prebuild` now chains `check-env-isolation.ts` → `generate-downloads.ts` → `next build`. `check-env` script exposed for ad-hoc verification.
+
+### Tested
+- [x] `bun run check-env` — clean on the current marketing workspace.
+- [x] `bun run build` — prebuild fires env-check then downloads generator, then Next.js build succeeds. 12 static routes clean.
+- [x] `bun run lint` — 0 errors, 0 warnings.
+
+### Deferred
+- Sprint 4.2: contact-form real submit (`/api/contact` + Turnstile verify + Resend send).
+- Sprint 4.3: Sentry client + server init with PII-stripping `beforeSend`; Vercel BotID on the contact POST.
+- Sprint 4.4: CSP enforce-mode cutover once report-only logs are clean.
+
 ## [ADR-0501 Sprint 3.2] — 2026-04-21
 
 **ADR:** ADR-0501 — ConsentShield marketing site

@@ -2,7 +2,7 @@
 
 (c) 2026 Sudhindra Anegondhi a.d.sudhindra@gmail.com
 
-**Status:** In Progress (Phases 1 + 2 + 3 complete 2026-04-21; Phase 4 pending)
+**Status:** In Progress (Phases 1 + 2 + 3 complete 2026-04-21; Phase 4 Sprint 4.1 shipped 2026-04-21; Phase 4 Sprints 4.2–4.3 pending)
 **Date:** 2026-04-21
 **Phases:** 4
 **Sprints:** 4+ (Phase 1 has one sprint; later phases sized once content + formats land)
@@ -216,16 +216,34 @@ Scope narrowed on user direction: **legal pages only** (terms, privacy, dpa). Ma
 
 ### Phase 4 — Security hardening
 
-Explicitly deferred per user direction. Items on the backlog for this phase:
+#### Sprint 4.1 — Security headers + env isolation (shipped 2026-04-21)
 
-- Strict CSP (report-only → enforce), HSTS with `preload`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`.
-- Secure cookie defaults (if any interactive state lands).
-- Turnstile on any contact / lead-capture form.
-- Sentry with `beforeSend` PII strip mirroring Rule 18.
-- Bot detection via Vercel BotID on high-value routes (signup-intent forms, asset downloads if gated).
-- No `NEXT_PUBLIC_*` secrets; env isolation prebuild check (mirror `admin/scripts/check-env-isolation.ts`).
+**Deliverables:**
 
-**Status:** `[ ] deferred`
+- [x] `marketing/next.config.ts` — security headers on every response: `Strict-Transport-Security` (2y + includeSubDomains + preload), `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` (camera/microphone/geolocation/interest-cohort all denied), `X-Frame-Options: DENY`, and `Content-Security-Policy-Report-Only` with a CSP that allows self + Fontshare for Satoshi, blocks framing, pins form-action to self, pins base-uri, denies objects, upgrades insecure requests.
+- [x] `marketing/scripts/check-env-isolation.ts` — mirrors the repo-root script; refuses builds that carry `ADMIN_*` vars or customer-app-only secrets (`MASTER_ENCRYPTION_KEY`, `DELETION_CALLBACK_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `RAZORPAY_KEY_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET`). Variable *names* are printed on violation; values are never logged.
+- [x] `marketing/package.json` — `prebuild` runs `check-env-isolation.ts` first, then `generate-downloads.ts`, then `next build`. `check-env` script exposed for ad-hoc verification.
+- [x] `marketing/.env.example` — documents the 5 optional marketing env vars (Turnstile site/secret, Resend API key, Contact inbox, Sentry DSN) + the block-list with pointer to the isolation script.
+
+**Deferred to a Sprint 4.4 cutover:** CSP enforce-mode. Report-only first to catalogue Next.js inline-script violations; nonce-based script-src tightening and the header rename (`Content-Security-Policy`) happen once the violation log is clean.
+
+**Status:** `[x] complete — 2026-04-21`
+
+#### Sprint 4.2 — Contact form real submit + Turnstile (pending)
+
+- `marketing/src/app/api/contact/route.ts` — POST handler; Turnstile verify (`https://challenges.cloudflare.com/turnstile/v0/siteverify`) + Resend send. Dev falls back to Turnstile test pair + Resend no-op.
+- Turnstile widget wired into `contact-form.tsx` client component. Site key from `NEXT_PUBLIC_TURNSTILE_SITE_KEY`.
+- Failure modes: turnstile-failed → 403; resend-failed → 502; validation failure → 400. Success → 202 + client shows existing acknowledgement UI.
+
+**Status:** `[ ] planned`
+
+#### Sprint 4.3 — Sentry + BotID (pending)
+
+- `marketing/sentry.client.config.ts` + `marketing/sentry.server.config.ts` — client + server Sentry init with `beforeSend` PII strip (drop request bodies, headers, cookies, query params). No-ops when `SENTRY_DSN` is unset.
+- Vercel BotID on POST `/api/contact` as a defence-in-depth layer alongside Turnstile.
+- DPA signature persistence is **out of scope** for Phase 4; belongs with the billing/admin schema when Phase 4 of ADR-0501 closes.
+
+**Status:** `[ ] planned`
 
 ## Acceptance criteria
 
