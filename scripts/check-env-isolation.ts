@@ -18,13 +18,18 @@
 //     must NOT carry any customer-only secret:
 //       - MASTER_ENCRYPTION_KEY      (per-org customer encryption)
 //       - DELETION_CALLBACK_SECRET   (customer deletion callback HMAC)
-//       - RAZORPAY_KEY_SECRET
-//       - RAZORPAY_WEBHOOK_SECRET
-//       - TURNSTILE_SECRET_KEY
+//       - RAZORPAY_WEBHOOK_SECRET    (webhooks post to customer app only)
+//       - TURNSTILE_SECRET_KEY       (human-verification on rights portal)
 //
 // Shared infra (Supabase, Cloudflare, Sentry org) is allowed on both —
 // the scoping is at the credential level (admin uses its own Supabase
 // connection, Sentry project, etc.).
+//
+// Shared Razorpay API access: RAZORPAY_KEY_ID + RAZORPAY_KEY_SECRET are
+// allowed on BOTH projects because the admin side actively calls Razorpay:
+// refund issuance (ADR-0034) + dispute contest submission (ADR-0052). The
+// customer app also holds them for checkout. Only the webhook receiver
+// secret stays customer-only (the admin app does not receive webhooks).
 //
 // Exit codes:
 //   0 — isolation intact
@@ -34,7 +39,6 @@
 const CUSTOMER_ONLY_SECRETS = [
   'MASTER_ENCRYPTION_KEY',
   'DELETION_CALLBACK_SECRET',
-  'RAZORPAY_KEY_SECRET',
   'RAZORPAY_WEBHOOK_SECRET',
   'TURNSTILE_SECRET_KEY',
 ] as const

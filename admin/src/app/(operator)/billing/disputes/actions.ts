@@ -248,8 +248,7 @@ export async function assembleEvidenceBundle(
 }
 
 // ADR-0052 Sprint 1.1 — contest preparation + manual submit tracking.
-// Sprint 1.2 will add actual Razorpay API integration via the existing
-// `admin/src/lib/razorpay/client.ts` module.
+// Sprint 1.2 — live Razorpay API integration (uploadDocument + contestDispute).
 export async function prepareContestPacket(
   disputeId: string,
   summary: string,
@@ -280,6 +279,135 @@ export async function markContestSubmitted(
     })
   if (error) return { error: error.message }
   return { ok: true }
+}
+
+/**
+ * ADR-0052 Sprint 1.2 — live Razorpay submit.
+ *
+ * Flow:
+ *   1. Load dispute + validate packet prepared + evidence bundle present.
+ *   2. Fetch the evidence bundle ZIP from R2.
+ *   3. Upload the ZIP to Razorpay Documents API → get document_id.
+ *   4. Call Razorpay contest API with the summary + document_id.
+ *   5. Persist the Razorpay response via billing_dispute_mark_contest_submitted.
+ *
+ * Returns the Razorpay dispute response or an error object. Audit-logged
+ * via the existing admin.admin_audit_log trigger chain (which also feeds
+ * the evidence ledger in ADR-0051).
+ */
+export async function submitContestViaRazorpay(
+  disputeId: string,
+): Promise<
+  | { ok: true; razorpay_dispute_id: string; razorpay_document_id: string }
+  | { error: string }
+> {
+  const { contestDispute, uploadDocument, isRazorpayEnvReady } = await import(
+    '@/lib/razorpay/client'
+  )
+  const { fetchEvidenceBundle } = await import('@/lib/billing/r2-disputes')
+
+  if (!isRazorpayEnvReady()) {
+    return {
+      error:
+        'Razorpay credentials not configured on the admin server. Set RAZORPAY_KEY_ID + RAZORPAY_KEY_SECRET.',
+    }
+  }
+
+  const supabase = await createServerClient()
+
+  // 1. Load the dispute record with everything we need for the contest
+  const { data: d, error: dErr } = await supabase
+    .from('disputes')
+    .select(
+      `razorpay_dispute_id, amount_paise, contest_summary,
+       contest_packet_prepared_at, contest_packet_r2_key,
+       evidence_bundle_r2_key, status`,
+    )
+    .eq('id', disputeId)
+    .single()
+
+  if (dErr || !d) {
+    return { error: dErr?.message ?? 'dispute not found' }
+  }
+  if (!d.contest_packet_prepared_at) {
+    return {
+      error:
+        'Contest packet not prepared yet. Prepare summary + packet first, then submit.',
+    }
+  }
+  if (!d.contest_summary) {
+    return { error: 'contest_summary missing; re-prepare the packet.' }
+  }
+  const bundleKey = (d.contest_packet_r2_key ?? d.evidence_bundle_r2_key) as string | null
+  if (!bundleKey) {
+    return {
+      error:
+        'No evidence bundle attached. Run "Assemble Evidence Bundle" before submitting.',
+    }
+  }
+  if (d.status !== 'open') {
+    return { error: `Cannot submit from status '${d.status}'; only 'open' is submittable.` }
+  }
+
+  // 2. Fetch the bundle ZIP
+  let zipBuffer: Buffer
+  try {
+    zipBuffer = await fetchEvidenceBundle(bundleKey)
+  } catch (e) {
+    return { error: `Failed to fetch evidence bundle from R2: ${e instanceof Error ? e.message : String(e)}` }
+  }
+
+  // 3. Upload to Razorpay Documents API
+  let documentId: string
+  try {
+    const doc = await uploadDocument({
+      file: zipBuffer,
+      filename: `evidence-${disputeId}.zip`,
+      contentType: 'application/zip',
+      purpose: 'dispute_evidence',
+    })
+    documentId = doc.id
+  } catch (e) {
+    return {
+      error: `Razorpay document upload failed: ${e instanceof Error ? e.message : String(e)}`,
+    }
+  }
+
+  // 4. Contest via Razorpay contest API
+  let contestResponse: Awaited<ReturnType<typeof contestDispute>>
+  try {
+    contestResponse = await contestDispute({
+      razorpayDisputeId: d.razorpay_dispute_id as string,
+      evidence: {
+        amount: d.amount_paise as number,
+        summary: d.contest_summary as string,
+        uncategorized_file: [documentId],
+      },
+      action: 'submit',
+    })
+  } catch (e) {
+    return {
+      error: `Razorpay contest submission failed: ${e instanceof Error ? e.message : String(e)}`,
+    }
+  }
+
+  // 5. Persist the response
+  const markResult = await markContestSubmitted(
+    disputeId,
+    contestResponse as unknown as Record<string, unknown>,
+  )
+  if ('error' in markResult) {
+    // Razorpay succeeded but our record-keeping failed — surface loudly.
+    return {
+      error: `Razorpay submit OK (dispute ${contestResponse.id}) but record failed: ${markResult.error}`,
+    }
+  }
+
+  return {
+    ok: true,
+    razorpay_dispute_id: contestResponse.id,
+    razorpay_document_id: documentId,
+  }
 }
 
 export async function markDisputeState(

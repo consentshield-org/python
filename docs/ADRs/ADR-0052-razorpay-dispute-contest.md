@@ -2,7 +2,7 @@
 
 (c) 2026 Sudhindra Anegondhi a.d.sudhindra@gmail.com
 
-**Status:** In Progress (Sprint 1.1 shipped 2026-04-20; Sprint 1.2 deferred — live Razorpay sandbox)
+**Status:** Completed — 2026-04-20
 **Date:** 2026-04-20
 **Phases:** 1
 **Sprints:** 2
@@ -53,16 +53,28 @@ The existing `billing_dispute_mark_state` RPC remains for post-submission lifecy
 
 **Status:** `[x] complete — 2026-04-20`
 
-### Sprint 1.2 — Live Razorpay API integration (deferred)
+### Sprint 1.2 — Live Razorpay API integration (shipped)
 
 **Deliverables:**
 
-- [ ] Extend `admin/src/lib/razorpay/client.ts` with `contestDispute(disputeId, evidence)` + `uploadDocument(path, purpose)`.
-- [ ] New server action `submitContestViaRazorpay(disputeId)` that calls Razorpay contest API and passes the response to `mark_contest_submitted`.
-- [ ] UI toggle — "Submit to Razorpay" button replaces the manual "Mark submitted" button when sandbox credentials are verified.
-- [ ] Tests mock the Razorpay HTTP layer.
+- [x] Extended `admin/src/lib/razorpay/client.ts`:
+  - `uploadDocument({ file, filename, contentType, purpose })` — multipart POST to `/v1/documents`. Zero-dep multipart encoding (Rule 15). Returns the Razorpay document id.
+  - `contestDispute({ razorpayDisputeId, evidence, action })` — JSON POST to `/v1/disputes/{id}/contest`. Evidence shape matches Razorpay's contest API (amount, summary, uncategorized_file[], etc.). Client-side validation: summary 20–1000 chars, amount positive integer.
+- [x] `submitContestViaRazorpay(disputeId)` server action in `admin/src/app/(operator)/billing/disputes/actions.ts`:
+  1. Loads dispute + validates packet-prepared + evidence bundle present.
+  2. Fetches the bundle ZIP from R2 via `fetchEvidenceBundle()`.
+  3. Uploads ZIP to Razorpay Documents API → document_id.
+  4. Calls Razorpay contest endpoint with summary + amount + uncategorized_file[doc_id].
+  5. Passes response to `markContestSubmitted(id, response)` for persistence.
+- [x] `admin/src/lib/billing/r2-disputes.ts` — new `fetchEvidenceBundle(r2Key)` helper (reuses `getObject`).
+- [x] UI — dispute detail now shows both "Submit to Razorpay" (auto) and "Mark submitted manually" (out-of-band fallback) buttons when packet is prepared + status is open.
+- [x] `scripts/check-env-isolation.ts` — `RAZORPAY_KEY_SECRET` removed from customer-only list. Policy comment clarifies that admin holds it for both refund (ADR-0034) and contest (ADR-0052) flows; `RAZORPAY_WEBHOOK_SECRET` stays customer-only.
+- [x] `admin/.env.local` — `RAZORPAY_KEY_ID` + `RAZORPAY_KEY_SECRET` added (test-mode).
+- [x] Tests: `tests/billing/dispute-contest-razorpay.test.ts` — 6/6 PASS mocking `fetch`. Covers multipart upload shape, JSON contest POST shape, client-side validators (missing summary, over-length summary, non-positive amount), RazorpayApiError on 4xx.
 
-**Status:** `[ ] planned — blocked on Razorpay sandbox setup`
+**Status:** `[x] complete — 2026-04-20`
+
+Manual smoke test (pending): run through a sandbox dispute end-to-end once Razorpay Dashboard is used to create a test dispute on the sandbox account. The contest API has no test-data generator, so this is a one-off live verification.
 
 ## Consequences
 

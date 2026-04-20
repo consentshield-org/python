@@ -159,3 +159,152 @@ export function subscriptionDashboardUrl(subscriptionId: string): string {
 export function isRazorpayEnvReady(): boolean {
   return Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET)
 }
+
+// ============================================================================
+// ADR-0052 Sprint 1.2 — Dispute contest + Documents APIs.
+// ============================================================================
+
+export interface RazorpayDocument {
+  id: string
+  entity: 'document'
+  purpose: string
+  name: string
+  mime_type: string
+  size: number
+  created_at: number
+}
+
+export interface RazorpayDisputeResponse {
+  id: string
+  entity: 'dispute'
+  payment_id: string
+  amount: number
+  currency: string
+  amount_deducted?: number
+  reason_code?: string
+  respond_by?: number
+  status: 'open' | 'under_review' | 'won' | 'lost' | 'closed'
+  phase?: string
+  evidence?: Record<string, unknown>
+  created_at: number
+}
+
+export interface DisputeEvidenceInput {
+  /**
+   * Total amount being contested, in paise. Usually the full disputed amount.
+   */
+  amount: number
+  /**
+   * Summary text — why this dispute is invalid. Max 1000 chars per Razorpay.
+   * Rule 3 reminder: operator-authored; MUST NOT contain customer PII.
+   */
+  summary: string
+  /**
+   * Array of Razorpay document_ids (from uploadDocument()) that back up the
+   * contest. These can go under any of Razorpay's evidence slots — we use
+   * `uncategorized_file` for our bundled ZIP, which is the broadest slot.
+   */
+  uncategorized_file?: string[]
+  /**
+   * Customer email address — required by some dispute categories. Optional
+   * at our level; Razorpay surfaces a validation error if missing.
+   */
+  customer_email_address?: string
+  /**
+   * Optional: billing address, service date, cancellation policy refs, etc.
+   * Map to Razorpay's evidence fields directly if the operator supplies them.
+   */
+  billing_address?: string
+  service_date?: string
+}
+
+/**
+ * Upload a file to Razorpay as a `document` (used for dispute evidence).
+ * Multipart request — `file` is a Buffer, `filename` + `contentType` drive
+ * the multipart part headers. Returns the Razorpay document id that the
+ * contest API then references.
+ */
+export async function uploadDocument(params: {
+  file: Buffer
+  filename: string
+  contentType: string
+  purpose?: string  // defaults to 'dispute_evidence'
+}): Promise<RazorpayDocument> {
+  const { keyId, keySecret } = credentials()
+
+  const boundary = `----ConsentShieldBoundary${Date.now().toString(36)}`
+  const crlf = '\r\n'
+  const header =
+    `--${boundary}${crlf}` +
+    `Content-Disposition: form-data; name="file"; filename="${params.filename}"${crlf}` +
+    `Content-Type: ${params.contentType}${crlf}${crlf}`
+  const purposeField =
+    `${crlf}--${boundary}${crlf}` +
+    `Content-Disposition: form-data; name="purpose"${crlf}${crlf}` +
+    (params.purpose ?? 'dispute_evidence')
+  const trailer = `${crlf}--${boundary}--${crlf}`
+
+  const body = Buffer.concat([
+    Buffer.from(header, 'utf8'),
+    params.file,
+    Buffer.from(purposeField, 'utf8'),
+    Buffer.from(trailer, 'utf8'),
+  ])
+
+  const res = await fetch(`${RAZORPAY_BASE_URL}/v1/documents`, {
+    method: 'POST',
+    headers: {
+      Authorization: authHeader(keyId, keySecret),
+      'Content-Type': `multipart/form-data; boundary=${boundary}`,
+      'Content-Length': String(body.length),
+    },
+    body,
+    cache: 'no-store',
+  })
+
+  if (!res.ok) {
+    const text = await res.text()
+    try {
+      throw new RazorpayApiError(res.status, JSON.parse(text) as RazorpayErrorPayload)
+    } catch (e) {
+      if (e instanceof RazorpayApiError) throw e
+      throw new RazorpayApiError(res.status, text)
+    }
+  }
+
+  return (await res.json()) as RazorpayDocument
+}
+
+/**
+ * Submit a dispute contest to Razorpay. Moves the dispute to `under_review`
+ * on their side. `action: 'draft'` is also supported for preview / save-only.
+ */
+export async function contestDispute(params: {
+  razorpayDisputeId: string
+  evidence: DisputeEvidenceInput
+  action: 'draft' | 'submit'
+}): Promise<RazorpayDisputeResponse> {
+  if (!params.razorpayDisputeId) {
+    throw new Error('razorpayDisputeId required')
+  }
+  if (!params.evidence.summary || params.evidence.summary.length < 20) {
+    throw new Error('evidence.summary must be at least 20 characters')
+  }
+  if (params.evidence.summary.length > 1000) {
+    throw new Error('evidence.summary cannot exceed 1000 characters (Razorpay limit)')
+  }
+  if (!Number.isInteger(params.evidence.amount) || params.evidence.amount <= 0) {
+    throw new Error('evidence.amount must be a positive integer (paise)')
+  }
+
+  return razorpayFetch<RazorpayDisputeResponse>(
+    `/v1/disputes/${encodeURIComponent(params.razorpayDisputeId)}/contest`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        ...params.evidence,
+        action: params.action,
+      }),
+    },
+  )
+}

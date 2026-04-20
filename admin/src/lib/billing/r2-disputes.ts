@@ -5,7 +5,7 @@
 
 import { createHash } from 'node:crypto'
 
-import { putObject, presignGet } from '@/lib/storage/sigv4'
+import { putObject, presignGet, getObject } from '@/lib/storage/sigv4'
 
 interface R2Config {
   endpoint: string
@@ -82,4 +82,24 @@ export async function uploadEvidenceBundle(
     bytes: zipBuffer.length,
     presignedUrl,
   }
+}
+
+/**
+ * Fetch an evidence bundle ZIP from R2 by its stored r2Key.
+ * Used by the ADR-0052 Sprint 1.2 Razorpay submit flow — we pull the
+ * ZIP into memory, upload it to Razorpay's Documents API as multipart,
+ * then reference the returned document_id in the contest payload.
+ */
+export async function fetchEvidenceBundle(r2Key: string): Promise<Buffer> {
+  const cfg = loadR2Config()
+  const prefix = `${cfg.bucket}/`
+  const key = r2Key.startsWith(prefix) ? r2Key.slice(prefix.length) : r2Key
+  return getObject({
+    endpoint: cfg.endpoint,
+    region: cfg.region,
+    bucket: cfg.bucket,
+    key,
+    accessKeyId: cfg.accessKeyId,
+    secretAccessKey: cfg.secretAccessKey,
+  })
 }

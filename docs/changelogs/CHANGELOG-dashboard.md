@@ -842,3 +842,10 @@ Combined: 42 (app) + 135 (rls/admin/depa) + 1 (admin smoke) = **178/178**.
 ### Changed
 - `admin/src/app/(operator)/billing/disputes/actions.ts` — added `prepareContestPacket` + `markContestSubmitted` server actions; `DisputeRow` extended with contest fields; `listDisputes` + `getDisputeDetail` select them.
 - Dispute detail page passes the new contest props to `DisputeActions`.
+
+## [ADR-0052 Sprint 1.2] — 2026-04-20
+
+**ADR:** ADR-0052 — Razorpay dispute contest submission
+
+### Added
+- Dispute detail page now surfaces both "Submit to Razorpay" (auto via Documents + Contest APIs) and "Mark submitted manually" (out-of-band fallback) when packet is prepared.

@@ -500,3 +500,19 @@ Service-role key is now only used by migrations.
 
 ### Note
 - SDF files are emitted for all orgs (even non-SDF) so ZIP shape stays stable across customers. Empty arrays for orgs with no DPIA records / engagements.
+
+## [ADR-0052 Sprint 1.2] — 2026-04-20
+
+**ADR:** ADR-0052 — Razorpay dispute contest submission
+
+### Added
+- `admin/src/lib/razorpay/client.ts` — extended with `uploadDocument()` (multipart POST to `/v1/documents`, zero-dep encoding per Rule 15) and `contestDispute()` (JSON POST to `/v1/disputes/{id}/contest`).
+- `admin/src/lib/billing/r2-disputes.ts` — new `fetchEvidenceBundle(r2Key)` helper.
+- `submitContestViaRazorpay(disputeId)` server action — orchestrates bundle fetch → doc upload → contest submit → response persistence.
+
+### Changed
+- `admin/.env.local` — added `RAZORPAY_KEY_ID` + `RAZORPAY_KEY_SECRET` (test mode) for admin-side Razorpay API access.
+- `scripts/check-env-isolation.ts` — removed `RAZORPAY_KEY_SECRET` from the admin-blocked list (admin genuinely needs it for refund + contest flows). `RAZORPAY_WEBHOOK_SECRET` stays customer-only.
+
+### Tested
+- [x] `tests/billing/dispute-contest-razorpay.test.ts` — 6/6 PASS via mocked fetch (multipart shape, contest JSON shape, summary/amount validators, RazorpayApiError surface)

@@ -6,6 +6,7 @@ import {
   markDisputeState,
   prepareContestPacket,
   markContestSubmitted,
+  submitContestViaRazorpay,
 } from '../actions'
 
 interface Props {
@@ -107,6 +108,18 @@ export function DisputeActions({
     })
   }
 
+  function handleAutoSubmit() {
+    setContestError(null)
+    startTransition(async () => {
+      const result = await submitContestViaRazorpay(disputeId)
+      if ('error' in result) {
+        setContestError(result.error)
+      } else {
+        window.location.reload()
+      }
+    })
+  }
+
   return (
     <section className="rounded-lg border p-4 space-y-4">
       <h2 className="text-sm font-semibold text-gray-700">Actions</h2>
@@ -158,16 +171,27 @@ export function DisputeActions({
               )}
               {submittedToRazorpay ? (
                 <div className="pt-1 text-green-700">
-                  ✓ Marked submitted {new Date(contestSubmittedAt!).toLocaleString('en-IN')}
+                  ✓ Submitted {new Date(contestSubmittedAt!).toLocaleString('en-IN')}
                 </div>
               ) : (
-                <button
-                  onClick={handleMarkSubmitted}
-                  disabled={isPending}
-                  className="mt-2 px-3 py-1 text-xs rounded bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50"
-                >
-                  {isPending ? 'Saving…' : 'Mark submitted to Razorpay'}
-                </button>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={handleAutoSubmit}
+                    disabled={isPending}
+                    className="px-3 py-1 text-xs rounded bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50"
+                    title="Uploads the bundle to Razorpay Documents API and posts to the dispute contest endpoint."
+                  >
+                    {isPending ? 'Submitting to Razorpay…' : 'Submit to Razorpay'}
+                  </button>
+                  <button
+                    onClick={handleMarkSubmitted}
+                    disabled={isPending}
+                    className="px-3 py-1 text-xs rounded border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50"
+                    title="Record that submission happened via Razorpay dashboard / out-of-band."
+                  >
+                    Mark submitted manually
+                  </button>
+                </div>
               )}
             </div>
           )}
