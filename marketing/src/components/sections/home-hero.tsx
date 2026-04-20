@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { HowItWorksDemo } from './how-it-works-demo'
 import { ROUTES } from '@/lib/routes'
 
 export function HomeHero() {
@@ -32,27 +33,37 @@ export function HomeHero() {
         <div className="hero-ctas">
           <Link href={ROUTES.contact.href} className="btn btn-primary">
             Book a demo
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path
+                d="M3 7h8m0 0L7.5 3.5M11 7L7.5 10.5"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </Link>
-          <Link href={ROUTES.product.href} className="btn btn-ghost">
-            See the platform
+          <HowItWorksDemo />
+          <Link href={ROUTES.depa.href} className="btn btn-ghost">
+            Why DEPA-native matters
           </Link>
         </div>
         <div className="hero-meta">
           <div className="hero-meta-item">
-            <span className="hero-meta-label">Stack</span>
-            <span className="hero-meta-value">
-              DEPA-native · Stateless oracle
-            </span>
+            <span className="hero-meta-label">Enforcement begins</span>
+            <span className="hero-meta-value">13 May 2027</span>
           </div>
           <div className="hero-meta-item">
-            <span className="hero-meta-label">Jurisdiction</span>
-            <span className="hero-meta-value">India · DPDP Act 2023</span>
+            <span className="hero-meta-label">Per-violation penalty</span>
+            <span className="hero-meta-value">Up to ₹250 crore</span>
           </div>
           <div className="hero-meta-item">
-            <span className="hero-meta-label">Status</span>
-            <span className="hero-meta-value">
-              Confidential preview — 2026
-            </span>
+            <span className="hero-meta-label">Indian businesses affected</span>
+            <span className="hero-meta-value">4,00,000+</span>
+          </div>
+          <div className="hero-meta-item">
+            <span className="hero-meta-label">Deploys in</span>
+            <span className="hero-meta-value">48 hours</span>
           </div>
         </div>
       </div>

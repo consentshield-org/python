@@ -2,6 +2,28 @@
 
 Public marketing site (`marketing/` workspace → `consentshield.in`). New in 2026-04-21.
 
+## [ADR-0501 Sprint 2.5] — 2026-04-21
+
+**ADR:** ADR-0501 — ConsentShield marketing site
+**Sprint:** Phase 2 Sprint 2.5 — How-it-works demo modal (Phase 2 close-out)
+
+### Added
+- `marketing/src/components/sections/demo-frames.tsx` — 7 frame function components + `FRAMES` array. Staggered `animation-delay` inline styles preserved verbatim. Sub-helpers: `BrowserBar`, `PurposeRow`, `TrackerRow`, `PrefRow`, `Receipt`, `LogTime`.
+- `marketing/src/components/sections/how-it-works-demo.tsx` — client island exporting `HowItWorksDemo` (trigger button) + internal `DemoModal`. Auto-advance (6s), progress-fill transition (imperative reflow-force), play/pause/prev/next/dot-jump controls, Escape to close, backdrop-click to close, body scroll lock. Frame remount via `key={index-tick}` replays staggered animations from the top on every navigation action.
+
+### Changed
+- `marketing/src/components/sections/home-hero.tsx` — **corrected to match HTML spec**:
+  - Third CTA "Why DEPA-native matters" added (routed to `/depa`).
+  - "See how it works" CTA (with play-triangle SVG) triggers `HowItWorksDemo` — replaces the Sprint-2.1 placeholder "See the platform".
+  - `hero-meta` corrected to the four items in the spec (Enforcement begins · 13 May 2027 / Per-violation penalty · Up to ₹250 crore / Indian businesses affected · 4,00,000+ / Deploys in · 48 hours). Sprint 2.1 had invented three placeholder items (Stack / Jurisdiction / Status).
+
+### Tested
+- [x] `cd marketing && bun run build` — 12 static routes; clean. Home page prerenders with the demo modal hydrating client-side only when the trigger button is clicked.
+- [x] `cd marketing && bun run lint` — 0 errors, 0 warnings.
+
+### Phase 2 status
+All five Phase 2 sprints (2.1–2.5) shipped 2026-04-21. The marketing site now matches the `consentshield-site-v2.html` spec end-to-end: 9 routes + 6 client islands (Nav, SolutionsTabs, PriceToggle, ContactForm, DpaSigningCard, HowItWorksDemo). Remaining: Phase 3 (downloads pipeline) + Phase 4 (security hardening), both explicitly deferred.
+
 ## [ADR-0501 Sprint 2.4] — 2026-04-21
 
 **ADR:** ADR-0501 — ConsentShield marketing site

@@ -2,7 +2,7 @@
 
 (c) 2026 Sudhindra Anegondhi a.d.sudhindra@gmail.com
 
-**Status:** In Progress (Sprints 1.1 + 2.1 + 2.2 + 2.3 + 2.4 shipped 2026-04-21; Sprint 2.5 + Phases 3–4 pending)
+**Status:** In Progress (Phase 1 + Phase 2 complete 2026-04-21; Phases 3–4 pending)
 **Date:** 2026-04-21
 **Phases:** 4
 **Sprints:** 4+ (Phase 1 has one sprint; later phases sized once content + formats land)
@@ -154,9 +154,17 @@ Sprint breakdown:
 
 **Status:** `[x] complete — 2026-04-21`
 
-#### Sprint 2.5 — How-it-works demo modal (pending)
+#### Sprint 2.5 — How-it-works demo modal (shipped 2026-04-21)
 
-- Client-component modal, 7 frames, play/pause/next/prev, esc-to-close, backdrop-click-to-close. Portal into body.
+**Deliverables:**
+
+- [x] `marketing/src/components/sections/demo-frames.tsx` — 7 frame function components (Frame1UserArrives → Frame7AuditExport) + `FRAMES` array. Inline styles + `animation-delay` values preserved verbatim from the HTML spec so log-line / artefact / receipt staggered animations replay identically on every frame remount. Small reusable helpers inside: `BrowserBar`, `PurposeRow`, `TrackerRow`, `PrefRow`, `Receipt`, `LogTime`.
+- [x] `marketing/src/components/sections/how-it-works-demo.tsx` — client island. Two exports:
+  - `HowItWorksDemo` — button trigger rendered inline in the hero CTA row.
+  - `DemoModal` — mounted only while open. State: `index` (0–6), `playing` (bool), `tick` (re-run key). Effects: auto-advance (6s setTimeout), progress-fill animation (imperative via `fillRef` — reflow-force + width transition matches the HTML's `showDemoFrame` technique), Escape key close, body scroll lock. Controls: prev / play-pause / next / click-dot. Current frame remounted via `key={index-tick}` so `animation-delay` sequences replay from frame 1 of each log chain.
+- [x] `marketing/src/components/sections/home-hero.tsx` — **corrected** to match spec: third CTA "Why DEPA-native matters" added; "See how it works" replaces the Sprint-2.1 placeholder "See the platform" and now triggers the demo; hero-meta corrected to the four items in the HTML spec (Enforcement begins · 13 May 2027 / Per-violation penalty · Up to ₹250 crore / Indian businesses affected · 4,00,000+ / Deploys in · 48 hours) — Sprint 2.1 had invented three different items.
+
+**Status:** `[x] complete — 2026-04-21`
 
 ### Phase 3 — Download pipeline
 
