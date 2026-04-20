@@ -3,10 +3,14 @@
 import { useState, type ReactNode } from 'react'
 
 // ─── Sector data ─────────────────────────────────────────────────────────
-// Ported verbatim from consentshield-site-v2.html (#page-solutions).
-// Each sector has a tab label, slug (used as `id=tab-<slug>` anchor for
-// cross-page links from the footer), priority badge, scenario copy, two
-// stats, and three feature cards with inline SVG icons.
+// Structure mirrors consentshield-site-v2.html (#page-solutions), but with
+// two intentional deviations (customer-facing site, not an investor deck):
+//   · `priority` badges stripped — internal ICP ranking isn't the visitor's
+//     concern.
+//   · Market-sizing stats (TAM / addressable facilities / ICP counts)
+//     removed. Only customer-value stats (what the product does for the
+//     reader) remain — one per sector.
+// These deviations will be captured in the alignment doc when one is opened.
 
 interface Stat {
   num: string
@@ -22,10 +26,9 @@ interface Feature {
 interface Sector {
   slug: string
   tab: ReactNode
-  priority: string
   heading: ReactNode
   description: ReactNode
-  stats: [Stat, Stat]
+  stat: Stat
   features: [Feature, Feature, Feature]
 }
 
@@ -33,14 +36,10 @@ const SECTORS: Sector[] = [
   {
     slug: 'saas',
     tab: <>SaaS &amp; B2B</>,
-    priority: 'PRIORITY 01',
     heading: 'Indian SaaS founders, 5–50 employees, seed to Series B.',
     description:
       'DPDP is now a due diligence item for fundraising. VCs ask about it. EU customer exposure adds GDPR urgency on top. DEPA-native artefacts answer the "show me your consent model" question in investor calls with a specific, auditable answer — not a cookie banner screenshot.',
-    stats: [
-      { num: '~15,000', label: 'Indian SaaS startups in the immediate ICP' },
-      { num: '48 hrs', label: 'From signup to first enforcement report' },
-    ],
+    stat: { num: '48 hrs', label: 'From signup to first enforcement report' },
     features: [
       {
         icon: (
@@ -95,7 +94,6 @@ const SECTORS: Sector[] = [
   {
     slug: 'edtech',
     tab: 'Edtech',
-    priority: 'PRIORITY 02',
     heading: 'Edtech platforms, 50K–2M users, K-12 or upskilling.',
     description: (
       <>
@@ -106,13 +104,10 @@ const SECTORS: Sector[] = [
         case is ever opened.
       </>
     ),
-    stats: [
-      { num: '~3,000', label: 'Indian edtech platforms in scope' },
-      {
-        num: 'Verifiable',
-        label: 'Parental consent recorded as a distinct artefact',
-      },
-    ],
+    stat: {
+      num: 'Verifiable',
+      label: 'Parental consent recorded as a distinct artefact',
+    },
     features: [
       {
         icon: (
@@ -170,14 +165,10 @@ const SECTORS: Sector[] = [
   {
     slug: 'd2c',
     tab: <>D2C &amp; e-commerce</>,
-    priority: 'PRIORITY 03',
     heading: 'D2C e-commerce, ₹5–50 crore GMV.',
     description:
       'Email and WhatsApp marketing lists are explicitly regulated under DPDP. Artefact-scoped deletion means when a user withdraws, marketing actually stops across Mailchimp, CleverTap, MoEngage, WhatsApp, and others — not just fires a webhook that gets ignored.',
-    stats: [
-      { num: '~25,000', label: 'Indian D2C brands in the target market' },
-      { num: '13', label: 'Pre-built deletion connectors on Pro tier' },
-    ],
+    stat: { num: '13', label: 'Pre-built deletion connectors on Pro tier' },
     features: [
       {
         icon: (
@@ -237,14 +228,10 @@ const SECTORS: Sector[] = [
   {
     slug: 'healthcare',
     tab: 'Healthcare (ABDM)',
-    priority: 'PRIORITY 04',
     heading: 'Single-doctor clinics and small group practices.',
     description:
-      'ABDM registration plus health data means immediate DPDP obligation. The unified DEPA artefact model — the same structure whether the framework is DPDP or ABDM — is the headline differentiator. One artefact register covers both. Target distribution: IMA chapters across Mumbai, Delhi NCR, Bengaluru, Hyderabad, Chennai, Pune, Kolkata, Ahmedabad.',
-    stats: [
-      { num: '4,38,000', label: 'ABDM-registered facilities in scope' },
-      { num: 'Zero', label: 'Clinical content persisted by ConsentShield' },
-    ],
+      'ABDM registration plus health data means immediate DPDP obligation. The unified DEPA artefact model — the same structure whether the framework is DPDP or ABDM — is the headline differentiator. One artefact register covers both.',
+    stat: { num: 'Zero', label: 'Clinical content persisted by ConsentShield' },
     features: [
       {
         icon: (
@@ -305,14 +292,10 @@ const SECTORS: Sector[] = [
   {
     slug: 'bfsi',
     tab: <>BFSI (NBFC + Broking)</>,
-    priority: 'PRIORITY 05 · NEW',
     heading: 'Digital NBFCs and broking/wealth platforms.',
     description:
-      "India's 1,500+ digital-first NBFCs and 500+ SEBI-registered broking platforms carry the same DPDP obligations as large banks — with none of the internal compliance infrastructure. Sensitive financial data at scale (KYC, bureau data, contact permissions, trading history), dual regulatory obligations under DPDP plus RBI/SEBI, and no existing tool that maps these intersections into operational software.",
-    stats: [
-      { num: '1,500+', label: 'Digital-first NBFCs addressable today' },
-      { num: 'First', label: 'India-native Regulatory Exemption Engine' },
-    ],
+      'Digital-first NBFCs and SEBI-registered broking platforms carry the same DPDP obligations as large banks — with none of the internal compliance infrastructure. Sensitive financial data at scale (KYC, bureau data, contact permissions, trading history), dual regulatory obligations under DPDP plus RBI/SEBI, and no existing tool that maps these intersections into operational software.',
+    stat: { num: 'First', label: 'India-native Regulatory Exemption Engine' },
     features: [
       {
         icon: (
@@ -409,18 +392,13 @@ export function SolutionsTabs() {
       >
         <div className="sol-panel-inner">
           <div className="sol-scenario">
-            <span className="mono" style={{ color: 'var(--teal)' }}>
-              {panel.priority}
-            </span>
             <h3>{panel.heading}</h3>
             <p>{panel.description}</p>
-            <div className="sol-stats">
-              {panel.stats.map((stat) => (
-                <div key={stat.label}>
-                  <div className="sol-stat-num">{stat.num}</div>
-                  <div className="sol-stat-label">{stat.label}</div>
-                </div>
-              ))}
+            <div className="sol-stats" style={{ gridTemplateColumns: '1fr' }}>
+              <div>
+                <div className="sol-stat-num">{panel.stat.num}</div>
+                <div className="sol-stat-label">{panel.stat.label}</div>
+              </div>
             </div>
           </div>
           <div className="sol-features">
