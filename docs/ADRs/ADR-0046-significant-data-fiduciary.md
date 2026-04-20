@@ -191,4 +191,20 @@ Phase 1 Sprint 1.2 (admin UI edit + customer dashboard card) is next.
 
 **Status:** `[x] complete` — 2026-04-18
 
-Phase 1 complete. Phases 2 (`dpia_records`), 3 (`data_auditor_engagements`), and 4 (DPIA export extension) remain — charter-only.
+Phase 1 complete. Phase 2 Sprint 2.1 shipped 2026-04-20 (see below). Phase 2 Sprint 2.2 (customer UI) is next. Phases 3 (`data_auditor_engagements`) and 4 (DPIA export extension) remain — charter-only.
+
+## Phase 2 Sprint 2.1 — shipped 2026-04-20
+
+**Deliverables:**
+
+- [x] `supabase/migrations/20260620000001_dpia_records.sql`:
+  - `public.dpia_records` table — org-scoped, RLS with read via `effective_org_role()` so account_owner inheritance works. Columns: title, processing_description, data_categories (jsonb array of category strings — Rule 3: never values), risk_level (low/medium/high), mitigations (jsonb object), auditor_attestation_ref + auditor_name (references, not bytes), conducted_at, next_review_at, status (draft/published/superseded), superseded_by FK, audit timestamps.
+  - `public.create_dpia_record()` — org_admin / admin (effective) only; creates in draft state.
+  - `public.publish_dpia_record()` — lifecycle transition draft → published; raises on re-publish.
+  - `public.supersede_dpia_record(old_id, replacement_id)` — same-org check, old flips to superseded, replacement auto-published if still draft.
+  - Updated-at trigger; indexes on (org_id, status, conducted_at) + next_review_at for "review due" queries.
+- [x] `tests/rls/dpia-records.test.ts` — 10/10 PASS covering: org_admin create happy path, cross-org create refused, cross-org read isolation, publish lifecycle, re-publish guard, supersede with replacement, cross-org replacement refused.
+
+**Status:** `[x] complete` — 2026-04-20
+
+Phase 2 Sprint 2.2 (customer UI at `/dashboard/dpia`) is next.

@@ -1139,3 +1139,16 @@ Closes four blocking findings from the 2026-04-14 review.
 
 ### Tested
 - [x] `tests/billing/customer-billing-profile-update.test.ts` — 8/8 PASS (happy path + audit row, cross-account isolation, empty GSTIN null-stored, all 5 validation failures)
+
+## [ADR-0046 Phase 2 Sprint 2.1] — 2026-04-20
+
+**ADR:** ADR-0046 — Significant Data Fiduciary foundation
+**Sprint:** Phase 2, Sprint 2.1 (DPIA records schema + RPCs)
+
+### Added
+- `20260620000001_dpia_records.sql` — `public.dpia_records` table (org-scoped, RLS via `effective_org_role()` so account_owner inherits org_admin), indexes on (org_id, status, conducted_at) + next_review_at (for review-due queries).
+- `public.create_dpia_record()`, `public.publish_dpia_record()`, `public.supersede_dpia_record()` — SECURITY DEFINER RPCs; write path restricted to `org_admin`/`admin` effective role.
+- Rule 3 respected throughout: `data_categories` is a JSONB array of category strings (never raw values); `auditor_attestation_ref` is a text pointer to customer-held artefacts, not the artefact bytes.
+
+### Tested
+- [x] `tests/rls/dpia-records.test.ts` — 10/10 PASS (create happy path, cross-org create refused, RLS read isolation, publish lifecycle, re-publish guard, supersede with replacement, cross-org replacement refused)
