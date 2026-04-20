@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-20T06:19:16.850Z
-> Files: 832 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-20T11:13:45.354Z
+> Files: 854 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../tmp/
 
@@ -15,6 +15,7 @@
 
 ## ../../../.claude/projects/-Users-sudhindra-projects-aiSpirit-consent-sheild/memory/
 
+- `feedback_adr_changelog_per_sprint.md` (~518 tok)
 - `feedback_billing_test_isolation.md` (~358 tok)
 - `feedback_bun_workspace_quirks.md` — Don't list non-existent dirs in root `package.json` `workspaces` (~517 tok)
 - `feedback_docs_vs_code_drift.md` (~534 tok)
@@ -36,7 +37,7 @@
 - `feedback_v2_backlog_pattern.md` (~479 tok)
 - `feedback_vitest_serial_for_supabase_auth.md` (~502 tok)
 - `feedback_wireframes_before_adrs.md` (~784 tok)
-- `MEMORY.md` (~1834 tok)
+- `MEMORY.md` (~1878 tok)
 - `project_admin_platform_2026-04-16.md` — What IS implemented as of 2026-04-16 (~1994 tok)
 - `project_admin_platform_2026-04-17.md` — What IS implemented as of 2026-04-17 (~2346 tok)
 - `project_admin_platform_2026-04-18.md` — State as of 2026-04-18 (~609 tok)
@@ -74,6 +75,7 @@
 - `.gitignore` — Git ignore rules (~182 tok)
 - `.prettierrc` (~29 tok)
 - `CLAUDE.md` — OpenWolf (~5779 tok)
+- `debug_rpc.ts` — Declares main (~218 tok)
 - `package.json` — Node.js package manifest (~117 tok)
 - `sentry.client.config.ts` (~166 tok)
 - `sentry.server.config.ts` (~166 tok)
@@ -83,7 +85,7 @@
 
 ## .claude/
 
-- `session-handoff.md` — Session Handoff — 2026-04-20 (ADR-1001 Sprints 2.2 + 2.3 wireframe) (~2883 tok)
+- `session-handoff.md` — Session Handoff — 2026-04-20 (late) (~4476 tok)
 
 ## .github/workflows/
 
@@ -129,13 +131,13 @@
 
 ## admin/src/app/(operator)/accounts/
 
-- `actions.ts` — Exports suspendAccountAction, restoreAccountAction (~570 tok)
+- `actions.ts` — Exports suspendAccountAction, restoreAccountAction, startAccountImpersonationAction (~1017 tok)
 - `page.tsx` — ADR-0048 Sprint 1.2 — Accounts list. (~1947 tok)
 
 ## admin/src/app/(operator)/accounts/[accountId]/
 
-- `action-bar.tsx` — AccountActionBar — renders form, modal (~1248 tok)
-- `page.tsx` — ADR-0048 Sprint 1.2 — Account detail. (~2847 tok)
+- `action-bar.tsx` — AccountActionBar — renders form, modal (~2316 tok)
+- `page.tsx` — ADR-0048 Sprint 1.2 — Account detail. (~2858 tok)
 
 ## admin/src/app/(operator)/admins/
 
@@ -163,12 +165,12 @@
 
 ## admin/src/app/(operator)/billing/disputes/
 
-- `actions.ts` — Exports DisputeRow, listDisputes, LedgerEventRow, getDisputeDetail + 4 more (~2778 tok)
+- `actions.ts` — ADR-0052 Sprint 1.2 — live Razorpay submit. (~3905 tok)
 - `page.tsx` — statusBadge — renders table (~1350 tok)
 
 ## admin/src/app/(operator)/billing/disputes/[disputeId]/
 
-- `dispute-actions.tsx` — STATE_OPTIONS (~2794 tok)
+- `dispute-actions.tsx` — STATE_OPTIONS (~3072 tok)
 - `page.tsx` — inr — renders table (~2685 tok)
 
 ## admin/src/app/(operator)/billing/export/
@@ -179,8 +181,8 @@
 
 ## admin/src/app/(operator)/billing/gst-statement/
 
-- `actions.ts` — Exports generateGstStatement (~1002 tok)
-- `form.tsx` — GstStatementForm — renders form (~1815 tok)
+- `actions.ts` — Exports generateGstStatement, generateGstr1Json (~1209 tok)
+- `form.tsx` — GstStatementForm — renders form (~2682 tok)
 - `page.tsx` — ADR-0050 Sprint 3.1 — GST statement generator. (~864 tok)
 
 ## admin/src/app/(operator)/billing/issuers/
@@ -231,7 +233,7 @@
 
 ## admin/src/app/(operator)/flags/
 
-- `actions.ts` — Exports setFeatureFlag, deleteFeatureFlag, toggleKillSwitch (~918 tok)
+- `actions.ts` — Exports setFeatureFlag, deleteFeatureFlag, toggleKillSwitch (~1084 tok)
 - `page.tsx` — ADR-0036 Sprint 1.1 — Feature Flags & Kill Switches panel. (~1110 tok)
 
 ## admin/src/app/(operator)/orgs/
@@ -366,7 +368,7 @@
 
 ## admin/src/components/flags/
 
-- `feature-flags-tab.tsx` — FeatureFlagsTab — renders form, table, modal (~4054 tok)
+- `feature-flags-tab.tsx` — FeatureFlagsTab — renders form, table, modal (~4124 tok)
 - `flags-tabs.tsx` — FlagsTabs (~469 tok)
 - `kill-switches-tab.tsx` — KillSwitchesTab — renders form, modal (~2312 tok)
 
@@ -425,7 +427,7 @@
 
 - `build-evidence-bundle.ts` — ADR-0050 Sprint 3.2 — Pure evidence bundle assembly for dispute workspace. (~1149 tok)
 - `build-export-zip.ts` — ADR-0050 Sprint 3.1 — Pure ZIP+CSV assembly for invoice export. (~964 tok)
-- `r2-disputes.ts` — ADR-0050 Sprint 3.2 — R2 helpers for dispute evidence bundles. (~630 tok)
+- `r2-disputes.ts` — Fetch an evidence bundle ZIP from R2 by its stored r2Key. (~828 tok)
 - `r2-invoices.ts` — ADR-0050 Sprint 2.2 — R2 invoice-upload wrapper. (~864 tok)
 - `render-invoice.ts` — ADR-0050 Sprint 2.2 — PDFKit-based invoice renderer (admin-side). (~2259 tok)
 - `resend-invoice.ts` — ADR-0050 Sprint 2.2 — Resend invoice-email dispatch (admin-side). (~988 tok)
@@ -436,7 +438,7 @@
 
 ## admin/src/lib/razorpay/
 
-- `client.ts` — Issue a refund against a captured Razorpay payment. Amount is in paise. (~1447 tok)
+- `client.ts` — Issue a refund against a captured Razorpay payment. Amount is in paise. (~2785 tok)
 
 ## admin/src/lib/storage/
 
@@ -461,7 +463,7 @@
 
 ## app/public/
 
-- `openapi.yaml` — Declares required (~4380 tok)
+- `openapi.yaml` (~6858 tok)
 
 ## app/sandbox-scripts/
 
@@ -607,7 +609,7 @@
 
 ## app/src/app/(dashboard)/dashboard/support-sessions/
 
-- `page.tsx` — ADR-0029 Sprint 4.1 + 2026-04-20 follow-up — customer-side Support sessions tab. (~2493 tok)
+- `page.tsx` — ADR-0029 Sprint 4.1 + 2026-04-20 follow-up — customer-side Support sessions tab. (~2602 tok)
 
 ## app/src/app/(dashboard)/dashboard/support/
 
@@ -695,6 +697,18 @@
 
 - `route.ts` — ADR-1001 Sprint 2.2 — Canary endpoint to exercise the Bearer middleware. (~324 tok)
 
+## app/src/app/api/v1/consent/artefacts/
+
+- `route.ts` — ADR-1002 Sprint 3.1 — GET /v1/consent/artefacts (~1027 tok)
+
+## app/src/app/api/v1/consent/artefacts/[id]/
+
+- `route.ts` — ADR-1002 Sprint 3.1 — GET /v1/consent/artefacts/{id} (~482 tok)
+
+## app/src/app/api/v1/consent/events/
+
+- `route.ts` — ADR-1002 Sprint 3.1 — GET /v1/consent/events (~832 tok)
+
 ## app/src/app/api/v1/consent/record/
 
 - `route.ts` — ADR-1002 Sprint 2.1 — POST /v1/consent/record (~2031 tok)
@@ -740,6 +754,7 @@
 - `context.ts` — Exports API_HDR, getApiContext, assertScope, buildApiContextHeaders (~546 tok)
 - `log-request.ts` — ADR-1001 Sprint 2.4 — fire-and-forget API request logging. (~276 tok)
 - `rate-limits.ts` — ADR-1001 Sprint 2.4 — rate tier limits. (~221 tok)
+- `v1-helpers.ts` — ADR-1002 Sprint 3.1 — shared response helpers for /v1/* handlers. (~566 tok)
 
 ## app/src/lib/auth/
 
@@ -764,6 +779,7 @@
 
 ## app/src/lib/consent/
 
+- `read.ts` — ADR-1002 Sprint 3.1 — server-side helpers for artefact + event read endpoints. (~1401 tok)
 - `record.ts` — ADR-1002 Sprint 2.1 — server-side helper for /v1/consent/record. (~790 tok)
 - `verify.ts` — ADR-1002 Sprint 1.2 — server-side helper for /v1/consent/verify. (~1147 tok)
 
@@ -823,7 +839,7 @@
 
 - `FEATURE-INVENTORY.md` — ConsentShield — Complete Feature Inventory (~9665 tok)
 - `ROADMAP-phase2.md` — ConsentShield — Phase 2 Roadmap (~3150 tok)
-- `STATUS.md` — ConsentShield Status (~3446 tok)
+- `STATUS.md` — ConsentShield Status (~3570 tok)
 - `V2-BACKLOG.md` — V2 Backlog — Deferred Items for Post-Phase-2 Review (~1378 tok)
 - `WHITEPAPER-AUDIT.md` — ConsentShield Integration Whitepaper — Critical Audit vs. Implementation (~4878 tok)
 
@@ -879,18 +895,21 @@
 - `ADR-0049-security-observability-ingestion.md` — ADR-0049: Security observability ingestion — rate_limit_events + sentry_events (~2365 tok)
 - `ADR-0050-admin-account-aware-billing.md` — ADR-0050: Admin account-aware billing — issuer entities, invoices, GST, dispute workspace (~12228 tok)
 - `ADR-0051-billing-evidence-ledger.md` — ADR-0051 — Billing evidence ledger (chargeback-defense capture points) (~1937 tok)
-- `ADR-0052-razorpay-dispute-contest.md` — ADR-0052 — Razorpay dispute contest submission (~1278 tok)
+- `ADR-0052-razorpay-dispute-contest.md` — ADR-0052 — Razorpay dispute contest submission (~1665 tok)
+- `ADR-0053-gstr1-json-export.md` — ADR-0053 — GSTR-1 JSON export for monthly filing (~1864 tok)
 - `ADR-0054-customer-billing-portal.md` — ADR-0054 — Customer-facing billing portal (invoice history + billing profile) (~3086 tok)
+- `ADR-0055-account-scoped-impersonation.md` — ADR-0055 — Account-scoped impersonation (~1701 tok)
+- `ADR-0056-account-scoped-feature-flags.md` — ADR-0056 — Per-account feature-flag targeting (~1347 tok)
 - `ADR-0057-sectoral-template-switcher.md` — ADR-0057 — Customer-facing sectoral template switcher (Settings → Account) (~1395 tok)
 - `ADR-1001-truth-in-marketing-and-public-api-foundation.md` — ADR-1001: Truth-in-Marketing + Public API Foundation (~5650 tok)
-- `ADR-1002-dpdp-section6-runtime-enforcement.md` — ADR-1002: DPDP §6 Runtime Enforcement — Verify, Record, Artefact Ops, Deletion API (~5052 tok)
+- `ADR-1002-dpdp-section6-runtime-enforcement.md` — ADR-1002: DPDP §6 Runtime Enforcement — Verify, Record, Artefact Ops, Deletion API (~5619 tok)
 - `ADR-1003-processor-posture-and-healthcare-unlock.md` — ADR-1003: Processor Posture + Healthcare Category Unlock (~3365 tok)
 - `ADR-1004-statutory-retention-material-change-silent-failure.md` — ADR-1004: Statutory Retention + Material-Change Re-consent + Silent-Failure Detection (~3856 tok)
 - `ADR-1005-operations-maturity.md` — ADR-1005: Operations Maturity — Webhook Reference, Support Model, Status Page, Multi-channel Alerts, (~3575 tok)
 - `ADR-1006-developer-experience-and-openapi.md` — ADR-1006: Developer Experience — Client Libraries + OpenAPI Spec + CI Drift Check (~2658 tok)
 - `ADR-1007-connector-ecosystem-expansion.md` — ADR-1007: Connector Ecosystem Expansion + Platform Plugins (~2738 tok)
 - `ADR-1008-scale-audit-polish-and-p3-hardening.md` — ADR-1008: Scale + Audit Polish + P3 Hardening (~3065 tok)
-- `ADR-index.md` — ADR Index (~2230 tok)
+- `ADR-index.md` — ADR Index (~2355 tok)
 - `ADR-template.md` — ADR-NNNN: Title (~423 tok)
 - `adr-workflow.md` — ADR Workflow Rules (~557 tok)
 
@@ -914,12 +933,12 @@
 
 ## docs/changelogs/
 
-- `CHANGELOG-api.md` — Changelog — API (~8250 tok)
+- `CHANGELOG-api.md` — Changelog — API (~8961 tok)
 - `CHANGELOG-dashboard.md` — Changelog — Dashboard (~13819 tok)
 - `CHANGELOG-docs.md` — Changelog — Documentation (~4378 tok)
 - `CHANGELOG-edge-functions.md` — Changelog — Edge Functions (~3148 tok)
 - `CHANGELOG-infra.md` — Changelog — Infrastructure (~3667 tok)
-- `CHANGELOG-schema.md` — Changelog — Schema (~26690 tok)
+- `CHANGELOG-schema.md` — Changelog — Schema (~27921 tok)
 - `CHANGELOG-worker.md` — Changelog — Worker (~1897 tok)
 
 ## docs/design/
@@ -1010,7 +1029,7 @@
 
 - `.tmp-cleanup-rehearsal.ts` — Declares main (~297 tok)
 - `bootstrap-admin.ts` — ADR-0027 Sprint 4.1 — admin bootstrap one-shot. (~1746 tok)
-- `check-env-isolation.ts` — ADR-0026 Sprint 4.1 — env-var isolation guard. (~953 tok)
+- `check-env-isolation.ts` — ADR-0026 Sprint 4.1 — env-var isolation guard. (~1068 tok)
 - `check-no-admin-imports-in-app.ts` — ADR-0026 Sprint 4.1 — cross-import guard: app/ must not reference admin/. (~989 tok)
 - `check-no-customer-imports-in-admin.ts` — ADR-0026 Sprint 4.1 — cross-import guard: admin/ must not reference app/. (~910 tok)
 - `smoke-test-rate-limit.ts` — Declares main (~242 tok)
@@ -1438,7 +1457,14 @@
 - `20260701000002_rpc_consent_verify.sql` — ADR-1002 Sprint 1.2 — rpc_consent_verify RPC. (~1082 tok)
 - `20260710000001_dispute_contest_fields.sql` — Migration: ADR-0052 Sprint 1.1 — dispute contest-submission fields + RPCs. (~1538 tok)
 - `20260710000002_rpc_consent_verify_batch.sql` — ADR-1002 Sprint 1.3 — rpc_consent_verify_batch RPC. (~1397 tok)
+- `20260720000001_billing_gstr1_json.sql` — Migration: ADR-0053 Sprint 1.1 — admin.billing_gstr1_json. (~3583 tok)
 - `20260720000002_consent_record_columns.sql` — ADR-1002 Sprint 2.1 — Mode B server-to-server consent capture. (~2956 tok)
+- `20260720000003_artefact_event_list_rpcs.sql` — ADR-1002 Sprint 3.1 — Artefact + event read endpoints. (~3760 tok)
+- `20260720000004_artefact_event_rpc_fixes.sql` — ADR-1002 Sprint 3.1 — fixes for rpc_artefact_get + rpc_event_list. (~1831 tok)
+- `20260722000002_fix_gstr1_nested_agg.sql` — Migration: ADR-0053 Sprint 1.1 follow-up — fix nested-aggregate error in (~3141 tok)
+- `20260722000003_fix_gstr1_b2cs_agg.sql` — Migration: ADR-0053 Sprint 1.1 follow-up 2 — fix nested-aggregate in B2CS (~2761 tok)
+- `20260725000001_account_scoped_impersonation.sql` — Migration: ADR-0055 Sprint 1.1 — account-scoped impersonation. (~1943 tok)
+- `20260730000001_account_scoped_feature_flags.sql` — Migration: ADR-0056 Sprint 1.1 — per-account feature-flag targeting. (~2550 tok)
 
 ## supabase/seed/
 
@@ -1496,8 +1522,11 @@
 
 ## tests/billing/
 
+- `account-feature-flags.test.ts` — Declares service (~2209 tok)
+- `account-scoped-impersonation.test.ts` — Declares service (~1785 tok)
 - `customer-billing-profile-update.test.ts` — ADR-0054 Sprint 1.2 — public.update_account_billing_profile. (~1794 tok)
 - `customer-invoice-reads.test.ts` — service: nextGstin, setAccountBilling, createIssuer + 3 more (~2618 tok)
+- `dispute-contest-razorpay.test.ts` — ADR-0052 Sprint 1.2 — Razorpay client unit tests (mocked fetch). (~1498 tok)
 - `dispute-contest.test.ts` — service: seedDispute (~2395 tok)
 - `dispute-webhook.test.ts` — Declares service (~1896 tok)
 - `dpia-records.test.ts` — ADR-0046 Phase 2 Sprint 2.1 — DPIA records schema + RPCs. (~1912 tok)
@@ -1506,6 +1535,7 @@
 - `evidence-ledger-triggers.test.ts` — service: nextGstin, setAccountBilling, createIssuer + 3 more (~2532 tok)
 - `gst-computation.test.ts` — ADR-0050 Sprint 2.2 — public.billing_compute_gst. (~1232 tok)
 - `gst-statement.test.ts` — service: nextGstin, setAccountBillingProfile, createIssuer, issueInvoice, finalizeInvoice (~2856 tok)
+- `gstr1-json.test.ts` — service: nextGstin, setBilling, createIssuer + 3 more (~3156 tok)
 - `invoice-export-authz.test.ts` — service: nextGstin, populateBilling, createIssuer, issueAndFinalize (~3426 tok)
 - `invoice-export-contents.test.ts` — ManifestEnvelope: nextGstin, populateBilling, createIssuer + 5 more (~3640 tok)
 - `issue-invoice.test.ts` — createdInvoices: nextGstin, createActiveIssuer, populateAccountBillingProfile, issue, readEnvelope (~3314 tok)
@@ -1533,6 +1563,7 @@
 
 - `api-keys.e2e.test.ts` — Declares TestOrg (~2521 tok)
 - `api-middleware.test.ts` — Declares TestOrg (~946 tok)
+- `artefact-event-read.test.ts` — ADR-1002 Sprint 3.1 — integration tests for the three read endpoints. (~3593 tok)
 - `consent-record.test.ts` — ADR-1002 Sprint 2.1 — /v1/consent/record integration tests. (~3288 tok)
 - `consent-verify-batch.test.ts` — ADR-1002 Sprint 1.3 — /v1/consent/verify/batch integration tests. (~3283 tok)
 - `consent-verify.test.ts` — ADR-1002 Sprint 1.2 — /v1/consent/verify integration tests. (~3716 tok)

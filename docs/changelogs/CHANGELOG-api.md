@@ -2,6 +2,25 @@
 
 API route changes.
 
+## [ADR-1002 Sprint 3.1] — 2026-04-20
+
+**ADR:** ADR-1002 — DPDP §6 runtime enforcement
+**Sprint:** Sprint 3.1 — Artefact + event read endpoints
+
+### Added
+- `app/src/app/api/v1/consent/artefacts/route.ts` — GET. `read:artefacts` scope. Parses optional query filters (property_id, data_principal_identifier, identifier_type, status, purpose_code, expires_before, expires_after, cursor, limit). Limit + date ISO validation at the route layer. Maps `bad_cursor` / `bad_filters` / `invalid_identifier` to 422.
+- `app/src/app/api/v1/consent/artefacts/[id]/route.ts` — GET. `read:artefacts` scope. Returns detail envelope; null result → 404.
+- `app/src/app/api/v1/consent/events/route.ts` — GET. `read:consent` scope. Parses optional filters (property_id, created_after, created_before, source=web|api|sdk, cursor, limit). 422 on bad cursor / malformed filter.
+- `app/src/lib/consent/read.ts` — three helpers (`listArtefacts`, `getArtefact`, `listEvents`) + typed envelopes / error kinds. Shared service-role client.
+- `app/src/lib/api/v1-helpers.ts` — `readContext` / `respondV1` / `gateScopeOrProblem` / `requireOrgOrProblem` — extracted to remove boilerplate duplication across the four v1 handlers now live (_ping, verify, verify/batch, record, artefacts, artefacts/[id], events).
+- `app/public/openapi.yaml` — three new path entries (`/consent/artefacts`, `/consent/artefacts/{id}`, `/consent/events`) + 6 new schemas (`ArtefactListItem`, `ArtefactListResponse`, `ArtefactRevocation`, `ArtefactDetail`, `EventListItem`, `EventListResponse`).
+
+### Tested
+- [x] 17/17 PASS — `tests/integration/artefact-event-read.test.ts`
+- [x] 87/87 full integration + DEPA — no regressions
+- [x] `cd app && bun run build` — PASS; three new routes in manifest
+- [x] `bun run lint` — PASS (0 errors, 0 warnings)
+
 ## [ADR-1002 Sprint 2.1] — 2026-04-20
 
 **ADR:** ADR-1002 — DPDP §6 runtime enforcement

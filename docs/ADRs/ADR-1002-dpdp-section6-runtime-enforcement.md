@@ -207,19 +207,45 @@ bun run lint — PASS (0 errors, 0 warnings)
 **Estimated effort:** 2 days
 
 **Deliverables:**
-- [ ] `GET /v1/consent/artefacts` with cursor-based pagination (`limit` ≤ 200, `cursor` opaque)
-- [ ] Filters: `property_id`, `data_principal_identifier`, `status`, `purpose_code`, `expires_before`, `expires_after`
-- [ ] `GET /v1/consent/artefacts/{id}` returning artefact + revocation record if any + `replaced_by` chain traversal (Section 3.4 semantics)
-- [ ] `GET /v1/consent/events` date-range filter; paged summary (no full payloads)
-- [ ] Scopes: `read:artefacts`, `read:consent`
+- [x] `GET /v1/consent/artefacts` — cursor-paginated list. `limit` default 50, max 200. Cursor is an opaque base64-encoded JSON of `{created_at, id}` keyset tuple.
+- [x] Filters: `property_id`, `data_principal_identifier` (+ `identifier_type` required with it; enforced via `bad_filters`), `status` (active|revoked|expired|replaced), `purpose_code`, `expires_before`, `expires_after`.
+- [x] `GET /v1/consent/artefacts/{id}` — returns the artefact envelope + `revocation` (joined from `artefact_revocations` via `consent_artefact_index.revocation_record_id`) + `replacement_chain` (recursive CTE walks both backward and forward, chronologically ordered).
+- [x] `GET /v1/consent/events` — cursor-paginated summary: `id, property_id, source, event_type, purposes_accepted_count, purposes_rejected_count, identifier_type, artefact_count, created_at`. Filters: `property_id`, `created_after`, `created_before`, `source` (web|api|sdk).
+- [x] Scopes: `read:artefacts` for the artefact endpoints, `read:consent` for events.
+- [x] Shared helpers: `app/src/lib/api/v1-helpers.ts` (`readContext`, `respondV1`, `gateScopeOrProblem`, `requireOrgOrProblem`) — refactor-clean reuse across all three new handlers.
+- [x] OpenAPI: three new path entries + `ArtefactListItem` / `ArtefactListResponse` / `ArtefactRevocation` / `ArtefactDetail` / `EventListItem` / `EventListResponse` schemas.
 
 **Testing plan:**
-- [ ] Cursor pagination: 250-artefact org returns two pages of 200 + 50
-- [ ] Replaced-by chain: A replaced by B replaced by C; GET C returns chain `[A, B, C]`
-- [ ] Revoked artefact: GET returns artefact + revocation record linked
-- [ ] Cross-org artefact_id lookup → 404
+- [x] List: org-scoped results, filters by property/purpose/status, cross-org isolation returns zero overlap.
+- [x] Cursor pagination: page 1 (limit=3) emits 3 items + `next_cursor`; page 2 (cursor=next_cursor) emits more items; no overlap between pages.
+- [x] Bad cursor → `bad_cursor` → 422.
+- [x] Identifier filter requires both `data_principal_identifier` + `identifier_type`; supplying only one → `bad_filters`.
+- [x] Detail: revocation field populated from `artefact_revocations` join.
+- [x] Replacement chain: 3-link chain [A→B→C] returns `[A, B, C]` regardless of which artefact is queried (forward + backward CTE walks).
+- [x] Cross-org artefact_id → null → 404.
+- [x] Events: org-scoped, filters by source + date range, cross-org isolation.
+- [x] Bad event cursor → `bad_cursor`.
+- [ ] 250-artefact org perf baseline — deferred to Sprint 5.1 perf stage (fixture cost too high for integration tier).
 
-**Status:** `[ ] planned`
+### Test Results — 2026-04-20
+
+```
+bunx vitest run tests/integration/artefact-event-read.test.ts
+17/17 PASS (11.51s)
+
+bunx vitest run tests/integration/ tests/depa/
+87/87 PASS (101.21s) — no regressions
+
+cd app && bun run build — PASS; three new routes in manifest
+bun run lint — PASS (0 errors, 0 warnings)
+```
+
+### Migrations applied
+
+- `20260720000003_artefact_event_list_rpcs.sql` — the three RPCs.
+- `20260801000001_artefact_event_rpc_fixes.sql` — two bug fixes caught by tests: `rpc_artefact_get` accessed an unassigned record (v_rev.id) when no revocation existed (replaced with a subquery-driven jsonb build); `rpc_event_list` had a stray `max(id) filter (where true)` leftover that called `max(uuid)` and failed 42883.
+
+**Status:** `[x] complete — 2026-04-20`
 
 #### Sprint 3.2: Revoke artefact
 

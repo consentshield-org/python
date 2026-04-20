@@ -239,6 +239,88 @@ components:
           type: boolean
           description: true when this response is a replay of an earlier call made with the same client_request_id.
 
+    ArtefactListItem:
+      type: object
+      required: [artefact_id, property_id, purpose_code, status, created_at]
+      properties:
+        artefact_id:          { type: string }
+        property_id:          { type: string, format: uuid }
+        purpose_code:         { type: string }
+        purpose_definition_id: { type: string, format: uuid }
+        data_scope:           { type: array, items: { type: string } }
+        framework:            { type: string, enum: [dpdp, abdm, gdpr] }
+        status:               { type: string, enum: [active, revoked, expired, replaced] }
+        expires_at:           { type: string, format: date-time, nullable: true }
+        revoked_at:           { type: string, format: date-time, nullable: true }
+        revocation_record_id: { type: string, format: uuid, nullable: true }
+        replaced_by:          { type: string, nullable: true }
+        identifier_type:      { type: string, enum: [email, phone, pan, aadhaar, custom], nullable: true }
+        created_at:           { type: string, format: date-time }
+
+    ArtefactListResponse:
+      type: object
+      required: [items, next_cursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ArtefactListItem"
+        next_cursor:
+          type: string
+          nullable: true
+          description: Opaque keyset cursor. Echo back in the next request's `cursor` query param to fetch the next page. Null when this is the last page.
+
+    ArtefactRevocation:
+      type: object
+      required: [id, revoked_by_type, created_at]
+      properties:
+        id:              { type: string, format: uuid }
+        reason:          { type: string, nullable: true }
+        revoked_by_type: { type: string }
+        revoked_by_ref:  { type: string, nullable: true }
+        created_at:      { type: string, format: date-time }
+
+    ArtefactDetail:
+      allOf:
+        - $ref: "#/components/schemas/ArtefactListItem"
+        - type: object
+          required: [revocation, replacement_chain]
+          properties:
+            revocation:
+              nullable: true
+              $ref: "#/components/schemas/ArtefactRevocation"
+            replacement_chain:
+              type: array
+              items:
+                type: string
+              description: All artefact_ids in this replacement chain in chronological order (earliest to latest). Single-element array when the artefact has no predecessors or successors.
+
+    EventListItem:
+      type: object
+      required: [id, property_id, source, event_type, created_at]
+      properties:
+        id:                      { type: string, format: uuid }
+        property_id:             { type: string, format: uuid }
+        source:                  { type: string, enum: [web, api, sdk] }
+        event_type:              { type: string }
+        purposes_accepted_count: { type: integer }
+        purposes_rejected_count: { type: integer }
+        identifier_type:         { type: string, nullable: true }
+        artefact_count:          { type: integer }
+        created_at:              { type: string, format: date-time }
+
+    EventListResponse:
+      type: object
+      required: [items, next_cursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/EventListItem"
+        next_cursor:
+          type: string
+          nullable: true
+
   responses:
     Unauthorized:
       description: Missing, malformed, or invalid API key.
@@ -362,6 +444,152 @@ paths:
                 $ref: "#/components/schemas/Problem"
         "429":
           $ref: "#/components/responses/TooManyRequests"
+
+  /consent/artefacts:
+    get:
+      operationId: consentArtefactsList
+      summary: List consent artefacts (cursor-paginated)
+      description: >
+        Returns artefacts for the key's org with keyset pagination and optional
+        filters. `data_principal_identifier` + `identifier_type` must be
+        supplied together to filter by identity.
+      tags: [Consent]
+      security:
+        - bearerAuth: [read:artefacts]
+      parameters:
+        - in: query
+          name: property_id
+          schema: { type: string, format: uuid }
+        - in: query
+          name: data_principal_identifier
+          schema: { type: string }
+        - in: query
+          name: identifier_type
+          schema: { type: string, enum: [email, phone, pan, aadhaar, custom] }
+        - in: query
+          name: status
+          schema: { type: string, enum: [active, revoked, expired, replaced] }
+        - in: query
+          name: purpose_code
+          schema: { type: string }
+        - in: query
+          name: expires_before
+          schema: { type: string, format: date-time }
+        - in: query
+          name: expires_after
+          schema: { type: string, format: date-time }
+        - in: query
+          name: cursor
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+      responses:
+        "200":
+          description: Paged list envelope.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArtefactListResponse"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403":
+          description: Key is valid but lacks read:artefacts scope.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "410": { $ref: "#/components/responses/Gone" }
+        "422":
+          description: Invalid filter combination, bad cursor, malformed identifier, or bad limit/date.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /consent/artefacts/{id}:
+    get:
+      operationId: consentArtefactGet
+      summary: Get a single consent artefact
+      description: >
+        Returns the artefact envelope + revocation record (if any) + full
+        replacement chain in chronological order.
+      tags: [Consent]
+      security:
+        - bearerAuth: [read:artefacts]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Artefact detail.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArtefactDetail"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403":
+          description: Key is valid but lacks read:artefacts scope.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "404":
+          description: No artefact with that id belongs to the key's org.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "410": { $ref: "#/components/responses/Gone" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /consent/events:
+    get:
+      operationId: consentEventsList
+      summary: List consent events (summary only, cursor-paginated)
+      description: >
+        Returns paginated summaries (counts, not full payloads) of
+        consent_events rows. Use for §11 audit timelines.
+      tags: [Consent]
+      security:
+        - bearerAuth: [read:consent]
+      parameters:
+        - in: query
+          name: property_id
+          schema: { type: string, format: uuid }
+        - in: query
+          name: created_after
+          schema: { type: string, format: date-time }
+        - in: query
+          name: created_before
+          schema: { type: string, format: date-time }
+        - in: query
+          name: source
+          schema: { type: string, enum: [web, api, sdk] }
+        - in: query
+          name: cursor
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+      responses:
+        "200":
+          description: Paged event list envelope.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventListResponse"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403":
+          description: Key is valid but lacks read:consent scope.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "410": { $ref: "#/components/responses/Gone" }
+        "422":
+          description: Bad cursor, limit, date, or source.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /consent/record:
     post:

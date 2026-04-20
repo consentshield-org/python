@@ -2,6 +2,25 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-1002 Sprint 3.1] — 2026-04-20
+
+**ADR:** ADR-1002 — DPDP §6 runtime enforcement
+**Sprint:** Sprint 3.1 — Artefact + event list/get RPCs
+
+### Added
+- `20260720000003_artefact_event_list_rpcs.sql`:
+  - `public.rpc_artefact_list(org, property, identifier, identifier_type, status, purpose_code, expires_before, expires_after, cursor, limit) returns jsonb` — SECURITY DEFINER. Keyset pagination on `(created_at, id)`; cursor is base64(JSON). Optional identifier+type join through `consent_artefact_index`. Effective status derived from `consent_artefacts.status` + `expires_at < now()`. Limit clamped to [1, 200]. Raises `bad_cursor` / `identifier_requires_both_fields` (22023).
+  - `public.rpc_artefact_get(org, artefact_id) returns jsonb | null` — SECURITY DEFINER. Joins `consent_artefact_index` for revocation pointer; recursive CTE traverses the replaced_by chain both backward and forward (depth-limited to 100); returns envelope with `revocation` + `replacement_chain` (chronological).
+  - `public.rpc_event_list(org, property, created_after, created_before, source, cursor, limit) returns jsonb` — SECURITY DEFINER. Cursor pagination; summary fields only (jsonb_array_length for purpose counts, array_length for artefact count — no full payloads). Limit clamped to [1, 200]. Raises `bad_cursor`.
+  - All three: grant to `service_role` only.
+- `20260801000001_artefact_event_rpc_fixes.sql`:
+  - `rpc_artefact_get` — replaced record-variable dereference (which raised 55000 "record is not assigned yet" when no revocation existed) with a subquery-driven `jsonb_build_object`. Returns null naturally.
+  - `rpc_event_list` — removed a stray `max(id) filter (where true)` placeholder that raised 42883 `max(uuid) does not exist`.
+
+### Tested
+- [x] 17/17 PASS — `tests/integration/artefact-event-read.test.ts`: list org-scoped, filters (property/purpose/status), cursor pagination with no-overlap check, identifier-filter both-fields requirement, bad cursor, cross-org isolation; detail revocation join, replacement chain [A,B,C] from any entry point, cross-org null; event list, source filter, date range, cross-org isolation.
+- [x] 87/87 full integration + DEPA suite — no regressions.
+
 ## [ADR-1002 Sprint 2.1] — 2026-04-20
 
 **ADR:** ADR-1002 — DPDP §6 runtime enforcement
