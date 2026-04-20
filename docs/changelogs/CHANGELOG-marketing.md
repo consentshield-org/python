@@ -2,6 +2,29 @@
 
 Public marketing site (`marketing/` workspace → `consentshield.in`). New in 2026-04-21.
 
+## [ADR-0501 Sprint 2.2] — 2026-04-21
+
+**ADR:** ADR-0501 — ConsentShield marketing site
+**Sprint:** Phase 2 Sprint 2.2 — Home body + Product page (full content)
+
+### Added
+- `marketing/src/components/sections/` — new directory holding composable page sections.
+  - `cta-band.tsx` — reusable CTA band. Takes `eyebrow`, `title`, `body`, and action children. Used by home + product (DEPA will reuse in 2.3).
+  - `home-hero.tsx` — hero extracted from `page.tsx` so home composes cleanly from named section components.
+  - `contrast.tsx` — documentation-vs-enforcement 2-up grid (home).
+  - `story.tsx` — Collect / Enforce / Prove 3-card grid with SVG icons; internal `StoryCard` helper (home).
+  - `depa-moat.tsx` — 5-principle dark-navy section (home).
+  - `timeline.tsx` — 3 enforcement-clock cards (home).
+  - `pricing-preview.tsx` — 4-tier pricing grid; `featured` variant flag; `Link`-based CTAs (home).
+  - `capability-layer.tsx` — reusable product-page building block; accepts `tag`, `title`, `lede`, and a typed `Feature[]`.
+  - `arch-promo.tsx` — Architecture Brief promo card. PDF primary CTA; DOCX + MD as secondary links; reads paths from `DOWNLOAD_BRIEF` constants in `src/lib/routes.ts`.
+- `marketing/src/app/page.tsx` — composes HomeHero + Contrast + Story + DepaMoat + Timeline + PricingPreview + CtaBand.
+- `marketing/src/app/product/page.tsx` — full content: product hero + 4 `CapabilityLayer` blocks (24 features total as typed inlined arrays) + ArchPromo + CtaBand.
+
+### Tested
+- [x] `cd marketing && bun run build` — 12 static routes; clean.
+- [x] `cd marketing && bun run lint` — 0 errors, 0 warnings.
+
 ## [ADR-0501 Sprint 2.1] — 2026-04-21
 
 **ADR:** ADR-0501 — ConsentShield marketing site

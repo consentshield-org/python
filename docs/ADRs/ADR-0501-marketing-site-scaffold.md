@@ -2,7 +2,7 @@
 
 (c) 2026 Sudhindra Anegondhi a.d.sudhindra@gmail.com
 
-**Status:** In Progress (Sprint 1.1 + Sprint 2.1 shipped 2026-04-21; Sprints 2.2–2.5 + Phases 3–4 pending)
+**Status:** In Progress (Sprints 1.1 + 2.1 + 2.2 shipped 2026-04-21; Sprints 2.3–2.5 + Phases 3–4 pending)
 **Date:** 2026-04-21
 **Phases:** 4
 **Sprints:** 4+ (Phase 1 has one sprint; later phases sized once content + formats land)
@@ -105,10 +105,23 @@ Sprint breakdown:
 
 **Status:** `[x] complete — 2026-04-21`
 
-#### Sprint 2.2 — Home + Product (pending)
+#### Sprint 2.2 — Home + Product (shipped 2026-04-21)
 
-- Home body: contrast, story, depa-moat, timeline, pricing-preview, cta-band.
-- Product page: product-hero + 4 capability-layers + arch-promo card (PDF download) + cta-band.
+**Deliverables:**
+
+- [x] `marketing/src/components/sections/cta-band.tsx` — reusable CTA band; takes eyebrow, title, body, action children. Used on home, product, depa pages.
+- [x] `marketing/src/components/sections/home-hero.tsx` — hero extracted from page.tsx so home composes cleanly from named section components.
+- [x] `marketing/src/components/sections/contrast.tsx` — documentation-vs-enforcement 2-up grid.
+- [x] `marketing/src/components/sections/story.tsx` — Collect/Enforce/Prove 3-card grid with SVG icons. `StoryCard` helper collapses the repeat.
+- [x] `marketing/src/components/sections/depa-moat.tsx` — 5-principle dark section. Principles array inlined.
+- [x] `marketing/src/components/sections/timeline.tsx` — 3 enforcement-clock cards. Entries array inlined.
+- [x] `marketing/src/components/sections/pricing-preview.tsx` — 4-tier pricing grid. Tiers array inlined; `featured` variant flag; Link-based CTAs.
+- [x] `marketing/src/components/sections/capability-layer.tsx` — reusable product-page building block. Takes tag, title, lede, features array. Each feature = name + description.
+- [x] `marketing/src/components/sections/arch-promo.tsx` — Architecture Brief promo card. PDF primary CTA; DOCX + MD as secondary links. Uses `DOWNLOAD_BRIEF` constants from `src/lib/routes.ts`.
+- [x] `marketing/src/app/page.tsx` — composes HomeHero + Contrast + Story + DepaMoat + Timeline + PricingPreview + CtaBand.
+- [x] `marketing/src/app/product/page.tsx` — full content: product hero + 4 `CapabilityLayer` blocks (24 features total, inlined as typed arrays) + ArchPromo + CtaBand.
+
+**Status:** `[x] complete — 2026-04-21`
 
 #### Sprint 2.3 — DEPA + Solutions (pending)
 
