@@ -43,3 +43,23 @@ export const DOWNLOAD_BRIEF = {
   docx: '/downloads/ConsentShield-Architecture-Brief.docx',
   md: '/downloads/ConsentShield-Architecture-Brief.md',
 } as const
+
+// Legal download packets — regenerated on every build from
+// src/content/legal/*.ts via scripts/generate-downloads.ts.
+export const DOWNLOAD_LEGAL = {
+  terms: {
+    pdf: '/downloads/terms.pdf',
+    docx: '/downloads/terms.docx',
+    md: '/downloads/terms.md',
+  },
+  privacy: {
+    pdf: '/downloads/privacy.pdf',
+    docx: '/downloads/privacy.docx',
+    md: '/downloads/privacy.md',
+  },
+  dpa: {
+    pdf: '/downloads/dpa.pdf',
+    docx: '/downloads/dpa.docx',
+    md: '/downloads/dpa.md',
+  },
+} as const

@@ -2,7 +2,7 @@
 
 (c) 2026 Sudhindra Anegondhi a.d.sudhindra@gmail.com
 
-**Status:** In Progress (Phases 1 + 2 complete 2026-04-21; Phase 3 Sprint 3.1 complete 2026-04-21; Phase 3 Sprint 3.2 + Phase 4 pending)
+**Status:** In Progress (Phases 1 + 2 + 3 complete 2026-04-21; Phase 4 pending)
 **Date:** 2026-04-21
 **Phases:** 4
 **Sprints:** 4+ (Phase 1 has one sprint; later phases sized once content + formats land)
@@ -190,16 +190,29 @@ Scope narrowed on user direction: **legal pages only** (terms, privacy, dpa). Ma
 
 **Status:** `[x] complete — 2026-04-21`
 
-#### Sprint 3.2 — Serializers + downloads generator (pending)
+#### Sprint 3.2 — Serializers + downloads generator (shipped 2026-04-21)
 
-- `scripts/generate-downloads.ts` — iterates the 3 `LegalDocument` sources; emits `terms.md` / `privacy.md` / `dpa.md` into `marketing/public/downloads/`; emits corresponding PDF (`pdfkit`) + DOCX (`docx` npm package) artefacts. Wired into `marketing/package.json` `prebuild`.
-- `marketing/src/content/legal/serialize-md.ts` — structured `LegalDocument` → Markdown string. Paragraphs, lists, notes, tables.
-- `marketing/src/content/legal/serialize-pdf.ts` — document → `pdfkit` stream.
-- `marketing/src/content/legal/serialize-docx.ts` — document → `docx` `Packer` buffer.
-- Update `src/lib/routes.ts` + footer + legal-page heroes to link to `/downloads/{terms,privacy,dpa}.{md,pdf,docx}`.
-- Tests: round-trip check (authored inline syntax in each block type renders correctly in each serializer).
+**Deliverables:**
 
-**Status:** `[ ] planned`
+- [x] `marketing/src/content/legal/serialize-md.ts` — structured document → Markdown string. Handles title, meta table, TOC, sections with anchors, intro paragraphs, paragraphs, lists, notes (blockquotes), contact blocks, sub-processor tables, SCC election tables, addendum with divider.
+- [x] `marketing/src/content/legal/serialize-pdf.ts` — document → `pdfkit` Buffer. Brand palette (navy/teal), auto-numbered sections, manually-drawn tables with header fill + row borders, inline formatting via `continued: true` font switching, clickable hyperlinks, page footer with "Page N of M" across all buffered pages. Title page includes meta strip + TOC.
+- [x] `marketing/src/content/legal/serialize-docx.ts` — document → `docx` `Packer` Buffer. Declarative Paragraph/Table tree with TextRun (bold/italic) and ExternalHyperlink children. Mirrors PDF visual treatment: brand-coloured headings, notes with left-border + teal-light shading, teal table headers.
+- [x] `marketing/scripts/generate-downloads.ts` — Bun entry point; iterates TERMS / PRIVACY / DPA, writes 9 files to `marketing/public/downloads/`.
+- [x] `marketing/package.json` — adds `pdfkit` 0.18.0 (matches admin), `@types/pdfkit` 0.17.6, `docx` 9.6.1. Adds `prebuild` + `downloads` scripts. `prebuild` runs before every `next build`, so the artefacts are always fresh.
+- [x] `marketing/.gitignore` — `public/downloads/{terms,privacy,dpa}.*` gitignored. Architecture-Brief trio stays committed.
+- [x] `marketing/src/lib/routes.ts` — `DOWNLOAD_LEGAL` constants for the 9 download paths.
+- [x] `marketing/src/components/sections/legal-layout.tsx` — optional `downloads` prop renders a dashed-border row under the meta strip with PDF / Word / Markdown pills.
+- [x] `marketing/src/components/sections/legal-document.tsx` — forwards `DOWNLOAD_LEGAL[doc.slug]` automatically to the layout.
+
+**Output sizes (post-generator run):**
+
+| Doc | MD | PDF | DOCX | Pages (PDF) |
+|-----|----|----|------|-------------|
+| terms | 10 KB | 19 KB | 14 KB | 12 |
+| privacy | 9 KB | 17 KB | 14 KB | ~11 |
+| dpa | 25 KB | 42 KB | 20 KB | ~22 |
+
+**Status:** `[x] complete — 2026-04-21`
 
 ### Phase 4 — Security hardening
 

@@ -14,7 +14,8 @@ export interface TocItem {
 // and the DPA/EU Addendum pages. The `<article className="legal-content">`
 // wrapper applies the auto-numbered section counter (h2::before uses
 // `counter(section)`), so callers pass child <section> elements with `id`
-// matching the TOC href anchors.
+// matching the TOC href anchors. `downloads` is an optional row of links
+// (Markdown / PDF / DOCX) rendered under the meta strip in the hero.
 export function LegalLayout({
   eyebrow = 'Legal',
   title,
@@ -22,6 +23,7 @@ export function LegalLayout({
   meta,
   tocTitle = 'Contents',
   tocItems,
+  downloads,
   children,
 }: {
   eyebrow?: string
@@ -30,6 +32,7 @@ export function LegalLayout({
   meta: LegalMeta[]
   tocTitle?: string
   tocItems: TocItem[]
+  downloads?: { pdf: string; docx: string; md: string }
   children: ReactNode
 }) {
   return (
@@ -47,6 +50,35 @@ export function LegalLayout({
               </div>
             ))}
           </div>
+          {downloads ? (
+            <div
+              style={{
+                marginTop: 22,
+                paddingTop: 16,
+                borderTop: '1px dashed var(--line)',
+                display: 'flex',
+                gap: 14,
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                fontSize: '12.5px',
+                color: 'var(--ink-3)',
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: 'var(--mono)',
+                  fontSize: '10.5px',
+                  letterSpacing: '.14em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                Download
+              </span>
+              <DownloadPill href={downloads.pdf} label="PDF" />
+              <DownloadPill href={downloads.docx} label="Word (.docx)" />
+              <DownloadPill href={downloads.md} label="Markdown (.md)" />
+            </div>
+          ) : null}
         </div>
       </section>
 
@@ -66,5 +98,21 @@ export function LegalLayout({
         </div>
       </section>
     </>
+  )
+}
+
+function DownloadPill({ href, label }: { href: string; label: string }) {
+  return (
+    <a
+      href={href}
+      download
+      style={{
+        color: 'var(--teal)',
+        borderBottom: '1px dashed var(--teal)',
+        paddingBottom: 1,
+      }}
+    >
+      {label}
+    </a>
   )
 }

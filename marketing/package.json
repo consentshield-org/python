@@ -4,18 +4,23 @@
   "private": true,
   "scripts": {
     "dev": "next dev --port 3002",
+    "prebuild": "bun scripts/generate-downloads.ts",
     "build": "next build",
     "start": "next start --port 3002",
-    "lint": "eslint src/"
+    "lint": "eslint src/",
+    "downloads": "bun scripts/generate-downloads.ts"
   },
   "dependencies": {
+    "docx": "9.6.1",
     "next": "16.2.3",
+    "pdfkit": "0.18.0",
     "react": "19.2.5",
     "react-dom": "19.2.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.2.2",
     "@types/node": "20.19.39",
+    "@types/pdfkit": "0.17.6",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "eslint": "9.39.4",

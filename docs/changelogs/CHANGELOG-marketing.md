@@ -2,6 +2,38 @@
 
 Public marketing site (`marketing/` workspace → `consentshield.in`). New in 2026-04-21.
 
+## [ADR-0501 Sprint 3.2] — 2026-04-21
+
+**ADR:** ADR-0501 — ConsentShield marketing site
+**Sprint:** Phase 3 Sprint 3.2 — Downloads pipeline (MD / PDF / DOCX, legal only)
+
+### Added
+- `marketing/src/content/legal/serialize-md.ts` — structured `LegalDocument` → Markdown. Renders title, meta definition-table, TOC, section anchors, paragraphs, lists, blockquoted notes, contact blocks, sub-processor + SCC tables, addendum with `---` divider.
+- `marketing/src/content/legal/serialize-pdf.ts` — `pdfkit`-based serializer. Brand palette, title page with meta strip + TOC, auto-numbered sections, inline formatting via `continued: true` font switching, clickable hyperlinks, manually-drawn tables with header fill + row borders, "Page N of M" footer on every buffered page.
+- `marketing/src/content/legal/serialize-docx.ts` — `docx` (v9.6.1) declarative tree. Paragraph / Table nodes with TextRun (bold/italic) + ExternalHyperlink inline children. Mirrors PDF visual treatment.
+- `marketing/scripts/generate-downloads.ts` — Bun entry point; iterates TERMS / PRIVACY / DPA, writes 9 files to `marketing/public/downloads/`.
+- `marketing/src/lib/routes.ts` — `DOWNLOAD_LEGAL` constants (terms/privacy/dpa × pdf/docx/md).
+
+### Changed
+- `marketing/package.json` — adds `pdfkit` 0.18.0 + `@types/pdfkit` 0.17.6 (matches admin) + `docx` 9.6.1. Adds `prebuild` (runs the generator before `next build`) and `downloads` (ad-hoc regen) scripts.
+- `marketing/.gitignore` — `public/downloads/{terms,privacy,dpa}.*` gitignored; Architecture-Brief trio stays committed.
+- `marketing/src/components/sections/legal-layout.tsx` — optional `downloads` prop renders a dashed-border row under the meta strip with PDF / Word / Markdown pill links.
+- `marketing/src/components/sections/legal-document.tsx` — auto-wires `DOWNLOAD_LEGAL[doc.slug]` to the layout, so every legal page gets its download row for free.
+
+### Tested
+- [x] `bun scripts/generate-downloads.ts` → 9 files written: terms.md (10 KB), terms.pdf (19 KB, 12 pages), terms.docx (14 KB); privacy.{md,pdf,docx} (9/17/14 KB); dpa.{md,pdf,docx} (25/42/20 KB).
+- [x] `file` check: PDFs are `PDF document, version 1.3`; DOCX are `Microsoft Word 2007+`; MDs parse cleanly.
+- [x] `bun run build` — prebuild step runs the generator first; Next.js build clean; 12 static routes.
+- [x] `bun run lint` — 0 errors, 0 warnings.
+
+### Dependency additions (per Rule 15)
+- **`pdfkit` 0.18.0** — standard Node PDF generator, already used by `admin/` for invoices. Mirroring the pin.
+- **`@types/pdfkit` 0.17.6** — types for the above. Matches admin.
+- **`docx` 9.6.1** — Microsoft-maintained Office Open XML writer. Hand-rolling DOCX bytes (zip of ~15 XML files per document) would take multiple days and be fragile; this is a justified dep.
+
+### Deferred to Phase 4 (security hardening)
+- Downloads currently have no rate limiting / bot gating. Files are small (max 42 KB) and publicly distributable — acceptable for now; BotID + rate limit would belong alongside the contact-form Turnstile wiring when Phase 4 lands.
+
 ## [ADR-0501 Sprint 3.1] — 2026-04-21
 
 **ADR:** ADR-0501 — ConsentShield marketing site

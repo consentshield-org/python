@@ -1,5 +1,6 @@
 import { LegalLayout } from './legal-layout'
 import { renderInline } from '@/content/legal/md-inline'
+import { DOWNLOAD_LEGAL } from '@/lib/routes'
 import type {
   LegalBlock,
   LegalDocument,
@@ -20,6 +21,7 @@ export function LegalDocumentView({ doc }: { doc: LegalDocument }) {
         lede={doc.lede}
         meta={doc.meta}
         tocItems={doc.tocItems}
+        downloads={DOWNLOAD_LEGAL[doc.slug]}
       >
         {doc.intro?.map((p, i) => (
           <IntroParagraph key={i} md={p} />
