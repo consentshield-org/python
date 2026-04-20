@@ -290,3 +290,10 @@ Source-of-truth docs now match the ADRs that shipped in the 2026-04-17/18 window
 
 ### Changed
 - `docs/STATUS.md` — refreshed to reflect ADR-0051 close-out: 53 completed ADRs, latest commit `b9c28e9`, 150 migrations, 199 commits. Evidence ledger + dispute ledger viewer called out in the admin panel inventory. ADR-1002 in progress (Terminal B). Immediate-next list trimmed to ADR-0052 + 0053.
+
+## [STATUS refresh — admin billing close-out] — 2026-04-20
+
+**ADRs closed:** 0051, 0052, 0053
+
+### Changed
+- `docs/STATUS.md` — 55 completed ADRs; latest commit `f22312b`; 157 migrations; admin billing track (0050 → 0053) fully closed. Immediate-next list trimmed to ADR-0055 + 0056.
