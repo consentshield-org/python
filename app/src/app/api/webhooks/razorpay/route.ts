@@ -27,6 +27,13 @@ const HANDLED_EVENTS = [
 
 const INVOICE_PAID_EVENT = 'invoice.paid'
 
+const DISPUTE_EVENTS = new Set([
+  'dispute.created',
+  'dispute.won',
+  'dispute.lost',
+  'dispute.closed',
+])
+
 export async function POST(request: Request) {
   const raw = await request.text()
   const signature = request.headers.get('x-razorpay-signature') ?? ''
@@ -54,6 +61,18 @@ export async function POST(request: Request) {
           order_id?: string | null
           status?: string
           paid_at?: number | null
+        }
+      }
+      dispute?: {
+        entity: {
+          id: string
+          payment_id: string
+          amount: number
+          currency: string
+          reason_code?: string
+          phase?: string
+          respond_by?: number | null
+          created_at?: number
         }
       }
     }
@@ -123,6 +142,41 @@ export async function POST(request: Request) {
       handled: true,
       reconciled: envelope,
     })
+  }
+
+  // ADR-0050 Sprint 3.2 — dispute.* upsert into public.disputes.
+  // Verbatim row is already stored above; this call creates/updates the
+  // structured dispute record so operators can action it.
+  if (DISPUTE_EVENTS.has(event.event)) {
+    const dispute = event.payload.dispute?.entity
+    if (dispute) {
+      const deadlineAt = dispute.respond_by
+        ? new Date(dispute.respond_by * 1000).toISOString()
+        : null
+      const openedAt = dispute.created_at
+        ? new Date(dispute.created_at * 1000).toISOString()
+        : new Date().toISOString()
+      const upsert = await anon.rpc('rpc_razorpay_dispute_upsert', {
+        p_razorpay_dispute_id: dispute.id,
+        p_event_type: event.event,
+        p_razorpay_payment_id: dispute.payment_id,
+        p_amount_paise: dispute.amount,
+        p_currency: dispute.currency ?? 'INR',
+        p_reason_code: dispute.reason_code ?? null,
+        p_phase: dispute.phase ?? null,
+        p_deadline_at: deadlineAt,
+        p_opened_at: openedAt,
+      })
+      if (upsert.error) {
+        console.error('[razorpay] dispute upsert failed', upsert.error)
+        await stamp(`dispute_upsert_error: ${upsert.error.message}`.slice(0, 250))
+      } else {
+        await stamp(`dispute_upserted:${event.event}`)
+      }
+    } else {
+      await stamp('dispute_no_entity')
+    }
+    return NextResponse.json({ received: true, handled: true })
   }
 
   if (!HANDLED_EVENTS.includes(event.event)) {

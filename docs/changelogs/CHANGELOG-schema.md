@@ -1095,3 +1095,18 @@ Closes four blocking findings from the 2026-04-14 review.
 - [x] `tests/billing/invoice-export-authz.test.ts` — 14/14 PASS (support/read_only denied; operator scope enforced; owner unrestricted)
 - [x] `tests/billing/invoice-export-contents.test.ts` — 7/7 PASS (CSV BOM+CRLF, per-row SHA-256, audit-log round-trip, determinism, missing/failed PDF tags)
 - [x] `bun run test:rls` — 412/414 PASS (2 pre-existing lifecycle-RPC flaky failures; not Sprint 3.1 scope)
+
+## [ADR-0050 Sprint 3.2] — 2026-04-20
+
+**ADR:** ADR-0050 — Admin account-aware billing
+**Sprint:** Phase 3, Sprint 3.2
+
+### Added
+- `20260530000001_billing_disputes.sql` — `public.disputes` table (RLS: cs_admin SELECT, cs_orchestrator all); deadline/evidence/state lifecycle columns; updated_at trigger.
+- `public.rpc_razorpay_dispute_upsert()` SECURITY DEFINER RPC — callable by anon/authenticated/cs_orchestrator; upserts dispute row on conflict; maps event_type to status; best-effort account_id resolution from prior billing webhook events.
+- `admin.billing_dispute_set_evidence()` SECURITY DEFINER RPC — platform_operator+; records R2 key + evidence_assembled_at + audit log.
+- `admin.billing_dispute_mark_state()` SECURITY DEFINER RPC — platform_operator+; status transitions (under_review/won/lost/closed) with required reason + audit log.
+
+### Tested
+- [x] `tests/billing/dispute-webhook.test.ts` — 5/5 PASS (created/won/lost/closed upsert, anon access)
+- [x] `tests/billing/evidence-bundle.test.ts` — 8/8 PASS (ZIP contents, PDF handling, counts, determinism)

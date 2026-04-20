@@ -692,3 +692,21 @@ Combined: 42 (app) + 135 (rls/admin/depa) + 1 (admin smoke) = **178/178**.
 ### Tested
 - [x] `cd admin && bun run build` — PASS (all 3 new routes compile cleanly)
 - [x] `cd admin && bun run lint` — PASS (zero warnings)
+
+## [ADR-0050 Sprint 3.2] — 2026-04-20
+
+**ADR:** ADR-0050 — Admin account-aware billing
+**Sprint:** Phase 3, Sprint 3.2
+
+### Added
+- `admin/src/app/(operator)/billing/disputes/page.tsx` — Dispute list with status/deadline filter. Red row highlight when deadline < 48h. Shows dispute ID, account, amount, reason, phase, status, deadline.
+- `admin/src/app/(operator)/billing/disputes/[disputeId]/page.tsx` — Dispute detail: dispute info, red deadline banner, webhook timeline, plan history, action section.
+- `admin/src/app/(operator)/billing/disputes/[disputeId]/dispute-actions.tsx` — Client component: Assemble Evidence Bundle button (streams presigned download URL) + state transition form (under_review/won/lost/closed with required reason).
+
+### Changed
+- `admin/src/app/(operator)/layout.tsx` — Added "Disputes" nav entry under Billing section.
+- `admin/src/lib/billing/r2-disputes.ts` — R2 upload helper for evidence ZIPs (`disputes/{id}/evidence-{iso}.zip`).
+- `admin/src/lib/billing/build-evidence-bundle.ts` — Pure ZIP assembly (dispute.json, account.json, invoices/*, webhook-events.ndjson, plan-history.json); testable without runtime.
+
+### Tested
+- [x] `cd admin && bun run build` — PASS (disputes + [disputeId] routes compile clean)

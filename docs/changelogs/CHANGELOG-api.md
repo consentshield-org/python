@@ -386,3 +386,14 @@ Service-role key is now only used by migrations.
 
 ### Tested
 - [x] `tests/billing/invoice-export-contents.test.ts` — 7/7 PASS (unit-testable without runtime; validates CSV structure, SHA-256, audit round-trip)
+
+## [ADR-0050 Sprint 3.2] — 2026-04-20
+
+**ADR:** ADR-0050 — Admin account-aware billing
+**Sprint:** Phase 3, Sprint 3.2
+
+### Changed
+- `app/src/app/api/webhooks/razorpay/route.ts` — Extended to handle `dispute.created`, `dispute.won`, `dispute.lost`, `dispute.closed` events. After the verbatim insert, calls `rpc_razorpay_dispute_upsert` to create/update the structured dispute row. Dispute entity type added to payload type.
+
+### Tested
+- [x] `cd app && bunx tsc --noEmit` — PASS

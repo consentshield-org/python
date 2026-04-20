@@ -499,7 +499,9 @@ Note: `tests/billing/invoice-search-scope.test.ts` skipped — search scope is f
 - [ ] `tests/billing/evidence-bundle.test.ts` — fixture invoice + webhook events + audit rows → bundle assembled, ZIP contents enumerated and checked, r2 key stored.
 - [ ] Manual: create a synthetic dispute row, assemble bundle, download ZIP, inspect contents.
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete — 2026-04-20`
+
+Note: `account_id` resolution in `rpc_razorpay_dispute_upsert` is best-effort (JSONB lookup against billing.razorpay_webhook_events). Returns null when no prior event carries the payment_id; operators can link manually via the detail page.
 
 ---
 

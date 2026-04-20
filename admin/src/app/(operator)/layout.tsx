@@ -43,6 +43,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Invoice Search', href: '/billing/search', adr: 'ADR-0050', live: true },
   { label: 'GST Statement', href: '/billing/gst-statement', adr: 'ADR-0050', live: true },
   { label: 'Invoice Export', href: '/billing/export', adr: 'ADR-0050', live: true },
+  { label: 'Disputes', href: '/billing/disputes', adr: 'ADR-0050', live: true },
   { label: 'Abuse & Security', href: '/security', adr: 'ADR-0033', live: true },
   { label: 'Feature Flags & Kill Switches', href: '/flags', adr: 'ADR-0036', live: true },
   { label: 'Admin Users', href: '/admins', adr: 'ADR-0045', live: true },
