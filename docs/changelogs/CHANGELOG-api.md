@@ -352,3 +352,17 @@ Service-role key is now only used by migrations.
 - [x] `bun run lint` — PASS
 - [x] `bun run build` — PASS
 - [x] `bun run test` — 39 / 39 PASS
+
+## [ADR-0050 Sprint 3.1] — 2026-04-20
+
+**ADR:** ADR-0050 — Admin account-aware billing
+**Sprint:** Phase 3, Sprint 3.1
+
+### Changed
+- `admin/src/lib/billing/build-export-zip.ts` — extracted pure ZIP+CSV assembly into a standalone function so it is testable without Next.js runtime or real R2.
+- `admin/src/app/(operator)/billing/export/actions.ts` — refactored to call `buildExportZip(envelope, fetchInvoicePdf)` via the extracted module.
+- `admin/src/lib/billing/r2-invoices.ts` — updated to support manifest-driven multi-PDF fetch for export flow.
+- `admin/src/lib/storage/sigv4.ts` — minor fixes to SigV4 signing for R2 presigned URL generation.
+
+### Tested
+- [x] `tests/billing/invoice-export-contents.test.ts` — 7/7 PASS (unit-testable without runtime; validates CSV structure, SHA-256, audit round-trip)

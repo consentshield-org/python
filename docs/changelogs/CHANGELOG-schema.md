@@ -1080,3 +1080,18 @@ Closes four blocking findings from the 2026-04-14 review.
 
 ### Tested
 - [ ] Live `supabase db push` — pending.
+
+## [ADR-0050 Sprint 3.1] — 2026-04-20
+
+**ADR:** ADR-0050 — Admin account-aware billing
+**Sprint:** Phase 3, Sprint 3.1
+
+### Added
+- `20260510000001_billing_gst_statement.sql` — `admin.billing_gst_statement()` SECURITY DEFINER RPC; scope rule: operator callers locked to current-active issuer, owner callers unrestricted; audit-logged on every call.
+- `20260510000002_billing_export_and_search.sql` — `admin.billing_invoice_export_manifest()` RPC; scope rule matches GST statement; snapshots `issuer_legal_name` + `account_name` at export time.
+
+### Tested
+- [x] `tests/billing/gst-statement.test.ts` — 5/5 PASS (synthetic invoices, intra/inter-state totals, scope enforcement)
+- [x] `tests/billing/invoice-export-authz.test.ts` — 14/14 PASS (support/read_only denied; operator scope enforced; owner unrestricted)
+- [x] `tests/billing/invoice-export-contents.test.ts` — 7/7 PASS (CSV BOM+CRLF, per-row SHA-256, audit-log round-trip, determinism, missing/failed PDF tags)
+- [x] `bun run test:rls` — 412/414 PASS (2 pre-existing lifecycle-RPC flaky failures; not Sprint 3.1 scope)

@@ -659,3 +659,20 @@ Combined: 42 (app) + 135 (rls/admin/depa) + 1 (admin smoke) = **178/178**.
 ### Tested
 - [x] `bun run lint` / `build` / `test` — all green.
 - Manual smoke test on live Vercel deploy after next push.
+
+## [ADR-0050 Sprint 3.1] — 2026-04-20
+
+**ADR:** ADR-0050 — Admin account-aware billing
+**Sprint:** Phase 3, Sprint 3.1
+
+### Added
+- `admin/src/app/(operator)/billing/gst-statement/` — GST statement page + server action; issuer selector (locked to current-active for operators, free-form incl. retired for owner); FY range selector; summary card (totals by tax head + invoice count); CSV download with UTF-8 BOM.
+- `admin/src/app/(operator)/billing/export/` — Invoice export page + server action; filter form (FY / account / issuer); streams ZIP of PDFs + `index.csv`; audit-logs caller role + filter params + row count + ZIP SHA-256.
+- `admin/src/app/(operator)/billing/search/` — Invoice search page; scope-aware (operator: current-active issuer; owner: all issuers); search by invoice_number / account / razorpay_payment_id / date range; paged; links to invoice detail.
+
+### Changed
+- `admin/src/app/(operator)/layout.tsx` — added sidebar nav entries for GST Statement, Export, and Search under the Billing section.
+
+### Tested
+- [x] `cd admin && bun run build` — PASS (all 3 new routes compile cleanly)
+- [x] `cd admin && bun run lint` — PASS (zero warnings)

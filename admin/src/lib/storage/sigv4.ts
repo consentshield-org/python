@@ -95,6 +95,67 @@ export async function putObject(opts: PutObjectOptions): Promise<{ status: numbe
   return { status: resp.status, etag: resp.headers.get('etag') }
 }
 
+// ═══════════════════════════════════════════════════════════
+// GET object (signed via Authorization header, streamed into a Buffer).
+// ═══════════════════════════════════════════════════════════
+// Used by the invoice export server action to fetch each PDF so the
+// ZIP contents can be hashed before streaming back to the operator.
+// The presigned-URL path (presignGet) still exists for the direct-
+// download flow where the operator's browser pulls the PDF itself.
+
+export async function getObject(opts: SigV4Options): Promise<Buffer> {
+  const now = new Date()
+  const amzDate = formatAmzDate(now)
+  const dateStamp = amzDate.slice(0, 8)
+  const host = new URL(opts.endpoint).host
+  const emptyHash = sha256Hex('')
+
+  const canonicalUri = canonicalUriFor(opts.bucket, opts.key)
+  const canonicalHeaders =
+    `host:${host}\n` +
+    `x-amz-content-sha256:${emptyHash}\n` +
+    `x-amz-date:${amzDate}\n`
+  const signedHeaders = 'host;x-amz-content-sha256;x-amz-date'
+
+  const canonicalRequest = [
+    'GET',
+    canonicalUri,
+    '',
+    canonicalHeaders,
+    signedHeaders,
+    emptyHash,
+  ].join('\n')
+
+  const credentialScope = `${dateStamp}/${opts.region}/${SERVICE}/aws4_request`
+  const stringToSign = [
+    'AWS4-HMAC-SHA256',
+    amzDate,
+    credentialScope,
+    sha256Hex(canonicalRequest),
+  ].join('\n')
+
+  const signingKey = deriveSigningKey(opts.secretAccessKey, dateStamp, opts.region)
+  const signature = createHmac('sha256', signingKey).update(stringToSign).digest('hex')
+
+  const authorization =
+    `AWS4-HMAC-SHA256 Credential=${opts.accessKeyId}/${credentialScope}, ` +
+    `SignedHeaders=${signedHeaders}, Signature=${signature}`
+
+  const resp = await fetch(`${opts.endpoint}${canonicalUri}`, {
+    method: 'GET',
+    headers: {
+      Authorization: authorization,
+      'x-amz-content-sha256': emptyHash,
+      'x-amz-date': amzDate,
+    },
+  })
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => '')
+    throw new Error(`R2 GET failed: ${resp.status} ${resp.statusText} — ${text.slice(0, 400)}`)
+  }
+  return Buffer.from(await resp.arrayBuffer())
+}
+
 export function presignGet(opts: PresignGetOptions): string {
   const expiresIn = Math.min(Math.max(opts.expiresIn ?? 3600, 1), 604800)
   const now = new Date()

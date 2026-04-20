@@ -6,7 +6,7 @@
 
 import { createHash } from 'node:crypto'
 
-import { putObject, presignGet } from '@/lib/storage/sigv4'
+import { putObject, presignGet, getObject } from '@/lib/storage/sigv4'
 
 const BUCKET_ENV = 'R2_INVOICES_BUCKET'
 
@@ -95,4 +95,18 @@ export function presignInvoicePdfUrl(r2Key: string, expiresIn = 900): string {
 export function invoiceR2Key(issuerId: string, fyYear: string, invoiceNumber: string): string {
   const safeNumber = invoiceNumber.replace(/[^A-Za-z0-9/_-]/g, '_')
   return `invoices/${issuerId}/${fyYear}/${safeNumber}.pdf`
+}
+
+export async function fetchInvoicePdf(r2Key: string): Promise<Buffer> {
+  const cfg = loadR2Config()
+  const prefix = `${cfg.bucket}/`
+  const key = r2Key.startsWith(prefix) ? r2Key.slice(prefix.length) : r2Key
+  return getObject({
+    endpoint: cfg.endpoint,
+    region: cfg.region,
+    bucket: cfg.bucket,
+    key,
+    accessKeyId: cfg.accessKeyId,
+    secretAccessKey: cfg.secretAccessKey,
+  })
 }

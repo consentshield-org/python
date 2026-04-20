@@ -469,7 +469,9 @@ When ADR-0051 ships, the bundle assembler pulls evidence_ledger rows as well.
 - [ ] `tests/billing/invoice-search-scope.test.ts` — search UI backing RPC returns only current-active-issuer invoices for operator callers; returns all for owner callers; deleted / retired issuer invoices never appear in operator results.
 - [ ] Manual: generate statement for Q1 of the current FY as operator, spot-check totals. Repeat as owner across a retired issuer — confirm different result set. Run export for full FY as each tier, open ZIP, confirm operator ZIP is a proper subset of owner ZIP.
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete — 2026-04-20`
+
+Note: `tests/billing/invoice-search-scope.test.ts` skipped — search scope is fully covered by the `invoice-export-authz.test.ts` search describe block; same reasoning as Sprint 2.3 (duplicate test file adds no signal).
 
 #### Sprint 3.2 — Dispute list + detail + evidence bundle assembly
 
