@@ -2,11 +2,11 @@
 
 (c) 2026 Sudhindra Anegondhi a.d.sudhindra@gmail.com
 
-**Snapshot date:** 2026-04-20 (late / admin-billing track close-out)
+**Snapshot date:** 2026-04-21 (admin-extensibility track close-out)
 **Branch:** main
-**Latest commit:** `f22312b` — feat(ADR-0053): GSTR-1 JSON export for monthly GSTN filing; 11/11 PASS; ADR complete
-**Total commits:** 205
-**Migrations applied:** 157
+**Latest commit:** `ff94c85` — feat(ADR-0056): sprint 1.2 — admin UI account picker for feature flags; ADR complete
+**Total commits:** 206
+**Migrations applied:** 158
 **Edge Functions deployed:** 10
 
 ---
@@ -20,7 +20,7 @@ The project has two independently deployable apps in a Bun workspace monorepo:
 
 **Customer app:** **Functionally complete for Phase 1 + Phase 2.** Every panel from the `docs/design/screen designs and ux/` wireframe is live and data-bound. All compliance workflows (consent capture → artefact creation → rights → deletion → audit export) are end-to-end. SDF workflow (DPIA records + auditor engagements + audit-ZIP extension) ships. Customer invoice portal + billing profile editor + sectoral template switcher ship. Support sessions list now shows operator names. Suspension banner clarifies paused vs. still-working surfaces.
 
-**Admin console:** 13/13 wireframe panels live. **Billing track complete through ADR-0053** — issuer entities, invoicing + GST + Resend, search/export/statement, dispute workspace with evidence bundle, chargeback-defense evidence ledger (20 event types trigger-driven), Razorpay dispute contest auto-submission via Documents + Contest APIs, GSTR-1 JSON monthly filing export (GSTN Offline-Utility v3.2 shape).
+**Admin console:** 13/13 wireframe panels live. **Billing track complete through ADR-0053** — issuer entities, invoicing + GST + Resend, search/export/statement, dispute workspace with evidence bundle, chargeback-defense evidence ledger (20 event types trigger-driven), Razorpay dispute contest auto-submission via Documents + Contest APIs, GSTR-1 JSON monthly filing export (GSTN Offline-Utility v3.2 shape). **Extensibility track closed** — account-scoped impersonation (ADR-0055) + account-scoped feature flags with resolver fallback org → account → global (ADR-0056) ship end-to-end.
 
 **Public API (ADR-1001):** Completed 2026-04-20. **ADR-1002** (route handlers — `/v1/consent/verify` + record + artefact ops + deletion API) is in progress in Terminal B — Sprints 1.1 + 1.2 shipped (identifier-lookup index + GET /v1/consent/verify route).
 
@@ -28,7 +28,7 @@ The project has two independently deployable apps in a Bun workspace monorepo:
 
 ## ADR Completion
 
-### Completed (55 ADRs)
+### Completed (57 ADRs)
 
 Phase 1 (ADR-0001 through ADR-0018): project scaffold, banner builder, rights workflow, tracker monitoring, Razorpay billing, deletion orchestration, auth hardening, scoped-role enforcement, rate limiter, deletion retry, test suites, signup bootstrap, external services, security scanner, consent probes v1, audit export, Mailchimp/HubSpot connectors.
 
@@ -49,6 +49,8 @@ Recent work (ADR-0046 through ADR-0057, ADR-1001):
 | 0052 | Razorpay dispute contest submission — prepare packet + auto-submit via Documents + Contest APIs | 2026-04-20 |
 | 0053 | GSTR-1 JSON export for monthly GSTN filing — v3.2 shape (b2b / b2cl / b2cs / hsn / doc_issue) | 2026-04-20 |
 | 0054 | Customer-facing billing portal — invoice history + PDF download + billing profile editor | 2026-04-20 |
+| 0055 | Account-scoped impersonation — target_account_id + `start_impersonation_account` + target_scope in customer session list | 2026-04-20 |
+| 0056 | Per-account feature-flag targeting — `account` scope + resolver fallback org → account → global + admin UI picker | 2026-04-21 |
 | 0057 | Customer-facing sectoral template switcher (Settings → Account) | 2026-04-20 |
 | 1001 | Public API foundation — `cs_live_*` keys + Bearer middleware + rate limiter + request log + OpenAPI | 2026-04-20 |
 
@@ -62,8 +64,6 @@ Recent work (ADR-0046 through ADR-0057, ADR-1001):
 
 | ADR | Title | Scope |
 |-----|-------|-------|
-| 0055 | Account-scoped impersonation | Admin-side |
-| 0056 | Per-account feature-flag targeting | Admin-side |
 | 1003 | Processor posture — `storage_mode` + BYOS + Zero-Storage + Healthcare seed + sandbox | Public API |
 | 1004 | Statutory retention — Regulatory Exemption Engine + material-change re-consent + silent-failure detection | Public API |
 | 1005 | Operations maturity — webhook reference + test_delete + support model + status page + rights API + non-email channels | Public API |
@@ -139,12 +139,7 @@ Per-ADR TODO items that don't belong to the customer-app scope are captured in `
 
 ### Remaining
 
-| Panel | Planned ADR |
-|-------|------------|
-| Razorpay auto-submit dispute evidence | ADR-0052 |
-| GSTR-1 XML download | ADR-0053 |
-| Account-scoped impersonation | ADR-0055 |
-| Per-account feature flag overrides | ADR-0056 |
+_None. Every admin wireframe panel + admin-extensibility ADR (0050–0056) is live._
 
 ---
 
@@ -162,7 +157,7 @@ Per-ADR TODO items that don't belong to the customer-app scope are captured in `
 
 **pg_cron jobs:** SLA reminders, buffer sweeps, security scans, consent probes, stuck-deletion checks, cron health watchdog, sentry events cleanup, feature-flag KV sync, DEPA expiry enforcement, auditor-engagement + DPIA next-review reminders.
 
-**Database:** 157 migrations applied. RLS on every table. Three scoped runtime roles (`cs_worker`, `cs_delivery`, `cs_orchestrator`). `SUPABASE_SERVICE_ROLE_KEY` only in admin `auth.admin.*` carve-out per CLAUDE.md Rule 5.
+**Database:** 158 migrations applied. RLS on every table. Three scoped runtime roles (`cs_worker`, `cs_delivery`, `cs_orchestrator`). `SUPABASE_SERVICE_ROLE_KEY` only in admin `auth.admin.*` carve-out per CLAUDE.md Rule 5.
 
 ---
 
@@ -212,9 +207,18 @@ Two pre-existing flaky tests in `tests/admin/admin-lifecycle-rpcs.test.ts` (shar
 - ADR-0052 (Razorpay dispute contest submission) — 2 sprints, 15 tests — completed (Sprint 1.2 auto-submit via Documents + Contest APIs landed same-day once sandbox credentials were located in `.secrets`)
 - ADR-0053 (GSTR-1 JSON monthly-filing export) — 1 sprint, 11 tests — completed
 
+**Night (admin extensibility track):**
+- ADR-0055 (account-scoped impersonation) — 1 sprint, 8 tests — completed
+- ADR-0056 Sprint 1.1 (account-scoped feature flags — schema + RPCs) — 9 tests
+
 **In parallel (Terminal B):** ADR-1001 completed; ADR-1002 Sprints 1.1 + 1.2 shipped (consent_artefact_index identifier extension + GET /v1/consent/verify route).
 
-**Net today:** ~30 commits, ~100 new tests, **7 ADRs completed** (0046, 0051, 0052, 0053, 0054, 0057, 1001). Customer-app backlog fully closed. Admin billing track (0050 → 0053) fully closed.
+**Net 2026-04-20:** ~30 commits, ~100 new tests, **9 ADRs completed** (0046, 0051, 0052, 0053, 0054, 0055, 0057, 1001 + Terminal B ADR-1001). Customer-app backlog fully closed. Admin billing track (0050 → 0053) fully closed. Admin extensibility kickoff (0055 done; 0056 Sprint 1.1 done).
+
+## Session Summary — 2026-04-21
+
+**Early:**
+- ADR-0056 Sprint 1.2 (admin UI account picker for feature flags) — Target column + ScopePill + account picker in modal + delete-flow forwards flag.account_id; admin build clean. ADR-0056 completed. Admin extensibility track closes.
 
 ---
 
