@@ -24,6 +24,7 @@ import {
   createTestOrg,
   cleanupTestOrg,
   getServiceClient,
+  seedApiKey,
   type TestOrg,
 } from '../rls/helpers'
 
@@ -36,10 +37,14 @@ let otherPropertyId: string
 let purposeIds: string[] = []
 let seededReceiptArtefactId: string
 let seededConnectorId: string
+let keyId: string
+let otherKeyId: string
 
 beforeAll(async () => {
   org = await createTestOrg('delA')
   otherOrg = await createTestOrg('delB')
+  keyId = (await seedApiKey(org)).keyId
+  otherKeyId = (await seedApiKey(otherOrg)).keyId
   const admin = getServiceClient()
 
   const { data: prop } = await admin
@@ -87,7 +92,7 @@ beforeAll(async () => {
   // Seed one artefact + a revocation + a receipt (so the list has something
   // to return regardless of Edge Function state).
   const rec = await recordConsent({
-    orgId: org.orgId, propertyId,
+    keyId, orgId: org.orgId, propertyId,
     identifier: `seed-receipt-${Date.now()}@t.test`,
     identifierType: 'email',
     acceptedPurposeIds: [purposeIds[0]],
@@ -132,7 +137,7 @@ describe('triggerDeletion — consent_revoked', () => {
     const email = `del-consent-${Date.now()}@t.test`
     // Seed artefacts for all 3 purposes.
     const rec = await recordConsent({
-      orgId: org.orgId, propertyId,
+      keyId, orgId: org.orgId, propertyId,
       identifier: email, identifierType: 'email',
       acceptedPurposeIds: purposeIds,
       capturedAt: new Date().toISOString(),
@@ -142,7 +147,7 @@ describe('triggerDeletion — consent_revoked', () => {
 
     // Trigger deletion for just 2 of the 3 purposes.
     const r = await triggerDeletion({
-      orgId: org.orgId, propertyId,
+      keyId, orgId: org.orgId, propertyId,
       identifier: email, identifierType: 'email',
       reason: 'consent_revoked',
       purposeCodes: [PURPOSE_CODES[0], PURPOSE_CODES[1]],
@@ -174,7 +179,7 @@ describe('triggerDeletion — consent_revoked', () => {
   it('re-trigger with no active artefacts remaining → 0 revoked', async () => {
     const email = `del-retrigger-${Date.now()}@t.test`
     const rec = await recordConsent({
-      orgId: org.orgId, propertyId,
+      keyId, orgId: org.orgId, propertyId,
       identifier: email, identifierType: 'email',
       acceptedPurposeIds: [purposeIds[0]],
       capturedAt: new Date().toISOString(),
@@ -183,7 +188,7 @@ describe('triggerDeletion — consent_revoked', () => {
 
     // First trigger → 1 revoked.
     const first = await triggerDeletion({
-      orgId: org.orgId, propertyId,
+      keyId, orgId: org.orgId, propertyId,
       identifier: email, identifierType: 'email',
       reason: 'consent_revoked', purposeCodes: [PURPOSE_CODES[0]],
     })
@@ -193,7 +198,7 @@ describe('triggerDeletion — consent_revoked', () => {
 
     // Second trigger → 0 (nothing active left).
     const second = await triggerDeletion({
-      orgId: org.orgId, propertyId,
+      keyId, orgId: org.orgId, propertyId,
       identifier: email, identifierType: 'email',
       reason: 'consent_revoked', purposeCodes: [PURPOSE_CODES[0]],
     })
@@ -209,7 +214,7 @@ describe('triggerDeletion — erasure_request', () => {
   it('sweeps all active artefacts for the principal', async () => {
     const email = `del-erase-${Date.now()}@t.test`
     const rec = await recordConsent({
-      orgId: org.orgId, propertyId,
+      keyId, orgId: org.orgId, propertyId,
       identifier: email, identifierType: 'email',
       acceptedPurposeIds: purposeIds, // all 3
       capturedAt: new Date().toISOString(),
@@ -217,7 +222,7 @@ describe('triggerDeletion — erasure_request', () => {
     expect(rec.ok).toBe(true)
 
     const r = await triggerDeletion({
-      orgId: org.orgId, propertyId,
+      keyId, orgId: org.orgId, propertyId,
       identifier: email, identifierType: 'email',
       reason: 'erasure_request',
     })
@@ -244,7 +249,7 @@ describe('triggerDeletion — validation errors', () => {
 
   it('consent_revoked without purpose_codes → purpose_codes_required_for_consent_revoked', async () => {
     const r = await triggerDeletion({
-      orgId: org.orgId, propertyId,
+      keyId, orgId: org.orgId, propertyId,
       identifier: `bad-${Date.now()}@t.test`, identifierType: 'email',
       reason: 'consent_revoked',
     })
@@ -255,7 +260,7 @@ describe('triggerDeletion — validation errors', () => {
 
   it('retention_expired → retention_mode_not_yet_implemented', async () => {
     const r = await triggerDeletion({
-      orgId: org.orgId, propertyId,
+      keyId, orgId: org.orgId, propertyId,
       identifier: `ret-${Date.now()}@t.test`, identifierType: 'email',
       reason: 'retention_expired',
     })
@@ -266,7 +271,7 @@ describe('triggerDeletion — validation errors', () => {
 
   it('unknown reason → unknown_reason', async () => {
     const r = await triggerDeletion({
-      orgId: org.orgId, propertyId,
+      keyId, orgId: org.orgId, propertyId,
       identifier: `unk-${Date.now()}@t.test`, identifierType: 'email',
       reason: 'wat' as 'consent_revoked',
     })
@@ -277,7 +282,7 @@ describe('triggerDeletion — validation errors', () => {
 
   it('cross-org property → property_not_found', async () => {
     const r = await triggerDeletion({
-      orgId: org.orgId, propertyId: otherPropertyId,
+      keyId, orgId: org.orgId, propertyId: otherPropertyId,
       identifier: `xorg-${Date.now()}@t.test`, identifierType: 'email',
       reason: 'erasure_request',
     })
@@ -286,9 +291,22 @@ describe('triggerDeletion — validation errors', () => {
     expect(r.error.kind).toBe('property_not_found')
   })
 
+  it('ADR-1009 fence: cross-org key → api_key_binding', async () => {
+    const r = await triggerDeletion({
+      keyId:      otherKeyId,     // otherOrg-bound key
+      orgId:      org.orgId,      // pretends to act on org
+      propertyId,
+      identifier: `fence-${Date.now()}@t.test`, identifierType: 'email',
+      reason: 'erasure_request',
+    })
+    expect(r.ok).toBe(false)
+    if (r.ok) return
+    expect(r.error.kind).toBe('api_key_binding')
+  })
+
   it('unknown identifier_type → invalid_identifier', async () => {
     const r = await triggerDeletion({
-      orgId: org.orgId, propertyId,
+      keyId, orgId: org.orgId, propertyId,
       identifier: 'x', identifierType: 'passport',
       reason: 'erasure_request',
     })

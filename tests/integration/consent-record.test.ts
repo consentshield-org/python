@@ -18,6 +18,7 @@ import {
   createTestOrg,
   cleanupTestOrg,
   getServiceClient,
+  seedApiKey,
   type TestOrg,
 } from '../rls/helpers'
 
@@ -27,6 +28,7 @@ let propertyId: string
 let otherPropertyId: string
 let purposeIds: string[] = []
 let otherOrgPurposeId: string
+let keyId: string
 
 const PURPOSE_CODES = [
   'rec_marketing',
@@ -39,6 +41,7 @@ const PURPOSE_CODES = [
 beforeAll(async () => {
   org = await createTestOrg('recMain')
   otherOrg = await createTestOrg('recOther')
+  keyId = (await seedApiKey(org)).keyId
   const admin = getServiceClient()
 
   const { data: prop } = await admin
@@ -104,6 +107,7 @@ describe('recordConsent — happy path', () => {
   it('5-grant fixture creates 5 artefacts in one transaction', async () => {
     const email = `rec-5grant-${Date.now()}@t.test`
     const r = await recordConsent({
+      keyId,
       orgId:              org.orgId,
       propertyId,
       identifier:         email,
@@ -151,6 +155,7 @@ describe('recordConsent — happy path', () => {
     const rejected = purposeIds.slice(3, 5) // 2 rejected
 
     const r = await recordConsent({
+      keyId,
       orgId:              org.orgId,
       propertyId,
       identifier:         email,
@@ -177,6 +182,7 @@ describe('recordConsent — happy path', () => {
     const email = `rec-verify-${Date.now()}@t.test`
     const purposeId = purposeIds[0]
     const rec = await recordConsent({
+      keyId,
       orgId:              org.orgId,
       propertyId,
       identifier:         email,
@@ -213,6 +219,7 @@ describe('recordConsent — idempotency', () => {
     const key = `req-${Date.now()}-${Math.random()}`
 
     const first = await recordConsent({
+      keyId,
       orgId:              org.orgId,
       propertyId,
       identifier:         email,
@@ -228,6 +235,7 @@ describe('recordConsent — idempotency', () => {
 
     // Second call with the same key.
     const second = await recordConsent({
+      keyId,
       orgId:              org.orgId,
       propertyId,
       identifier:         email,
@@ -255,6 +263,7 @@ describe('recordConsent — validation errors', () => {
   it('captured_at > 15 min stale → captured_at_stale', async () => {
     const staleMs = Date.now() - 16 * 60 * 1000
     const r = await recordConsent({
+      keyId,
       orgId:              org.orgId,
       propertyId,
       identifier:         `rec-stale-${Date.now()}@t.test`,
@@ -270,6 +279,7 @@ describe('recordConsent — validation errors', () => {
   it('captured_at > 15 min in the future → captured_at_stale', async () => {
     const futureMs = Date.now() + 16 * 60 * 1000
     const r = await recordConsent({
+      keyId,
       orgId:              org.orgId,
       propertyId,
       identifier:         `rec-future-${Date.now()}@t.test`,
@@ -284,6 +294,7 @@ describe('recordConsent — validation errors', () => {
 
   it('invalid purpose_definition_id (belongs to different org) → invalid_purpose_ids', async () => {
     const r = await recordConsent({
+      keyId,
       orgId:              org.orgId,
       propertyId,
       identifier:         `rec-badpurpose-${Date.now()}@t.test`,
@@ -300,6 +311,7 @@ describe('recordConsent — validation errors', () => {
 
   it('empty accepted purposes → purposes_empty', async () => {
     const r = await recordConsent({
+      keyId,
       orgId:              org.orgId,
       propertyId,
       identifier:         `rec-noempty-${Date.now()}@t.test`,
@@ -314,6 +326,7 @@ describe('recordConsent — validation errors', () => {
 
   it('cross-org property → property_not_found', async () => {
     const r = await recordConsent({
+      keyId,
       orgId:              org.orgId,
       propertyId:         otherPropertyId,
       identifier:         `rec-xorg-${Date.now()}@t.test`,
@@ -328,6 +341,7 @@ describe('recordConsent — validation errors', () => {
 
   it('empty identifier → invalid_identifier', async () => {
     const r = await recordConsent({
+      keyId,
       orgId:              org.orgId,
       propertyId,
       identifier:         '',

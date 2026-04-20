@@ -69,6 +69,7 @@ All Architecture Decision Records for ConsentShield, in chronological order.
 | ADR-1006 | v2 Whitepaper Phase 6 — Developer experience (Node/Python/Java/Go client libraries + OpenAPI + CI drift check) | Proposed | 2026-04-19 | 4 | 7 |
 | ADR-1007 | v2 Whitepaper Phase 7 — Connector ecosystem expansion (CleverTap, Razorpay, WebEngage/MoEngage, Intercom/Freshdesk, Shopify/WooCommerce, Segment) + WordPress + Shopify plugins | Proposed | 2026-04-19 | 3 | 9 |
 | ADR-1008 | v2 Whitepaper Phase 8 — Scale + audit polish + P3 hardening (load tests, verify SLO, audit CSV, tracker corpus, multi-channel re-consent, HMAC rotation, SOC 2, React Native, WYSIWYG decision) | Proposed | 2026-04-19 | 3 | 10 |
+| ADR-1009 | v1 API role hardening — remove service-role shortcut, adopt `cs_api` as designed (DB tenant fence + `cs_api` JWT + env purge) | In Progress | 2026-04-20 | 3 | 9 |
 | ADR-0501 | ConsentShield marketing site (`marketing/`) — Bun workspace sibling; scaffold → content → downloads (PDF/DOCX/MD) → security hardening | In Progress | 2026-04-21 | 4 | 4+ |
 
 <!--

@@ -2,6 +2,20 @@
 
 API route changes.
 
+## [ADR-1009 Sprint 1.1] — 2026-04-20
+
+**ADR:** ADR-1009 — v1 API role hardening
+**Sprint:** Phase 1 Sprint 1.1 — DB tenant fence on mutating RPCs
+
+### Changed
+- `app/src/lib/consent/record.ts`, `revoke.ts`, `deletion.ts`: each helper gains a required `keyId` param, threaded as `p_key_id` to the underlying RPC. New `api_key_binding` error kind in each discriminated-union error type; detects 42501 and any `api_key_*` / `org_id_missing` / `org_not_found` error messages surfaced by `assert_api_key_binding`.
+- `app/src/app/api/v1/consent/record/route.ts`, `app/src/app/api/v1/consent/artefacts/[id]/revoke/route.ts`, `app/src/app/api/v1/deletion/trigger/route.ts`: each route passes `context.key_id` into its helper and maps `api_key_binding` → 403 Forbidden (`API key does not authorise access to this organisation`).
+- `tests/rls/helpers.ts`: new `seedApiKey(org, { scopes?, orgScoped? })` helper inserts a test `api_keys` row and returns `{ keyId }`.
+- Five integration test files updated to seed a key in `beforeAll` and thread `keyId` through every mutating-helper call.
+
+### Tested
+- See CHANGELOG-schema.md § ADR-1009 Sprint 1.1 — 123/123 PASS.
+
 ## [ADR-1002 Sprint 5.1] — 2026-04-20
 
 **ADR:** ADR-1002 — DPDP §6 runtime enforcement (**COMPLETED**)

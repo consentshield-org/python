@@ -11,6 +11,7 @@ import {
   createTestOrg,
   cleanupTestOrg,
   getServiceClient,
+  seedApiKey,
   type TestOrg,
 } from '../rls/helpers'
 
@@ -19,6 +20,7 @@ let otherOrg: TestOrg
 let propertyId: string
 let otherPropertyId: string
 let purposeIds: string[] = []
+let keyId: string
 
 const PURPOSE_CODES = ['list_p1', 'list_p2', 'list_p3']
 
@@ -31,6 +33,7 @@ let replacedChain: { a: string; b: string; c: string } // A replaced by B replac
 beforeAll(async () => {
   org = await createTestOrg('readArt')
   otherOrg = await createTestOrg('readOth')
+  keyId = (await seedApiKey(org)).keyId
   const admin = getServiceClient()
 
   const { data: prop } = await admin
@@ -66,7 +69,7 @@ beforeAll(async () => {
 
   // Seed 6 artefacts via record (two 3-grant batches to create 6).
   const rec1 = await recordConsent({
-    orgId: org.orgId, propertyId,
+    keyId, orgId: org.orgId, propertyId,
     identifier: `read-p1-${Date.now()}@t.test`,
     identifierType: 'email',
     acceptedPurposeIds: purposeIds,
@@ -76,7 +79,7 @@ beforeAll(async () => {
   for (const a of rec1.data.artefact_ids) firstBatchArtefactIds.push(a.artefact_id)
 
   const rec2 = await recordConsent({
-    orgId: org.orgId, propertyId,
+    keyId, orgId: org.orgId, propertyId,
     identifier: `read-p2-${Date.now()}@t.test`,
     identifierType: 'email',
     acceptedPurposeIds: purposeIds,

@@ -10,6 +10,7 @@ export interface RevokeEnvelope {
 }
 
 export type RevokeError =
+  | { kind: 'api_key_binding'; detail: string }
   | { kind: 'artefact_not_found' }
   | { kind: 'artefact_terminal_state'; detail: string }
   | { kind: 'reason_code_missing' }
@@ -17,6 +18,7 @@ export type RevokeError =
   | { kind: 'unknown'; detail: string }
 
 export async function revokeArtefact(params: {
+  keyId: string
   orgId: string
   artefactId: string
   reasonCode: string
@@ -30,6 +32,7 @@ export async function revokeArtefact(params: {
   )
 
   const { data, error } = await client.rpc('rpc_artefact_revoke', {
+    p_key_id:       params.keyId,
     p_org_id:       params.orgId,
     p_artefact_id:  params.artefactId,
     p_reason_code:  params.reasonCode,
@@ -40,6 +43,8 @@ export async function revokeArtefact(params: {
 
   if (error) {
     const msg = error.message ?? ''
+    if (error.code === '42501' || msg.includes('api_key_') || msg.includes('org_id_missing') || msg.includes('org_not_found'))
+      return { ok: false, error: { kind: 'api_key_binding', detail: msg } }
     if (msg.includes('artefact_not_found'))           return { ok: false, error: { kind: 'artefact_not_found' } }
     if (msg.includes('artefact_terminal_state'))      return { ok: false, error: { kind: 'artefact_terminal_state', detail: msg } }
     if (msg.includes('reason_code_missing'))          return { ok: false, error: { kind: 'reason_code_missing' } }

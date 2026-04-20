@@ -22,6 +22,7 @@ export interface DeletionTriggerEnvelope {
 }
 
 export type DeletionTriggerError =
+  | { kind: 'api_key_binding'; detail: string }
   | { kind: 'property_not_found' }
   | { kind: 'unknown_reason'; detail: string }
   | { kind: 'retention_mode_not_yet_implemented' }
@@ -31,6 +32,7 @@ export type DeletionTriggerError =
   | { kind: 'unknown'; detail: string }
 
 export async function triggerDeletion(params: {
+  keyId: string
   orgId: string
   propertyId: string
   identifier: string
@@ -42,6 +44,7 @@ export async function triggerDeletion(params: {
   actorRef?: string
 }): Promise<{ ok: true; data: DeletionTriggerEnvelope } | { ok: false; error: DeletionTriggerError }> {
   const { data, error } = await serviceClient().rpc('rpc_deletion_trigger', {
+    p_key_id:          params.keyId,
     p_org_id:          params.orgId,
     p_property_id:     params.propertyId,
     p_identifier:      params.identifier,
@@ -55,6 +58,8 @@ export async function triggerDeletion(params: {
 
   if (error) {
     const msg = error.message ?? ''
+    if (error.code === '42501' || msg.includes('api_key_') || msg.includes('org_id_missing') || msg.includes('org_not_found'))
+      return { ok: false, error: { kind: 'api_key_binding', detail: msg } }
     if (msg.includes('property_not_found'))                       return { ok: false, error: { kind: 'property_not_found' } }
     if (msg.includes('unknown_reason'))                           return { ok: false, error: { kind: 'unknown_reason', detail: msg } }
     if (msg.includes('retention_mode_not_yet_implemented'))       return { ok: false, error: { kind: 'retention_mode_not_yet_implemented' } }

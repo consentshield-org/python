@@ -20,6 +20,7 @@ import {
   createTestOrg,
   cleanupTestOrg,
   getServiceClient,
+  seedApiKey,
   type TestOrg,
 } from '../rls/helpers'
 
@@ -28,6 +29,8 @@ let org: TestOrg
 let otherOrg: TestOrg
 let propertyId: string
 let purposeId: string
+let keyId: string
+let otherKeyId: string
 
 interface Seeded {
   artefactId: string
@@ -37,6 +40,7 @@ interface Seeded {
 async function seedActiveArtefact(identifierPrefix: string): Promise<Seeded> {
   const email = `${identifierPrefix}-${Date.now()}-${Math.random()}@t.test`
   const r = await recordConsent({
+    keyId,
     orgId:              org.orgId,
     propertyId,
     identifier:         email,
@@ -59,6 +63,8 @@ async function forceStatus(artefactId: string, status: 'expired' | 'replaced'): 
 beforeAll(async () => {
   org = await createTestOrg('revK')
   otherOrg = await createTestOrg('revO')
+  keyId = (await seedApiKey(org)).keyId
+  otherKeyId = (await seedApiKey(otherOrg)).keyId
   const admin = getServiceClient()
 
   const { data: prop } = await admin
@@ -93,6 +99,7 @@ describe('revokeArtefact — happy path', () => {
     const { artefactId, identifier } = await seedActiveArtefact('rev-active')
 
     const r = await revokeArtefact({
+      keyId,
       orgId:       org.orgId,
       artefactId,
       reasonCode:  'user_withdrawal',
@@ -126,6 +133,7 @@ describe('revokeArtefact — happy path', () => {
     const { artefactId, identifier } = await seedActiveArtefact('rev-then-verify')
 
     const rev = await revokeArtefact({
+      keyId,
       orgId:       org.orgId,
       artefactId,
       reasonCode:  'user_preference_change',
@@ -151,6 +159,7 @@ describe('revokeArtefact — happy path', () => {
     const { artefactId } = await seedActiveArtefact('rev-operator')
 
     const r = await revokeArtefact({
+      keyId,
       orgId:       org.orgId,
       artefactId,
       reasonCode:  'business_withdrawal',
@@ -178,14 +187,14 @@ describe('revokeArtefact — idempotency', () => {
     const { artefactId } = await seedActiveArtefact('rev-idem')
 
     const first = await revokeArtefact({
-      orgId: org.orgId, artefactId, reasonCode: 'user_withdrawal', actorType: 'user',
+      keyId, orgId: org.orgId, artefactId, reasonCode: 'user_withdrawal', actorType: 'user',
     })
     expect(first.ok).toBe(true)
     if (!first.ok) return
     expect(first.data.idempotent_replay).toBe(false)
 
     const second = await revokeArtefact({
-      orgId: org.orgId, artefactId, reasonCode: 'user_withdrawal', actorType: 'user',
+      keyId, orgId: org.orgId, artefactId, reasonCode: 'user_withdrawal', actorType: 'user',
     })
     expect(second.ok).toBe(true)
     if (!second.ok) return
@@ -202,7 +211,7 @@ describe('revokeArtefact — terminal states', () => {
     await forceStatus(artefactId, 'expired')
 
     const r = await revokeArtefact({
-      orgId: org.orgId, artefactId, reasonCode: 'user_withdrawal', actorType: 'user',
+      keyId, orgId: org.orgId, artefactId, reasonCode: 'user_withdrawal', actorType: 'user',
     })
     expect(r.ok).toBe(false)
     if (r.ok) return
@@ -217,7 +226,7 @@ describe('revokeArtefact — terminal states', () => {
     await forceStatus(artefactId, 'replaced')
 
     const r = await revokeArtefact({
-      orgId: org.orgId, artefactId, reasonCode: 'user_withdrawal', actorType: 'user',
+      keyId, orgId: org.orgId, artefactId, reasonCode: 'user_withdrawal', actorType: 'user',
     })
     expect(r.ok).toBe(false)
     if (r.ok) return
@@ -233,7 +242,7 @@ describe('revokeArtefact — validation errors', () => {
 
   it('nonexistent artefact_id → artefact_not_found', async () => {
     const r = await revokeArtefact({
-      orgId: org.orgId, artefactId: 'art_definitely_not_there',
+      keyId, orgId: org.orgId, artefactId: 'art_definitely_not_there',
       reasonCode: 'user_withdrawal', actorType: 'user',
     })
     expect(r.ok).toBe(false)
@@ -241,24 +250,43 @@ describe('revokeArtefact — validation errors', () => {
     expect(r.error.kind).toBe('artefact_not_found')
   })
 
-  it('cross-org artefact → artefact_not_found (not leaked)', async () => {
+  it('cross-org key attempts revoke → api_key_binding (ADR-1009 fence)', async () => {
     const { artefactId } = await seedActiveArtefact('rev-xorg')
 
     const r = await revokeArtefact({
-      orgId:      otherOrg.orgId,   // different org
+      keyId:      otherKeyId,       // key bound to otherOrg
+      orgId:      otherOrg.orgId,   // otherOrg can't reach org's artefact
       artefactId,
       reasonCode: 'user_withdrawal',
       actorType:  'user',
     })
     expect(r.ok).toBe(false)
     if (r.ok) return
-    expect(r.error.kind).toBe('artefact_not_found')
+    // Either the fence rejects the org-binding mismatch (when key+org agree
+    // but artefact lives elsewhere) or the downstream not-found fires. Both
+    // paths leak nothing about the artefact's existence.
+    expect(['api_key_binding', 'artefact_not_found']).toContain(r.error.kind)
+  })
+
+  it('key bound to org-A + p_org_id=org-B → api_key_binding', async () => {
+    const { artefactId } = await seedActiveArtefact('rev-xkey')
+
+    const r = await revokeArtefact({
+      keyId,                        // bound to org
+      orgId:      otherOrg.orgId,   // caller tries to pretend they're otherOrg
+      artefactId,
+      reasonCode: 'user_withdrawal',
+      actorType:  'user',
+    })
+    expect(r.ok).toBe(false)
+    if (r.ok) return
+    expect(r.error.kind).toBe('api_key_binding')
   })
 
   it('empty reason_code → reason_code_missing', async () => {
     const { artefactId } = await seedActiveArtefact('rev-noreason')
     const r = await revokeArtefact({
-      orgId: org.orgId, artefactId, reasonCode: '   ', actorType: 'user',
+      keyId, orgId: org.orgId, artefactId, reasonCode: '   ', actorType: 'user',
     })
     // The TS helper passes through — the RPC catches this.
     // However the route handler rejects empty-after-trim client-side (422);
@@ -272,7 +300,7 @@ describe('revokeArtefact — validation errors', () => {
     const { artefactId } = await seedActiveArtefact('rev-badactor')
     // Cast to bypass TS type-check — we're testing runtime validation.
     const r = await revokeArtefact({
-      orgId: org.orgId, artefactId, reasonCode: 'user_withdrawal',
+      keyId, orgId: org.orgId, artefactId, reasonCode: 'user_withdrawal',
       actorType: 'regulator' as 'user',
     })
     expect(r.ok).toBe(false)

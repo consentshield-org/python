@@ -114,6 +114,7 @@ export async function POST(request: NextRequest) {
   }
 
   const result = await triggerDeletion({
+    keyId:          context.key_id,
     orgId:          context.org_id!,
     propertyId:     property_id as string,
     identifier:     data_principal_identifier as string,
@@ -127,6 +128,9 @@ export async function POST(request: NextRequest) {
 
   if (!result.ok) {
     switch (result.error.kind) {
+      case 'api_key_binding':
+        return respondV1(context, ROUTE, 'POST', 403,
+          problemJson(403, 'Forbidden', 'API key does not authorise access to this organisation'), t0, true)
       case 'property_not_found':
         return respondV1(context, ROUTE, 'POST', 404,
           problemJson(404, 'Not Found', 'property_id does not belong to your org'), t0, true)

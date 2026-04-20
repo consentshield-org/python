@@ -2,6 +2,25 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-1009 Sprint 1.1] — 2026-04-20
+
+**ADR:** ADR-1009 — v1 API role hardening
+**Sprint:** Phase 1 Sprint 1.1 — DB tenant fence on mutating RPCs
+
+### Added
+- `20260801000004_api_key_binding_mutations.sql`:
+  - `public.assert_api_key_binding(p_key_id uuid, p_org_id uuid) returns void` — SECURITY DEFINER fence. Raises 42501 when the referenced `api_keys` row is missing, revoked, bound to a different org (for org-scoped keys), or bound to a different account (for account-scoped keys). Grants EXECUTE to `service_role` only (Phase 2 will re-target to `cs_api`).
+
+### Changed
+- `public.rpc_consent_record` — signature gains `p_key_id uuid` as first parameter; calls `assert_api_key_binding(p_key_id, p_org_id)` before any tenant-visible work. DROP + CREATE (signature change). Existing SECURITY DEFINER + `service_role` grant preserved.
+- `public.rpc_artefact_revoke` — same change: `p_key_id` first; fence call at top.
+- `public.rpc_deletion_trigger` — same change: `p_key_id` first; fence call at top.
+
+### Tested
+- [x] 63/63 PASS across five affected suites — `consent-record`, `consent-revoke`, `deletion-api`, `artefact-event-read`, `mrs-sharma.e2e`.
+- [x] 123/123 PASS full integration + DEPA suite (baseline 121 + 2 new cross-key/cross-org fence tests).
+- [x] Cross-key attacks rejected by the DB fence: (a) otherOrg-bound key acting on org → `api_key_binding` 403, (b) org-bound key pretending to be otherOrg → `api_key_binding` 403, (c) same-org key on same-org artefact → 200 (unchanged happy path).
+
 ## [ADR-1002 Sprint 4.1] — 2026-04-20
 
 **ADR:** ADR-1002 — DPDP §6 runtime enforcement

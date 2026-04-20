@@ -161,6 +161,7 @@ export async function POST(request: NextRequest) {
   }
 
   const result = await recordConsent({
+    keyId:              context.key_id,
     orgId:              context.org_id,
     propertyId:         property_id as string,
     identifier:         data_principal_identifier as string,
@@ -173,6 +174,8 @@ export async function POST(request: NextRequest) {
 
   if (!result.ok) {
     switch (result.error.kind) {
+      case 'api_key_binding':
+        return respond(context, 403, problemJson(403, 'Forbidden', 'API key does not authorise access to this organisation'), t0, true)
       case 'property_not_found':
         return respond(context, 404, problemJson(404, 'Not Found', 'property_id does not belong to your org'), t0, true)
       case 'captured_at_missing':

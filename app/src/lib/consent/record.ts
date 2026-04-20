@@ -18,6 +18,7 @@ export interface RecordEnvelope {
 }
 
 export type RecordError =
+  | { kind: 'api_key_binding'; detail: string }
   | { kind: 'property_not_found' }
   | { kind: 'captured_at_stale'; detail: string }
   | { kind: 'captured_at_missing' }
@@ -27,6 +28,7 @@ export type RecordError =
   | { kind: 'unknown'; detail: string }
 
 export async function recordConsent(params: {
+  keyId: string
   orgId: string
   propertyId: string
   identifier: string
@@ -42,6 +44,7 @@ export async function recordConsent(params: {
   )
 
   const { data, error } = await client.rpc('rpc_consent_record', {
+    p_key_id:                          params.keyId,
     p_org_id:                          params.orgId,
     p_property_id:                     params.propertyId,
     p_identifier:                      params.identifier,
@@ -54,6 +57,8 @@ export async function recordConsent(params: {
 
   if (error) {
     const msg = error.message ?? ''
+    if (error.code === '42501' || msg.includes('api_key_') || msg.includes('org_id_missing') || msg.includes('org_not_found'))
+      return { ok: false, error: { kind: 'api_key_binding', detail: msg } }
     if (msg.includes('property_not_found'))           return { ok: false, error: { kind: 'property_not_found' } }
     if (msg.includes('captured_at_missing'))          return { ok: false, error: { kind: 'captured_at_missing' } }
     if (msg.includes('captured_at_stale'))            return { ok: false, error: { kind: 'captured_at_stale', detail: msg } }

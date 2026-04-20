@@ -28,6 +28,7 @@ import {
   createTestOrg,
   cleanupTestOrg,
   getServiceClient,
+  seedApiKey,
   type TestOrg,
 } from '../rls/helpers'
 
@@ -46,9 +47,11 @@ let sharmaIdentifier: string
 let artefactByPurpose: Record<string, string> = {}
 let marketingArtefactId: string
 let marketingRevocationId: string
+let keyId: string
 
 beforeAll(async () => {
   org = await createTestOrg('sharma')
+  keyId = (await seedApiKey(org)).keyId
   const admin = getServiceClient()
 
   const { data: prop } = await admin
@@ -92,6 +95,7 @@ describe('Mrs. Sharma — §11 end-to-end', () => {
 
   it('1. records 5-purpose banking consent via Mode B', async () => {
     const r = await recordConsent({
+      keyId,
       orgId:              org.orgId,
       propertyId,
       identifier:         sharmaIdentifier,
@@ -167,6 +171,7 @@ describe('Mrs. Sharma — §11 end-to-end', () => {
 
   it('4. revokes marketing artefact with user_withdrawal reason', async () => {
     const r = await revokeArtefact({
+      keyId,
       orgId:       org.orgId,
       artefactId:  marketingArtefactId,
       reasonCode:  'user_withdrawal',
@@ -251,6 +256,7 @@ describe('Mrs. Sharma — §11 end-to-end', () => {
 
   it('9. DPDP §13 erasure_request sweeps the remaining 4 active artefacts', async () => {
     const r = await triggerDeletion({
+      keyId,
       orgId:          org.orgId,
       propertyId,
       identifier:     sharmaIdentifier,

@@ -84,6 +84,38 @@ export async function createTestOrg(suffix?: string): Promise<TestOrg> {
   return { orgId: org.id, accountId: account.id, userId, email, client: userClient }
 }
 
+// ADR-1009 Sprint 1.1 — seed an api_keys row for a test org.
+// Returns the key_id that v1 lib helpers now require.
+// Set orgScoped=false to create an account-scoped key (org_id null).
+export async function seedApiKey(
+  org: TestOrg,
+  opts: { scopes?: string[]; orgScoped?: boolean } = {},
+): Promise<{ keyId: string }> {
+  const admin = getServiceClient()
+  const uniq = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+  const scopes = opts.scopes ?? [
+    'read:consent', 'write:consent',
+    'read:artefacts', 'write:artefacts',
+    'read:rights', 'write:rights',
+    'read:deletion', 'write:deletion',
+  ]
+  const { data, error } = await admin
+    .from('api_keys')
+    .insert({
+      org_id:     opts.orgScoped === false ? null : org.orgId,
+      account_id: org.accountId,
+      key_hash:   `test-hash-${uniq}`,
+      key_prefix: 'cs_live_tst',
+      name:       `test-key-${uniq}`,
+      scopes,
+      rate_tier:  'starter',
+    })
+    .select('id')
+    .single()
+  if (error) throw new Error(`seedApiKey failed: ${error.message}`)
+  return { keyId: data!.id }
+}
+
 export async function cleanupTestOrg(testOrg: TestOrg) {
   const admin = getServiceClient()
   // Cascade delete handles org_memberships and all org-scoped data;

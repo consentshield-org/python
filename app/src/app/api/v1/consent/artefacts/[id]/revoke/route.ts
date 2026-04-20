@@ -86,6 +86,7 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ id: st
   }
 
   const result = await revokeArtefact({
+    keyId:       context.key_id,
     orgId:       context.org_id!,
     artefactId:  id,
     reasonCode:  reason_code,
@@ -96,6 +97,9 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ id: st
 
   if (!result.ok) {
     switch (result.error.kind) {
+      case 'api_key_binding':
+        return respondV1(context, ROUTE, 'POST', 403,
+          problemJson(403, 'Forbidden', 'API key does not authorise access to this organisation'), t0, true)
       case 'artefact_not_found':
         return respondV1(context, ROUTE, 'POST', 404,
           problemJson(404, 'Not Found', 'No artefact with that id belongs to your org'), t0, true)
