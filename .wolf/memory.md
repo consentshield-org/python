@@ -2672,3 +2672,5 @@
 | 07:04 | Edited docs/design/screen designs and ux/consentshield-screens.html | 7→8 lines | ~108 |
 | 07:05 | Edited docs/design/screen designs and ux/consentshield-screens.html | modified read() | ~4476 |
 | 07:05 | Edited docs/design/screen designs and ux/consentshield-screens.html | added 1 condition(s) | ~293 |
+| 07:06 | Session end: 33 writes across 22 files (ADR-0050-admin-account-aware-billing.md, auth.ts, context.ts, proxy.ts, route.ts) | 22 reads | ~166923 tok |
+| 07:15 | Created .claude/session-handoff.md | — | ~3075 |
