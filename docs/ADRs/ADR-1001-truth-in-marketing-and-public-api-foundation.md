@@ -1,8 +1,8 @@
 # ADR-1001: Truth-in-Marketing + Public API Foundation
 
-**Status:** In Progress
+**Status:** Completed
 **Date proposed:** 2026-04-19
-**Date completed:** —
+**Date completed:** 2026-04-20
 **Related plan:** `docs/plans/ConsentShield-V2-Whitepaper-Closure-Plan.md` Phase 1
 **Related gaps:** G-001, G-004, G-036 (from `docs/design/ConsentShield-Whitepaper-V2-Gaps-Combined.md`)
 
@@ -237,15 +237,27 @@ Fix during testing: `rpc_api_key_revoke` requires `current_uid()` — must call 
 **Estimated effort:** 1 day
 
 **Deliverables:**
-- [ ] End-to-end smoke: mint key in prod-like env → hit canary → verify audit log → rotate → verify dual-window → revoke → verify 410
-- [ ] Security review checklist (prep for CC-D): threat model of API-key surface, token-in-URL avoidance, logging redaction, key-prefix search ergonomics
-- [ ] Status update to whitepaper Appendix E: `cs_live_*` key issuance moved to Shipping
+- [x] End-to-end smoke: mint key → verify context → rotate → dual-window → revoke → 410 (see `tests/integration/api-keys.e2e.test.ts`)
+- [x] Security review checklist: `docs/reviews/2026-04-20-api-key-security-review.md` — threat model, token-in-URL avoidance, logging redaction, key-prefix ergonomics, constant-time lookup, rate-limit bucket design. 0 blocking / 0 should-fix / 2 cosmetic (V2 backlog).
+- [x] Whitepaper Appendix E updated: `cs_live_*` key issuance and rate-tier enforcement both moved to **Shipping today**.
 
 **Testing plan:**
-- [ ] Full scenario captured in `tests/integration/api-keys.e2e.test.ts`
-- [ ] Manual penetration probe: key prefix collision impossible (64 bits of entropy minimum); hashed-secret lookup constant-time; no plaintext ever in logs
+- [x] 13/13 PASS — `tests/integration/api-keys.e2e.test.ts` (create, entropy ×3, verify, rotate ×2, dual-window, request-log + usage, revoke ×2, 410 ×2, 401/invalid)
+- [x] Entropy verified: 256-bit (32 random bytes), base64url body ≥ 43 chars
+- [x] Column-level REVOKE confirmed: authenticated SELECT cannot read `key_hash`
+- [x] `rpc_api_request_log_insert` + `rpc_api_key_usage` round-trip verified
+- [ ] Formal timing probe (1000-req t-test): deferred to V2 pre-launch audit
 
-**Status:** `[ ] planned`
+### Test Results — 2026-04-20
+
+```
+bunx vitest run tests/integration/api-keys.e2e.test.ts
+13/13 PASS (5.0s)
+```
+
+Edge case documented: `rotate+revoke` causes original plaintext to return 401 instead of 410 (hash cleared from both slots). Documented in test, `auth.ts`, and V2 backlog (C-1).
+
+**Status:** `[x] complete — 2026-04-20`
 
 ---
 

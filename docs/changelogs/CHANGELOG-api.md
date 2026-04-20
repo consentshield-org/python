@@ -2,6 +2,23 @@
 
 API route changes.
 
+## [ADR-1001 Sprint 3.1] — 2026-04-20
+
+**ADR:** ADR-1001 — Truth-in-Marketing + Public API Foundation
+**Sprint:** Sprint 3.1 — End-to-end smoke + security review
+
+### Added
+- `tests/integration/api-keys.e2e.test.ts` — 13-test end-to-end suite: create → entropy validation → verify → rotate → dual-window → request log + usage RPC → revoke → 410. Documents the rotate+revoke/401 edge case.
+- `docs/reviews/2026-04-20-api-key-security-review.md` — security review checklist: threat model, token-in-URL avoidance, logging redaction, key-prefix ergonomics, column-level REVOKE, rate-limit bucket design. 0 blocking / 0 should-fix.
+
+### Changed
+- `docs/design/ConsentShield-Customer-Integration-Whitepaper-v2.md` — Appendix E: `cs_live_*` API keys and rate-tier enforcement moved from Roadmap Q2 2026 to **Shipping today**.
+- `docs/V2-BACKLOG.md` — C-1 (rotate+revoke 401 vs 410) and C-2 (static rate-tier sync) added.
+- ADR-1001 status: **Completed**.
+
+### Tested
+- [x] 13/13 PASS — `bunx vitest run tests/integration/api-keys.e2e.test.ts`
+
 ## [ADR-1001 Sprint 2.4] — 2026-04-20
 
 **ADR:** ADR-1001 — Truth-in-Marketing + Public API Foundation

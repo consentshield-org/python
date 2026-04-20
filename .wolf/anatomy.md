@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-20T04:34:42.830Z
-> Files: 798 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-20T04:41:28.848Z
+> Files: 807 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../tmp/
 
@@ -575,6 +575,12 @@
 
 - `page.tsx` — RightsRequestDetailPage — renders table (~5598 tok)
 
+## app/src/app/(dashboard)/dashboard/settings/account/
+
+- `actions.ts` — Exports updateOrgIndustry (~161 tok)
+- `industry-editor.tsx` — IndustryEditor (~997 tok)
+- `page.tsx` — dynamic (~1586 tok)
+
 ## app/src/app/(dashboard)/dashboard/settings/api-keys/
 
 - `actions.ts` — API routes: GET (4 endpoints) (~636 tok)
@@ -601,7 +607,7 @@
 
 ## app/src/app/(dashboard)/dashboard/support-sessions/
 
-- `page.tsx` — ADR-0029 Sprint 4.1 — customer-side Support sessions tab. (~1208 tok)
+- `page.tsx` — ADR-0029 Sprint 4.1 + 2026-04-20 follow-up — customer-side Support sessions tab. (~2493 tok)
 
 ## app/src/app/(dashboard)/dashboard/support/
 
@@ -703,7 +709,7 @@
 
 ## app/src/components/
 
-- `dashboard-nav.tsx` — navItems (~773 tok)
+- `dashboard-nav.tsx` — navItems (~793 tok)
 - `otp-boxes.tsx` — OtpBoxes (~345 tok)
 - `suspended-banner.tsx` — ADR-0029 Sprint 4.1 — customer-side suspension banner. (~537 tok)
 
@@ -856,7 +862,8 @@
 - `ADR-0049-security-observability-ingestion.md` — ADR-0049: Security observability ingestion — rate_limit_events + sentry_events (~2365 tok)
 - `ADR-0050-admin-account-aware-billing.md` — ADR-0050: Admin account-aware billing — issuer entities, invoices, GST, dispute workspace (~12228 tok)
 - `ADR-0054-customer-billing-portal.md` — ADR-0054 — Customer-facing billing portal (invoice history + billing profile) (~3086 tok)
-- `ADR-1001-truth-in-marketing-and-public-api-foundation.md` — ADR-1001: Truth-in-Marketing + Public API Foundation (~5472 tok)
+- `ADR-0057-sectoral-template-switcher.md` — ADR-0057 — Customer-facing sectoral template switcher (Settings → Account) (~1395 tok)
+- `ADR-1001-truth-in-marketing-and-public-api-foundation.md` — ADR-1001: Truth-in-Marketing + Public API Foundation (~5650 tok)
 - `ADR-1002-dpdp-section6-runtime-enforcement.md` — ADR-1002: DPDP §6 Runtime Enforcement — Verify, Record, Artefact Ops, Deletion API (~2942 tok)
 - `ADR-1003-processor-posture-and-healthcare-unlock.md` — ADR-1003: Processor Posture + Healthcare Category Unlock (~3365 tok)
 - `ADR-1004-statutory-retention-material-change-silent-failure.md` — ADR-1004: Statutory Retention + Material-Change Re-consent + Silent-Failure Detection (~3856 tok)
@@ -864,7 +871,7 @@
 - `ADR-1006-developer-experience-and-openapi.md` — ADR-1006: Developer Experience — Client Libraries + OpenAPI Spec + CI Drift Check (~2658 tok)
 - `ADR-1007-connector-ecosystem-expansion.md` — ADR-1007: Connector Ecosystem Expansion + Platform Plugins (~2738 tok)
 - `ADR-1008-scale-audit-polish-and-p3-hardening.md` — ADR-1008: Scale + Audit Polish + P3 Hardening (~3065 tok)
-- `ADR-index.md` — ADR Index (~2113 tok)
+- `ADR-index.md` — ADR Index (~2141 tok)
 - `ADR-template.md` — ADR-NNNN: Title (~423 tok)
 - `adr-workflow.md` — ADR Workflow Rules (~557 tok)
 
@@ -888,7 +895,7 @@
 
 ## docs/changelogs/
 
-- `CHANGELOG-api.md` — Changelog — API (~6942 tok)
+- `CHANGELOG-api.md` — Changelog — API (~7360 tok)
 - `CHANGELOG-dashboard.md` — Changelog — Dashboard (~13819 tok)
 - `CHANGELOG-docs.md` — Changelog — Documentation (~4378 tok)
 - `CHANGELOG-edge-functions.md` — Changelog — Edge Functions (~3003 tok)
@@ -900,7 +907,7 @@
 
 - `consentshield-complete-schema-design.md` — ConsentShield — Complete Schema Design (~17070 tok)
 - `ConsentShield-Customer-Integration-Whitepaper-V2-gaps.md` — ConsentShield — Whitepaper-to-Code Gap Document (Revised) (~13055 tok)
-- `ConsentShield-Customer-Integration-Whitepaper-v2.md` — ConsentShield — Customer-Side Integration (~22710 tok)
+- `ConsentShield-Customer-Integration-Whitepaper-v2.md` — ConsentShield — Customer-Side Integration (~22736 tok)
 - `consentshield-definitive-architecture.md` — ConsentShield — Definitive Architecture Reference (~10435 tok)
 - `consentshield-technical-architecture.md` — ConsentShield — Technical Architecture (~14936 tok)
 - `consentshield-testing-strategy.md` — ConsentShield — The Testing Question (~6253 tok)
@@ -950,6 +957,7 @@
 - `2026-04-16-phase2-completion-review.md` — Critical Codebase Review — Phase 2 Completion (~6107 tok)
 - `2026-04-18-adr-0044-customer-rbac-review.md` — Review — ADR-0044 Customer RBAC (Phase 0 + 1 + 2.1–2.6) (~3002 tok)
 - `2026-04-18-comprehensive-project-review.md` — ConsentShield — Comprehensive Review as of 2026-04-18 (~3553 tok)
+- `2026-04-20-api-key-security-review.md` — Security Review — API Key Surface (ADR-1001 Sprint 3.1) (~1833 tok)
 
 ## packages/compliance/
 
@@ -1400,6 +1408,8 @@
 - `20260610000002_customer_billing_portal_writes.sql` — Migration: ADR-0054 Sprint 1.2 — Customer billing portal (write path). (~1706 tok)
 - `20260620000001_dpia_records.sql` — Migration: ADR-0046 Phase 2 Sprint 2.1 — DPIA records schema + RPCs. (~2760 tok)
 - `20260620000002_data_auditor_engagements.sql` — Migration: ADR-0046 Phase 3 — Data Auditor Engagements. (~2810 tok)
+- `20260620000003_enrich_support_sessions.sql` — Migration: ADR-0029 follow-up — enriched customer-facing support sessions. (~741 tok)
+- `20260620000004_update_org_industry.sql` — Migration: ADR-0057 Sprint 1.1 — `public.update_org_industry(p_org_id, p_industry)`. (~364 tok)
 
 ## supabase/seed/
 
@@ -1488,6 +1498,7 @@
 
 ## tests/integration/
 
+- `api-keys.e2e.test.ts` — Declares TestOrg (~2521 tok)
 - `api-middleware.test.ts` — Declares TestOrg (~946 tok)
 
 ## tests/rbac/
@@ -1514,6 +1525,7 @@
 - `isolation.test.ts` — Declares admin (~2328 tok)
 - `sectoral-template-apply.test.ts` — ADR-0030 Sprint 3.1 — customer-side sectoral-template application. (~1784 tok)
 - `support-tickets.test.ts` — ADR-0032 Sprint 2.1 — customer-side support access isolation. (~1536 tok)
+- `update-org-industry.test.ts` — ADR-0057 Sprint 1.1 — public.update_org_industry. (~667 tok)
 - `url-path.test.ts` — S-2 from the 2026-04-14 codebase review: authenticated API routes (~856 tok)
 
 ## tests/worker/

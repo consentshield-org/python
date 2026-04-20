@@ -158,3 +158,27 @@ No code change, just redeploy.
   follow-up ADR, replace the body with a one-line "→ see ADR-NNNN"
   pointer.
 - Keep it short. Backlog documents that grow prose go unread.
+
+---
+
+## ADR-1001: rotate+revoke plaintext returns 401 instead of 410 (C-1)
+
+**Origin.** ADR-1001 Sprint 3.1 security review, finding C-1.
+
+**Limitation.** When a key is rotated and then revoked, the *original* plaintext (before rotation) returns 401/invalid instead of 410/revoked. This is because revocation clears `previous_key_hash`, so the original hash is gone from both DB slots. `getKeyStatus` can't find it → 'not_found' → 401. The *rotated* plaintext correctly returns 410.
+
+**Why accepted.** Operators who rotate before revoking lose the original plaintext at rotation time anyway (plaintext shown once). The 401 vs 410 distinction is informational only; both block the call.
+
+**Shape of v2 fix.** Add a `revoked_key_hashes` tombstone table. `rpc_api_key_revoke` inserts both `key_hash` and `previous_key_hash` into it. `rpc_api_key_verify` checks the tombstone table before returning null. All plaintexts for a revoked key then return 410.
+
+---
+
+## ADR-1001: rate-tier limits static map must stay in sync with DB (C-2)
+
+**Origin.** ADR-1001 Sprint 3.1 security review, finding C-2.
+
+**Limitation.** `app/src/lib/api/rate-limits.ts` is a static mirror of `public.plans.api_rate_limit_per_hour`. If a plan tier's limits change in the DB without updating the TS file, the proxy enforces stale limits.
+
+**Why accepted.** Querying the DB per API request in middleware is too expensive. The static map is acceptable because plan limits change rarely and via migration (where the TS file change is part of the same PR).
+
+**Shape of v2 fix.** Add a build-time integration test that queries `public.plans` and asserts the TS map values match. Runs in CI on every deploy.

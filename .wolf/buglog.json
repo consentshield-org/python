@@ -6209,6 +6209,54 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-04-20T04:32:43.000Z"
+    },
+    {
+      "id": "bug-388",
+      "timestamp": "2026-04-20T04:38:35.858Z",
+      "error_message": "Significant refactor of ",
+      "file": "tests/integration/api-keys.e2e.test.ts",
+      "root_cause": "5 lines replaced/restructured",
+      "fix": "Rewrote 9→14 lines (5 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-20T04:38:35.858Z"
+    },
+    {
+      "id": "bug-389",
+      "timestamp": "2026-04-20T04:39:58.242Z",
+      "error_message": "Incorrect value in code",
+      "file": "app/src/components/dashboard-nav.tsx",
+      "root_cause": "Had '/dashboard/settings/members'",
+      "fix": "Changed to '/dashboard/settings/account'",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-20T04:39:58.242Z"
+    },
+    {
+      "id": "bug-390",
+      "timestamp": "2026-04-20T04:40:41.317Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/ADRs/ADR-1001-truth-in-marketing-and-public-api-foundation.md",
+      "root_cause": "6 lines replaced/restructured",
+      "fix": "Rewrote 10→22 lines (6 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-20T04:40:41.317Z"
     }
   ]
 }

@@ -1263,8 +1263,8 @@ Target quarters are as of 2026-04-19 and reflect the solo-execution schedule of 
 
 | Capability | Status | Target | Notes |
 |---|---|---|---|
-| `cs_live_*` bearer-token API keys | Roadmap | Q2 2026 | G-036 (ADR-1001 Phase 2) — precondition for every `/v1/*` endpoint |
-| Rate-tier enforcement per plan | Roadmap | Q2 2026 | G-036 Sprint 2.4 |
+| `cs_live_*` bearer-token API keys | Shipping today | — | G-036 (ADR-1001 Sprints 2.1–2.4) — issuance, rotation, revocation, dual-window, rate limiting shipped |
+| Rate-tier enforcement per plan | Shipping today | — | G-036 Sprint 2.4 — 100/hr starter, 1000/hr growth, 10k/hr pro, 100k/hr enterprise |
 | `/v1/consent/{verify, verify/batch, record}` | Roadmap | Q2 2026 | G-037 + G-038 (ADR-1002) |
 | `/v1/consent/artefacts` + revoke + events | Roadmap | Q2 2026 | G-039 (ADR-1002 Phase 3) |
 | `/v1/deletion/trigger` + receipts list | Roadmap | Q2 2026 | G-040 (ADR-1002 Phase 4) |
