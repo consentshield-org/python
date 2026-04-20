@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-18T15:56:12.701Z
-> Files: 699 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-20T01:23:16.392Z
+> Files: 761 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../tmp/
 
@@ -15,6 +15,7 @@
 
 ## ../../../.claude/projects/-Users-sudhindra-projects-aiSpirit-consent-sheild/memory/
 
+- `feedback_billing_test_isolation.md` (~358 tok)
 - `feedback_bun_workspace_quirks.md` — Don't list non-existent dirs in root `package.json` `workspaces` (~517 tok)
 - `feedback_docs_vs_code_drift.md` (~534 tok)
 - `feedback_explicit_git_staging.md` (~479 tok)
@@ -35,13 +36,13 @@
 - `feedback_v2_backlog_pattern.md` (~479 tok)
 - `feedback_vitest_serial_for_supabase_auth.md` (~502 tok)
 - `feedback_wireframes_before_adrs.md` (~784 tok)
-- `MEMORY.md` (~1779 tok)
+- `MEMORY.md` (~1834 tok)
 - `project_admin_platform_2026-04-16.md` — What IS implemented as of 2026-04-16 (~1994 tok)
 - `project_admin_platform_2026-04-17.md` — What IS implemented as of 2026-04-17 (~2346 tok)
 - `project_admin_platform_2026-04-18.md` — State as of 2026-04-18 (~609 tok)
 - `project_adr0045_sprint12_done.md` — Shipped in commit 764952b (~596 tok)
 - `project_adr0047_done.md` — Commits (~783 tok)
-- `project_adr0050_proposed.md` (~1133 tok)
+- `project_adr0050_proposed.md` (~1215 tok)
 - `project_customer_segment_enterprise.md` — The customer (~546 tok)
 - `project_dev_only_no_prod.md` (~347 tok)
 - `project_open_gap_admin_account_awareness.md` (~814 tok)
@@ -73,16 +74,16 @@
 - `.gitignore` — Git ignore rules (~182 tok)
 - `.prettierrc` (~29 tok)
 - `CLAUDE.md` — OpenWolf (~5779 tok)
-- `package.json` — Node.js package manifest (~110 tok)
+- `package.json` — Node.js package manifest (~117 tok)
 - `sentry.client.config.ts` (~166 tok)
 - `sentry.server.config.ts` (~166 tok)
 - `tsconfig.base.json` (~110 tok)
 - `tsconfig.json` — TypeScript configuration (~206 tok)
-- `vitest.config.ts` — /*.test.ts', (~226 tok)
+- `vitest.config.ts` — /*.test.ts', (~248 tok)
 
 ## .claude/
 
-- `session-handoff.md` — Session Handoff — 2026-04-18 (late afternoon close) (~895 tok)
+- `session-handoff.md` — Session Handoff — 2026-04-20 (ADR-1001 Sprint 2.1) (~2810 tok)
 
 ## .github/workflows/
 
@@ -92,7 +93,7 @@
 
 - `eslint.config.mjs` — Declares eslintConfig (~98 tok)
 - `next.config.ts` — Declares NOINDEX_VALUE (~548 tok)
-- `package.json` — Node.js package manifest (~259 tok)
+- `package.json` — Node.js package manifest (~282 tok)
 - `sentry.client.config.ts` (~170 tok)
 - `sentry.edge.config.ts` — Sentry init for Next.js edge runtime (middleware, edge routes). (~241 tok)
 - `sentry.server.config.ts` — Read the same NEXT_PUBLIC_ var the client uses so there's one env var (~249 tok)
@@ -123,7 +124,7 @@
 ## admin/src/app/(operator)/
 
 - `actions.ts` — Exports refreshPlatformMetrics (~167 tok)
-- `layout.tsx` — Operator shell — visual spec: docs/admin/design/consentshield-admin-screens.html. (~2190 tok)
+- `layout.tsx` — Operator shell — visual spec: docs/admin/design/consentshield-admin-screens.html. (~2265 tok)
 - `page.tsx` — ADR-0028 Sprint 2.1 — Operations Dashboard. (~1660 tok)
 
 ## admin/src/app/(operator)/accounts/
@@ -154,11 +155,28 @@
 
 - `actions.ts` — Exports createRefund, upsertPlanAdjustment, revokePlanAdjustment (~1866 tok)
 - `billing-tabs.tsx` — BillingTabs — renders table, modal (~8331 tok)
-- `page.tsx` — ADR-0050 Sprint 1 — Billing landing (account-indexed). (~2702 tok)
+- `page.tsx` — ADR-0050 Sprint 1 — Billing landing (account-indexed). (~3223 tok)
 
 ## admin/src/app/(operator)/billing/[accountId]/
 
-- `page.tsx` — ADR-0050 Sprint 1 — per-account billing detail. (~4292 tok)
+- `page.tsx` — ADR-0050 Sprint 2.3 — per-account billing detail. (~6196 tok)
+
+## admin/src/app/(operator)/billing/disputes/
+
+- `actions.ts` — Exports DisputeRow, listDisputes, getDisputeDetail, assembleEvidenceBundle, markDisputeState (~2121 tok)
+- `page.tsx` — statusBadge — renders table (~1350 tok)
+
+## admin/src/app/(operator)/billing/export/
+
+- `actions.ts` — Exports previewExport, generateExportZip (~644 tok)
+- `form.tsx` — ExportForm — renders form, table (~2216 tok)
+- `page.tsx` — ADR-0050 Sprint 3.1 — owner-only (for retired issuers) invoice ZIP (~742 tok)
+
+## admin/src/app/(operator)/billing/gst-statement/
+
+- `actions.ts` — Exports generateGstStatement (~1002 tok)
+- `form.tsx` — GstStatementForm — renders form (~1815 tok)
+- `page.tsx` — ADR-0050 Sprint 3.1 — GST statement generator. (~864 tok)
 
 ## admin/src/app/(operator)/billing/issuers/
 
@@ -184,6 +202,10 @@
 - `actions.ts` — Exports createRefund, upsertPlanAdjustment, revokePlanAdjustment (~1883 tok)
 - `billing-tabs.tsx` — BillingTabs — renders table, modal (~9004 tok)
 - `page.tsx` — ADR-0034 Sprint 2.1 — Billing Operations panel. (~1062 tok)
+
+## admin/src/app/(operator)/billing/search/
+
+- `page.tsx` — ADR-0050 Sprint 3.1 — invoice search. (~2634 tok)
 
 ## admin/src/app/(operator)/connectors/
 
@@ -289,6 +311,14 @@
 
 - `page.tsx` — ADR-0030 Sprint 2.1 — New-draft form. (~952 tok)
 
+## admin/src/app/api/admin/billing/invoices/[invoiceId]/download/
+
+- `route.ts` — ADR-0050 Sprint 2.3 — GET /api/admin/billing/invoices/:invoiceId/download (~612 tok)
+
+## admin/src/app/api/admin/billing/invoices/issue/
+
+- `route.ts` — Next.js API route: POST (~2296 tok)
+
 ## admin/src/app/api/admin/users/[adminId]/disable/
 
 - `route.ts` — ADR-0045 Sprint 1.2 — POST /api/admin/users/[adminId]/disable (~410 tok)
@@ -386,6 +416,15 @@
 - `lifecycle.ts` — ADR-0045 Sprint 1.2/2.1 — shared orchestration for the three admin (~1511 tok)
 - `role-tiers.ts` — ADR-0050 Sprint 2.1 — admin tier helpers. (~243 tok)
 
+## admin/src/lib/billing/
+
+- `build-evidence-bundle.ts` — ADR-0050 Sprint 3.2 — Pure evidence bundle assembly for dispute workspace. (~971 tok)
+- `build-export-zip.ts` — ADR-0050 Sprint 3.1 — Pure ZIP+CSV assembly for invoice export. (~964 tok)
+- `r2-disputes.ts` — ADR-0050 Sprint 3.2 — R2 helpers for dispute evidence bundles. (~630 tok)
+- `r2-invoices.ts` — ADR-0050 Sprint 2.2 — R2 invoice-upload wrapper. (~864 tok)
+- `render-invoice.ts` — ADR-0050 Sprint 2.2 — PDFKit-based invoice renderer (admin-side). (~2259 tok)
+- `resend-invoice.ts` — ADR-0050 Sprint 2.2 — Resend invoice-email dispatch (admin-side). (~988 tok)
+
 ## admin/src/lib/impersonation/
 
 - `cookie.ts` — ADR-0029 Sprint 3.1 — impersonation cookie lifecycle. (~439 tok)
@@ -393,6 +432,10 @@
 ## admin/src/lib/razorpay/
 
 - `client.ts` — Issue a refund against a captured Razorpay payment. Amount is in paise. (~1447 tok)
+
+## admin/src/lib/storage/
+
+- `sigv4.ts` — Hand-rolled AWS sigv4 for Cloudflare R2 S3 compatibility. Admin-side (~2258 tok)
 
 ## admin/src/lib/supabase/
 
@@ -407,7 +450,7 @@
 ## app/
 
 - `next.config.ts` — Declares NOINDEX_VALUE (~148 tok)
-- `package.json` — Node.js package manifest (~310 tok)
+- `package.json` — Node.js package manifest (~319 tok)
 - `tsconfig.json` — TypeScript configuration (~117 tok)
 - `vercel.json` (~33 tok)
 
@@ -423,7 +466,7 @@
 
 ## app/src/
 
-- `proxy.ts` — Customer-app proxy. (~910 tok)
+- `proxy.ts` — Customer-app proxy. (~1396 tok)
 
 ## app/src/app/
 
@@ -583,9 +626,13 @@
 
 - `route.ts` — Next.js API route: POST (~870 tok)
 
+## app/src/app/api/v1/_ping/
+
+- `route.ts` — ADR-1001 Sprint 2.2 — Canary endpoint to exercise the Bearer middleware. (~210 tok)
+
 ## app/src/app/api/webhooks/razorpay/
 
-- `route.ts` — ADR-0050 Sprint 2.1 chunk 3 — verbatim Razorpay webhook preservation. (~1428 tok)
+- `route.ts` — ADR-0050 Sprint 2.1 chunk 3 — verbatim Razorpay webhook preservation. (~2417 tok)
 
 ## app/src/app/api/webhooks/sentry/
 
@@ -610,10 +657,24 @@
 
 - `template-picker.tsx` — TemplatePicker (~898 tok)
 
+## app/src/lib/api/
+
+- `auth.ts` — Exports ApiKeyContext, VerifyResult, verifyBearerToken, problemJson (~984 tok)
+- `context.ts` — Exports API_HDR, getApiContext, assertScope, buildApiContextHeaders (~534 tok)
+
 ## app/src/lib/auth/
 
 - `bootstrap-org.ts` — ADR-0042 — signup bootstrap extracted into a pure helper so the (~423 tok)
 - `require-org-role.ts` — ADR-0044 Phase 1 — Server-side role gate with account_owner inheritance. (~565 tok)
+
+## app/src/lib/billing/
+
+- `r2-invoices.ts` — ADR-0050 Sprint 2.2 — R2 invoice-upload wrapper. (~817 tok)
+- `render-invoice.ts` — ADR-0050 Sprint 2.2 — PDFKit-based invoice renderer. (~2421 tok)
+
+## app/src/lib/connectors/
+
+- `README.md` — Project documentation (~834 tok)
 
 ## app/src/lib/connectors/oauth/
 
@@ -680,6 +741,7 @@
 - `ROADMAP-phase2.md` — ConsentShield — Phase 2 Roadmap (~3150 tok)
 - `STATUS.md` — ConsentShield Status (~2363 tok)
 - `V2-BACKLOG.md` — V2 Backlog — Deferred Items for Post-Phase-2 Review (~1378 tok)
+- `WHITEPAPER-AUDIT.md` — ConsentShield Integration Whitepaper — Critical Audit vs. Implementation (~4878 tok)
 
 ## docs/ADRs/
 
@@ -731,8 +793,16 @@
 - `ADR-0047-customer-membership-lifecycle.md` — ADR-0047 — Customer membership lifecycle (role change + remove) + single-account-per-identity invari (~3944 tok)
 - `ADR-0048-admin-accounts-and-observability.md` — ADR-0048: Admin Accounts panel + ADR-0033/34 deviation closeout (~2261 tok)
 - `ADR-0049-security-observability-ingestion.md` — ADR-0049: Security observability ingestion — rate_limit_events + sentry_events (~2365 tok)
-- `ADR-0050-admin-account-aware-billing.md` — ADR-0050: Admin account-aware billing — issuer entities, invoices, GST, dispute workspace (~11197 tok)
-- `ADR-index.md` — ADR Index (~1718 tok)
+- `ADR-0050-admin-account-aware-billing.md` — ADR-0050: Admin account-aware billing — issuer entities, invoices, GST, dispute workspace (~12164 tok)
+- `ADR-1001-truth-in-marketing-and-public-api-foundation.md` — ADR-1001: Truth-in-Marketing + Public API Foundation (~5196 tok)
+- `ADR-1002-dpdp-section6-runtime-enforcement.md` — ADR-1002: DPDP §6 Runtime Enforcement — Verify, Record, Artefact Ops, Deletion API (~2942 tok)
+- `ADR-1003-processor-posture-and-healthcare-unlock.md` — ADR-1003: Processor Posture + Healthcare Category Unlock (~3365 tok)
+- `ADR-1004-statutory-retention-material-change-silent-failure.md` — ADR-1004: Statutory Retention + Material-Change Re-consent + Silent-Failure Detection (~3856 tok)
+- `ADR-1005-operations-maturity.md` — ADR-1005: Operations Maturity — Webhook Reference, Support Model, Status Page, Multi-channel Alerts, (~3575 tok)
+- `ADR-1006-developer-experience-and-openapi.md` — ADR-1006: Developer Experience — Client Libraries + OpenAPI Spec + CI Drift Check (~2658 tok)
+- `ADR-1007-connector-ecosystem-expansion.md` — ADR-1007: Connector Ecosystem Expansion + Platform Plugins (~2738 tok)
+- `ADR-1008-scale-audit-polish-and-p3-hardening.md` — ADR-1008: Scale + Audit Polish + P3 Hardening (~3065 tok)
+- `ADR-index.md` — ADR Index (~2085 tok)
 - `ADR-template.md` — ADR-NNNN: Title (~423 tok)
 - `adr-workflow.md` — ADR Workflow Rules (~557 tok)
 
@@ -756,21 +826,24 @@
 
 ## docs/changelogs/
 
-- `CHANGELOG-api.md` — Changelog — API (~4845 tok)
-- `CHANGELOG-dashboard.md` — Changelog — Dashboard (~11902 tok)
-- `CHANGELOG-docs.md` — Changelog — Documentation (~3064 tok)
+- `CHANGELOG-api.md` — Changelog — API (~6363 tok)
+- `CHANGELOG-dashboard.md` — Changelog — Dashboard (~12311 tok)
+- `CHANGELOG-docs.md` — Changelog — Documentation (~4121 tok)
 - `CHANGELOG-edge-functions.md` — Changelog — Edge Functions (~3003 tok)
 - `CHANGELOG-infra.md` — Changelog — Infrastructure (~3667 tok)
-- `CHANGELOG-schema.md` — Changelog — Schema (~19187 tok)
+- `CHANGELOG-schema.md` — Changelog — Schema (~22322 tok)
 - `CHANGELOG-worker.md` — Changelog — Worker (~1897 tok)
 
 ## docs/design/
 
 - `consentshield-complete-schema-design.md` — ConsentShield — Complete Schema Design (~17070 tok)
+- `ConsentShield-Customer-Integration-Whitepaper-V2-gaps.md` — ConsentShield — Whitepaper-to-Code Gap Document (Revised) (~13055 tok)
+- `ConsentShield-Customer-Integration-Whitepaper-v2.md` — ConsentShield — Customer-Side Integration (~22710 tok)
 - `consentshield-definitive-architecture.md` — ConsentShield — Definitive Architecture Reference (~10435 tok)
 - `consentshield-technical-architecture.md` — ConsentShield — Technical Architecture (~14936 tok)
 - `consentshield-testing-strategy.md` — ConsentShield — The Testing Question (~6253 tok)
 - `consentshield-v2-complete-blueprint.md` — ConsentShield v2 — Complete Product Blueprint (~18422 tok)
+- `ConsentShield-Whitepaper-V2-Gaps-Combined.md` — ConsentShield — Whitepaper-to-Code Gap Document (Combined & Canonical) (~12397 tok)
 
 ## docs/design/brand-assets/
 
@@ -794,12 +867,17 @@
 - `consentshield-mobile.html` — iOS wireframes spec, 3 flows (rights monitor, breach trigger, clinic ABDM Month 6+). M1/M2/M3 drift items deferred to ABDM/mobile/BFSI ADRs. (~17068 tok)
 - `consentshield-next-steps.md` — Strategic decisions log April 2026 + 2026-04-16 addendum noting DEPA architecture has moved on. (~2784 tok)
 - `consentshield-screens.html` — ConsentShield — Screen Designs & UX Flows (~30282 tok)
+- `consentshield-site.html` — ConsentShield — India's DEPA-native DPDP compliance platform (~55978 tok)
 
 ## docs/ops/
 
 - `invitation-email-setup.md` — Runbook — Invitation email + marketing endpoint setup (~2144 tok)
 - `sentry-webhook-setup.md` — Sentry → ConsentShield webhook setup (~694 tok)
 - `supabase-auth-templates.md` — Supabase Auth Email Templates (OTP form) (~943 tok)
+
+## docs/plans/
+
+- `ConsentShield-V2-Whitepaper-Closure-Plan.md` — ConsentShield — v2.0 Whitepaper Closure Plan (~2100 tok)
 
 ## docs/reviews/
 
@@ -809,6 +887,7 @@
 - `2026-04-16-depa-package-architecture-review.md` — DEPA Package Architecture Review — 2026-04-16 (~5618 tok)
 - `2026-04-16-phase2-completion-review.md` — Critical Codebase Review — Phase 2 Completion (~6107 tok)
 - `2026-04-18-adr-0044-customer-rbac-review.md` — Review — ADR-0044 Customer RBAC (Phase 0 + 1 + 2.1–2.6) (~3002 tok)
+- `2026-04-18-comprehensive-project-review.md` — ConsentShield — Comprehensive Review as of 2026-04-18 (~3553 tok)
 
 ## packages/compliance/
 
@@ -864,6 +943,7 @@
 - `context-2026-04-18-09-34-45.md` — Session context — 2026-04-18 09:34 (~782 tok)
 - `context-2026-04-18-12-18-16.md` — Session context — 2026-04-18 12:18 (~2627 tok)
 - `context-2026-04-18-16-22-35.md` — Session Context — 2026-04-18 (afternoon/evening closing) (~2259 tok)
+- `context-2026-04-20-06-19-25.md` — Session Context — 2026-04-20 (morning) (~1913 tok)
 
 ## src/
 
@@ -1242,6 +1322,17 @@
 - `20260507000007_billing_issuer_update_op_fix.sql` — ADR-0050 Sprint 2.1 chunk 2 — fix admin.billing_issuer_update parse error. (~890 tok)
 - `20260507000008_billing_accounts_invoices_webhooks.sql` — ADR-0050 Sprint 2.1 chunk 3 — accounts billing-profile + invoices + verbatim Razorpay store. (~3901 tok)
 - `20260507000009_billing_webhook_event_detail_rpc.sql` — ADR-0050 Sprint 2.1 chunk 3 follow-up — admin.billing_webhook_event_detail. (~397 tok)
+- `20260508000001_billing_issue_invoice_rpc.sql` — ADR-0050 Sprint 2.2 — invoice issuance RPC + GST computation + finalize RPCs. (~5932 tok)
+- `20260508000002_billing_finalize_role_column_fix.sql` — ADR-0050 Sprint 2.2 follow-up — column-name fix on billing_finalize_*. (~1218 tok)
+- `20260509000001_billing_invoice_list_detail.sql` — ADR-0050 Sprint 2.3 — invoice list + detail RPCs and billing_account_summary expansion. (~3986 tok)
+- `20260509000002_razorpay_reconcile_invoice_paid.sql` — ADR-0050 Sprint 2.3 — Razorpay invoice.paid reconciliation. (~980 tok)
+- `20260509000003_billing_invoice_order_tiebreak.sql` — ADR-0050 Sprint 2.3 follow-up — deterministic newest-first ordering. (~1993 tok)
+- `20260510000001_billing_gst_statement.sql` — ADR-0050 Sprint 3.1 — admin.billing_gst_statement (~1608 tok)
+- `20260510000002_billing_export_and_search.sql` — ADR-0050 Sprint 3.1 — admin.billing_invoice_export_manifest + admin.billing_invoice_search (~2700 tok)
+- `20260520000001_api_keys_v2.sql` — Migration: ADR-1001 Sprint 2.1 — `cs_live_*` Public API keys + Bearer infra (~5775 tok)
+- `20260520000002_api_keys_v2_fixes.sql` — Migration: ADR-1001 Sprint 2.1 — fixes to 20260520000001 (~1664 tok)
+- `20260520000003_api_keys_column_grants.sql` — Migration: ADR-1001 Sprint 2.1 — column-level SELECT grants on public.api_keys (~299 tok)
+- `20260530000001_billing_disputes.sql` — Migration: ADR-0050 Sprint 3.2 — public.disputes table + dispute-upsert RPC + admin RPCs (~2808 tok)
 
 ## supabase/seed/
 
@@ -1282,6 +1373,7 @@
 - `admin-lifecycle-rpcs.test.ts` — service: countAuditRows (~3812 tok)
 - `audit_log.test.ts` — service: countAuditRows (~1832 tok)
 - `billing-account-view.test.ts` — Declares env (~1374 tok)
+- `billing-invoice-list.test.ts` — service: nextGstin, populateAccountBillingProfile, createIssuer, issueThroughActiveIssuer (~3246 tok)
 - `billing-issuer-rpcs.test.ts` — nextGstin: hardDelete, fetchIssuer, createIssuer (~3521 tok)
 - `billing-rpcs.test.ts` — service: countAuditRows, createPendingRefund (~4016 tok)
 - `foundation.test.ts` — Declares anon (~1516 tok)
@@ -1295,6 +1387,16 @@
 - `rpcs.test.ts` — service: rpc (~4104 tok)
 - `sdf-rpcs.test.ts` — service: countAuditRows (~1560 tok)
 - `sentry-events-rpcs.test.ts` — Declares service (~1111 tok)
+
+## tests/billing/
+
+- `gst-computation.test.ts` — ADR-0050 Sprint 2.2 — public.billing_compute_gst. (~1232 tok)
+- `gst-statement.test.ts` — service: nextGstin, setAccountBillingProfile, createIssuer, issueInvoice, finalizeInvoice (~2856 tok)
+- `invoice-export-authz.test.ts` — service: nextGstin, populateBilling, createIssuer, issueAndFinalize (~3426 tok)
+- `invoice-export-contents.test.ts` — ManifestEnvelope: nextGstin, populateBilling, createIssuer + 5 more (~3640 tok)
+- `issue-invoice.test.ts` — createdInvoices: nextGstin, createActiveIssuer, populateAccountBillingProfile, issue, readEnvelope (~3314 tok)
+- `issuer-immutability.test.ts` — nextGstin: patch, readDetail (~1256 tok)
+- `webhook-reconciliation.test.ts` — service: nextGstin, populateAccountBillingProfile, createIssueStubInvoice, readStatus, resetToIssued (~2449 tok)
 
 ## tests/buffer/
 
@@ -1312,6 +1414,10 @@
 
 - `banner-test.html` — ConsentShield Banner Test (~895 tok)
 
+## tests/integration/
+
+- `api-middleware.test.ts` — Declares TestOrg (~946 tok)
+
 ## tests/rbac/
 
 - `invitations-dispatch-trigger.test.ts` — ADR-0044 Phase 2.5 — invitation email dispatch primitives. (~1239 tok)
@@ -1328,6 +1434,7 @@
 
 ## tests/rls/
 
+- `api-keys.test.ts` — Declares key (~2381 tok)
 - `depa-isolation.test.ts` — ADR-0020 Sprint 1.1 — DEPA RLS isolation tests. (~3131 tok)
 - `depa-purpose-crud.test.ts` — ADR-0024 Sprint 1.4 — RLS cross-tenant isolation for Purpose Definitions (~1430 tok)
 - `helpers.ts` — Exports getServiceClient, getAnonClient, TestOrg, createTestOrg + 3 more (~1275 tok)

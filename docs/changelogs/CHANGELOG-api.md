@@ -2,6 +2,26 @@
 
 API route changes.
 
+## [ADR-1001 Sprint 2.2] — 2026-04-20
+
+**ADR:** ADR-1001 — Truth-in-Marketing + Public API Foundation
+**Sprint:** Sprint 2.2 — Bearer middleware + request context
+
+### Added
+- `app/src/lib/api/auth.ts` — `verifyBearerToken(authHeader)`: parses `Bearer cs_live_*`, calls `rpc_api_key_verify` (service_role only per migration 20260520000001), distinguishes revoked (410) from invalid (401) via secondary `api_keys` hash lookup. `problemJson()` RFC 7807 body builder.
+- `app/src/lib/api/context.ts` — `getApiContext()` reads injected headers into `ApiKeyContext`; `assertScope()` returns 403 response for missing scopes; `buildApiContextHeaders()` used by proxy.ts to stamp context onto the request.
+- `app/src/app/api/v1/_ping/route.ts` — canary GET returns `{ ok, org_id, account_id, scopes, rate_tier }` from proxy-injected headers.
+- `tests/integration/api-middleware.test.ts` — 6 unit-style integration tests for `verifyBearerToken` (valid, missing, malformed ×2, invalid, revoked).
+
+### Changed
+- `app/src/proxy.ts` — added `/api/v1/:path*` to `config.matcher`; added Bearer gate branch that skips `/api/v1/deletion-receipts/*`, validates the token, injects context headers on success, or returns RFC 7807 problem+json (401 / 410).
+- `vitest.config.ts` — added `tests/integration/**/*.test.ts` to include list.
+
+### Tested
+- [x] 6/6 integration tests — PASS (`bunx vitest run tests/integration/api-middleware.test.ts`)
+- [x] `cd app && bun run build` — clean (0 errors, 0 warnings)
+- [x] `cd app && bunx tsc --noEmit` — clean
+
 ## [ADR-0050 Sprint 2.3] — 2026-04-19
 
 **ADR:** ADR-0050 — Admin account-aware billing

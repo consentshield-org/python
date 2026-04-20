@@ -5921,6 +5921,70 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-04-20T00:55:00.000Z"
+    },
+    {
+      "id": "bug-370",
+      "timestamp": "2026-04-20T01:19:05.845Z",
+      "error_message": "Missing await",
+      "file": "app/src/proxy.ts",
+      "root_cause": "Async call without await — returned Promise instead of value",
+      "fix": "Added await to async call",
+      "tags": [
+        "auto-detected",
+        "async-fix",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-20T01:19:05.845Z"
+    },
+    {
+      "id": "bug-371",
+      "timestamp": "2026-04-20T01:20:17.042Z",
+      "error_message": "Type error",
+      "file": "tests/integration/api-middleware.test.ts",
+      "root_cause": "Missing or incorrect type annotation",
+      "fix": "Added type assertion/annotation",
+      "tags": [
+        "auto-detected",
+        "type-fix",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-20T01:20:17.042Z"
+    },
+    {
+      "id": "bug-372",
+      "timestamp": "2026-04-20T01:21:18.890Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/ADRs/ADR-1001-truth-in-marketing-and-public-api-foundation.md",
+      "root_cause": "17 lines replaced/restructured",
+      "fix": "Rewrote 21→44 lines (17 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-20T01:21:18.890Z"
+    },
+    {
+      "id": "bug-373",
+      "timestamp": "2026-04-20T01:21:47.332Z",
+      "error_message": "Null/undefined access in ",
+      "file": "app/src/app/api/webhooks/razorpay/route.ts",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check)",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-20T01:21:47.332Z"
     }
   ]
 }

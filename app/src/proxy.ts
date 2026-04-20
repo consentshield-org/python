@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
+import { verifyBearerToken, problemJson } from '@/lib/api/auth'
+import { buildApiContextHeaders } from '@/lib/api/context'
 
 // Customer-app proxy.
 //
@@ -8,11 +10,54 @@ import { createServerClient } from '@supabase/ssr'
 // surface. This proxy rejects any session carrying that claim with a
 // 403 + hint at the admin origin. Non-admin authed users follow the
 // standard /dashboard gate.
+//
+// ADR-1001 Sprint 2.2 — Bearer gate for /api/v1/* (excluding
+// /api/v1/deletion-receipts/* which uses its own HMAC callback scheme).
 
 const ADMIN_ORIGIN =
   process.env.NEXT_PUBLIC_ADMIN_ORIGIN ?? 'https://admin.consentshield.in'
 
+const PROBLEM_JSON_HEADERS = { 'Content-Type': 'application/problem+json' }
+
 export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl
+
+  // /api/v1/* — Bearer token gate.
+  // Deletion-receipts uses its own HMAC callback verification (ADR-0009);
+  // pass it through without touching the Authorization header.
+  if (pathname.startsWith('/api/v1/') && !pathname.startsWith('/api/v1/deletion-receipts/')) {
+    const result = await verifyBearerToken(request.headers.get('authorization'))
+
+    if (!result.ok) {
+      if (result.status === 410) {
+        return NextResponse.json(
+          problemJson(410, 'Gone', 'This API key has been revoked'),
+          { status: 410, headers: PROBLEM_JSON_HEADERS },
+        )
+      }
+      const detail =
+        result.reason === 'missing'
+          ? 'Authorization header is required'
+          : result.reason === 'malformed'
+            ? 'Authorization header must be: Bearer cs_live_<token>'
+            : 'Invalid or expired API key'
+      return NextResponse.json(
+        problemJson(401, 'Unauthorized', detail),
+        {
+          status: 401,
+          headers: {
+            ...PROBLEM_JSON_HEADERS,
+            'WWW-Authenticate': 'Bearer realm="consentshield"',
+          },
+        },
+      )
+    }
+
+    // Inject verified context as request headers for the route handler.
+    const injected = buildApiContextHeaders(request.headers, result.context)
+    return NextResponse.next({ request: { headers: injected } })
+  }
+
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -37,8 +82,6 @@ export async function proxy(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser()
-
-  const { pathname } = request.nextUrl
 
   // Rule 12 — reject admin identities on every customer surface the
   // proxy sees. A signed-in admin who navigates here gets a crisp 403
@@ -81,5 +124,5 @@ function escapeHtml(s: string): string {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/login', '/signup'],
+  matcher: ['/dashboard/:path*', '/login', '/signup', '/api/v1/:path*'],
 }

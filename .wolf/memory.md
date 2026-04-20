@@ -2449,3 +2449,212 @@
 | 21:25 | Edited docs/changelogs/CHANGELOG-schema.md | expanded (+21 lines) | ~967 |
 | 21:26 | Edited docs/changelogs/CHANGELOG-dashboard.md | expanded (+12 lines) | ~322 |
 | 21:26 | Edited docs/ADRs/ADR-0050-admin-account-aware-billing.md | "[~] in progress" → "[x] complete" | ~129 |
+| 21:27 | Created docs/reviews/2026-04-18-comprehensive-project-review.md | — | ~3337 |
+| 21:27 | review:  saved 2026-04-18 comprehensive project review | docs/reviews/2026-04-18-comprehensive-project-review.md | success | ~4.2k |
+| 21:27 | Session end: 13 writes across 9 files (CHANGELOG-schema.md, CHANGELOG-dashboard.md, ADR-0050-admin-account-aware-billing.md, 20260507000008_billing_accounts_invoices_webhooks.sql, route.ts) | 43 reads | ~187391 tok |
+| 21:27 | Session end: 13 writes across 9 files (CHANGELOG-schema.md, CHANGELOG-dashboard.md, ADR-0050-admin-account-aware-billing.md, 20260507000008_billing_accounts_invoices_webhooks.sql, route.ts) | 43 reads | ~187391 tok |
+| 21:28 | Session end: 13 writes across 9 files (CHANGELOG-schema.md, CHANGELOG-dashboard.md, ADR-0050-admin-account-aware-billing.md, 20260507000008_billing_accounts_invoices_webhooks.sql, route.ts) | 43 reads | ~187391 tok |
+| 07:34 | Edited docs/reviews/2026-04-18-comprehensive-project-review.md | expanded (+13 lines) | ~513 |
+| 07:34 | Session end: 14 writes across 9 files (CHANGELOG-schema.md, CHANGELOG-dashboard.md, ADR-0050-admin-account-aware-billing.md, 20260507000008_billing_accounts_invoices_webhooks.sql, route.ts) | 43 reads | ~187940 tok |
+| 10:17 | Created supabase/migrations/20260508000001_billing_issue_invoice_rpc.sql | — | ~5063 |
+| 10:17 | Edited app/package.json | 8→10 lines | ~73 |
+| 10:18 | Created app/src/lib/billing/render-invoice.ts | — | ~2421 |
+| 10:18 | Created app/src/lib/billing/r2-invoices.ts | — | ~817 |
+| 10:19 | Edited app/package.json | 10→8 lines | ~58 |
+| 10:19 | Edited admin/package.json | 10→12 lines | ~90 |
+| 10:20 | Created admin/src/lib/storage/sigv4.ts | — | ~1659 |
+| 10:21 | Created admin/src/lib/billing/render-invoice.ts | — | ~2259 |
+| 10:21 | Created admin/src/lib/billing/r2-invoices.ts | — | ~746 |
+| 10:21 | Created admin/src/lib/billing/resend-invoice.ts | — | ~988 |
+| 10:22 | Created admin/src/app/api/admin/billing/invoices/issue/route.ts | — | ~2446 |
+| 10:22 | Edited supabase/migrations/20260508000001_billing_issue_invoice_rpc.sql | modified admin() | ~949 |
+| 10:23 | Edited admin/src/app/api/admin/billing/invoices/issue/route.ts | modified if() | ~715 |
+| 10:24 | Created tests/billing/gst-computation.test.ts | — | ~1210 |
+| 10:24 | Created tests/billing/issue-invoice.test.ts | — | ~3314 |
+| 10:25 | Edited vitest.config.ts | 6→7 lines | ~54 |
+| 10:26 | Edited supabase/migrations/20260508000001_billing_issue_invoice_rpc.sql | inline fix | ~21 |
+| 10:26 | Edited tests/billing/gst-computation.test.ts | 6→7 lines | ~84 |
+| 10:26 | Created supabase/migrations/20260508000002_billing_finalize_role_column_fix.sql | — | ~1218 |
+| 10:34 | Edited docs/changelogs/CHANGELOG-schema.md | expanded (+19 lines) | ~876 |
+| 10:34 | Edited docs/changelogs/CHANGELOG-api.md | expanded (+18 lines) | ~676 |
+| 10:34 | Edited docs/changelogs/CHANGELOG-docs.md | expanded (+8 lines) | ~146 |
+| 10:35 | Edited docs/ADRs/ADR-0050-admin-account-aware-billing.md | 17→19 lines | ~968 |
+| 10:39 | ADR-0050 Sprint 2.2 — issue-invoice RPC + PDFKit render + R2 upload + Resend dispatch; GST compute SQL | supabase/migrations/20260508000001-2, admin/src/lib/billing/*, admin/src/app/api/admin/billing/invoices/issue/route.ts, tests/billing/* | 24/24 PASS (gst 11 + issue 13); full repo 343/343; admin+app build+lint clean | ~38k |
+| 10:39 | Session end: 37 writes across 21 files (CHANGELOG-schema.md, CHANGELOG-dashboard.md, ADR-0050-admin-account-aware-billing.md, 20260507000008_billing_accounts_invoices_webhooks.sql, route.ts) | 48 reads | ~223533 tok |
+| 11:21 | Created docs/WHITEPAPER-AUDIT.md | — | ~5203 |
+| 11:21 | Session end: 38 writes across 22 files (CHANGELOG-schema.md, CHANGELOG-dashboard.md, ADR-0050-admin-account-aware-billing.md, 20260507000008_billing_accounts_invoices_webhooks.sql, route.ts) | 49 reads | ~229108 tok |
+| 11:26 | Edited .claude/session-handoff.md | modified 1() | ~2368 |
+| 11:26 | Session end: 39 writes across 23 files (CHANGELOG-schema.md, CHANGELOG-dashboard.md, ADR-0050-admin-account-aware-billing.md, 20260507000008_billing_accounts_invoices_webhooks.sql, route.ts) | 50 reads | ~232540 tok |
+
+## Session: 2026-04-19 11:27
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 14:12 | Created docs/design/ConsentShield-Customer-Integration-Whitepaper-V2-gaps.md | — | ~11092 |
+| 14:12 | Session end: 1 writes across 1 files (ConsentShield-Customer-Integration-Whitepaper-V2-gaps.md) | 19 reads | ~44276 tok |
+| 14:28 | Edited docs/design/ConsentShield-Customer-Integration-Whitepaper-V2-gaps.md | expanded (+67 lines) | ~2886 |
+| 14:28 | Session end: 2 writes across 1 files (ConsentShield-Customer-Integration-Whitepaper-V2-gaps.md) | 19 reads | ~47368 tok |
+| 14:41 | Created docs/design/ConsentShield-Whitepaper-V2-Gaps-Combined.md | — | ~13223 |
+| 14:42 | Created docs/plans/ConsentShield-V2-Whitepaper-Closure-Plan.md | — | ~2240 |
+| 14:43 | Created docs/ADRs/ADR-1001-truth-in-marketing-and-public-api-foundation.md | — | ~3021 |
+| 14:44 | Created docs/ADRs/ADR-1002-dpdp-section6-runtime-enforcement.md | — | ~3139 |
+| 14:46 | Created docs/ADRs/ADR-1003-processor-posture-and-healthcare-unlock.md | — | ~3589 |
+| 14:47 | Created docs/ADRs/ADR-1004-statutory-retention-material-change-silent-failure.md | — | ~4113 |
+| 14:49 | Created docs/ADRs/ADR-1005-operations-maturity.md | — | ~3813 |
+| 14:50 | Created docs/ADRs/ADR-1006-developer-experience-and-openapi.md | — | ~2835 |
+| 14:51 | Created docs/ADRs/ADR-1007-connector-ecosystem-expansion.md | — | ~2921 |
+| 14:53 | Created docs/ADRs/ADR-1008-scale-audit-polish-and-p3-hardening.md | — | ~3269 |
+| 14:53 | Edited docs/ADRs/ADR-index.md | expanded (+8 lines) | ~427 |
+| 14:53 | Session end: 13 writes across 12 files (ConsentShield-Customer-Integration-Whitepaper-V2-gaps.md, ConsentShield-Whitepaper-V2-Gaps-Combined.md, ConsentShield-V2-Whitepaper-Closure-Plan.md, ADR-1001-truth-in-marketing-and-public-api-foundation.md, ADR-1002-dpdp-section6-runtime-enforcement.md) | 21 reads | ~95143 tok |
+| 16:47 | Session end: 13 writes across 12 files (ConsentShield-Customer-Integration-Whitepaper-V2-gaps.md, ConsentShield-Whitepaper-V2-Gaps-Combined.md, ConsentShield-V2-Whitepaper-Closure-Plan.md, ADR-1001-truth-in-marketing-and-public-api-foundation.md, ADR-1002-dpdp-section6-runtime-enforcement.md) | 24 reads | ~155270 tok |
+| 16:50 | Session end: 13 writes across 12 files (ConsentShield-Customer-Integration-Whitepaper-V2-gaps.md, ConsentShield-Whitepaper-V2-Gaps-Combined.md, ConsentShield-V2-Whitepaper-Closure-Plan.md, ADR-1001-truth-in-marketing-and-public-api-foundation.md, ADR-1002-dpdp-section6-runtime-enforcement.md) | 24 reads | ~155270 tok |
+| 16:51 | Session end: 13 writes across 12 files (ConsentShield-Customer-Integration-Whitepaper-V2-gaps.md, ConsentShield-Whitepaper-V2-Gaps-Combined.md, ConsentShield-V2-Whitepaper-Closure-Plan.md, ADR-1001-truth-in-marketing-and-public-api-foundation.md, ADR-1002-dpdp-section6-runtime-enforcement.md) | 24 reads | ~155270 tok |
+| 16:57 | Created supabase/migrations/20260509000001_billing_invoice_list_detail.sql | — | ~3986 |
+| 16:58 | Created supabase/migrations/20260509000002_razorpay_reconcile_invoice_paid.sql | — | ~980 |
+| 16:58 | Edited app/src/app/api/webhooks/razorpay/route.ts | 8→10 lines | ~64 |
+| 16:58 | Edited app/src/app/api/webhooks/razorpay/route.ts | expanded (+8 lines) | ~138 |
+| 16:58 | Edited app/src/app/api/webhooks/razorpay/route.ts | added optional chaining | ~458 |
+| 16:58 | Created admin/src/app/api/admin/billing/invoices/[invoiceId]/download/route.ts | — | ~612 |
+| 16:59 | Edited admin/src/app/(operator)/billing/[accountId]/page.tsx | 14→16 lines | ~231 |
+| 16:59 | Edited admin/src/app/(operator)/billing/[accountId]/page.tsx | expanded (+46 lines) | ~460 |
+| 16:59 | Edited admin/src/app/(operator)/billing/[accountId]/page.tsx | 7→11 lines | ~131 |
+| 16:59 | Edited admin/src/app/(operator)/billing/[accountId]/page.tsx | 5→7 lines | ~113 |
+| 16:59 | Edited admin/src/app/(operator)/billing/[accountId]/page.tsx | modified rupees() | ~1549 |
+| 16:59 | Edited admin/src/app/(operator)/billing/[accountId]/page.tsx | modified InvoiceStatusPill() | ~199 |
+| 17:00 | Edited admin/src/app/(operator)/billing/page.tsx | expanded (+10 lines) | ~158 |
+| 17:00 | Edited admin/src/app/(operator)/billing/page.tsx | modified filter() | ~267 |
+| 17:00 | Edited admin/src/app/(operator)/billing/page.tsx | CSS: hover | ~249 |
+| 17:00 | Edited admin/src/app/(operator)/billing/page.tsx | modified InvoiceSnapshotPill() | ~222 |
+| 17:00 | Created tests/billing/webhook-reconciliation.test.ts | — | ~2449 |
+| 17:01 | Created tests/admin/billing-invoice-list.test.ts | — | ~3246 |
+| 17:01 | Created tests/billing/issuer-immutability.test.ts | — | ~1256 |
+| 17:03 | Created supabase/migrations/20260509000003_billing_invoice_order_tiebreak.sql | — | ~1993 |
+| 17:24 | Edited docs/changelogs/CHANGELOG-schema.md | expanded (+23 lines) | ~1006 |
+| 17:24 | Edited docs/changelogs/CHANGELOG-api.md | expanded (+15 lines) | ~360 |
+| 17:24 | Edited docs/changelogs/CHANGELOG-dashboard.md | expanded (+18 lines) | ~462 |
+| 17:24 | Edited docs/changelogs/CHANGELOG-docs.md | expanded (+8 lines) | ~154 |
+| 17:25 | Edited docs/ADRs/ADR-0050-admin-account-aware-billing.md | 19→21 lines | ~1092 |
+| 20:18 | ADR-0050 Sprint 2.2 done (prior) + Sprint 2.3 — billing_invoice_list/detail/snapshot + rpc_razorpay_reconcile_invoice_paid + account detail UI + landing last-invoice + webhook invoice.paid branch + R2 download route | supabase/migrations/20260509000001-3, admin/src/app/(operator)/billing/[accountId]/page.tsx, admin/src/app/(operator)/billing/page.tsx, admin/src/app/api/admin/billing/invoices/[invoiceId]/download/route.ts, app/src/app/api/webhooks/razorpay/route.ts, tests/billing/webhook-reconciliation.test.ts, tests/billing/issuer-immutability.test.ts, tests/admin/billing-invoice-list.test.ts | 52/52 new tests PASS; repo 371/371 | ~32k |
+| 20:19 | Session end: 38 writes across 25 files (ConsentShield-Customer-Integration-Whitepaper-V2-gaps.md, ConsentShield-Whitepaper-V2-Gaps-Combined.md, ConsentShield-V2-Whitepaper-Closure-Plan.md, ADR-1001-truth-in-marketing-and-public-api-foundation.md, ADR-1002-dpdp-section6-runtime-enforcement.md) | 29 reads | ~199865 tok |
+| 20:33 | Edited docs/design/ConsentShield-Customer-Integration-Whitepaper-v2.md | modified catalogue() | ~274 |
+| 20:33 | Created supabase/migrations/20260510000001_billing_gst_statement.sql | — | ~1608 |
+| 20:33 | Edited docs/design/ConsentShield-Customer-Integration-Whitepaper-v2.md | 20→22 lines | ~599 |
+| 20:33 | Created supabase/migrations/20260510000002_billing_export_and_search.sql | — | ~2700 |
+| 20:33 | Edited admin/package.json | 3→4 lines | ~27 |
+| 20:33 | Edited docs/design/ConsentShield-Customer-Integration-Whitepaper-v2.md | inline fix | ~26 |
+| 20:34 | Edited admin/src/lib/storage/sigv4.ts | added 1 condition(s) | ~617 |
+| 20:34 | Edited admin/src/lib/billing/r2-invoices.ts | inline fix | ~20 |
+| 20:34 | Edited admin/src/lib/billing/r2-invoices.ts | modified invoiceR2Key() | ~179 |
+| 20:34 | Edited docs/design/screen designs and ux/consentshield-site.html | 3→3 lines | ~117 |
+| 20:34 | Edited docs/design/screen designs and ux/consentshield-site.html | inline fix | ~66 |
+| 20:34 | Edited admin/src/app/(operator)/layout.tsx | 3→6 lines | ~146 |
+| 20:34 | Edited docs/design/screen designs and ux/consentshield-site.html | inline fix | ~92 |
+| 20:34 | Edited docs/design/screen designs and ux/consentshield-site.html | inline fix | ~34 |
+| 20:34 | Created admin/src/app/(operator)/billing/gst-statement/page.tsx | — | ~864 |
+| 20:34 | Edited docs/design/screen designs and ux/consentshield-site.html | inline fix | ~144 |
+| 20:35 | Created admin/src/app/(operator)/billing/gst-statement/form.tsx | — | ~1815 |
+| 20:35 | Created admin/src/app/(operator)/billing/gst-statement/actions.ts | — | ~1002 |
+| 20:35 | Created app/src/lib/connectors/README.md | — | ~890 |
+| 20:35 | Created admin/src/app/(operator)/billing/search/page.tsx | — | ~2634 |
+| 20:36 | Created admin/src/app/(operator)/billing/export/page.tsx | — | ~742 |
+| 20:36 | Edited docs/ADRs/ADR-1001-truth-in-marketing-and-public-api-foundation.md | 3→3 lines | ~20 |
+| 20:36 | Edited docs/ADRs/ADR-1001-truth-in-marketing-and-public-api-foundation.md | modified 3() | ~372 |
+| 20:36 | Created admin/src/app/(operator)/billing/export/form.tsx | — | ~2216 |
+| 20:36 | Edited docs/ADRs/ADR-1001-truth-in-marketing-and-public-api-foundation.md | modified 3() | ~270 |
+| 20:36 | Created admin/src/app/(operator)/billing/export/actions.ts | — | ~1492 |
+| 20:36 | Edited docs/changelogs/CHANGELOG-docs.md | modified 3() | ~447 |
+| 20:37 | Edited docs/ADRs/ADR-index.md | inline fix | ~42 |
+| 20:37 | Session end: 66 writes across 36 files (ConsentShield-Customer-Integration-Whitepaper-V2-gaps.md, ConsentShield-Whitepaper-V2-Gaps-Combined.md, ConsentShield-V2-Whitepaper-Closure-Plan.md, ADR-1001-truth-in-marketing-and-public-api-foundation.md, ADR-1002-dpdp-section6-runtime-enforcement.md) | 32 reads | ~281333 tok |
+| 20:37 | Created tests/billing/gst-statement.test.ts | — | ~2856 |
+| 20:38 | Created tests/billing/invoice-export-authz.test.ts | — | ~3302 |
+| 20:39 | Edited tests/billing/invoice-export-authz.test.ts | added 1 condition(s) | ~290 |
+| 20:39 | Edited tests/billing/invoice-export-authz.test.ts | inline fix | ~21 |
+| 20:39 | Edited tests/billing/invoice-export-authz.test.ts | inline fix | ~20 |
+| 20:39 | Session end: 71 writes across 38 files (ConsentShield-Customer-Integration-Whitepaper-V2-gaps.md, ConsentShield-Whitepaper-V2-Gaps-Combined.md, ConsentShield-V2-Whitepaper-Closure-Plan.md, ADR-1001-truth-in-marketing-and-public-api-foundation.md, ADR-1002-dpdp-section6-runtime-enforcement.md) | 32 reads | ~287822 tok |
+| 20:44 | Edited docs/design/ConsentShield-Customer-Integration-Whitepaper-v2.md | expanded (+164 lines) | ~2874 |
+| 20:44 | Edited docs/design/ConsentShield-Customer-Integration-Whitepaper-v2.md | 1→3 lines | ~351 |
+| 20:54 | Edited docs/ADRs/ADR-1001-truth-in-marketing-and-public-api-foundation.md | 18→20 lines | ~368 |
+| 20:55 | Edited docs/ADRs/ADR-1001-truth-in-marketing-and-public-api-foundation.md | modified 3() | ~438 |
+| 20:55 | Edited docs/changelogs/CHANGELOG-docs.md | expanded (+21 lines) | ~471 |
+| 20:55 | Session end: 76 writes across 38 files (ConsentShield-Customer-Integration-Whitepaper-V2-gaps.md, ConsentShield-Whitepaper-V2-Gaps-Combined.md, ConsentShield-V2-Whitepaper-Closure-Plan.md, ADR-1001-truth-in-marketing-and-public-api-foundation.md, ADR-1002-dpdp-section6-runtime-enforcement.md) | 32 reads | ~315223 tok |
+| 21:03 | Created supabase/migrations/20260520000001_api_keys_v2.sql | — | ~5784 |
+| 21:04 | Edited supabase/migrations/20260520000001_api_keys_v2.sql | 3→2 lines | ~22 |
+| 21:07 | Created tests/rls/api-keys.test.ts | — | ~2210 |
+| 21:08 | Created supabase/migrations/20260520000002_api_keys_v2_fixes.sql | — | ~1664 |
+| 21:09 | Edited tests/rls/api-keys.test.ts | added nullish coalescing | ~238 |
+| 21:09 | Created supabase/migrations/20260520000003_api_keys_column_grants.sql | — | ~299 |
+
+## Session: 2026-04-19 21:43
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-04-19 21:46
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 05:55 | Created admin/src/lib/billing/build-export-zip.ts | — | ~964 |
+| 05:56 | Created admin/src/app/(operator)/billing/export/actions.ts | — | ~644 |
+| 05:57 | Created tests/billing/invoice-export-contents.test.ts | — | ~3639 |
+| 05:57 | Edited package.json | 2→3 lines | ~21 |
+| 05:58 | Edited tests/billing/invoice-export-contents.test.ts | "created_at" → "occurred_at" | ~14 |
+| 05:58 | Edited tests/billing/invoice-export-contents.test.ts | inline fix | ~12 |
+| 06:19 | Edited docs/ADRs/ADR-1001-truth-in-marketing-and-public-api-foundation.md | modified test() | ~904 |
+| 06:20 | Edited docs/ADRs/ADR-1001-truth-in-marketing-and-public-api-foundation.md | expanded (+47 lines) | ~528 |
+| 06:20 | Created session-context/context-2026-04-20-06-19-25.md | — | ~2041 |
+| 06:20 | Edited ../../../.claude/projects/-Users-sudhindra-projects-aiSpirit-consent-sheild/memory/project_adr0050_proposed.md | modified progress() | ~155 |
+| 06:20 | Created ../../../.claude/projects/-Users-sudhindra-projects-aiSpirit-consent-sheild/memory/feedback_billing_test_isolation.md | — | ~367 |
+| 06:20 | Edited ../../../.claude/projects/-Users-sudhindra-projects-aiSpirit-consent-sheild/memory/MEMORY.md | 1→2 lines | ~127 |
+| 06:30 | Created .claude/session-handoff.md | — | ~1401 |
+| 06:30 | Edited docs/changelogs/CHANGELOG-schema.md | expanded (+35 lines) | ~1547 |
+
+## Session: 2026-04-20 06:19
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 06:19 | ADR-0050 Sprint 3.1 resumed — both migrations already applied, gst-statement.test.ts + invoice-export-authz.test.ts were passing (19/19) | tests/billing/ | prior crash was after tests passed | ~5k |
+| 06:20 | Extracted buildExportZip() pure function | admin/src/lib/billing/build-export-zip.ts | new lib, server action refactored | ~2k |
+| 06:20 | Created tests/billing/invoice-export-contents.test.ts | 7/7 PASS | ZIP+CSV format + SHA-256 round-trip | ~4k |
+| 06:21 | Added jszip to root package.json devDependencies | package.json, bun.lock | resolves import in vitest root context | ~50 |
+| 06:22 | Fixed occurred_at (not created_at) in test + userId (not id) in AdminTestUser | invoice-export-contents.test.ts | two test bugs fixed | ~200 |
+| 06:25 | Full suite: 3 failures — 2 pre-existing lifecycle flaky + 1 gst-statement 4 vs 3 count | — | orphan rows from prior crashes | ~1k |
+| 06:26 | Cleaned 3 orphan test invoices (ACT/RET/GACT) from dev DB | /tmp/cleanup-orphan-invoices.mjs | left 0 stale rows | ~100 |
+| 06:30 | Saved session context + memories + handoff | session-context/, memory/, .claude/ | Sprint 3.1 ready to commit | ~2k |
+| 06:31 | Session end: 14 writes across 11 files (build-export-zip.ts, actions.ts, invoice-export-contents.test.ts, package.json, ADR-1001-truth-in-marketing-and-public-api-foundation.md) | 18 reads | ~81834 tok |
+
+## Session: 2026-04-20 06:31
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 06:38 | Created .claude/session-handoff.md | — | ~2998 |
+| 06:38 | Session end: 1 writes across 1 files (session-handoff.md) | 1 reads | ~4525 tok |
+
+## Session: 2026-04-20 06:39
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 06:41 | Edited docs/ADRs/ADR-0050-admin-account-aware-billing.md | 3→5 lines | ~88 |
+| 06:42 | Session end: 1 writes across 1 files (ADR-0050-admin-account-aware-billing.md) | 5 reads | ~16821 tok |
+| 06:47 | Session end: 1 writes across 1 files (ADR-0050-admin-account-aware-billing.md) | 8 reads | ~20714 tok |
+| 06:47 | Session end: 1 writes across 1 files (ADR-0050-admin-account-aware-billing.md) | 8 reads | ~20714 tok |
+| 06:48 | Created app/src/lib/api/auth.ts | — | ~984 |
+| 06:48 | Created app/src/lib/api/context.ts | — | ~534 |
+| 06:49 | Edited app/src/proxy.ts | added 3 condition(s) | ~674 |
+| 06:49 | Edited app/src/proxy.ts | 3→1 lines | ~20 |
+| 06:49 | Edited app/src/proxy.ts | 3→3 lines | ~28 |
+| 06:49 | Created app/src/app/api/v1/_ping/route.ts | — | ~210 |
+| 06:49 | Created tests/integration/api-middleware.test.ts | — | ~937 |
+| 06:49 | Edited vitest.config.ts | 2→3 lines | ~24 |
+| 06:50 | Edited tests/integration/api-middleware.test.ts | getServiceClient() → current_uid() | ~75 |
+| 06:50 | Edited tests/integration/api-middleware.test.ts | 6→5 lines | ~24 |
+| 06:51 | Edited docs/ADRs/ADR-1001-truth-in-marketing-and-public-api-foundation.md | expanded (+23 lines) | ~792 |
+| 06:51 | Created supabase/migrations/20260530000001_billing_disputes.sql | — | ~2808 |
+| 06:51 | Edited app/src/app/api/webhooks/razorpay/route.ts | expanded (+7 lines) | ~96 |
+| 06:51 | Edited app/src/app/api/webhooks/razorpay/route.ts | expanded (+12 lines) | ~217 |
+| 06:51 | Edited docs/changelogs/CHANGELOG-api.md | expanded (+20 lines) | ~429 |
+| 06:51 | Edited app/src/app/api/webhooks/razorpay/route.ts | added optional chaining | ~443 |
+| 06:52 | Created admin/src/lib/billing/r2-disputes.ts | — | ~630 |
+| 06:52 | Created admin/src/lib/billing/build-evidence-bundle.ts | — | ~971 |
+| 06:52 | Created admin/src/app/(operator)/billing/disputes/actions.ts | — | ~2121 |
+| 06:53 | ADR-1001 Sprint 2.2 — Bearer middleware + request context | app/src/lib/api/auth.ts, context.ts, proxy.ts, api/v1/_ping/route.ts, tests/integration/api-middleware.test.ts | 6/6 tests PASS, build clean | ~2600 tok |
+| 06:53 | Created admin/src/app/(operator)/billing/disputes/page.tsx | — | ~1350 |
