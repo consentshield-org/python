@@ -2,7 +2,7 @@
 
 (c) 2026 Sudhindra Anegondhi a.d.sudhindra@gmail.com
 
-**Status:** In Progress (Sprint 1.1 shipped 2026-04-20; UI selector Sprint 1.2 planned)
+**Status:** Completed — 2026-04-21
 **Date:** 2026-04-20
 **Phases:** 1
 **Sprints:** 2
@@ -60,17 +60,21 @@ Sprint 1.1 wires the schema + server actions + RPC plumbing. Sprint 1.2 adds the
 
 **Status:** `[x] complete — 2026-04-20`
 
-### Sprint 1.2 — Admin UI account picker (planned)
+### Sprint 1.2 — Admin UI account picker (shipped)
 
 **Deliverables:**
 
-- [ ] Extend `FeatureFlag` interface in `feature-flags-tab.tsx` with `account_id`, `account_name`.
-- [ ] Flags page server component fetches accounts + joins `account_name` into rows.
-- [ ] Scope selector adds 'account' option. Account-scope flags reveal an account picker (dropdown of `{accountId → name}`).
-- [ ] Flag list shows account-scoped rows with an account badge.
-- [ ] Delete flow extended for account-scoped rows.
+- [x] `admin/src/components/flags/feature-flags-tab.tsx` — `FeatureFlag` interface extended with `account_id`, `account_name`; scope type widened to `'global' | 'account' | 'org'`; new `ScopePill` renders colour-coded scope; Target column shows account name for account-scoped rows; `FlagFormModal` accepts `accounts` prop, scope select has 'account' option, conditional account picker mirrors the org picker, `scopeOk` gate covers the account branch, `setFeatureFlag` call forwards `accountId`; `DeleteFlagModal` passes `flag.account_id` and subtitle shows `account_name` for account-scoped rows.
+- [x] `admin/src/components/flags/flags-tabs.tsx` — forwards `accounts` prop through to `FeatureFlagsTab`.
+- [x] `admin/src/app/(operator)/flags/page.tsx` — fetches `public.accounts` (id, name) alongside organisations; builds `accountById` lookup; row maps now populate `account_id` + `account_name`; passes `accounts` to `FlagsTabs`.
+- [x] Admin build green (`cd admin && bun run build`).
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete — 2026-04-21`
+
+### Test Results
+
+- `cd admin && bun run build` — clean. All 47 admin routes compile (including `/flags`).
+- Behavioural coverage is already provided by `tests/billing/account-feature-flags.test.ts` (Sprint 1.1, 9/9 PASS) — the UI change is a thin wrapper over those same RPCs. Sprint 1.2 introduces no new server-side logic, so no new RLS / RPC tests are required.
 
 ## Acceptance criteria
 

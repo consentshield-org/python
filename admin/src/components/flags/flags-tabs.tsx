@@ -11,12 +11,14 @@ export function FlagsTabs({
   flags,
   switches,
   orgs,
+  accounts,
   adminRole,
 }: {
   activeTab: 'flags' | 'kill-switches'
   flags: FeatureFlag[]
   switches: KillSwitch[]
   orgs: Array<{ id: string; name: string }>
+  accounts: Array<{ id: string; name: string }>
   adminRole: AdminRole
 }) {
   const [tab, setTab] = useState<'flags' | 'kill-switches'>(activeTab)
@@ -36,7 +38,12 @@ export function FlagsTabs({
       </div>
 
       {tab === 'flags' ? (
-        <FeatureFlagsTab flags={flags} orgs={orgs} adminRole={adminRole} />
+        <FeatureFlagsTab
+          flags={flags}
+          orgs={orgs}
+          accounts={accounts}
+          adminRole={adminRole}
+        />
       ) : (
         <KillSwitchesTab switches={switches} adminRole={adminRole} />
       )}

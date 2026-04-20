@@ -2,6 +2,23 @@
 
 Next.js UI changes.
 
+## [ADR-0056 Sprint 1.2] — 2026-04-21
+
+**ADR:** ADR-0056 — Per-account feature-flag targeting
+**Sprint:** Sprint 1.2 — Admin UI account picker for feature flags
+
+### Added
+- `admin/src/components/flags/feature-flags-tab.tsx` — `ScopePill` (global/account/org colour-coded); `Target` column renders account name for account-scoped rows; scope select widened to `'global' | 'account' | 'org'`; conditional Account picker mirrors the Organisation picker in `FlagFormModal`; `DeleteFlagModal` subtitle shows account name for account-scoped rows.
+- `admin/src/app/(operator)/flags/page.tsx` — fetches `public.accounts (id, name)` alongside organisations; builds `accountById` lookup; `account_id` + `account_name` populated on every flag row; passes `accounts` down to `FlagsTabs`.
+
+### Changed
+- `admin/src/components/flags/flags-tabs.tsx` — `accounts` prop forwarded to `FeatureFlagsTab`.
+- `admin/src/app/(operator)/flags/actions.ts` — Sprint 1.1 already accepted `accountId`; UI now forwards a real value (was `null`) when scope = `account`; delete forwards `flag.account_id`.
+
+### Tested
+- [x] `cd admin && bun run build` — PASS (47 routes; `/flags` compiles clean).
+- [x] Sprint 1.1 behavioural coverage (`tests/billing/account-feature-flags.test.ts`, 9/9 PASS) still valid — UI is a thin wrapper over the same RPCs, no new server-side paths introduced.
+
 ## [ADR-1001 Sprint 2.4] — 2026-04-20
 
 **ADR:** ADR-1001 — Truth in marketing and public API foundation

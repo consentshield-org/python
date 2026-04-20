@@ -58,7 +58,7 @@ All Architecture Decision Records for ConsentShield, in chronological order.
 | ADR-0052 | Razorpay dispute contest submission — prepare packet + auto-submit via Razorpay Documents + Contest APIs | Completed | 2026-04-20 | 1 | 2 |
 | ADR-0053 | GSTR-1 JSON export (monthly filing) — GSTN Offline-Utility v3.2 shape; b2b / b2cl / b2cs / hsn / doc_issue | Completed | 2026-04-20 | 1 | 1 |
 | ADR-0055 | Account-scoped impersonation — target_account_id column + `start_impersonation_account` + target_scope in customer session list | Completed | 2026-04-20 | 1 | 1 |
-| ADR-0056 | Per-account feature-flag targeting — new 'account' scope in admin.feature_flags; resolver fallback org → account → global | In Progress | 2026-04-20 | 1 | 2 |
+| ADR-0056 | Per-account feature-flag targeting — new 'account' scope in admin.feature_flags; resolver fallback org → account → global | Completed | 2026-04-21 | 1 | 2 |
 | ADR-0054 | Customer-facing billing portal (invoice history + billing profile) | Completed | 2026-04-20 | 1 | 2 |
 | ADR-0057 | Customer-facing sectoral template switcher (Settings → Account) | Completed | 2026-04-20 | 1 | 1 |
 | ADR-1001 | v2 Whitepaper Phase 1 — Truth-in-marketing + Public API foundation (`cs_live_*` keys + Bearer middleware) | Completed | 2026-04-19 | 3 | 7 |

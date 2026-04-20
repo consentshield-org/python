@@ -16,8 +16,9 @@ export const dynamic = 'force-dynamic'
 interface FeatureFlag {
   id: string
   flag_key: string
-  scope: 'global' | 'org'
+  scope: 'global' | 'account' | 'org'
   org_id: string | null
+  account_id: string | null
   value: unknown
   description: string
   set_by: string
@@ -25,6 +26,7 @@ interface FeatureFlag {
   expires_at: string | null
   set_by_name: string | null
   org_name: string | null
+  account_name: string | null
 }
 
 interface KillSwitch {
@@ -59,11 +61,13 @@ export default async function FlagsPage({ searchParams }: PageProps) {
       | 'read_only'
       | undefined) ?? 'read_only'
 
-  const [flagsRes, switchesRes, adminsRes, orgsRes] = await Promise.all([
+  const [flagsRes, switchesRes, adminsRes, orgsRes, accountsRes] = await Promise.all([
     supabase
       .schema('admin')
       .from('feature_flags')
-      .select('id, flag_key, scope, org_id, value, description, set_by, set_at, expires_at')
+      .select(
+        'id, flag_key, scope, org_id, account_id, value, description, set_by, set_at, expires_at',
+      )
       .order('flag_key'),
     supabase
       .schema('admin')
@@ -72,6 +76,7 @@ export default async function FlagsPage({ searchParams }: PageProps) {
       .order('switch_key'),
     supabase.schema('admin').from('admin_users').select('id, display_name'),
     supabase.from('organisations').select('id, name').order('name'),
+    supabase.from('accounts').select('id, name').order('name'),
   ])
 
   const adminById = new Map<string, string>()
@@ -86,11 +91,19 @@ export default async function FlagsPage({ searchParams }: PageProps) {
     orgs.push({ id: o.id, name: o.name })
   }
 
+  const accountById = new Map<string, string>()
+  const accounts: Array<{ id: string; name: string }> = []
+  for (const a of accountsRes.data ?? []) {
+    accountById.set(a.id, a.name)
+    accounts.push({ id: a.id, name: a.name })
+  }
+
   const flags: FeatureFlag[] = (flagsRes.data ?? []).map((f) => ({
     id: f.id,
     flag_key: f.flag_key,
     scope: f.scope,
     org_id: f.org_id,
+    account_id: f.account_id,
     value: f.value,
     description: f.description,
     set_by: f.set_by,
@@ -98,6 +111,7 @@ export default async function FlagsPage({ searchParams }: PageProps) {
     expires_at: f.expires_at,
     set_by_name: adminById.get(f.set_by) ?? null,
     org_name: f.org_id ? orgById.get(f.org_id) ?? null : null,
+    account_name: f.account_id ? accountById.get(f.account_id) ?? null : null,
   }))
 
   const switches: KillSwitch[] = (switchesRes.data ?? []).map((s) => ({
@@ -126,6 +140,7 @@ export default async function FlagsPage({ searchParams }: PageProps) {
         flags={flags}
         switches={switches}
         orgs={orgs}
+        accounts={accounts}
         adminRole={adminRole}
       />
     </div>

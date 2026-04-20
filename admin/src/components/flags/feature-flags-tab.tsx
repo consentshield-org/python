@@ -13,8 +13,9 @@ import { canOperate, type AdminRole } from '@/lib/admin/role-tiers'
 export interface FeatureFlag {
   id: string
   flag_key: string
-  scope: 'global' | 'org'
+  scope: 'global' | 'account' | 'org'
   org_id: string | null
+  account_id: string | null
   value: unknown
   description: string
   set_by: string
@@ -22,6 +23,7 @@ export interface FeatureFlag {
   expires_at: string | null
   set_by_name: string | null
   org_name: string | null
+  account_name: string | null
 }
 
 type ValueType = 'boolean' | 'string' | 'number'
@@ -35,10 +37,12 @@ type Modal =
 export function FeatureFlagsTab({
   flags,
   orgs,
+  accounts,
   adminRole,
 }: {
   flags: FeatureFlag[]
   orgs: Array<{ id: string; name: string }>
+  accounts: Array<{ id: string; name: string }>
   adminRole: AdminRole
 }) {
   const [modal, setModal] = useState<Modal>(null)
@@ -70,7 +74,7 @@ export function FeatureFlagsTab({
               <tr>
                 <th className="px-4 py-2">Flag key</th>
                 <th className="px-4 py-2">Scope</th>
-                <th className="px-4 py-2">Org</th>
+                <th className="px-4 py-2">Target</th>
                 <th className="px-4 py-2">Value</th>
                 <th className="px-4 py-2">Description</th>
                 <th className="px-4 py-2">Set by</th>
@@ -81,9 +85,15 @@ export function FeatureFlagsTab({
               {flags.map((f) => (
                 <tr key={f.id} className="border-t border-[color:var(--border)]">
                   <td className="px-4 py-2 font-mono text-xs">{f.flag_key}</td>
-                  <td className="px-4 py-2">{f.scope}</td>
+                  <td className="px-4 py-2">
+                    <ScopePill scope={f.scope} />
+                  </td>
                   <td className="px-4 py-2 text-xs text-text-2">
-                    {f.scope === 'global' ? '—' : f.org_name ?? f.org_id}
+                    {f.scope === 'global'
+                      ? '—'
+                      : f.scope === 'account'
+                        ? f.account_name ?? f.account_id
+                        : f.org_name ?? f.org_id}
                   </td>
                   <td className="px-4 py-2">
                     <ValuePill value={f.value} />
@@ -124,6 +134,7 @@ export function FeatureFlagsTab({
         <FlagFormModal
           mode="create"
           orgs={orgs}
+          accounts={accounts}
           onClose={() => setModal(null)}
         />
       ) : null}
@@ -132,6 +143,7 @@ export function FeatureFlagsTab({
           mode="edit"
           flag={modal.flag}
           orgs={orgs}
+          accounts={accounts}
           onClose={() => setModal(null)}
         />
       ) : null}
@@ -139,6 +151,20 @@ export function FeatureFlagsTab({
         <DeleteFlagModal flag={modal.flag} onClose={() => setModal(null)} />
       ) : null}
     </div>
+  )
+}
+
+function ScopePill({ scope }: { scope: 'global' | 'account' | 'org' }) {
+  const cls =
+    scope === 'global'
+      ? 'bg-[color:var(--border)] text-text-2'
+      : scope === 'account'
+        ? 'bg-amber-100 text-amber-800'
+        : 'bg-sky-100 text-sky-800'
+  return (
+    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${cls}`}>
+      {scope}
+    </span>
   )
 }
 
@@ -167,11 +193,13 @@ function FlagFormModal({
   mode,
   flag,
   orgs,
+  accounts,
   onClose,
 }: {
   mode: 'create' | 'edit'
   flag?: FeatureFlag
   orgs: Array<{ id: string; name: string }>
+  accounts: Array<{ id: string; name: string }>
   onClose: () => void
 }) {
   const initialType: ValueType =
@@ -182,8 +210,11 @@ function FlagFormModal({
         : 'string'
 
   const [flagKey, setFlagKey] = useState(flag?.flag_key ?? '')
-  const [scope, setScope] = useState<'global' | 'org'>(flag?.scope ?? 'global')
+  const [scope, setScope] = useState<'global' | 'account' | 'org'>(
+    flag?.scope ?? 'global',
+  )
   const [orgId, setOrgId] = useState<string>(flag?.org_id ?? '')
+  const [accountId, setAccountId] = useState<string>(flag?.account_id ?? '')
   const [valueType, setValueType] = useState<ValueType>(initialType)
   const [boolValue, setBoolValue] = useState<boolean>(
     typeof flag?.value === 'boolean' ? flag.value : true,
@@ -201,7 +232,12 @@ function FlagFormModal({
 
   const reasonOk = reason.trim().length >= 10
   const keyOk = /^[a-z0-9_]+$/.test(flagKey.trim())
-  const scopeOk = scope === 'global' || orgId !== ''
+  const scopeOk =
+    scope === 'global'
+      ? true
+      : scope === 'org'
+        ? orgId !== ''
+        : accountId !== ''
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -227,9 +263,7 @@ function FlagFormModal({
       flagKey: flagKey.trim(),
       scope,
       orgId: scope === 'org' ? orgId : null,
-      // ADR-0056 Sprint 1.1 — account-scope plumbing in place; UI selector
-      // for account targets lands in a follow-up sprint.
-      accountId: null,
+      accountId: scope === 'account' ? accountId : null,
       value,
       description,
       reason,
@@ -262,14 +296,16 @@ function FlagFormModal({
             <select
               value={scope}
               onChange={(e) => {
-                const next = e.target.value as 'global' | 'org'
+                const next = e.target.value as 'global' | 'account' | 'org'
                 setScope(next)
-                if (next === 'global') setOrgId('')
+                if (next !== 'org') setOrgId('')
+                if (next !== 'account') setAccountId('')
               }}
               disabled={mode === 'edit'}
               className="rounded border border-[color:var(--border-mid)] px-3 py-2 text-sm disabled:bg-bg disabled:text-text-3"
             >
               <option value="global">global</option>
+              <option value="account">account</option>
               <option value="org">org</option>
             </select>
           </Field>
@@ -287,6 +323,23 @@ function FlagFormModal({
                 {orgs.map((o) => (
                   <option key={o.id} value={o.id}>
                     {o.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          ) : scope === 'account' ? (
+            <Field label="Account">
+              <select
+                value={accountId}
+                onChange={(e) => setAccountId(e.target.value)}
+                disabled={mode === 'edit'}
+                required
+                className="rounded border border-[color:var(--border-mid)] px-3 py-2 text-sm disabled:bg-bg disabled:text-text-3"
+              >
+                <option value="">— pick —</option>
+                {accounts.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
                   </option>
                 ))}
               </select>
@@ -403,7 +456,7 @@ function DeleteFlagModal({
       flagKey: flag.flag_key,
       scope: flag.scope,
       orgId: flag.org_id,
-      accountId: null,  // ADR-0056: account-scoped delete wired via UI in follow-up sprint
+      accountId: flag.account_id,
       reason,
     })
     setPending(false)
@@ -414,7 +467,13 @@ function DeleteFlagModal({
   return (
     <ModalShell
       title={`Delete flag ${flag.flag_key}`}
-      subtitle={`${flag.scope}${flag.org_name ? ` · ${flag.org_name}` : ''}`}
+      subtitle={`${flag.scope}${
+        flag.scope === 'org' && flag.org_name
+          ? ` · ${flag.org_name}`
+          : flag.scope === 'account' && flag.account_name
+            ? ` · ${flag.account_name}`
+            : ''
+      }`}
       onClose={onClose}
     >
       <form onSubmit={onSubmit} className="space-y-4 p-4">
