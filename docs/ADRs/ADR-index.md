@@ -54,7 +54,7 @@ All Architecture Decision Records for ConsentShield, in chronological order.
 | ADR-0048 | Admin Accounts panel + ADR-0033/34 deviation closeout (suspend_account / account picker / Worker HMAC+Origin logging) | Completed | 2026-04-18 | 2 | 3 |
 | ADR-0049 | Security observability ingestion — rate_limit_events + sentry_events (closes V2-S1/S2) | Completed | 2026-04-18 | 2 | 4 |
 | ADR-0050 | Admin account-aware billing — issuer entities + invoices + GST + dispute workspace | Completed | 2026-04-20 | 3 | 6 |
-| ADR-0051 | Billing evidence ledger — chargeback-defense capture points (triggers on audit_log / webhook_events / invoices) | In Progress | 2026-04-20 | 1 | 2 |
+| ADR-0051 | Billing evidence ledger — chargeback-defense capture points (triggers on audit_log / webhook_events / invoices / accounts / rights_requests / banners) | Completed | 2026-04-20 | 1 | 2 |
 | ADR-0054 | Customer-facing billing portal (invoice history + billing profile) | Completed | 2026-04-20 | 1 | 2 |
 | ADR-0057 | Customer-facing sectoral template switcher (Settings → Account) | Completed | 2026-04-20 | 1 | 1 |
 | ADR-1001 | v2 Whitepaper Phase 1 — Truth-in-marketing + Public API foundation (`cs_live_*` keys + Bearer middleware) | Completed | 2026-04-19 | 3 | 7 |

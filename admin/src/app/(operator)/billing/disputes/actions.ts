@@ -57,11 +57,21 @@ export async function listDisputes(): Promise<
   })) as DisputeRow[]
 }
 
+export interface LedgerEventRow {
+  id: string
+  event_type: string
+  event_source: string
+  occurred_at: string
+  source_ref: string | null
+  metadata: Record<string, unknown> | null
+}
+
 export async function getDisputeDetail(disputeId: string): Promise<
   | {
       dispute: DisputeRow
       webhookEvents: WebhookEventRow[]
       planHistory: PlanHistoryRow[]
+      ledger: LedgerEventRow[]
     }
   | { error: string }
 > {
@@ -108,10 +118,23 @@ export async function getDisputeDetail(disputeId: string): Promise<
         .limit(50)
     : { data: null }
 
+  // Evidence ledger — unified chargeback-defense timeline (ADR-0051).
+  const { data: ledgerRows } = dispute.account_id
+    ? await supabase
+        .schema('admin')
+        .rpc('billing_evidence_ledger_for_account', {
+          p_account_id: dispute.account_id,
+          p_from: null,
+          p_to: null,
+          p_limit: 500,
+        })
+    : { data: null }
+
   return {
     dispute,
     webhookEvents: (events ?? []) as WebhookEventRow[],
     planHistory: (history ?? []) as PlanHistoryRow[],
+    ledger: (ledgerRows ?? []) as LedgerEventRow[],
   }
 }
 
@@ -120,10 +143,10 @@ export async function assembleEvidenceBundle(
 ): Promise<{ presignedUrl: string; sha256: string } | { error: string }> {
   const supabase = await createServerClient()
 
-  // 1. Load dispute + related data
+  // 1. Load dispute + related data (includes evidence ledger per ADR-0051)
   const detail = await getDisputeDetail(disputeId)
   if ('error' in detail) return { error: detail.error }
-  const { dispute, webhookEvents, planHistory } = detail
+  const { dispute, webhookEvents, planHistory, ledger } = detail
 
   // 2. Load invoices linked to the account for cross-reference
   const { data: invoiceRows } = dispute.account_id
@@ -146,17 +169,7 @@ export async function assembleEvidenceBundle(
         .single()
     : { data: null }
 
-  // 3.5 Load evidence ledger for the account (ADR-0051)
-  const { data: ledgerRows } = dispute.account_id
-    ? await supabase
-        .schema('admin')
-        .rpc('billing_evidence_ledger_for_account', {
-          p_account_id: dispute.account_id,
-          p_from: null,
-          p_to: null,
-          p_limit: 500,
-        })
-    : { data: null }
+  // Evidence ledger already loaded by getDisputeDetail() above.
 
   const disputeInfo: DisputeInfo = {
     id: dispute.id,
@@ -195,15 +208,6 @@ export async function assembleEvidenceBundle(
         razorpay_subscription_id: null,
         plan: null,
       }
-
-  const ledger = (ledgerRows ?? []) as Array<{
-    id: string
-    event_type: string
-    event_source: string
-    occurred_at: string
-    source_ref: string | null
-    metadata: Record<string, unknown> | null
-  }>
 
   const evidenceInput: EvidenceInput = {
     dispute: disputeInfo,

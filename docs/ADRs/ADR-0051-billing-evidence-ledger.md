@@ -2,7 +2,7 @@
 
 (c) 2026 Sudhindra Anegondhi a.d.sudhindra@gmail.com
 
-**Status:** In Progress (Sprint 1.1 shipped 2026-04-20)
+**Status:** Completed — 2026-04-20
 **Date:** 2026-04-20
 **Phases:** 1
 **Sprints:** 2
@@ -58,17 +58,26 @@ Read path: `admin.billing_evidence_ledger_for_account(account_id, from, to, limi
 
 **Status:** `[x] complete — 2026-04-20`
 
-### Sprint 1.2 — Expand capture points + admin ledger viewer (planned)
+### Sprint 1.2 — Expand capture points + admin ledger viewer (shipped)
 
 **Deliverables:**
 
-- [ ] Direct-call capture in `public.bootstrap_org_for_account` (signup event).
-- [ ] Direct-call capture in rights request filing (customer activity signal).
-- [ ] Direct-call capture in banner publish (customer activity signal).
-- [ ] `admin/src/app/(operator)/billing/disputes/[disputeId]/` — new "Evidence ledger" tab/panel listing captured events with filter by event_type + date range.
-- [ ] Tests for each direct-call capture.
+- [x] `supabase/migrations/20260705000001_evidence_ledger_sprint_1_2.sql`:
+  - Extended `event_type` CHECK with `customer_signup`, `rights_request_filed`, `banner_published`.
+  - Extended `event_source` CHECK with `account_trigger`, `rights_request_trigger`, `banner_trigger`.
+  - Trigger on `public.accounts` AFTER INSERT → `customer_signup`.
+  - Trigger on `public.rights_requests` AFTER UPDATE (email_verified_at null→ts) → `rights_request_filed`.
+  - Trigger on `public.consent_banners` AFTER UPDATE (is_active false→true) → `banner_published`.
+- [x] Rule 3 check: `requestor_email` / `requestor_name` / `requestor_message` are NOT in ledger metadata — only `request_type` + `status` + `request_id` (category + id, never content).
+- [x] `admin/src/app/(operator)/billing/disputes/[disputeId]/page.tsx` — new "Evidence Ledger" section with compact table (when + event_type + source + ref + metadata preview). Shows first 50; full set always in the bundle ZIP.
+- [x] `admin/src/app/(operator)/billing/disputes/actions.ts` — `getDisputeDetail` returns `ledger: LedgerEventRow[]` alongside existing webhook/plan-history rows. `assembleEvidenceBundle` now reuses the same ledger (no double fetch).
+- [x] `tests/billing/evidence-ledger-sprint12.test.ts` — 4/4 PASS (customer_signup, rights_request_filed, banner_published fires on transition, banner trigger does NOT fire on unrelated updates).
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete — 2026-04-20`
+
+## Phases 3+: signup via direct-call RPC and admin ledger viewer as standalone panel
+
+Deferred — triggers cover the material events for Sprint 1.1 + 1.2. Extending to more event types (OAuth connection, support ticket filing, admin password reset) is a low-priority backlog item; each new trigger is ~20 lines of SQL and can ship ad-hoc without a new ADR.
 
 ## Consequences
 

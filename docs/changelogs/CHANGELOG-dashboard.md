@@ -820,3 +820,14 @@ Combined: 42 (app) + 135 (rls/admin/depa) + 1 (admin smoke) = **178/178**.
 ### Changed
 - `admin/src/lib/billing/build-evidence-bundle.ts` — accepts optional `ledger: LedgerEvent[]`; emits `evidence-ledger.ndjson` in the dispute ZIP; returns `ledgerEventCount`.
 - `admin/src/app/(operator)/billing/disputes/actions.ts` — `assembleEvidenceBundle` fetches ledger rows via `admin.billing_evidence_ledger_for_account` before building the ZIP.
+
+## [ADR-0051 Sprint 1.2] — 2026-04-20
+
+**ADR:** ADR-0051 — Billing evidence ledger
+**Sprint:** Sprint 1.2 — admin dispute ledger viewer
+
+### Added
+- `admin/src/app/(operator)/billing/disputes/[disputeId]/page.tsx` — new "Evidence Ledger" section: compact table with when / event_type / source / source_ref / metadata preview. Shows first 50; full set always in the bundle ZIP.
+
+### Changed
+- `admin/src/app/(operator)/billing/disputes/actions.ts` — `getDisputeDetail` returns `ledger: LedgerEventRow[]`; `assembleEvidenceBundle` now reuses that ledger instead of re-fetching.

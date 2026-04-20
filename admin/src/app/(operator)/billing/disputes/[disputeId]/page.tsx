@@ -16,7 +16,7 @@ export default async function DisputeDetailPage({
 
   if ('error' in result) notFound()
 
-  const { dispute, webhookEvents, planHistory } = result
+  const { dispute, webhookEvents, planHistory, ledger } = result
 
   const deadlineHours = dispute.deadline_at
     ? (new Date(dispute.deadline_at).getTime() - Date.now()) / (1000 * 60 * 60)
@@ -163,6 +163,65 @@ export default async function DisputeDetailPage({
                 {h.reason && <span className="text-gray-500 text-xs">{h.reason}</span>}
               </div>
             ))}
+          </div>
+        )}
+      </section>
+
+      {/* Evidence ledger (ADR-0051) — unified chargeback-defense timeline */}
+      <section className="rounded-lg border p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-gray-700">
+            Evidence Ledger ({ledger.length})
+          </h2>
+          <span className="text-xs text-gray-400">
+            Newest first · included in evidence ZIP as <code className="font-mono">evidence-ledger.ndjson</code>
+          </span>
+        </div>
+        {ledger.length === 0 ? (
+          <p className="text-sm text-gray-400">No chargeback-relevant events on record for this account.</p>
+        ) : (
+          <div className="overflow-hidden rounded border">
+            <table className="w-full text-xs">
+              <thead className="bg-gray-50 text-left">
+                <tr>
+                  <th className="px-3 py-2 font-medium text-gray-600">When</th>
+                  <th className="px-3 py-2 font-medium text-gray-600">Event</th>
+                  <th className="px-3 py-2 font-medium text-gray-600">Source</th>
+                  <th className="px-3 py-2 font-medium text-gray-600">Reference</th>
+                  <th className="px-3 py-2 font-medium text-gray-600">Metadata</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {ledger.slice(0, 50).map(e => (
+                  <tr key={e.id} className="hover:bg-gray-50">
+                    <td className="px-3 py-2 whitespace-nowrap text-gray-600">
+                      {new Date(e.occurred_at).toLocaleString('en-IN')}
+                    </td>
+                    <td className="px-3 py-2">
+                      <span className="font-mono rounded bg-gray-100 px-1.5 py-0.5">
+                        {e.event_type}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-gray-500">
+                      {e.event_source.replace(/_trigger$/, '').replace(/_/g, ' ')}
+                    </td>
+                    <td className="px-3 py-2 font-mono text-gray-400">
+                      {e.source_ref ? e.source_ref.slice(0, 8) : '—'}
+                    </td>
+                    <td className="px-3 py-2 max-w-xs truncate text-gray-500" title={JSON.stringify(e.metadata)}>
+                      {e.metadata
+                        ? Object.entries(e.metadata).slice(0, 2).map(([k, v]) => `${k}=${String(v).slice(0, 30)}`).join(' · ')
+                        : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {ledger.length > 50 && (
+              <div className="bg-gray-50 px-3 py-2 text-xs text-gray-500">
+                Showing first 50 of {ledger.length} events. Full set included in the evidence ZIP.
+              </div>
+            )}
           </div>
         )}
       </section>

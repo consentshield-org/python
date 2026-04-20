@@ -2,6 +2,19 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-1002 Sprint 1.2] — 2026-04-20
+
+**ADR:** ADR-1002 — DPDP §6 runtime enforcement
+**Sprint:** Sprint 1.2 — `rpc_consent_verify` RPC for `/v1/consent/verify`
+
+### Added
+- `20260710000001_rpc_consent_verify.sql`:
+  - `public.rpc_consent_verify(p_org_id, p_property_id, p_identifier, p_identifier_type, p_purpose_code) returns jsonb` — SECURITY DEFINER. Validates property ownership (raises `property_not_found` / P0001 if the property does not belong to the org); calls `hash_data_principal_identifier` (propagates 22023 for empty / unknown-type); selects the most-authoritative index row (priority: active > expired > revoked, newest first); returns the §5.1 envelope. `evaluated_at` is server-stamped.
+  - Grant: `service_role` only. Route handlers reach this via the service-role client (same carve-out as the Bearer verify path).
+
+### Tested
+- [x] 9/9 PASS — `tests/integration/consent-verify.test.ts`: granted / revoked / expired / never_consented / cross-org property_not_found / empty identifier / unknown type / identifier_type mismatch / cross-org salt isolation.
+
 ## [ADR-1002 Sprint 1.1] — 2026-04-20
 
 **ADR:** ADR-1002 — DPDP §6 runtime enforcement
@@ -1241,3 +1254,14 @@ Closes four blocking findings from the 2026-04-14 review.
 ### Tested
 - [x] `tests/billing/evidence-ledger-triggers.test.ts` — 7/7 PASS (invoice_issued/emailed/voided, audit_log billing_* mapping, non-billing skip, platform_operator access, support denied)
 - [x] `tests/billing/evidence-bundle.test.ts` — 10/10 PASS (2 new assertions for `evidence-ledger.ndjson`)
+
+## [ADR-0051 Sprint 1.2] — 2026-04-20
+
+**ADR:** ADR-0051 — Billing evidence ledger
+**Sprint:** Sprint 1.2 — additional capture points
+
+### Added
+- `20260705000001_evidence_ledger_sprint_1_2.sql` — extended event_type + event_source CHECK enums; three new triggers (accounts INSERT / rights_requests email-verified transition / consent_banners is_active transition). Rule 3 preserved — requestor email/name never enter the ledger metadata.
+
+### Tested
+- [x] `tests/billing/evidence-ledger-sprint12.test.ts` — 4/4 PASS (customer_signup, rights_request_filed, banner_published on transition, no-fire on unrelated banner update)
