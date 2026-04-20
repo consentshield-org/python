@@ -1197,8 +1197,8 @@ Target quarters are as of 2026-04-19 and reflect the solo-execution schedule of 
 
 | Capability | Status | Target | Notes |
 |---|---|---|---|
-| `GET /v1/consent/verify` | Roadmap | Q2 2026 | G-037 (ADR-1002 Phase 1) |
-| `POST /v1/consent/verify/batch` | Roadmap | Q2 2026 | G-037 (ADR-1002 Phase 1) |
+| `GET /v1/consent/verify` | Shipping today | — | G-037 (ADR-1002 Phase 1) — identifier+property+purpose → granted/revoked/expired/never_consented |
+| `POST /v1/consent/verify/batch` | Shipping today | — | G-037 (ADR-1002 Phase 1) — up to 10,000 identifiers per call; order preserved |
 | Sub-50ms p99 latency SLO (measured) | Roadmap | Q3 2026 | One-shot baseline in ADR-1002; continuous measurement in G-027 (ADR-1008 Phase 1) |
 | Client libraries: Node.js, Python | Roadmap | Q3 2026 | G-002 + G-003 (ADR-1006) |
 | Client libraries: Java, Go | Roadmap | Q3 2026 | G-024 (ADR-1006 Phase 4) |
@@ -1265,9 +1265,9 @@ Target quarters are as of 2026-04-19 and reflect the solo-execution schedule of 
 |---|---|---|---|
 | `cs_live_*` bearer-token API keys | Shipping today | — | G-036 (ADR-1001 Sprints 2.1–2.4) — issuance, rotation, revocation, dual-window, rate limiting shipped |
 | Rate-tier enforcement per plan | Shipping today | — | G-036 Sprint 2.4 — 100/hr starter, 1000/hr growth, 10k/hr pro, 100k/hr enterprise |
-| `/v1/consent/{verify, verify/batch, record}` | Roadmap | Q2 2026 | G-037 + G-038 (ADR-1002) |
-| `/v1/consent/artefacts` + revoke + events | Roadmap | Q2 2026 | G-039 (ADR-1002 Phase 3) |
-| `/v1/deletion/trigger` + receipts list | Roadmap | Q2 2026 | G-040 (ADR-1002 Phase 4) |
+| `/v1/consent/{verify, verify/batch, record}` | Shipping today | — | G-037 + G-038 (ADR-1002 Phases 1–2) |
+| `/v1/consent/artefacts` + revoke + events | Shipping today | — | G-039 (ADR-1002 Phase 3) |
+| `/v1/deletion/trigger` + receipts list | Shipping today | — | G-040 (ADR-1002 Phase 4); `reason=retention_expired` deferred |
 | `/v1/rights/requests` (list + create) | Roadmap | Q3 2026 | G-049 (ADR-1005 Phase 5); public portal + OTP path is Shipping |
 | `/v1/deletion-receipts/{id}` callback | Shipping | — | ADR-0022 (HMAC-signed customer callback) |
 | Public OpenAPI spec + CI drift check against Appendix A | Roadmap | Q3 2026 | G-045 (ADR-1006 Phase 3); once landed, Appendix A is regenerated from `openapi.yaml` |

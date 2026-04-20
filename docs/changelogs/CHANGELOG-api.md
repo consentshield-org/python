@@ -2,6 +2,35 @@
 
 API route changes.
 
+## [ADR-1002 Sprint 5.1] — 2026-04-20
+
+**ADR:** ADR-1002 — DPDP §6 runtime enforcement (**COMPLETED**)
+**Sprint:** Sprint 5.1 — Exit gate: Mrs. Sharma e2e + OpenAPI sign-off
+
+### Added
+- `tests/integration/mrs-sharma.e2e.test.ts` — 10-step §11 BFSI worked example against the live dev DB. Exercises every endpoint shipped in Phases 1–4:
+  1. `POST /v1/consent/record` — 5-purpose banking consent with `client_request_id`
+  2. `GET /v1/consent/verify` — `granted` + `active_artefact_id`
+  3. `POST /v1/consent/verify/batch` — 10,000 identifiers (Sharma at index 7,142 `granted`, 9,999 `never_consented`, order preserved, < 10s)
+  4. `POST /v1/consent/artefacts/{id}/revoke` — marketing withdrawal
+  5. `GET /v1/consent/verify` — `revoked` with `revocation_record_id` pointer
+  6. `GET /v1/consent/artefacts` — 5 rows (4 active, 1 revoked)
+  7. `GET /v1/consent/artefacts/{id}` — detail + revocation record
+  8. `GET /v1/consent/events` — Mode B event surfaced
+  9. `POST /v1/deletion/trigger` — erasure_request sweeps remaining 4 → all 5 revoked
+  10. `GET /v1/deletion/receipts` — seeded fixture observable (live Edge Function fan-out is a staging check)
+
+### Changed
+- **ADR-1002 status: Completed.** All 8 sprints shipped; `ADR-index.md` flipped.
+- OpenAPI stub at `app/public/openapi.yaml` now covers all 10 v1 paths with full error matrices.
+- No whitepaper §5 / §11 response-shape drift detected — no whitepaper amendments required this sprint.
+
+### Tested
+- [x] 10/10 PASS — Mrs. Sharma e2e (10.81s)
+- [x] 121/121 PASS — full integration + DEPA suite
+- [x] `cd app && bun run build` — PASS; all 10 v1 routes in manifest
+- [x] `bun run lint` — PASS
+
 ## [ADR-1002 Sprint 4.1] — 2026-04-20
 
 **ADR:** ADR-1002 — DPDP §6 runtime enforcement

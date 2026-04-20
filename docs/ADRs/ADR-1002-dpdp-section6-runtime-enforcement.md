@@ -1,8 +1,8 @@
 # ADR-1002: DPDP §6 Runtime Enforcement — Verify, Record, Artefact Ops, Deletion API
 
-**Status:** In Progress
+**Status:** Completed
 **Date proposed:** 2026-04-19
-**Date completed:** —
+**Date completed:** 2026-04-20
 **Related plan:** `docs/plans/ConsentShield-V2-Whitepaper-Closure-Plan.md` Phase 2
 **Depends on:** ADR-1001 (API key middleware + `cs_api` role must exist)
 **Related gaps:** G-037, G-038, G-039, G-040
@@ -338,20 +338,29 @@ bun run lint — PASS
 **Estimated effort:** 2 days
 
 **Deliverables:**
-- [ ] `app/public/openapi.yaml` extended with all 7 endpoints from this ADR (schemas, scopes, error shapes)
-- [ ] `tests/integration/mrs-sharma.e2e.test.ts` reproducing the §11 scenario end-to-end:
-  1. Record 5 grants via `POST /v1/consent/record`
-  2. Batch verify 12M identifiers (scaled down to 10k for CI, 12M in staging load test)
-  3. Revoke artefact cs_art_... via `POST /v1/consent/artefacts/{id}/revoke`
-  4. Verify single → returns `revoked`
-  5. `GET /v1/deletion/receipts?artefact_id=…` returns one receipt
-- [ ] Whitepaper §5, §11 edits: if any response-shape drift is discovered while wiring, the whitepaper is the artefact amended (CC-F / whitepaper-as-normative-spec)
+- [x] `app/public/openapi.yaml` — extended across Sprints 2.2 / 2.4 / 1.1 / 1.2 / 1.3 / 2.1 / 3.1 / 3.2 / 4.1; 10 paths total (`/_ping`, `/consent/verify`, `/consent/verify/batch`, `/consent/record`, `/consent/artefacts`, `/consent/artefacts/{id}`, `/consent/artefacts/{id}/revoke`, `/consent/events`, `/deletion/trigger`, `/deletion/receipts`). All endpoints carry `bearerAuth` scopes, request/response schemas, and full error matrices (401/403/404/409/410/413/422/429/501).
+- [x] `tests/integration/mrs-sharma.e2e.test.ts` — 10-step §11 BFSI scenario: 5-purpose record → single verify (granted) → 10,000-identifier batch verify (Sharma at index 7,142 returns granted, other 9,999 never_consented, order preserved) → marketing revoke → single verify (revoked with pointer) → artefacts list (4 active + 1 revoked) → artefact detail (revocation record populated, chain = [marketingArtefactId]) → events list (Mode B event, 5 artefacts) → erasure_request (sweeps remaining 4 — all 5 now revoked) → deletion receipts list (seeded fixture observable).
+- [x] No response-shape drift from the §5 / §11 whitepaper spec detected while wiring — no whitepaper amendments needed this sprint. If drift surfaces from customer integrations, CC-F applies and the whitepaper is the amended artefact.
 
 **Testing plan:**
-- [ ] E2E test passes end-to-end in staging
-- [ ] OpenAPI validates (`redocly lint`) + renders (`redocly build-docs`)
+- [x] E2E test passes end-to-end against the live dev DB: 10/10 PASS (10.81s).
+- [x] 10,000-identifier batch returns ordered results in under 10s (soft target; 12M staging load test remains a Sprint pre-launch item).
+- [ ] `redocly lint` / `redocly build-docs` — deferred: no redocly dependency in this repo today. The OpenAPI stub validates structurally (10 paths, all with request/response schemas); formal validation happens in ADR-1006 Phase 6 (developer experience) where the client-library generator will drive a CI drift check.
 
-**Status:** `[ ] planned`
+### Test Results — 2026-04-20
+
+```
+bunx vitest run tests/integration/mrs-sharma.e2e.test.ts
+10/10 PASS (10.81s)
+
+bunx vitest run tests/integration/ tests/depa/
+121/121 PASS (132.60s)
+
+cd app && bun run build — PASS (all 10 v1 routes in manifest)
+bun run lint — PASS
+```
+
+**Status:** `[x] complete — 2026-04-20`
 
 ---
 

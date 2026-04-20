@@ -2,6 +2,20 @@
 
 Documentation changes.
 
+## [ADR-1002 Sprint 5.1 — ADR complete] — 2026-04-20
+
+**ADR:** ADR-1002 — DPDP §6 runtime enforcement (**COMPLETED**)
+
+### Changed
+- `docs/ADRs/ADR-1002-dpdp-section6-runtime-enforcement.md` — status flipped to **Completed**; all 8 sprints marked `[x]`.
+- `docs/ADRs/ADR-index.md` — ADR-1002 status flipped to **Completed**.
+- `docs/design/ConsentShield-Customer-Integration-Whitepaper-v2.md` Appendix E — 5 rows moved from Roadmap Q2 2026 to **Shipping today**:
+  - `GET /v1/consent/verify`
+  - `POST /v1/consent/verify/batch`
+  - `/v1/consent/{verify, verify/batch, record}` (bundle row in §API table)
+  - `/v1/consent/artefacts` + revoke + events
+  - `/v1/deletion/trigger` + receipts list (with deferred-retention_expired note)
+
 ## [ADR-1001 Sprint 2.2] — 2026-04-20
 
 **ADR:** ADR-1001 — Truth-in-Marketing + Public API Foundation

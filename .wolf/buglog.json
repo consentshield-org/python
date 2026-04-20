@@ -7121,6 +7121,38 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-04-20T13:34:32.145Z"
+    },
+    {
+      "id": "bug-445",
+      "timestamp": "2026-04-20T13:38:50.366Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/ADRs/ADR-0501-marketing-site-scaffold.md",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 3→11 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-20T13:38:50.366Z"
+    },
+    {
+      "id": "bug-446",
+      "timestamp": "2026-04-20T13:42:03.750Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/ADRs/ADR-1002-dpdp-section6-runtime-enforcement.md",
+      "root_cause": "11 lines replaced/restructured",
+      "fix": "Rewrote 15→24 lines (11 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-20T13:42:03.750Z"
     }
   ]
 }

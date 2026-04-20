@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-20T13:35:00.450Z
-> Files: 907 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-20T13:43:57.902Z
+> Files: 910 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../tmp/
 
@@ -915,9 +915,9 @@
 - `ADR-0055-account-scoped-impersonation.md` — ADR-0055 — Account-scoped impersonation (~1701 tok)
 - `ADR-0056-account-scoped-feature-flags.md` — ADR-0056 — Per-account feature-flag targeting (~1570 tok)
 - `ADR-0057-sectoral-template-switcher.md` — ADR-0057 — Customer-facing sectoral template switcher (Settings → Account) (~1395 tok)
-- `ADR-0501-marketing-site-scaffold.md` — ADR-0501 — ConsentShield marketing site (`marketing/`) (~3964 tok)
+- `ADR-0501-marketing-site-scaffold.md` — ADR-0501 — ConsentShield marketing site (`marketing/`) (~4333 tok)
 - `ADR-1001-truth-in-marketing-and-public-api-foundation.md` — ADR-1001: Truth-in-Marketing + Public API Foundation (~5650 tok)
-- `ADR-1002-dpdp-section6-runtime-enforcement.md` — ADR-1002: DPDP §6 Runtime Enforcement — Verify, Record, Artefact Ops, Deletion API (~6703 tok)
+- `ADR-1002-dpdp-section6-runtime-enforcement.md` — ADR-1002: DPDP §6 Runtime Enforcement — Verify, Record, Artefact Ops, Deletion API (~7030 tok)
 - `ADR-1003-processor-posture-and-healthcare-unlock.md` — ADR-1003: Processor Posture + Healthcare Category Unlock (~3365 tok)
 - `ADR-1004-statutory-retention-material-change-silent-failure.md` — ADR-1004: Statutory Retention + Material-Change Re-consent + Silent-Failure Detection (~3856 tok)
 - `ADR-1005-operations-maturity.md` — ADR-1005: Operations Maturity — Webhook Reference, Support Model, Status Page, Multi-channel Alerts, (~3575 tok)
@@ -948,12 +948,12 @@
 
 ## docs/changelogs/
 
-- `CHANGELOG-api.md` — Changelog — API (~9619 tok)
+- `CHANGELOG-api.md` — Changelog — API (~10033 tok)
 - `CHANGELOG-dashboard.md` — Changelog — Dashboard (~16200 tok)
-- `CHANGELOG-docs.md` — Changelog — Documentation (~4378 tok)
+- `CHANGELOG-docs.md` — Changelog — Documentation (~4866 tok)
 - `CHANGELOG-edge-functions.md` — Changelog — Edge Functions (~3148 tok)
 - `CHANGELOG-infra.md` — Changelog — Infrastructure (~3667 tok)
-- `CHANGELOG-marketing.md` — Changelog — Marketing (~2604 tok)
+- `CHANGELOG-marketing.md` — Changelog — Marketing (~3114 tok)
 - `CHANGELOG-schema.md` — Changelog — Schema (~28722 tok)
 - `CHANGELOG-worker.md` — Changelog — Worker (~1897 tok)
 
@@ -961,7 +961,7 @@
 
 - `consentshield-complete-schema-design.md` — ConsentShield — Complete Schema Design (~17070 tok)
 - `ConsentShield-Customer-Integration-Whitepaper-V2-gaps.md` — ConsentShield — Whitepaper-to-Code Gap Document (Revised) (~13055 tok)
-- `ConsentShield-Customer-Integration-Whitepaper-v2.md` — ConsentShield — Customer-Side Integration (~22736 tok)
+- `ConsentShield-Customer-Integration-Whitepaper-v2.md` — ConsentShield — Customer-Side Integration (~22780 tok)
 - `consentshield-definitive-architecture.md` — ConsentShield — Definitive Architecture Reference (~10435 tok)
 - `consentshield-technical-architecture.md` — ConsentShield — Technical Architecture (~14936 tok)
 - `consentshield-testing-strategy.md` — ConsentShield — The Testing Question (~6253 tok)
@@ -1080,11 +1080,13 @@
 - `contact-form.tsx` — ContactForm — renders form (~1593 tok)
 - `contrast.tsx` — Contrast (~567 tok)
 - `cta-band.tsx` — Reusable CTA band section — used by home, product, depa, solutions pages. (~333 tok)
+- `demo-frames.tsx` — 7 frames of the How-It-Works demo — ported verbatim from the HTML (~9092 tok)
 - `depa-compare.tsx` — ROWS (~978 tok)
 - `depa-hero.tsx` — DepaHero (~1266 tok)
 - `depa-moat.tsx` — PRINCIPLES (~773 tok)
 - `dpa-signing-card.tsx` — DpaSigningCard — renders form (~1597 tok)
-- `home-hero.tsx` — HomeHero (~613 tok)
+- `home-hero.tsx` — HomeHero (~769 tok)
+- `how-it-works-demo.tsx` — FRAME_DURATION (~2363 tok)
 - `legal-layout.tsx` — LegalLayout (~544 tok)
 - `price-table.tsx` — GROUPS (~1936 tok)
 - `price-toggle.tsx` — PriceToggle (~262 tok)
@@ -1671,6 +1673,7 @@
 - `consent-verify-batch.test.ts` — ADR-1002 Sprint 1.3 — /v1/consent/verify/batch integration tests. (~3283 tok)
 - `consent-verify.test.ts` — ADR-1002 Sprint 1.2 — /v1/consent/verify integration tests. (~3716 tok)
 - `deletion-api.test.ts` — ADR-1002 Sprint 4.1 — deletion trigger + receipts list integration tests. (~3484 tok)
+- `mrs-sharma.e2e.test.ts` — ADR-1002 Sprint 5.1 — Mrs. Sharma end-to-end scenario. (~3392 tok)
 
 ## tests/rbac/
 
