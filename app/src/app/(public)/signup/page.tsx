@@ -22,7 +22,15 @@ export default function SignupPage() {
   )
 }
 
-type Stage = 'loading' | 'no_invite' | 'invalid' | 'form' | 'code' | 'accepting'
+type Stage =
+  | 'loading'
+  | 'lookup'
+  | 'looking_up'
+  | 'lookup_miss'
+  | 'invalid'
+  | 'form'
+  | 'code'
+  | 'accepting'
 
 interface InvitePreview {
   invited_email: string
@@ -40,11 +48,12 @@ function SignupForm() {
   const token = params.get('invite') ?? ''
   const router = useRouter()
 
-  const [stage, setStage] = useState<Stage>(token ? 'loading' : 'no_invite')
+  const [stage, setStage] = useState<Stage>(token ? 'loading' : 'lookup')
   const [invite, setInvite] = useState<InvitePreview | null>(null)
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [lookupEmail, setLookupEmail] = useState('')
 
   useEffect(() => {
     if (!token) return
@@ -126,27 +135,109 @@ function SignupForm() {
     router.refresh()
   }
 
+  async function handleLookup(e: React.FormEvent) {
+    e.preventDefault()
+    const email = lookupEmail.trim().toLowerCase()
+    if (!email) return
+    setStage('looking_up')
+    setError('')
+    try {
+      const res = await fetch('/api/public/lookup-invitation', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      const json = (await res.json()) as {
+        found: boolean
+        token?: string
+        origin?: 'operator_invite' | 'marketing_intake' | 'operator_intake'
+      }
+      if (!res.ok || !json.found || !json.token) {
+        setStage('lookup_miss')
+        return
+      }
+      if (json.origin === 'operator_invite') {
+        router.replace(`/signup?invite=${encodeURIComponent(json.token)}`)
+      } else {
+        router.replace(`/onboarding?token=${encodeURIComponent(json.token)}`)
+      }
+    } catch {
+      setError('Network error. Try again in a moment.')
+      setStage('lookup')
+    }
+  }
+
   if (stage === 'loading') {
     return <LoadingShell />
   }
 
-  if (stage === 'no_invite') {
+  if (stage === 'lookup' || stage === 'looking_up') {
     return (
-      <Shell title="An invitation is required">
+      <Shell title="Continue your ConsentShield setup">
         <p className="text-sm text-gray-700">
-          ConsentShield is invitation-only during our beta.
+          Enter the email address your invitation was sent to — we&apos;ll
+          route you to the right place.
         </p>
-        <p className="mt-3 text-sm text-gray-700">
-          If you expected to sign up here, check the invite email for the
-          link, or contact us at{' '}
+        <form onSubmit={handleLookup} className="mt-5 space-y-4">
+          <div>
+            <label htmlFor="lookup-email" className="block text-sm font-medium">
+              Email
+            </label>
+            <input
+              id="lookup-email"
+              type="email"
+              required
+              autoFocus
+              value={lookupEmail}
+              onChange={(e) => setLookupEmail(e.target.value)}
+              className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm"
+            />
+          </div>
+          {error ? <p className="text-sm text-red-600">{error}</p> : null}
+          <button
+            type="submit"
+            disabled={stage === 'looking_up'}
+            className="w-full rounded bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+          >
+            {stage === 'looking_up' ? 'Checking…' : 'Continue'}
+          </button>
+        </form>
+        <p className="mt-4 text-center text-xs text-gray-500">
+          Already have an account?{' '}
+          <a href="/login" className="font-medium text-black hover:underline">
+            Sign in
+          </a>
+        </p>
+      </Shell>
+    )
+  }
+
+  if (stage === 'lookup_miss') {
+    return (
+      <Shell title="We couldn't find an invitation for that email">
+        <p className="text-sm text-gray-700">
+          The email <strong>{lookupEmail}</strong> doesn&apos;t match a
+          pending ConsentShield invitation. Double-check the address your
+          invite was sent to — typos happen.
+        </p>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              setStage('lookup')
+              setError('')
+            }}
+            className="rounded bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
+          >
+            Try a different email
+          </button>
           <a
             href="mailto:hello@consentshield.in"
-            className="font-medium text-black underline"
+            className="text-sm text-gray-600 hover:text-black"
           >
-            hello@consentshield.in
+            Email support
           </a>
-          .
-        </p>
+        </div>
       </Shell>
     )
   }
