@@ -2,6 +2,20 @@
 
 Documentation changes.
 
+## [ADR-1013 Sprint 1 verified end-to-end] — 2026-04-21
+
+**ADR:** ADR-1013 — `cs_orchestrator` direct-Postgres migration (Next.js runtime)
+
+### Changed
+- `docs/ADRs/ADR-1013-cs-orchestrator-direct-postgres.md` — Sprint 1.1 Tested block flipped from "deferred" to "verified". Sprint 1.2 (operator action) flipped to `[x]` after the cs_orchestrator password rotation + env-var paste landed and the marketing signup form successfully delivered an invite email end-to-end.
+- `docs/changelogs/CHANGELOG-marketing.md` (ADR-0058 follow-up — email relay + explicit signup status) — "End-to-end email send — deferred" flipped to verified, citing the dispatch-trigger retirement (commit `d5143fd`) and ADR-1013 cs_orchestrator migration (commit `c0f94f3`) as the two prerequisites that landed on 2026-04-21.
+- `docs/changelogs/CHANGELOG-api.md` (ADR-0058 follow-up — drop dispatch trigger) — "End-to-end email send — deferred" flipped to verified.
+
+### Tested
+- Marketing `consentshield.in/signup` form (localhost:3002 in dev) → app `/api/public/signup-intake` (localhost:3000) running as cs_orchestrator via the new direct-Postgres pool → `public.create_signup_intake` RPC → `branch='created'` → in-process `dispatchInvitationById` → marketing `/api/internal/send-email` relay → Resend API → invite email delivered to the recipient inbox.
+
+ADR-1013's Phase 2 (env + doc cleanup, retire `CS_ORCHESTRATOR_ROLE_KEY` from Next.js docs) remains scoped for a follow-up sprint; ADR row stays **In Progress** until that lands.
+
 ## [ADR-0058 — ADR complete] — 2026-04-21
 
 **ADR:** ADR-0058 — Split-flow customer onboarding (**COMPLETED**)

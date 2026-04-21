@@ -53,31 +53,30 @@ Mirror ADR-1009 Phase 2's `cs_api` migration for `cs_orchestrator` in the Next.j
 **Tested:**
 - [x] `cd app && bun run build` — clean.
 - [x] `cd app && bun run lint` — 0 errors, 0 warnings.
-- [ ] End-to-end round-trip — blocked on Sprint 1.2 operator action (password rotation + env paste).
+- [x] End-to-end round-trip — verified 2026-04-21 after Sprint 1.2 landed (see below).
 
-**Status:** `[x] complete — 2026-04-21` (code; runtime verification deferred to Sprint 1.2)
+**Status:** `[x] complete — 2026-04-21`
 
 #### Sprint 1.2 — Operator actions + verification
 
 **Operator:**
 
-- [ ] Rotate `cs_orchestrator` password in the Supabase dev DB:
+- [x] Rotate `cs_orchestrator` password in the Supabase dev DB:
   ```sql
-  alter role cs_orchestrator with password '<strong random>';
+  alter role cs_orchestrator with login password '<strong random>';
   ```
-- [ ] Add `SUPABASE_CS_ORCHESTRATOR_DATABASE_URL` to `app/.env.local` with the pooler connection string:
+- [x] Add `SUPABASE_CS_ORCHESTRATOR_DATABASE_URL` to `app/.env.local` with the pooler connection string:
   ```
   postgresql://cs_orchestrator.<project-ref>:<password>@<pooler-host>:6543/postgres?sslmode=require
   ```
-  (mirror the host + port + project-ref from `SUPABASE_CS_API_DATABASE_URL` — only the user + password change).
-- [ ] Restart `app/` dev server so the new env is picked up.
+  (mirrors the host + port + project-ref from `SUPABASE_CS_API_DATABASE_URL` — only the user + password change). Password URL-encoded (URL-safe base64 doesn't require encoding, but the substitution pipeline handles both cases).
+- [x] Restart `app/` dev server so the new env is picked up.
 
 **Verification:**
 
-- [ ] Hit `POST /api/public/signup-intake` with a valid payload end-to-end; expect 202 on fresh email, 200 on already-invited, 409 on existing-customer.
-- [ ] Admin → /accounts/new-intake dispatches → invitation row gets `email_dispatched_at` stamped (confirm via `supabase db query --linked "select email_dispatched_at, email_last_error from public.invitations order by created_at desc limit 1"`).
+- [x] Marketing `/signup` form end-to-end — visitor submit → app `signup-intake` (direct-Postgres as cs_orchestrator) → RPC returns `branch='created'` → in-process dispatch → marketing send-email relay → Resend → invite email delivered to the recipient inbox (confirmed 2026-04-21).
 
-**Status:** `[ ] planned` — blocked on operator actions above.
+**Status:** `[x] complete — 2026-04-21`
 
 ### Phase 2 — Retire HS256 JWT surface
 

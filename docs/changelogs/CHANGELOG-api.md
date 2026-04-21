@@ -21,7 +21,7 @@ API route changes.
 ### Tested
 - [x] `cd app && bun run build` — clean.
 - [x] `cd app && bun run lint` — 0 errors, 0 warnings.
-- [ ] End-to-end — blocked on ADR-1013 Sprint 1.2 operator action (rotate cs_orchestrator password + paste into `SUPABASE_CS_ORCHESTRATOR_DATABASE_URL`). Connection URL template already written to `app/.env.local` with a `<PASTE-ROTATED-PW-HERE>` marker.
+- [x] End-to-end — verified 2026-04-21. cs_orchestrator password rotated, `SUPABASE_CS_ORCHESTRATOR_DATABASE_URL` wired, app dev restarted, marketing `/signup` → app `signup-intake` (direct-Postgres as cs_orchestrator) → create_signup_intake RPC → in-process dispatcher → marketing `/api/internal/send-email` relay → Resend → invite email landed in recipient inbox.
 
 ## [ADR-0058 follow-up — drop dispatch trigger, synchronous callers] — 2026-04-21
 
@@ -47,7 +47,7 @@ API route changes.
 ### Tested
 - [x] Build + lint clean on app/, admin/, marketing/.
 - [x] `bunx supabase db push` — migration applied.
-- [ ] End-to-end email send — deferred until `RESEND_API_KEY` lands on marketing/.env.local.
+- [x] End-to-end email send — verified 2026-04-21. With `RESEND_API_KEY` set on marketing and `cs_orchestrator` migrated to direct-Postgres (ADR-1013), the synchronous-dispatch path delivers an invite email end-to-end.
 
 ## [ADR-0058 follow-up — explicit signup-intake status + relay rewire] — 2026-04-21
 

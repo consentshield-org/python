@@ -22,7 +22,7 @@ Public marketing site (`marketing/` workspace → `consentshield.in`). New in 20
 ### Tested
 - [x] `cd marketing && bun run build` — PASS; routes include `/api/internal/send-email`.
 - [x] `cd marketing && bun run lint` — 0 errors, 0 warnings.
-- [ ] End-to-end email send — deferred until `INVITATION_DISPATCH_SECRET` + `RESEND_API_KEY` are set on both env files and Vault URL repointed. Operator playtest flagged for next session.
+- [x] End-to-end email send — verified 2026-04-21 after the dispatcher trigger was retired (ADR-0058 follow-up commit `d5143fd`) and cs_orchestrator was migrated to direct-Postgres (ADR-1013 commit `c0f94f3`). Marketing `/signup` form → app `signup-intake` → in-process dispatch → marketing `send-email` relay → Resend → invite email landed in recipient inbox.
 
 ## [ADR-0058 Sprint 1.2] — 2026-04-21
 
