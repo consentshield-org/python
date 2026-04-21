@@ -118,6 +118,26 @@ describeIf('cs_api direct-Postgres role — ADR-1009 Phase 2', () => {
     ).rejects.toThrow(/property_not_found/i)
   })
 
+  it('service_role is NO LONGER granted EXECUTE on v1 RPCs (ADR-1009 Sprint 2.4)', async () => {
+    // Call rpc_consent_verify through the Supabase REST service-role client.
+    // Before Sprint 2.4: succeeds (service_role had EXECUTE). After: permission
+    // denied / 42501. This is the canary that proves the service-role fallback
+    // is gone — any accidental reintroduction of SUPABASE_SERVICE_ROLE_KEY
+    // into the v1 path fails loudly instead of silently.
+    const admin = getServiceClient()
+    const { error } = await admin.rpc('rpc_consent_verify', {
+      p_key_id:          keyId,
+      p_org_id:          org.orgId,
+      p_property_id:     '00000000-0000-0000-0000-000000000000',
+      p_identifier:      'svc@example.com',
+      p_identifier_type: 'email',
+      p_purpose_code:    'marketing',
+    })
+    expect(error).not.toBeNull()
+    const msg = (error?.message ?? '') + (error?.code ?? '')
+    expect(msg).toMatch(/permission denied|42501/i)
+  })
+
   it('cs_api blocked on v1 RPC with wrong keyId — fence fires, not grant', async () => {
     // With a made-up key_id, assert_api_key_binding raises 'api_key_not_found'
     // (errcode 42501). Confirms the fence still bites even when the grant lets

@@ -2,6 +2,22 @@
 
 Vercel, Cloudflare, Supabase config changes.
 
+## [ADR-1009 Sprint 2.4] — 2026-04-21
+
+**ADR:** ADR-1009 — v1 API role hardening
+**Sprint:** Phase 2 Sprint 2.4 — env purge
+
+### Removed
+- `app/.env.local` — `SUPABASE_SERVICE_ROLE_KEY=sb_secret_*` line (was line 4). The customer-app runtime stopped reading it in Sprint 2.3; removing it from env means any accidental re-introduction hits `UnconfiguredError` / undefined at call time instead of silently falling back to service-role powers.
+- `app/.env.local.bak` — sed backup created during the purge, deleted (would have contained the removed plaintext secret; already in .gitignore but extra caution).
+
+### Unchanged
+- Root `.env.local` — `SUPABASE_SERVICE_ROLE_KEY` retained. Used by `tests/rls/helpers.ts` admin ops (seedApiKey, createTestOrg) which run outside the customer-app runtime.
+- Vercel customer-app project — already had no service-role entry (ADR-0009 purged it previously). Verified with `vercel env ls`.
+
+### Outcome
+**Phase 2 CLOSED.** The v1 API surface runs entirely as `cs_api` via direct Postgres (Supavisor pooler, transaction mode). `SUPABASE_SERVICE_ROLE_KEY` has zero reachability from the customer-app runtime — revoked at the DB layer AND absent from every customer-app env (local + Vercel).
+
 ## [ADR-1009 Sprint 2.1] — 2026-04-21
 
 **ADR:** ADR-1009 — v1 API role hardening

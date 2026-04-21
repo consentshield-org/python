@@ -188,16 +188,18 @@ SUPABASE_CS_API_DATABASE_URL="<...>" bunx vitest run tests/integration/cs-api-ro
 **Estimated effort:** 0.5 day
 
 **Deliverables:**
-- [ ] Migration: `revoke execute on function <each v1 RPC> from service_role;` for all 12 RPCs.
-- [ ] Remove `SUPABASE_SERVICE_ROLE_KEY` from customer-app `.env.local`, `.env.example`, Vercel preview env, Vercel production env. (Test harness keeps it — it runs outside app runtime.)
-- [ ] Verify `app/src/` has zero references to `SUPABASE_SERVICE_ROLE_KEY` / `SUPABASE_SECRET_KEY`.
+- [x] Migration `20260801000009_revoke_service_role_v1_grants.sql` — revoke EXECUTE from `service_role` on the 9 v1 business RPCs + 3 auth/telemetry RPCs (`api_key_verify`, `api_key_status`, `api_request_log_insert`) + 1 fence helper (`assert_api_key_binding`). cs_api grants untouched.
+- [x] `app/.env.local` — `SUPABASE_SERVICE_ROLE_KEY=sb_secret_*` line removed (was line 4; the customer-app runtime stopped reading it in Sprint 2.3, but leaving it in env meant a re-introduction could go unnoticed). Sed backup `app/.env.local.bak` removed too.
+- [x] `app/.env.example` — already had no service-role entry.
+- [x] Vercel customer-app project — verified via `vercel env ls`: no `SUPABASE_SERVICE_ROLE_KEY` / `SUPABASE_SECRET_KEY` present in any environment. ADR-0009 had already purged it from Vercel; the only remaining local plaintext copy was in `app/.env.local` (this sprint cleans it).
+- [x] Root `.env.local` — `SUPABASE_SERVICE_ROLE_KEY` retained. Test harness (`tests/rls/helpers.ts` `getServiceClient()`) uses it for admin ops (seedApiKey, createTestOrg) which run outside the customer-app runtime.
 
 **Testing plan:**
-- [ ] Full 124-test suite green with `SUPABASE_SERVICE_ROLE_KEY` absent from customer-app env.
-- [ ] Negative test: direct psql-as-service_role `select * from rpc_consent_verify(...)` raises `42501 permission denied for function`.
-- [ ] `bun run build` clean; customer app starts with only `SUPABASE_CS_API_DATABASE_URL` set (no service-role key).
+- [x] 107/107 integration + cs_api smoke PASS (106 from Sprint 2.3 + 1 new negative assertion).
+- [x] Negative test in `cs-api-role.test.ts`: `admin.rpc('rpc_consent_verify', {...})` as service_role raises `42501` / "permission denied for function" — confirms the revoke took effect.
+- [x] `bun run build` + `bun run lint` clean on customer app with no service-role key in its env.
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete` — 2026-04-21. Phase 2 CLOSED — v1 API surface runs entirely as `cs_api` (minimum-privilege, direct Postgres). `SUPABASE_SERVICE_ROLE_KEY` has zero reachability from customer-app runtime (grants revoked at DB level AND key removed from env).
 
 ### Phase 3 — Guardrails + documentation
 

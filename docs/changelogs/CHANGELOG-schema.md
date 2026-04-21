@@ -2,6 +2,21 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-1009 Sprint 2.4] — 2026-04-21
+
+**ADR:** ADR-1009 — v1 API role hardening
+**Sprint:** Phase 2 Sprint 2.4 — revoke service_role on v1-path functions
+
+### Removed (grants)
+- `20260801000009_revoke_service_role_v1_grants.sql` — revokes EXECUTE from `service_role` on:
+  - 9 v1 business RPCs (rpc_consent_verify, rpc_consent_verify_batch, rpc_consent_record, rpc_artefact_list, rpc_artefact_get, rpc_artefact_revoke, rpc_event_list, rpc_deletion_trigger, rpc_deletion_receipts_list).
+  - 3 auth/telemetry RPCs (rpc_api_key_verify, rpc_api_key_status, rpc_api_request_log_insert).
+  - 1 fence helper (assert_api_key_binding).
+- cs_api EXECUTE grants are untouched. The v1 path now has exactly one callable role at the DB layer.
+
+### Tested
+- [x] 107/107 integration + cs_api smoke PASS, incl. new negative assertion that `rpc_consent_verify` called as service_role (via Supabase REST `admin.rpc`) raises `42501` / "permission denied for function".
+
 ## [ADR-1009 Sprint 2.2] — 2026-04-21
 
 **ADR:** ADR-1009 — v1 API role hardening
