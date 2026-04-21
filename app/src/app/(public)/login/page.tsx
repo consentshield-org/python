@@ -25,6 +25,7 @@ function LoginForm() {
   const searchParams = useSearchParams()
   const redirect = searchParams.get('redirect') || '/dashboard'
   const urlError = searchParams.get('error')
+  const reason = searchParams.get('reason')
 
   async function handleRequestCode(e: React.FormEvent) {
     e.preventDefault()
@@ -121,6 +122,13 @@ function LoginForm() {
             No password. We&rsquo;ll email you a one-time code.
           </p>
         </div>
+
+        {reason === 'operator_session_cleared' ? (
+          <div className="rounded border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+            You were signed in as a ConsentShield operator. We cleared that
+            session so you can sign in here as a customer.
+          </div>
+        ) : null}
 
         <form onSubmit={handleRequestCode} className="space-y-4">
           <div>
