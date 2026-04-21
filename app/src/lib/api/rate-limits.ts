@@ -7,7 +7,7 @@ export interface TierLimits {
   burst: number
 }
 
-const TIER_LIMITS: Record<string, TierLimits> = {
+export const TIER_LIMITS: Record<string, TierLimits> = {
   starter:       { perHour: 100,    burst: 20 },
   trial:         { perHour: 100,    burst: 20 },
   trial_starter: { perHour: 100,    burst: 20 },

@@ -21,6 +21,72 @@ Database migrations, RLS policies, roles.
 - [x] `cd app && bun run lint` — 0 errors, 0 warnings.
 - [ ] `bunx supabase db push` — pending user authorization (sandbox blocked the auto-apply); migrations + RLS test suite (`tests/rls/invitations-origin.test.ts`) ready to run once applied.
 
+## [ADR-1011 — revoked-key tombstone] — 2026-04-21
+
+**ADR:** ADR-1011 — rotate+revoke 401→410 fix (V2 C-1)
+
+### Added
+- `20260801000010_revoked_key_tombstone.sql`:
+  - `public.revoked_api_key_hashes (key_hash pk, key_id uuid fk, revoked_at)` — tombstone table; RLS on, zero policies, zero grants.
+  - `rpc_api_key_revoke` rewritten: inserts current `key_hash` + (if rotated) `previous_key_hash` into the tombstone BEFORE the UPDATE clears `previous_key_hash`.
+  - `rpc_api_key_status` rewritten: three-slot lookup — current `key_hash`, live `previous_key_hash`, tombstone. Every plaintext ever associated with a now-revoked key surfaces as `'revoked'` (→ 410 Gone) instead of `'not_found'` (→ 401).
+
+### Tested
+- [x] 108/108 integration suite PASS.
+- [x] New cs-api-role test: rotate H1→H2, revoke, both `rpc_api_key_status(P1)` and `rpc_api_key_status(P2)` return `'revoked'`; tombstone holds exactly `{H1, H2}` for the key_id.
+- [x] Existing api-keys.e2e assertion flipped from 401/invalid → 410/revoked for the rotated-then-revoked plaintext.
+
+## [ADR-1009 Sprint 2.4] — 2026-04-21
+
+**ADR:** ADR-1009 — v1 API role hardening
+**Sprint:** Phase 2 Sprint 2.4 — revoke service_role on v1-path functions
+
+### Removed (grants)
+- `20260801000009_revoke_service_role_v1_grants.sql` — revokes EXECUTE from `service_role` on:
+  - 9 v1 business RPCs (rpc_consent_verify, rpc_consent_verify_batch, rpc_consent_record, rpc_artefact_list, rpc_artefact_get, rpc_artefact_revoke, rpc_event_list, rpc_deletion_trigger, rpc_deletion_receipts_list).
+  - 3 auth/telemetry RPCs (rpc_api_key_verify, rpc_api_key_status, rpc_api_request_log_insert).
+  - 1 fence helper (assert_api_key_binding).
+- cs_api EXECUTE grants are untouched. The v1 path now has exactly one callable role at the DB layer.
+
+### Tested
+- [x] 107/107 integration + cs_api smoke PASS, incl. new negative assertion that `rpc_consent_verify` called as service_role (via Supabase REST `admin.rpc`) raises `42501` / "permission denied for function".
+
+## [ADR-1009 Sprint 2.2] — 2026-04-21
+
+**ADR:** ADR-1009 — v1 API role hardening
+**Sprint:** Phase 2 Sprint 2.2 — grant v1 RPCs to `cs_api`
+
+### Added
+- `20260801000008_cs_api_v1_rpc_grants.sql` — `grant execute on function ... to cs_api` for the 9 v1 business RPCs: rpc_consent_verify, rpc_consent_verify_batch, rpc_consent_record, rpc_artefact_list, rpc_artefact_get, rpc_artefact_revoke, rpc_event_list, rpc_deletion_trigger, rpc_deletion_receipts_list. Purely additive — `service_role` grants remain (Sprint 2.4 revokes).
+
+### Tested
+- [x] 6/6 cs-api-role.test.ts PASS (assertion "cs_api cannot execute rpc_consent_record" inverted to "cs_api can execute rpc_consent_verify + fence still rejects a bogus keyId with api_key_not_found").
+- [x] 106/106 full integration suite PASS.
+
+## [ADR-1009 Sprint 2.1 follow-up] — 2026-04-21
+
+**ADR:** ADR-1009 — v1 API role hardening
+**Sprint:** Phase 2 Sprint 2.1 follow-up — bootstrap RPC grants
+
+### Added
+- `20260801000007_cs_api_bootstrap_rpc_grants.sql` — grants EXECUTE on `rpc_api_key_verify(text)` and `rpc_api_request_log_insert(uuid, uuid, uuid, text, text, int, int)` to `cs_api`. These two sit BEFORE any v1 business RPC in the middleware request path; originally scoped for Sprint 2.2 but needed earlier to unlock the Sprint 2.1 smoke suite.
+
+### Tested
+- [x] 5/5 cs-api-role.test.ts PASS; 105/105 full integration suite PASS (no regression).
+
+## [ADR-1009 Sprint 2.1 — scope amendment] — 2026-04-21
+
+**ADR:** ADR-1009 — v1 API role hardening
+**Sprint:** Phase 2 Sprint 2.1 — cs_api role activation (scope-amended)
+
+### Scope amendment
+Original Phase 2 minted an HS256 JWT for cs_api (same pattern as SUPABASE_WORKER_KEY). Supabase is rotating project JWT signing keys to ECC P-256; the legacy HS256 secret is flagged "Previously used" in the dashboard and will be revoked. HS256-signed scoped-role JWTs are on borrowed time. Direct Postgres connections as LOGIN roles are unaffected, so cs_api switches to that path — same pattern as cs_delivery / cs_orchestrator from Edge Functions. See ADR-1009 Phase 2 "Scope amendment" block for the rationale.
+
+### Added
+- `20260801000006_cs_api_login_and_key_status.sql`:
+  - `alter role cs_api with login password 'cs_api_change_me'` — placeholder password, same pattern as 20260413000010 cs_worker seed. User rotates out-of-band via psql.
+  - `public.rpc_api_key_status(text) returns text` — SECURITY DEFINER lookup of lifecycle state by plaintext (`'active' | 'revoked' | 'not_found'`). Handles current `key_hash` + dual-window `previous_key_hash` rotation path. Grants: `cs_api` + `service_role` (transition window).
+
 ## [ADR-1009 Sprint 1.2] — 2026-04-20
 
 **ADR:** ADR-1009 — v1 API role hardening

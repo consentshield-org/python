@@ -1,7 +1,6 @@
-// ADR-1002 Sprint 2.1 — server-side helper for /v1/consent/record.
-// Thin wrapper over rpc_consent_record via the service-role client.
+// ADR-1009 Phase 2 Sprint 2.3 — /v1/consent/record helper over the cs_api pool.
 
-import { createClient } from '@supabase/supabase-js'
+import { csApi } from '../api/cs-api-client'
 
 export interface RecordedArtefact {
   purpose_definition_id: string
@@ -38,37 +37,40 @@ export async function recordConsent(params: {
   capturedAt: string
   clientRequestId?: string
 }): Promise<{ ok: true; data: RecordEnvelope } | { ok: false; error: RecordError }> {
-  const client = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  )
-
-  const { data, error } = await client.rpc('rpc_consent_record', {
-    p_key_id:                          params.keyId,
-    p_org_id:                          params.orgId,
-    p_property_id:                     params.propertyId,
-    p_identifier:                      params.identifier,
-    p_identifier_type:                 params.identifierType,
-    p_purpose_definition_ids:          params.acceptedPurposeIds,
-    p_rejected_purpose_definition_ids: params.rejectedPurposeIds ?? null,
-    p_captured_at:                     params.capturedAt,
-    p_client_request_id:               params.clientRequestId ?? null,
-  })
-
-  if (error) {
-    const msg = error.message ?? ''
-    if (error.code === '42501' || msg.includes('api_key_') || msg.includes('org_id_missing') || msg.includes('org_not_found'))
+  try {
+    const sql = csApi()
+    const rejected = params.rejectedPurposeIds ?? null
+    const clientReqId = params.clientRequestId ?? null
+    const rows = await sql<Array<{ result: RecordEnvelope }>>`
+      select rpc_consent_record(
+        ${params.keyId}::uuid,
+        ${params.orgId}::uuid,
+        ${params.propertyId}::uuid,
+        ${params.identifier},
+        ${params.identifierType},
+        ${params.acceptedPurposeIds}::uuid[],
+        ${rejected}::uuid[],
+        ${params.capturedAt}::timestamptz,
+        ${clientReqId}::text
+      ) as result
+    `
+    return { ok: true, data: rows[0].result }
+  } catch (e) {
+    const err = e as { code?: string; message?: string }
+    const msg = err.message ?? ''
+    if (err.code === '42501' || msg.includes('api_key_') || msg.includes('org_id_missing') || msg.includes('org_not_found')) {
       return { ok: false, error: { kind: 'api_key_binding', detail: msg } }
-    if (msg.includes('property_not_found'))           return { ok: false, error: { kind: 'property_not_found' } }
-    if (msg.includes('captured_at_missing'))          return { ok: false, error: { kind: 'captured_at_missing' } }
-    if (msg.includes('captured_at_stale'))            return { ok: false, error: { kind: 'captured_at_stale', detail: msg } }
-    if (msg.includes('purposes_empty'))               return { ok: false, error: { kind: 'purposes_empty' } }
-    if (msg.includes('invalid_purpose_definition_ids') || msg.includes('invalid_rejected'))
+    }
+    if (msg.includes('property_not_found'))  return { ok: false, error: { kind: 'property_not_found' } }
+    if (msg.includes('captured_at_missing')) return { ok: false, error: { kind: 'captured_at_missing' } }
+    if (msg.includes('captured_at_stale'))   return { ok: false, error: { kind: 'captured_at_stale', detail: msg } }
+    if (msg.includes('purposes_empty'))      return { ok: false, error: { kind: 'purposes_empty' } }
+    if (msg.includes('invalid_purpose_definition_ids') || msg.includes('invalid_rejected')) {
       return { ok: false, error: { kind: 'invalid_purpose_ids', detail: msg } }
-    if (error.code === '22023' || msg.includes('identifier'))
+    }
+    if (err.code === '22023' || msg.includes('identifier')) {
       return { ok: false, error: { kind: 'invalid_identifier', detail: msg } }
+    }
     return { ok: false, error: { kind: 'unknown', detail: msg } }
   }
-
-  return { ok: true, data: data as RecordEnvelope }
 }

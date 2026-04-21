@@ -1,13 +1,6 @@
-// ADR-1002 Sprint 4.1 — deletion helpers.
+// ADR-1009 Phase 2 Sprint 2.3 — deletion helpers over the cs_api pool.
 
-import { createClient } from '@supabase/supabase-js'
-
-function serviceClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  )
-}
+import { csApi } from '../api/cs-api-client'
 
 // ── Trigger ──────────────────────────────────────────────────────────────────
 
@@ -31,6 +24,16 @@ export type DeletionTriggerError =
   | { kind: 'invalid_identifier'; detail: string }
   | { kind: 'unknown'; detail: string }
 
+function classifyKeyBinding(err: { code?: string; message?: string }): boolean {
+  const msg = err.message ?? ''
+  return (
+    err.code === '42501' ||
+    msg.includes('api_key_') ||
+    msg.includes('org_id_missing') ||
+    msg.includes('org_not_found')
+  )
+}
+
 export async function triggerDeletion(params: {
   keyId: string
   orgId: string
@@ -43,33 +46,39 @@ export async function triggerDeletion(params: {
   actorType?: 'user' | 'operator' | 'system'
   actorRef?: string
 }): Promise<{ ok: true; data: DeletionTriggerEnvelope } | { ok: false; error: DeletionTriggerError }> {
-  const { data, error } = await serviceClient().rpc('rpc_deletion_trigger', {
-    p_key_id:          params.keyId,
-    p_org_id:          params.orgId,
-    p_property_id:     params.propertyId,
-    p_identifier:      params.identifier,
-    p_identifier_type: params.identifierType,
-    p_reason:          params.reason,
-    p_purpose_codes:   params.purposeCodes ?? null,
-    p_scope_override:  params.scopeOverride ?? null,
-    p_actor_type:      params.actorType ?? 'user',
-    p_actor_ref:       params.actorRef ?? null,
-  })
-
-  if (error) {
-    const msg = error.message ?? ''
-    if (error.code === '42501' || msg.includes('api_key_') || msg.includes('org_id_missing') || msg.includes('org_not_found'))
-      return { ok: false, error: { kind: 'api_key_binding', detail: msg } }
-    if (msg.includes('property_not_found'))                       return { ok: false, error: { kind: 'property_not_found' } }
-    if (msg.includes('unknown_reason'))                           return { ok: false, error: { kind: 'unknown_reason', detail: msg } }
-    if (msg.includes('retention_mode_not_yet_implemented'))       return { ok: false, error: { kind: 'retention_mode_not_yet_implemented' } }
+  try {
+    const sql = csApi()
+    const purposes = params.purposeCodes ?? null
+    const scope = params.scopeOverride ?? null
+    const actor = params.actorType ?? 'user'
+    const ref = params.actorRef ?? null
+    const rows = await sql<Array<{ result: DeletionTriggerEnvelope }>>`
+      select rpc_deletion_trigger(
+        ${params.keyId}::uuid,
+        ${params.orgId}::uuid,
+        ${params.propertyId}::uuid,
+        ${params.identifier}::text,
+        ${params.identifierType}::text,
+        ${params.reason}::text,
+        ${purposes}::text[],
+        ${scope}::text[],
+        ${actor}::text,
+        ${ref}::text
+      ) as result
+    `
+    return { ok: true, data: rows[0].result }
+  } catch (e) {
+    const err = e as { code?: string; message?: string }
+    const msg = err.message ?? ''
+    if (classifyKeyBinding(err)) return { ok: false, error: { kind: 'api_key_binding', detail: msg } }
+    if (msg.includes('property_not_found'))                         return { ok: false, error: { kind: 'property_not_found' } }
+    if (msg.includes('unknown_reason'))                             return { ok: false, error: { kind: 'unknown_reason', detail: msg } }
+    if (msg.includes('retention_mode_not_yet_implemented'))         return { ok: false, error: { kind: 'retention_mode_not_yet_implemented' } }
     if (msg.includes('purpose_codes_required_for_consent_revoked')) return { ok: false, error: { kind: 'purpose_codes_required_for_consent_revoked' } }
-    if (msg.includes('unknown_actor_type'))                       return { ok: false, error: { kind: 'unknown_actor_type', detail: msg } }
-    if (error.code === '22023' || msg.includes('identifier'))     return { ok: false, error: { kind: 'invalid_identifier', detail: msg } }
+    if (msg.includes('unknown_actor_type'))                         return { ok: false, error: { kind: 'unknown_actor_type', detail: msg } }
+    if (err.code === '22023' || msg.includes('identifier'))          return { ok: false, error: { kind: 'invalid_identifier', detail: msg } }
     return { ok: false, error: { kind: 'unknown', detail: msg } }
   }
-
-  return { ok: true, data: data as DeletionTriggerEnvelope }
 }
 
 // ── Receipts list ────────────────────────────────────────────────────────────
@@ -110,24 +119,27 @@ export async function listDeletionReceipts(params: {
   cursor?: string
   limit?: number
 }): Promise<{ ok: true; data: DeletionReceiptsEnvelope } | { ok: false; error: DeletionReceiptsError }> {
-  const { data, error } = await serviceClient().rpc('rpc_deletion_receipts_list', {
-    p_key_id:        params.keyId,
-    p_org_id:        params.orgId,
-    p_status:        params.status ?? null,
-    p_connector_id:  params.connectorId ?? null,
-    p_artefact_id:   params.artefactId ?? null,
-    p_issued_after:  params.issuedAfter ?? null,
-    p_issued_before: params.issuedBefore ?? null,
-    p_cursor:        params.cursor ?? null,
-    p_limit:         params.limit ?? 50,
-  })
-
-  if (error) {
-    const msg = error.message ?? ''
-    if (error.code === '42501' || msg.includes('api_key_') || msg.includes('org_id_missing') || msg.includes('org_not_found'))
-      return { ok: false, error: { kind: 'api_key_binding', detail: msg } }
+  try {
+    const sql = csApi()
+    const rows = await sql<Array<{ result: DeletionReceiptsEnvelope }>>`
+      select rpc_deletion_receipts_list(
+        ${params.keyId}::uuid,
+        ${params.orgId}::uuid,
+        ${params.status ?? null}::text,
+        ${params.connectorId ?? null}::uuid,
+        ${params.artefactId ?? null}::text,
+        ${params.issuedAfter ?? null}::timestamptz,
+        ${params.issuedBefore ?? null}::timestamptz,
+        ${params.cursor ?? null}::text,
+        ${params.limit ?? 50}::int
+      ) as result
+    `
+    return { ok: true, data: rows[0].result }
+  } catch (e) {
+    const err = e as { code?: string; message?: string }
+    const msg = err.message ?? ''
+    if (classifyKeyBinding(err)) return { ok: false, error: { kind: 'api_key_binding', detail: msg } }
     if (msg.includes('bad_cursor')) return { ok: false, error: { kind: 'bad_cursor' } }
     return { ok: false, error: { kind: 'unknown', detail: msg } }
   }
-  return { ok: true, data: data as DeletionReceiptsEnvelope }
 }

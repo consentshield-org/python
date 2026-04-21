@@ -2,6 +2,11 @@
 
 API route changes.
 
+## [ADR-0058 Sprint 1.2] — 2026-04-21
+
+**ADR:** ADR-0058 — Split-flow customer onboarding
+**Sprint:** Sprint 1.2 — (marketing-side; see CHANGELOG-marketing.md)
+
 ## [ADR-0058 Sprint 1.1] — 2026-04-21
 
 **ADR:** ADR-0058 — Split-flow customer onboarding
@@ -16,6 +21,53 @@ API route changes.
 
 ### Tested
 - [x] `bunx vitest run tests/invitation-dispatch.test.ts` — 11/11 PASS (4 new origin-aware copy tests added; legacy 7 unchanged).
+
+## [V2 C-2 drift check] — 2026-04-21
+
+**ADR:** ADR-1001 V2 C-2 (no separate ADR; inline implementation)
+
+### Added
+- `tests/integration/rate-tier-drift.test.ts` — two assertions: (a) every row in `public.plans` has a matching `TIER_LIMITS` entry with identical `perHour` + `burst`; (b) every value in the `api_keys.rate_tier` CHECK enum has a `TIER_LIMITS` entry. Runs on every CI vitest pass.
+
+### Changed
+- `app/src/lib/api/rate-limits.ts` — `TIER_LIMITS` is now `export`ed (was module-local) so the drift test can read it directly.
+
+### Tested
+- [x] 2/2 drift assertions PASS against current `public.plans` (5 rows: enterprise/growth/pro/starter/trial_starter).
+
+## [ADR-1009 Sprint 2.3] — 2026-04-21
+
+**ADR:** ADR-1009 — v1 API role hardening
+**Sprint:** Phase 2 Sprint 2.3 — runtime swap (service-role → cs_api pool)
+
+### Changed
+- `app/src/lib/api/auth.ts` — rewritten to call `rpc_api_key_verify` + `rpc_api_key_status` via the `csApi()` postgres.js pool. `makeServiceClient` helper removed; `getKeyStatus` no longer does a direct `api_keys` SELECT (cs_api has no table grants). Code comment replaced (old comment claimed the Worker uses the service key, which was never true; new comment describes the direct-Postgres pattern).
+- `app/src/lib/api/log-request.ts` — fire-and-forget `rpc_api_request_log_insert` over `csApi`. Swallows errors so telemetry failures don't cascade into 5xx on the user-facing path.
+- `app/src/lib/consent/verify.ts`, `record.ts`, `read.ts`, `revoke.ts`, `deletion.ts` — each helper rewritten to call its target RPC via postgres.js tagged-template SQL (`select rpc_name(${p1}::type, ...)`). Error classification preserved: `42501` + `api_key_*` → `api_key_binding` 403; `22023` → validation 422; `P0001` property/artefact-not-found → 404.
+
+### Removed
+- Every `SUPABASE_SERVICE_ROLE_KEY` reference from `app/src/`. Verified via `grep -rn "SUPABASE_SERVICE_ROLE_KEY" app/src` → empty. Rule 5 now clean in the customer app runtime.
+
+### Tested
+- [x] 106/106 integration + cs_api smoke PASS (no behavioural change; only the transport swap).
+- [x] `bun run lint` + `bun run build` clean.
+
+## [ADR-1009 Sprint 2.1 — scope amendment] — 2026-04-21
+
+**ADR:** ADR-1009 — v1 API role hardening
+**Sprint:** Phase 2 Sprint 2.1 — cs_api role activation
+
+### Added
+- `app/src/lib/api/cs-api-client.ts` — singleton `postgres.js` pool connecting as cs_api against the Supavisor transaction pooler (port 6543). Fluid-Compute-safe: module-scope instance reused across concurrent requests. Lazy-init throws on first use if `SUPABASE_CS_API_DATABASE_URL` is unset, so `next build` stays clean. `isCsApiConfigured()` lets test/smoke paths skip gracefully.
+- `postgres@3.4.9` — new dep (root + app), exact-pinned. Rule 15 justification in the ADR.
+- `tests/integration/cs-api-role.test.ts` — skip-when-env-missing smoke suite (5 assertions: rpc_api_key_verify context, rpc_api_key_status enum, api_keys SELECT denied, consent_events / organisations SELECT denied, rpc_consent_record not-yet-granted).
+
+### Removed
+- `scripts/mint-role-jwt.ts` — dead-on-arrival given the HS256 → ECC P-256 rotation. Preserved in history at commit `b6f41a2`.
+
+### Tested
+- [x] 100/100 integration tests pass + 5 skipped (cs_api smoke waits for env).
+- [x] `bun run lint` clean; `bun run build` clean.
 
 ## [ADR-1009 Sprint 1.2] — 2026-04-20
 

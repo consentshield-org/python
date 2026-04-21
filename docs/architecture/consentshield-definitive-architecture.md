@@ -175,7 +175,7 @@ create policy "public insert" on rights_requests for insert with check (true);
 
 ### 5.4 Scoped Database Roles (Principle of Least Privilege)
 
-The previous architecture used a single service role key for all server-side operations. That is replaced with three scoped roles, each with the minimum permissions required for its function. The full service role key is retained only for schema migrations and manual admin operations — never in running application code.
+The previous architecture used a single service role key for all server-side operations. That is replaced with four scoped roles on the customer surface — `cs_worker`, `cs_delivery`, `cs_orchestrator`, `cs_api` — each with the minimum permissions required for its function. The admin surface carries its own `cs_admin` role (ADR-0027) and a carefully-scoped service-role carve-out for `auth.admin.*` operations (ADR-0045). The full service role key is retained only for schema migrations and manual admin operations — never in running customer-app code (verified by a CI grep gate introduced in ADR-1009 Phase 3).
 
 **Role: cs_worker** (used by Cloudflare Worker)
 
@@ -236,12 +236,33 @@ CAN UPDATE: rights_requests.status/assignee_id, consent_artefact_index.validity_
 CANNOT: read tracker_observations directly. Cannot delete any row.
 ```
 
-**The full service_role key** is never used in running application code. It exists for:
+**Role: cs_api** (used by `/api/v1/*` handlers in the customer app; introduced by ADR-1009 Phase 2)
+
+```
+NO direct table privileges — zero INSERT, SELECT, UPDATE, DELETE on any public table.
+CAN EXECUTE: rpc_api_key_verify, rpc_api_key_status, rpc_api_request_log_insert
+             (auth + telemetry bootstrap),
+             rpc_consent_verify, rpc_consent_verify_batch, rpc_consent_record,
+             rpc_artefact_list, rpc_artefact_get, rpc_artefact_revoke,
+             rpc_event_list, rpc_deletion_trigger, rpc_deletion_receipts_list
+             (the 9 v1 business RPCs — all SECURITY DEFINER, all fenced by
+             assert_api_key_binding at the top of their bodies).
+Connection:  direct Postgres via Supavisor pooler (aws-1-<region>.pooler.
+             supabase.com:6543, transaction mode), not PostgREST.
+             Runtime uses postgres.js singleton pool (app/src/lib/api/cs-api-client.ts).
+```
+
+Why direct Postgres instead of a `role: cs_api` JWT on Supabase REST (the pattern `SUPABASE_WORKER_KEY` uses today)? Supabase is rotating project JWT signing keys from HS256 (shared secret) to ECC P-256 (asymmetric). The legacy HS256 secret is flagged "Previously used" in the dashboard and slated for revocation; once revoked, every HS256-signed scoped-role JWT stops working. Direct Postgres connections as LOGIN roles are unaffected by the rotation. This is also the Worker's eventual migration path — tracked as a V2 backlog item.
+
+If the cs_api credential leaks, the attacker can execute the 12 whitelisted RPCs — but every one of them calls `assert_api_key_binding(p_key_id, p_org_id)` first, which refuses the call unless the plaintext-derived key_id matches the supplied org_id. So even with the credential, there is no cross-tenant read or write without also having a valid Bearer API key that's bound to the target organisation. No direct table reads are possible at all.
+
+**The full service_role key** is never used in running customer-app code. It exists for:
 - Schema migrations
 - Manual database administration
 - Emergency debugging (logged, audited, requires justification)
+- The admin-app `auth.admin.*` carve-out (ADR-0045), scoped to user lifecycle operations behind AAL2 + `admin.require_admin('platform_operator')`.
 
-Each role gets its own Supabase database password stored as a separate environment variable.
+Each role gets its own Supabase database password (for LOGIN roles) or JWT (for scoped roles on Supabase REST, while the HS256 path is still alive), stored as a separate environment variable.
 
 ---
 

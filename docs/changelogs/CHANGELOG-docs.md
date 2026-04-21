@@ -2,6 +2,27 @@
 
 Documentation changes.
 
+## [Backlog sweep] — 2026-04-21
+
+### Added
+- `docs/ADRs/ADR-1010-cloudflare-worker-role-migration.md` — **Proposed** ADR scoping the Cloudflare Worker migration off HS256 scoped-role JWT. 4 phases / 6 sprints: research mechanism (Hyperdrive vs Supabase Data API vs hand-rolled) → cs_worker LOGIN readiness → Worker rewrite (read paths then write paths) → cutover + deprecation. Does not implement yet.
+- `docs/ADRs/ADR-1011-revoked-key-tombstone.md` — **Completed** ADR retroactively documenting the V2 C-1 fix (migration 20260801000010 + cs-api-role test + api-keys.e2e flipped assertion).
+
+### Changed
+- `docs/ADRs/ADR-index.md` — new rows for ADR-1010 (Proposed) and ADR-1011 (Completed).
+- `docs/V2-BACKLOG.md` — backlog sweep. 12 pre-existing closed items and the new C-1 / C-2 / ADR-1009-follow-up completions collapsed into a single "Closed (tracked in ADRs)" section. Remaining open items grouped by blocker type: pre-launch only (3), waiting on external platform (1), blocked on downstream ADR (1). "Open — actionable but small" section removed (its sole entry, C-2, shipped inline).
+
+## [ADR-1009 Sprint 3.2 — ADR complete] — 2026-04-21
+
+**ADR:** ADR-1009 — v1 API role hardening (**COMPLETED**)
+**Sprint:** Phase 3 Sprint 3.2 — doc sync
+
+### Changed
+- `CLAUDE.md` Rule 5 — rewritten to name `cs_api` as the v1 role, describe the direct-Postgres pattern + 12-RPC EXECUTE surface + `assert_api_key_binding` fence, and reference the CI grep gate (`scripts/check-no-service-role-in-customer-app.ts`). The ADR-0045 admin carve-out text is preserved verbatim.
+- `docs/architecture/consentshield-definitive-architecture.md` §5.4 — intro updated from "three scoped roles" to "four scoped roles on the customer surface" (cs_worker / cs_delivery / cs_orchestrator / cs_api), plus cs_admin on the admin surface. Added a full `cs_api` block describing zero table privileges, the 12 RPC EXECUTE surface, the Supavisor pooler connection, and the rationale for direct Postgres over HS256 JWT signing.
+- `docs/V2-BACKLOG.md` — new **ADR-1009 follow-up: migrate Cloudflare Worker off HS256 scoped-role JWT** entry. The Worker's `SUPABASE_WORKER_KEY` is on the same kill-timer as the HS256 signing secret. Priority: High.
+- `docs/ADRs/ADR-index.md` — ADR-1009 status flipped to **Completed**. ADR row rewritten to reflect the scope amendment.
+
 ## [ADR-1002 Sprint 5.1 — ADR complete] — 2026-04-20
 
 **ADR:** ADR-1002 — DPDP §6 runtime enforcement (**COMPLETED**)

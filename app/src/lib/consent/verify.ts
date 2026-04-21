@@ -1,10 +1,7 @@
-// ADR-1002 Sprint 1.2 — server-side helper for /v1/consent/verify.
-// Thin wrapper over rpc_consent_verify. Uses the service-role client (same
-// carve-out as verifyBearerToken + logApiRequest): the /v1/* middleware path
-// has no user JWT, only an API key context, so it must reach the DB via the
-// service role to call a SECURITY DEFINER RPC.
+// ADR-1009 Phase 2 Sprint 2.3 — /v1/consent/verify + /v1/consent/verify/batch
+// helpers over the cs_api pool. Replaces the service-role Supabase client.
 
-import { createClient } from '@supabase/supabase-js'
+import { csApi } from '../api/cs-api-client'
 
 export type VerifyStatus = 'granted' | 'revoked' | 'expired' | 'never_consented'
 
@@ -51,10 +48,15 @@ export type VerifyBatchError =
   | { kind: 'identifiers_too_large'; detail: string }
   | { kind: 'unknown'; detail: string }
 
-function serviceClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+// postgres.js throws a PostgresError on any DB-side exception. We key
+// error branches off code + message (both are exposed on the instance).
+function classifyKeyBinding(err: { code?: string; message?: string }): boolean {
+  const msg = err.message ?? ''
+  return (
+    err.code === '42501' ||
+    msg.includes('api_key_') ||
+    msg.includes('org_id_missing') ||
+    msg.includes('org_not_found')
   )
 }
 
@@ -66,30 +68,29 @@ export async function verifyConsent(params: {
   identifierType: string
   purposeCode: string
 }): Promise<{ ok: true; data: VerifyEnvelope } | { ok: false; error: VerifyError }> {
-  const { data, error } = await serviceClient().rpc('rpc_consent_verify', {
-    p_key_id:          params.keyId,
-    p_org_id:          params.orgId,
-    p_property_id:     params.propertyId,
-    p_identifier:      params.identifier,
-    p_identifier_type: params.identifierType,
-    p_purpose_code:    params.purposeCode,
-  })
-
-  if (error) {
-    const msg = error.message ?? ''
-    if (error.code === '42501' || msg.includes('api_key_') || msg.includes('org_id_missing') || msg.includes('org_not_found')) {
-      return { ok: false, error: { kind: 'api_key_binding', detail: msg } }
-    }
-    if (msg.includes('property_not_found')) {
-      return { ok: false, error: { kind: 'property_not_found' } }
-    }
-    if (error.code === '22023' || msg.includes('identifier') || msg.includes('unknown identifier_type')) {
+  try {
+    const sql = csApi()
+    const rows = await sql<Array<{ result: VerifyEnvelope }>>`
+      select rpc_consent_verify(
+        ${params.keyId}::uuid,
+        ${params.orgId}::uuid,
+        ${params.propertyId}::uuid,
+        ${params.identifier},
+        ${params.identifierType},
+        ${params.purposeCode}
+      ) as result
+    `
+    return { ok: true, data: rows[0].result }
+  } catch (e) {
+    const err = e as { code?: string; message?: string }
+    const msg = err.message ?? ''
+    if (classifyKeyBinding(err)) return { ok: false, error: { kind: 'api_key_binding', detail: msg } }
+    if (msg.includes('property_not_found')) return { ok: false, error: { kind: 'property_not_found' } }
+    if (err.code === '22023' || msg.includes('identifier') || msg.includes('unknown identifier_type')) {
       return { ok: false, error: { kind: 'invalid_identifier', detail: msg } }
     }
     return { ok: false, error: { kind: 'unknown', detail: msg } }
   }
-
-  return { ok: true, data: data as VerifyEnvelope }
 }
 
 export async function verifyConsentBatch(params: {
@@ -100,34 +101,29 @@ export async function verifyConsentBatch(params: {
   identifierType: string
   purposeCode: string
 }): Promise<{ ok: true; data: VerifyBatchEnvelope } | { ok: false; error: VerifyBatchError }> {
-  const { data, error } = await serviceClient().rpc('rpc_consent_verify_batch', {
-    p_key_id:          params.keyId,
-    p_org_id:          params.orgId,
-    p_property_id:     params.propertyId,
-    p_identifier_type: params.identifierType,
-    p_purpose_code:    params.purposeCode,
-    p_identifiers:     params.identifiers,
-  })
-
-  if (error) {
-    const msg = error.message ?? ''
-    if (error.code === '42501' || msg.includes('api_key_') || msg.includes('org_id_missing') || msg.includes('org_not_found')) {
-      return { ok: false, error: { kind: 'api_key_binding', detail: msg } }
-    }
-    if (msg.includes('property_not_found')) {
-      return { ok: false, error: { kind: 'property_not_found' } }
-    }
-    if (msg.includes('identifiers_empty')) {
-      return { ok: false, error: { kind: 'identifiers_empty' } }
-    }
-    if (msg.includes('identifiers_too_large')) {
-      return { ok: false, error: { kind: 'identifiers_too_large', detail: msg } }
-    }
-    if (error.code === '22023' || msg.includes('identifier') || msg.includes('unknown identifier_type')) {
+  try {
+    const sql = csApi()
+    const rows = await sql<Array<{ result: VerifyBatchEnvelope }>>`
+      select rpc_consent_verify_batch(
+        ${params.keyId}::uuid,
+        ${params.orgId}::uuid,
+        ${params.propertyId}::uuid,
+        ${params.identifierType},
+        ${params.purposeCode},
+        ${params.identifiers}::text[]
+      ) as result
+    `
+    return { ok: true, data: rows[0].result }
+  } catch (e) {
+    const err = e as { code?: string; message?: string }
+    const msg = err.message ?? ''
+    if (classifyKeyBinding(err)) return { ok: false, error: { kind: 'api_key_binding', detail: msg } }
+    if (msg.includes('property_not_found')) return { ok: false, error: { kind: 'property_not_found' } }
+    if (msg.includes('identifiers_empty')) return { ok: false, error: { kind: 'identifiers_empty' } }
+    if (msg.includes('identifiers_too_large')) return { ok: false, error: { kind: 'identifiers_too_large', detail: msg } }
+    if (err.code === '22023' || msg.includes('identifier') || msg.includes('unknown identifier_type')) {
       return { ok: false, error: { kind: 'invalid_identifier', detail: msg } }
     }
     return { ok: false, error: { kind: 'unknown', detail: msg } }
   }
-
-  return { ok: true, data: data as VerifyBatchEnvelope }
 }

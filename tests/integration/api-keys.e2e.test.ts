@@ -183,19 +183,19 @@ describe('ADR-1001 Sprint 3.1 — API key end-to-end smoke', () => {
     expect(result.reason).toBe('revoked')
   })
 
-  it('original plaintext returns 401/invalid after rotate+revoke (known edge case)', async () => {
+  it('original plaintext returns 410/revoked after rotate+revoke (ADR-1001 V2 C-1 fix)', async () => {
     const result = await verifyBearerToken(`Bearer ${originalPlaintext}`)
     expect(result.ok).toBe(false)
     if (result.ok) return
-    // After rotation the original hash moved to previous_key_hash.
-    // Revocation clears previous_key_hash, so the original hash is gone from
-    // both slots. getKeyStatus finds no row and returns 'not_found' → 401.
-    // This is the documented edge case in auth.ts: "using the *old* plaintext
-    // after rotate+revoke returns 'not_found'". Operators who lose the original
-    // token after a rotation cannot distinguish invalid from revoked — an
-    // acceptable security trade-off (the rotated key's 410 is authoritative).
-    expect(result.status).toBe(401)
-    expect(result.reason).toBe('invalid')
+    // Previously returned 401: rotation moved the original hash to
+    // previous_key_hash, revocation cleared it, so neither slot on api_keys
+    // held the original hash. ADR-1001 V2 C-1 (migration 20260801000010)
+    // added revoked_api_key_hashes: rpc_api_key_revoke tombstones BOTH the
+    // current and previous hashes before clearing, and rpc_api_key_status
+    // consults the tombstone on fallback. Every plaintext ever associated
+    // with a now-revoked key surfaces as 'revoked' → 410 Gone.
+    expect(result.status).toBe(410)
+    expect(result.reason).toBe('revoked')
   })
 
   // ── Step 7: Non-existent key ──────────────────────────────────────────────

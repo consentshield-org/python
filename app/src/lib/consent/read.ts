@@ -1,13 +1,7 @@
-// ADR-1002 Sprint 3.1 — server-side helpers for artefact + event read endpoints.
+// ADR-1009 Phase 2 Sprint 2.3 — artefact + event read helpers over the
+// cs_api pool.
 
-import { createClient } from '@supabase/supabase-js'
-
-function serviceClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  )
-}
+import { csApi } from '../api/cs-api-client'
 
 // ── Artefact list ────────────────────────────────────────────────────────────
 
@@ -39,6 +33,16 @@ export type ArtefactListError =
   | { kind: 'invalid_identifier'; detail: string }
   | { kind: 'unknown'; detail: string }
 
+function classifyKeyBinding(err: { code?: string; message?: string }): boolean {
+  const msg = err.message ?? ''
+  return (
+    err.code === '42501' ||
+    msg.includes('api_key_') ||
+    msg.includes('org_id_missing') ||
+    msg.includes('org_not_found')
+  )
+}
+
 export async function listArtefacts(params: {
   keyId: string
   orgId: string
@@ -52,30 +56,33 @@ export async function listArtefacts(params: {
   cursor?: string
   limit?: number
 }): Promise<{ ok: true; data: ArtefactListEnvelope } | { ok: false; error: ArtefactListError }> {
-  const { data, error } = await serviceClient().rpc('rpc_artefact_list', {
-    p_key_id:          params.keyId,
-    p_org_id:          params.orgId,
-    p_property_id:     params.propertyId ?? null,
-    p_identifier:      params.identifier ?? null,
-    p_identifier_type: params.identifierType ?? null,
-    p_status:          params.status ?? null,
-    p_purpose_code:    params.purposeCode ?? null,
-    p_expires_before:  params.expiresBefore ?? null,
-    p_expires_after:   params.expiresAfter ?? null,
-    p_cursor:          params.cursor ?? null,
-    p_limit:           params.limit ?? 50,
-  })
-
-  if (error) {
-    const msg = error.message ?? ''
-    if (error.code === '42501' || msg.includes('api_key_') || msg.includes('org_id_missing') || msg.includes('org_not_found'))
-      return { ok: false, error: { kind: 'api_key_binding', detail: msg } }
-    if (msg.includes('bad_cursor'))                       return { ok: false, error: { kind: 'bad_cursor' } }
-    if (msg.includes('identifier_requires_both_fields'))  return { ok: false, error: { kind: 'bad_filters', detail: 'Both identifier and identifier_type must be supplied together' } }
-    if (msg.includes('identifier') || error.code === '22023') return { ok: false, error: { kind: 'invalid_identifier', detail: msg } }
+  try {
+    const sql = csApi()
+    const rows = await sql<Array<{ result: ArtefactListEnvelope }>>`
+      select rpc_artefact_list(
+        ${params.keyId}::uuid,
+        ${params.orgId}::uuid,
+        ${params.propertyId ?? null}::uuid,
+        ${params.identifier ?? null}::text,
+        ${params.identifierType ?? null}::text,
+        ${params.status ?? null}::text,
+        ${params.purposeCode ?? null}::text,
+        ${params.expiresBefore ?? null}::timestamptz,
+        ${params.expiresAfter ?? null}::timestamptz,
+        ${params.cursor ?? null}::text,
+        ${params.limit ?? 50}::int
+      ) as result
+    `
+    return { ok: true, data: rows[0].result }
+  } catch (e) {
+    const err = e as { code?: string; message?: string }
+    const msg = err.message ?? ''
+    if (classifyKeyBinding(err)) return { ok: false, error: { kind: 'api_key_binding', detail: msg } }
+    if (msg.includes('bad_cursor'))                        return { ok: false, error: { kind: 'bad_cursor' } }
+    if (msg.includes('identifier_requires_both_fields'))   return { ok: false, error: { kind: 'bad_filters', detail: 'Both identifier and identifier_type must be supplied together' } }
+    if (msg.includes('identifier') || err.code === '22023') return { ok: false, error: { kind: 'invalid_identifier', detail: msg } }
     return { ok: false, error: { kind: 'unknown', detail: msg } }
   }
-  return { ok: true, data: data as ArtefactListEnvelope }
 }
 
 // ── Artefact get ─────────────────────────────────────────────────────────────
@@ -101,18 +108,22 @@ export async function getArtefact(params: {
   { ok: true; data: ArtefactDetail | null } |
   { ok: false; error: { kind: 'api_key_binding'; detail: string } | { kind: 'unknown'; detail: string } }
 > {
-  const { data, error } = await serviceClient().rpc('rpc_artefact_get', {
-    p_key_id:      params.keyId,
-    p_org_id:      params.orgId,
-    p_artefact_id: params.artefactId,
-  })
-  if (error) {
-    const msg = error.message ?? ''
-    if (error.code === '42501' || msg.includes('api_key_') || msg.includes('org_id_missing') || msg.includes('org_not_found'))
-      return { ok: false, error: { kind: 'api_key_binding', detail: msg } }
+  try {
+    const sql = csApi()
+    const rows = await sql<Array<{ result: ArtefactDetail | null }>>`
+      select rpc_artefact_get(
+        ${params.keyId}::uuid,
+        ${params.orgId}::uuid,
+        ${params.artefactId}::text
+      ) as result
+    `
+    return { ok: true, data: rows[0]?.result ?? null }
+  } catch (e) {
+    const err = e as { code?: string; message?: string }
+    const msg = err.message ?? ''
+    if (classifyKeyBinding(err)) return { ok: false, error: { kind: 'api_key_binding', detail: msg } }
     return { ok: false, error: { kind: 'unknown', detail: msg } }
   }
-  return { ok: true, data: data as ArtefactDetail | null }
 }
 
 // ── Event list ───────────────────────────────────────────────────────────────
@@ -149,23 +160,26 @@ export async function listEvents(params: {
   cursor?: string
   limit?: number
 }): Promise<{ ok: true; data: EventListEnvelope } | { ok: false; error: EventListError }> {
-  const { data, error } = await serviceClient().rpc('rpc_event_list', {
-    p_key_id:         params.keyId,
-    p_org_id:         params.orgId,
-    p_property_id:    params.propertyId ?? null,
-    p_created_after:  params.createdAfter ?? null,
-    p_created_before: params.createdBefore ?? null,
-    p_source:         params.source ?? null,
-    p_cursor:         params.cursor ?? null,
-    p_limit:          params.limit ?? 50,
-  })
-
-  if (error) {
-    const msg = error.message ?? ''
-    if (error.code === '42501' || msg.includes('api_key_') || msg.includes('org_id_missing') || msg.includes('org_not_found'))
-      return { ok: false, error: { kind: 'api_key_binding', detail: msg } }
+  try {
+    const sql = csApi()
+    const rows = await sql<Array<{ result: EventListEnvelope }>>`
+      select rpc_event_list(
+        ${params.keyId}::uuid,
+        ${params.orgId}::uuid,
+        ${params.propertyId ?? null}::uuid,
+        ${params.createdAfter ?? null}::timestamptz,
+        ${params.createdBefore ?? null}::timestamptz,
+        ${params.source ?? null}::text,
+        ${params.cursor ?? null}::text,
+        ${params.limit ?? 50}::int
+      ) as result
+    `
+    return { ok: true, data: rows[0].result }
+  } catch (e) {
+    const err = e as { code?: string; message?: string }
+    const msg = err.message ?? ''
+    if (classifyKeyBinding(err)) return { ok: false, error: { kind: 'api_key_binding', detail: msg } }
     if (msg.includes('bad_cursor')) return { ok: false, error: { kind: 'bad_cursor' } }
     return { ok: false, error: { kind: 'unknown', detail: msg } }
   }
-  return { ok: true, data: data as EventListEnvelope }
 }

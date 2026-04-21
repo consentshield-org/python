@@ -1,8 +1,8 @@
 # ADR-1009: v1 API role hardening — remove service-role shortcut, adopt `cs_api` as designed
 
-**Status:** In Progress
+**Status:** Completed
 **Date proposed:** 2026-04-20
-**Date completed:** —
+**Date completed:** 2026-04-21
 **Superseded by:** —
 
 ---
@@ -105,102 +105,134 @@ The admin service-role carve-out (ADR-0045) remains. It is genuinely required (S
 
 **Status:** `[ ] planned`
 
-### Phase 2 — `cs_api` role activation
+### Phase 2 — `cs_api` role activation (revised 2026-04-21)
 
-**Goal:** The customer-app Node process stops holding `SUPABASE_SERVICE_ROLE_KEY`. Every v1 request runs as `cs_api` end-to-end. Done behind Phase 1's fence so a migration bug cannot create tenant bleed.
+**Goal:** The customer-app Node process stops holding `SUPABASE_SERVICE_ROLE_KEY` (and does not acquire `SUPABASE_SECRET_KEY` either). Every v1 request runs as `cs_api` end-to-end over a direct Postgres connection.
 
-#### Sprint 2.1 — `cs_api` JWT + client helper
+**Scope amendment:** The original plan minted a `cs_api` HS256 JWT and called PostgREST with it — the same mechanism used for `SUPABASE_WORKER_KEY`. Supabase is rotating the project's JWT signing keys from HS256 (shared secret) to ECC P-256 (asymmetric). The legacy HS256 key is listed as "Previously used" in the dashboard; Supabase is nudging users to revoke it. Once revoked, every HS256-signed scoped-role JWT stops working — including the one this ADR originally proposed to mint.
+
+Direct Postgres connections as scoped roles are unaffected by the JWT rotation. `cs_delivery` and `cs_orchestrator` already use this pattern from Supabase Edge Functions. We adopt the same pattern for `cs_api`. Side-effect: the same pattern will fix the Cloudflare Worker when its HS256 JWT stops working.
+
+The abandoned `scripts/mint-role-jwt.ts` is removed in Sprint 2.1; its code and commit (`b6f41a2`) are preserved in history.
+
+#### Sprint 2.1 — `cs_api` LOGIN + postgres.js pool
 **Estimated effort:** 0.5 day
 
 **Deliverables:**
-- [ ] Mint `cs_api` JWT (HS256, signed with Supabase project JWT secret, payload: `{"role": "cs_api", "iss": "supabase", "iat": <epoch>}`). Follow the same procedure used for `SUPABASE_WORKER_KEY`.
-- [ ] Store as `SUPABASE_CS_API_KEY` in customer-app `.env.local` + Vercel preview + production envs.
-- [ ] New helper `app/src/lib/api/cs-api-client.ts` exports `makeCsApiClient(): SupabaseClient`. Uses `SUPABASE_CS_API_KEY` as `apikey` + `Authorization: Bearer`.
-- [ ] New SECURITY DEFINER RPC `public.rpc_api_key_status(p_plaintext text) returns text` — replaces the direct `api_keys` SELECT in `getKeyStatus`. Returns `'active' | 'revoked' | 'not_found'`. Grants EXECUTE to `cs_api` + `service_role`.
+- [ ] Migration: `alter role cs_api with login password 'cs_api_change_me'` (placeholder, same pattern as the 20260413000010 cs_worker seed). User rotates the password immediately via psql: `alter role cs_api with password '<openssl rand -base64 32>';`.
+- [ ] Store rotated password in `.secrets` as `SUPABASE_CS_API_PASSWORD`; mirror into Vercel preview + production as `SUPABASE_CS_API_DATABASE_URL` (full connection string against the Supavisor transaction pooler).
+- [ ] Install `postgres@3.x` (postgres.js — zero sub-deps, ~8KB gzipped, implements the wire protocol natively). Rule 15 justification inline: Postgres wire protocol is non-trivial and an established, widely-used, zero-sub-dep library is strictly safer than a hand-rolled client.
+- [ ] New helper `app/src/lib/api/cs-api-client.ts` exports `csApi`: a singleton `postgres.js` pool connecting to the Supavisor transaction pooler as `cs_api`. Hot-path safe (Fluid Compute reuses the instance across requests).
+- [ ] New SECURITY DEFINER RPC `public.rpc_api_key_status(p_plaintext text) returns text` — replaces the direct `api_keys` SELECT in `getKeyStatus`. Returns `'active' | 'revoked' | 'not_found'`. Grants EXECUTE to `cs_api` (+ `service_role` for the transition window).
+- [ ] Delete `scripts/mint-role-jwt.ts` with a note in the commit message referencing this scope amendment.
 
 **Testing plan:**
-- [ ] Unit test: a request signed with the `cs_api` JWT can call `rpc_api_key_verify` (seeded key → returns context) but cannot `select * from api_keys` (permission denied) or `select * from organisations` (empty RLS or permission denied).
-- [ ] `rpc_api_key_status` returns correct enum for all three states (seeded fixtures).
+- [x] `tests/integration/cs-api-role.test.ts` — 5 assertions: rpc_api_key_verify returns seeded context; rpc_api_key_status returns active / revoked / not_found correctly; cs_api cannot SELECT api_keys / consent_events / organisations; cs_api cannot (yet) execute rpc_consent_record (inverts in Sprint 2.2). Skips gracefully when `SUPABASE_CS_API_DATABASE_URL` is missing.
+- [x] Without env set: 5 tests skip, 100/100 existing integration tests pass.
+- [x] With env set (2026-04-21): 5/5 cs-api-role pass; 105/105 total integration suite green.
+- [x] Follow-up migration `20260801000007_cs_api_bootstrap_rpc_grants.sql` granted `rpc_api_key_verify` + `rpc_api_request_log_insert` EXECUTE to `cs_api` — these are the middleware bootstrap RPCs (called before any v1 business RPC fires); originally left for Sprint 2.2 but needed earlier for the smoke tests to pass.
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete` — 2026-04-21. Migrations 20260801000006 + 20260801000007 applied; password rotated; env set in `.secrets` + `app/.env.local` + root `.env.local` + Vercel preview + production.
+
+**User action to close Sprint 2.1:**
+```sh
+# 1. Generate a strong password
+PW=$(openssl rand -base64 32 | tr -d '+/=')
+# 2. Rotate cs_api password via psql
+psql "$SUPABASE_DIRECT_CONNECTION_STRING" -c "alter role cs_api with password '$PW';"
+# 3. Persist in .secrets
+echo "SUPABASE_CS_API_PASSWORD=$PW" >> .secrets
+echo "SUPABASE_CS_API_DATABASE_URL=postgresql://cs_api.<project-ref>:$PW@aws-1-<region>.pooler.supabase.com:6543/postgres?sslmode=require" >> .secrets
+# 4. Mirror into Vercel (preview + production)
+vercel env add SUPABASE_CS_API_DATABASE_URL preview
+vercel env add SUPABASE_CS_API_DATABASE_URL production
+# 5. Re-run smoke
+SUPABASE_CS_API_DATABASE_URL="<...>" bunx vitest run tests/integration/cs-api-role.test.ts
+```
 
 #### Sprint 2.2 — Flip RPC grants to `cs_api`
 **Estimated effort:** 0.5 day
 
 **Deliverables:**
-- [ ] Migration: `grant execute on function <each v1 RPC> to cs_api;` for all 12 v1 RPCs (verify, verify_batch, record, artefact_list, artefact_get, artefact_revoke, event_list, deletion_trigger, deletion_receipts_list, api_key_verify, api_key_status, api_request_log_insert, assert_api_key_binding).
-- [ ] Do NOT revoke from `service_role` yet — keeps Phase 1 regression net live during Phase 2.3.
+- [x] Migration `20260801000008_cs_api_v1_rpc_grants.sql` — grants EXECUTE on the 9 v1 business RPCs to `cs_api`:
+  - Reads: `rpc_consent_verify`, `rpc_consent_verify_batch`, `rpc_artefact_list`, `rpc_artefact_get`, `rpc_event_list`, `rpc_deletion_receipts_list`.
+  - Mutations: `rpc_consent_record`, `rpc_artefact_revoke`, `rpc_deletion_trigger`.
+  - Not re-granted here (already granted): `rpc_api_key_verify`, `rpc_api_key_status`, `rpc_api_request_log_insert` (Sprints 2.1 + follow-up).
+  - Not needed: `assert_api_key_binding` — called from SECURITY DEFINER bodies at owner privilege, caller grants irrelevant.
+- [x] `service_role` grants retained — Sprint 2.4 revokes.
+- [x] `cs-api-role.test.ts` inverted: the old "cs_api cannot execute rpc_consent_record" assertion is now "cs_api CAN execute rpc_consent_verify (proves grant)" + a new "fence still fires with bogus keyId → api_key_not_found" companion test.
 
 **Testing plan:**
-- [ ] Direct JWT-as-cs_api call to each RPC succeeds (12 smoke tests, run via raw HTTP against local Supabase).
-- [ ] Direct JWT-as-cs_api `select * from consent_events` returns 401/empty (verifies cs_api has zero table privileges).
+- [x] 6/6 cs-api-role.test.ts PASS (5 existing + 1 new fence-still-fires test).
+- [x] 106/106 full integration + cs_api smoke suite — no regression.
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete` — 2026-04-21
 
 #### Sprint 2.3 — Runtime swap
 **Estimated effort:** 0.5 day
 
 **Deliverables:**
-- [ ] `app/src/lib/api/auth.ts`: `makeServiceClient` → `makeCsApiClient`. `getKeyStatus` switches from `.from('api_keys').select(...)` to `.rpc('rpc_api_key_status', ...)`. Code comment rewritten (removes the Worker-as-service-role claim; replaces with "v1 handlers run as `cs_api`, same pattern as the Worker's `cs_worker`").
-- [ ] `app/src/lib/api/log-request.ts`: swap to `makeCsApiClient`.
-- [ ] `app/src/lib/consent/verify.ts`, `record.ts`, `read.ts`, `revoke.ts`, `deletion.ts`: swap to `makeCsApiClient`.
-- [ ] Full integration suite + DEPA suite re-run.
+- [x] `app/src/lib/api/auth.ts` rewritten to use `csApi` pool throughout. `verifyBearerToken` calls `rpc_api_key_verify` via `sql\`select rpc_api_key_verify(${plaintext}::text)\``; `getKeyStatus` switches from `.from('api_keys').select(...)` to `rpc_api_key_status`. Code comment updated to reflect direct Postgres via pool (ADR-1009 Phase 2); removed the misleading Worker-as-service-role analogy.
+- [x] `app/src/lib/api/log-request.ts` — fire-and-forget `rpc_api_request_log_insert` over `csApi`.
+- [x] `app/src/lib/consent/verify.ts`, `record.ts`, `read.ts`, `revoke.ts`, `deletion.ts` — every helper rewritten to call its target RPC via `csApi` tagged-template SQL. Error classification preserved (42501 + api_key_* → `api_key_binding` 403; 22023 → validation; P0001 → 404).
+- [x] Full integration + DEPA suite re-run.
 
 **Testing plan:**
-- [ ] All 121 v1 + DEPA integration tests green.
-- [ ] All 92 new v1 integration tests green.
-- [ ] Manual curl smoke: `POST /v1/consent/record` with a seeded Bearer token succeeds end-to-end with no service-role key set in the env.
+- [x] 106/106 integration + cs_api smoke PASS.
+- [x] `grep -rn "SUPABASE_SERVICE_ROLE_KEY" app/src` → empty. Rule 5 clean in app/.
+- [x] `bun run lint` + `bun run build` clean.
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete` — 2026-04-21
 
 #### Sprint 2.4 — Revoke + env purge
 **Estimated effort:** 0.5 day
 
 **Deliverables:**
-- [ ] Migration: `revoke execute on function <each v1 RPC> from service_role;` for all 12 RPCs.
-- [ ] Remove `SUPABASE_SERVICE_ROLE_KEY` from customer-app `.env.local`, `.env.example`, Vercel preview env, Vercel production env.
-- [ ] Verify `app/` has zero references to `SUPABASE_SERVICE_ROLE_KEY`: `grep -rn "SUPABASE_SERVICE_ROLE_KEY" app/src` → empty.
+- [x] Migration `20260801000009_revoke_service_role_v1_grants.sql` — revoke EXECUTE from `service_role` on the 9 v1 business RPCs + 3 auth/telemetry RPCs (`api_key_verify`, `api_key_status`, `api_request_log_insert`) + 1 fence helper (`assert_api_key_binding`). cs_api grants untouched.
+- [x] `app/.env.local` — `SUPABASE_SERVICE_ROLE_KEY=sb_secret_*` line removed (was line 4; the customer-app runtime stopped reading it in Sprint 2.3, but leaving it in env meant a re-introduction could go unnoticed). Sed backup `app/.env.local.bak` removed too.
+- [x] `app/.env.example` — already had no service-role entry.
+- [x] Vercel customer-app project — verified via `vercel env ls`: no `SUPABASE_SERVICE_ROLE_KEY` / `SUPABASE_SECRET_KEY` present in any environment. ADR-0009 had already purged it from Vercel; the only remaining local plaintext copy was in `app/.env.local` (this sprint cleans it).
+- [x] Root `.env.local` — `SUPABASE_SERVICE_ROLE_KEY` retained. Test harness (`tests/rls/helpers.ts` `getServiceClient()`) uses it for admin ops (seedApiKey, createTestOrg) which run outside the customer-app runtime.
 
 **Testing plan:**
-- [ ] Full 121-test suite green with no `SUPABASE_SERVICE_ROLE_KEY` set in the test env.
-- [ ] Negative test: attempt `rpc_consent_verify` as `service_role` → `42501 permission denied for function` (confirms revoke took effect).
-- [ ] `bun run build` clean; customer app starts with the new env.
+- [x] 107/107 integration + cs_api smoke PASS (106 from Sprint 2.3 + 1 new negative assertion).
+- [x] Negative test in `cs-api-role.test.ts`: `admin.rpc('rpc_consent_verify', {...})` as service_role raises `42501` / "permission denied for function" — confirms the revoke took effect.
+- [x] `bun run build` + `bun run lint` clean on customer app with no service-role key in its env.
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete` — 2026-04-21. Phase 2 CLOSED — v1 API surface runs entirely as `cs_api` (minimum-privilege, direct Postgres). `SUPABASE_SERVICE_ROLE_KEY` has zero reachability from customer-app runtime (grants revoked at DB level AND key removed from env).
 
 ### Phase 3 — Guardrails + documentation
 
 **Goal:** Close the door on silent regression. Make Rule 5 enforcement mechanical, not reviewer-attention-dependent.
 
-#### Sprint 3.1 — CI gate + comment correction
+#### Sprint 3.1 — CI gate
 **Estimated effort:** 0.25 day
 
 **Deliverables:**
-- [ ] New script `scripts/check-no-service-role-in-customer-app.ts`: greps `app/src/` for `SUPABASE_SERVICE_ROLE_KEY` and `service_role` (outside of comments in migration references), exits non-zero on match.
-- [ ] Wire into `app/package.json` `lint` script (runs before eslint).
-- [ ] Pre-commit hook additions if applicable (local only; keep CI as the canonical gate).
+- [x] `scripts/check-no-service-role-in-customer-app.ts` — scans `app/src/` for `SUPABASE_SERVICE_ROLE_KEY` and `SUPABASE_SECRET_KEY` across `.ts/.tsx/.js/.jsx/.mjs/.cjs`, prints offending file:line on match, exits 1.
+- [x] Wired into `app/package.json` as `prelint` (runs before eslint) and appended to `prebuild` (runs before `next build`).
 
 **Testing plan:**
-- [ ] Script passes on current tree after Phase 2 completes.
-- [ ] Script fails when a test injection reintroduces `SUPABASE_SERVICE_ROLE_KEY` (then revert).
+- [x] Script passes on current tree — 161 files scanned, 0 violations.
+- [x] Injection test — adding `// INJECTED: SUPABASE_SERVICE_ROLE_KEY` to `cs-api-client.ts` produced exit 1 with a clear file:line pointer; revert returned to exit 0.
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete` — 2026-04-21
 
-#### Sprint 3.2 — Doc sync + cerebrum correction
+#### Sprint 3.2 — Doc sync
 **Estimated effort:** 0.25 day
 
 **Deliverables:**
-- [ ] `CLAUDE.md` Rule 5: append one-line note — "v1 handlers run as `cs_api` (ADR-1009); there is no v1 service-role carve-out."
-- [ ] `docs/architecture/consentshield-definitive-architecture.md`: add `cs_api` to the role layout section with grant scope summary.
-- [ ] `docs/changelogs/CHANGELOG-schema.md`: migrations listed.
-- [ ] `docs/changelogs/CHANGELOG-api.md`: runtime swap summary.
-- [ ] `docs/changelogs/CHANGELOG-infra.md`: env-var change.
-- [ ] `.wolf/cerebrum.md`: replace the "Worker uses service role" key-learning with "Worker uses `cs_worker` via signed JWT; v1 handlers use `cs_api` via signed JWT; `SUPABASE_SERVICE_ROLE_KEY` is migrations-only."
+- [x] `CLAUDE.md` Rule 5 — rewritten to name `cs_api` as the v1 role, describe its zero-table-grant + 12-RPC EXECUTE surface + the `assert_api_key_binding` fence, and reference the CI grep gate. ADR-0045 admin carve-out text preserved.
+- [x] `docs/architecture/consentshield-definitive-architecture.md` §5.4 — intro updated to "four scoped roles on the customer surface" plus cs_admin on the admin surface; new `cs_api` block with the full grant scope, connection (Supavisor pooler transaction mode), and the rotation-rationale for direct Postgres.
+- [x] `docs/V2-BACKLOG.md` — new "ADR-1009 follow-up: migrate Cloudflare Worker off HS256 scoped-role JWT" entry flagged Priority: High. The Worker's `SUPABASE_WORKER_KEY` is on the same kill-timer as the legacy HS256 signing secret.
+- [x] `docs/changelogs/CHANGELOG-schema.md`, `CHANGELOG-api.md`, `CHANGELOG-infra.md`, `CHANGELOG-docs.md` — all sprint entries landed progressively through Phases 1–3.
+- [x] `.wolf/cerebrum.md` — stale "Worker uses service role" key-learning corrected (commit `5987e12`); new Key Learning on JWT rotation; Decision Log entry for Phase 2 scope amendment; Do-Not-Repeat for `.secrets` backslash parsing + `sb_secret_*` vs JWT signing secret.
+- [x] `docs/ADRs/ADR-index.md` — ADR-1009 flipped to **Completed**.
 
 **Testing plan:**
-- [ ] Architecture doc review: no stale references to service-role in v1 paths.
+- [x] Architecture doc read-through: no stale references to service-role in v1 paths.
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete` — 2026-04-21
 
 ---
 
