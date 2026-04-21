@@ -73,7 +73,7 @@ All Architecture Decision Records for ConsentShield, in chronological order.
 | ADR-1009 | v1 API role hardening — DB tenant fence + `cs_api` direct-Postgres pool + service-role revoke (scope-amended 2026-04-21: direct Postgres, not HS256 JWT, due to Supabase key rotation) | Completed | 2026-04-20 | 3 | 8 |
 | ADR-1010 | Cloudflare Worker — scoped-role migration off HS256 JWT (Hyperdrive / direct Postgres; Supabase is rotating legacy HS256 signing secret → SUPABASE_WORKER_KEY is on a kill-timer) | Proposed | 2026-04-21 | 4 | 6 |
 | ADR-1011 | ADR-1001 V2 C-1 — rotate+revoke 401→410 fix (revoked_api_key_hashes tombstone); landed inline 2026-04-21 | Completed | 2026-04-21 | 1 | 1 |
-| ADR-1012 | v1 API day-1 DX gap fixes — `/v1/keys/self`, `/v1/usage`, `/v1/purposes`, `/v1/properties`, `/v1/plans` + OpenAPI examples backfill | Proposed | 2026-04-21 | 2 | 4 |
+| ADR-1012 | v1 API day-1 DX gap fixes — `/v1/keys/self`, `/v1/usage`, `/v1/purposes`, `/v1/properties`, `/v1/plans` + OpenAPI examples backfill (Sprint 2.1 scope-amended to also fix pre-existing schema mis-placement + OpenAPI 3.1 nullable syntax) | Completed | 2026-04-21 | 2 | 4 |
 | ADR-1013 | `cs_orchestrator` direct-Postgres migration (Next.js runtime) — completes ADR-1009 Phase 2 scope for the last scoped role on the customer-app surface. All five callers migrated (signup-intake, invitation-dispatch, dispatch helper, lookup-invitation, internal/invites, run-probes); architecture doc + Rule 5 synced; Next.js runtime fully off HS256. | Completed | 2026-04-21 | 2 | 3 |
 | ADR-0501 | ConsentShield marketing site (`marketing/`) — Bun workspace sibling; scaffold → content → downloads (PDF/DOCX/MD) → security hardening | In Progress | 2026-04-21 | 4 | 4+ |
 

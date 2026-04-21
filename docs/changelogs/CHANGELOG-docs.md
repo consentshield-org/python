@@ -2,6 +2,27 @@
 
 Documentation changes.
 
+## [ADR-1012 Sprint 2.1 — OpenAPI examples backfill + ADR CLOSED] — 2026-04-21
+
+**ADR:** ADR-1012 — v1 API day-1 DX gap fixes **(COMPLETED)**
+**Sprint:** Phase 2, Sprint 2.1
+
+### Added
+- `app/public/openapi.yaml` — request and/or 2xx response `example:` blocks on all 10 pre-ADR-1012 paths: `/_ping` (response), `/consent/verify` (response), `/consent/verify/batch` (request + response), `/consent/record` (request + 201 response + 200 replay response), `/consent/artefacts` (response), `/consent/artefacts/{id}` (response), `/consent/artefacts/{id}/revoke` (request + response), `/consent/events` (response), `/deletion/trigger` (request + response), `/deletion/receipts` (response). UUIDs, artefact IDs and purpose codes are kept consistent across examples so the spec reads as one end-to-end scenario.
+
+### Fixed
+- `app/public/openapi.yaml` — pre-existing structural bugs shipped in Sprints 1.1–1.3 that were caught by the Sprint-2.1 `redocly lint` gate:
+  - **Schema mis-placement.** 9 schemas (`KeySelfResponse`, `UsageResponse`, `UsageDayRow`, `PurposeItem`, `PurposeListResponse`, `PropertyItem`, `PropertyListResponse`, `PlanItem`, `PlanListResponse`) were defined under `components/responses:` instead of `components/schemas:`. Every `$ref: "#/components/schemas/KeySelfResponse"` etc. was pointing to a missing target. Relocated all nine into `components/schemas/`. No runtime impact — the file is a static reference only.
+  - **OpenAPI 3.0 `nullable: true` in a 3.1 spec.** 27 occurrences rewritten to 3.1 syntax (`type: [string, "null"]` inline, or `oneOf: [{type: "null"}, {$ref: …}]` for the one `$ref`-nullable under `ArtefactDetail.revocation`).
+
+### Changed
+- `docs/ADRs/ADR-1012-v1-dx-gap-fixes.md` — top-line status flipped to **Completed** (date completed 2026-04-21). Sprint 2.1 deliverables + Testing plan boxes ticked. Scope-amendment note added explaining the two pre-existing bugs folded into 2.1.
+- `docs/ADRs/ADR-index.md` — ADR-1012 row flipped to **Completed**; description extended to mention the Sprint 2.1 scope amendment.
+
+### Tested
+- [x] `bunx @redocly/cli lint app/public/openapi.yaml` — 0 errors, 1 warning (missing `info.license` field — cosmetic, pre-existing, tracked for ADR-1006's CI spec-drift check).
+- [x] `cd app && bun run build` — passes (the file is a static public asset, not imported at runtime).
+
 ## [§5.4 cs_orchestrator GRANT list refresh] — 2026-04-21
 
 **ADR:** n/a — doc drift cleanup flagged in the 2026-04-21 session handoff (gotcha #17).

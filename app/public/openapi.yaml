@@ -50,9 +50,8 @@ components:
           type: boolean
           example: true
         org_id:
-          type: string
+          type: [string, "null"]
           format: uuid
-          nullable: true
         account_id:
           type: string
           format: uuid
@@ -82,23 +81,19 @@ components:
           type: string
           enum: [granted, revoked, expired, never_consented]
         active_artefact_id:
-          type: string
-          nullable: true
+          type: [string, "null"]
           description: Present only when status=granted. Opaque identifier.
         revoked_at:
-          type: string
+          type: [string, "null"]
           format: date-time
-          nullable: true
           description: Present only when status=revoked.
         revocation_record_id:
-          type: string
+          type: [string, "null"]
           format: uuid
-          nullable: true
           description: Pointer to artefact_revocations row. Present only when status=revoked.
         expires_at:
-          type: string
+          type: [string, "null"]
           format: date-time
-          nullable: true
           description: Artefact expiry timestamp. Null for never_consented.
         evaluated_at:
           type: string
@@ -137,20 +132,16 @@ components:
           type: string
           enum: [granted, revoked, expired, never_consented]
         active_artefact_id:
-          type: string
-          nullable: true
+          type: [string, "null"]
         revoked_at:
-          type: string
+          type: [string, "null"]
           format: date-time
-          nullable: true
         revocation_record_id:
-          type: string
+          type: [string, "null"]
           format: uuid
-          nullable: true
         expires_at:
-          type: string
+          type: [string, "null"]
           format: date-time
-          nullable: true
 
     VerifyBatchResponse:
       type: object
@@ -250,11 +241,11 @@ components:
         data_scope:           { type: array, items: { type: string } }
         framework:            { type: string, enum: [dpdp, abdm, gdpr] }
         status:               { type: string, enum: [active, revoked, expired, replaced] }
-        expires_at:           { type: string, format: date-time, nullable: true }
-        revoked_at:           { type: string, format: date-time, nullable: true }
-        revocation_record_id: { type: string, format: uuid, nullable: true }
-        replaced_by:          { type: string, nullable: true }
-        identifier_type:      { type: string, enum: [email, phone, pan, aadhaar, custom], nullable: true }
+        expires_at:           { type: [string, "null"], format: date-time }
+        revoked_at:           { type: [string, "null"], format: date-time }
+        revocation_record_id: { type: [string, "null"], format: uuid }
+        replaced_by:          { type: [string, "null"] }
+        identifier_type:      { type: [string, "null"], enum: [email, phone, pan, aadhaar, custom, null] }
         created_at:           { type: string, format: date-time }
 
     ArtefactListResponse:
@@ -266,8 +257,7 @@ components:
           items:
             $ref: "#/components/schemas/ArtefactListItem"
         next_cursor:
-          type: string
-          nullable: true
+          type: [string, "null"]
           description: Opaque keyset cursor. Echo back in the next request's `cursor` query param to fetch the next page. Null when this is the last page.
 
     ArtefactRevocation:
@@ -275,9 +265,9 @@ components:
       required: [id, revoked_by_type, created_at]
       properties:
         id:              { type: string, format: uuid }
-        reason:          { type: string, nullable: true }
+        reason:          { type: [string, "null"] }
         revoked_by_type: { type: string }
-        revoked_by_ref:  { type: string, nullable: true }
+        revoked_by_ref:  { type: [string, "null"] }
         created_at:      { type: string, format: date-time }
 
     ArtefactDetail:
@@ -287,8 +277,9 @@ components:
           required: [revocation, replacement_chain]
           properties:
             revocation:
-              nullable: true
-              $ref: "#/components/schemas/ArtefactRevocation"
+              oneOf:
+                - type: "null"
+                - $ref: "#/components/schemas/ArtefactRevocation"
             replacement_chain:
               type: array
               items:
@@ -305,7 +296,7 @@ components:
         event_type:              { type: string }
         purposes_accepted_count: { type: integer }
         purposes_rejected_count: { type: integer }
-        identifier_type:         { type: string, nullable: true }
+        identifier_type:         { type: [string, "null"] }
         artefact_count:          { type: integer }
         created_at:              { type: string, format: date-time }
 
@@ -318,8 +309,7 @@ components:
           items:
             $ref: "#/components/schemas/EventListItem"
         next_cursor:
-          type: string
-          nullable: true
+          type: [string, "null"]
 
     RevokeRequest:
       type: object
@@ -380,7 +370,7 @@ components:
       properties:
         reason:               { type: string, enum: [consent_revoked, erasure_request, retention_expired] }
         revoked_artefact_ids: { type: array, items: { type: string } }
-        revoked_count:        { type: integer, nullable: true }
+        revoked_count:        { type: [integer, "null"] }
         initial_status:       { type: string, example: pending }
         note:                 { type: string }
 
@@ -390,15 +380,15 @@ components:
       properties:
         id:             { type: string, format: uuid }
         trigger_type:   { type: string }
-        trigger_id:     { type: string, format: uuid, nullable: true }
-        artefact_id:    { type: string, nullable: true }
-        connector_id:   { type: string, format: uuid, nullable: true }
+        trigger_id:     { type: [string, "null"], format: uuid }
+        artefact_id:    { type: [string, "null"] }
+        connector_id:   { type: [string, "null"], format: uuid }
         target_system:  { type: string }
         status:         { type: string }
         retry_count:    { type: integer }
-        failure_reason: { type: string, nullable: true }
-        requested_at:   { type: string, format: date-time, nullable: true }
-        confirmed_at:   { type: string, format: date-time, nullable: true }
+        failure_reason: { type: [string, "null"] }
+        requested_at:   { type: [string, "null"], format: date-time }
+        confirmed_at:   { type: [string, "null"], format: date-time }
         created_at:     { type: string, format: date-time }
 
     DeletionReceiptsResponse:
@@ -410,39 +400,7 @@ components:
           items:
             $ref: "#/components/schemas/DeletionReceiptRow"
         next_cursor:
-          type: string
-          nullable: true
-
-  responses:
-    Unauthorized:
-      description: Missing, malformed, or invalid API key.
-      content:
-        application/problem+json:
-          schema:
-            $ref: "#/components/schemas/Problem"
-
-    Gone:
-      description: API key has been revoked.
-      content:
-        application/problem+json:
-          schema:
-            $ref: "#/components/schemas/Problem"
-
-    TooManyRequests:
-      description: Rate limit exceeded.
-      headers:
-        Retry-After:
-          schema:
-            type: integer
-          description: Seconds until the rate-limit window resets.
-        X-RateLimit-Limit:
-          schema:
-            type: integer
-          description: Requests allowed per hour for this key's tier.
-      content:
-        application/problem+json:
-          schema:
-            $ref: "#/components/schemas/Problem"
+          type: [string, "null"]
 
     KeySelfResponse:
       type: object
@@ -455,9 +413,8 @@ components:
           type: string
           format: uuid
         org_id:
-          type: string
+          type: [string, "null"]
           format: uuid
-          nullable: true
           description: null for account-scoped keys.
         name:
           type: string
@@ -479,17 +436,14 @@ components:
           type: string
           format: date-time
         last_rotated_at:
-          type: string
+          type: [string, "null"]
           format: date-time
-          nullable: true
         expires_at:
-          type: string
+          type: [string, "null"]
           format: date-time
-          nullable: true
         revoked_at:
-          type: string
+          type: [string, "null"]
           format: date-time
-          nullable: true
           description: Always null on a successful response — revoked keys are rejected at the Bearer layer (410 Gone) before this endpoint runs.
 
     UsageDayRow:
@@ -527,8 +481,7 @@ components:
           type: string
           example: "Marketing communications"
         description:
-          type: string
-          nullable: true
+          type: [string, "null"]
         data_scope:
           type: array
           items:
@@ -583,13 +536,11 @@ components:
             type: string
           example: ["https://acme.example.com", "https://www.acme.example.com"]
         snippet_verified_at:
-          type: string
+          type: [string, "null"]
           format: date-time
-          nullable: true
         snippet_last_seen_at:
-          type: string
+          type: [string, "null"]
           format: date-time
-          nullable: true
         created_at:
           type: string
           format: date-time
@@ -627,8 +578,7 @@ components:
           type: integer
           example: 2
         base_price_inr:
-          type: integer
-          nullable: true
+          type: [integer, "null"]
           example: 999
           description: Monthly price in INR. `null` for enterprise tiers that are negotiated.
         trial_days:
@@ -671,6 +621,37 @@ components:
             $ref: "#/components/schemas/UsageDayRow"
           description: One row per day. Most recent first. Days with no activity have counts of 0.
 
+  responses:
+    Unauthorized:
+      description: Missing, malformed, or invalid API key.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+
+    Gone:
+      description: API key has been revoked.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+
+    TooManyRequests:
+      description: Rate limit exceeded.
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+          description: Seconds until the rate-limit window resets.
+        X-RateLimit-Limit:
+          schema:
+            type: integer
+          description: Requests allowed per hour for this key's tier.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+
 paths:
   /_ping:
     get:
@@ -688,6 +669,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PingResponse"
+              example:
+                ok: true
+                org_id: "11111111-2222-3333-4444-555555555555"
+                account_id: "3a4b8b21-5a11-4f37-9b7c-6f2e0d5c8b1a"
+                scopes: ["read:consent", "write:consent", "read:artefacts"]
+                rate_tier: "starter"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "410":
@@ -739,6 +726,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/VerifyResponse"
+              example:
+                property_id: "3a4b8b21-5a11-4f37-9b7c-6f2e0d5c8b1a"
+                identifier_type: "email"
+                purpose_code: "marketing"
+                status: "granted"
+                active_artefact_id: "art_01J5TZ8XQKVPKPYH7PZCTMFMH8"
+                revoked_at: null
+                revocation_record_id: null
+                expires_at: "2027-03-14T08:12:00Z"
+                evaluated_at: "2026-04-21T10:15:33Z"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -810,6 +807,22 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ArtefactListResponse"
+              example:
+                items:
+                  - artefact_id: "art_01J5TZ8XQKVPKPYH7PZCTMFMH8"
+                    property_id: "3a4b8b21-5a11-4f37-9b7c-6f2e0d5c8b1a"
+                    purpose_code: "marketing"
+                    purpose_definition_id: "7f4b3b21-5a11-4f37-9b7c-6f2e0d5c8b1a"
+                    data_scope: ["email_address", "phone_number"]
+                    framework: "dpdp"
+                    status: "active"
+                    expires_at: "2027-03-14T08:12:00Z"
+                    revoked_at: null
+                    revocation_record_id: null
+                    replaced_by: null
+                    identifier_type: "email"
+                    created_at: "2026-04-21T10:15:03Z"
+                next_cursor: null
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403":
           description: Key is valid but lacks read:artefacts scope.
@@ -846,6 +859,22 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ArtefactDetail"
+              example:
+                artefact_id: "art_01J5TZ8XQKVPKPYH7PZCTMFMH8"
+                property_id: "3a4b8b21-5a11-4f37-9b7c-6f2e0d5c8b1a"
+                purpose_code: "marketing"
+                purpose_definition_id: "7f4b3b21-5a11-4f37-9b7c-6f2e0d5c8b1a"
+                data_scope: ["email_address", "phone_number"]
+                framework: "dpdp"
+                status: "active"
+                expires_at: "2027-03-14T08:12:00Z"
+                revoked_at: null
+                revocation_record_id: null
+                replaced_by: null
+                identifier_type: "email"
+                created_at: "2026-04-21T10:15:03Z"
+                revocation: null
+                replacement_chain: ["art_01J5TZ8XQKVPKPYH7PZCTMFMH8"]
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403":
           description: Key is valid but lacks read:artefacts scope.
@@ -884,6 +913,11 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/RevokeRequest"
+            example:
+              reason_code: "user_withdrawal"
+              reason_notes: "User requested unsubscribe via email"
+              actor_type: "user"
+              actor_ref: "alice@example.com"
       responses:
         "200":
           description: Revoked (new or idempotent replay).
@@ -891,6 +925,11 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RevokeResponse"
+              example:
+                artefact_id: "art_01J5TZ8XQKVPKPYH7PZCTMFMH8"
+                status: "revoked"
+                revocation_record_id: "6c9d0e1f-2a3b-4c5d-6e7f-8a9b0c1d2e3f"
+                idempotent_replay: false
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403":
           description: Key is valid but lacks write:artefacts scope.
@@ -951,6 +990,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/EventListResponse"
+              example:
+                items:
+                  - id: "5b8c9d0e-1f2a-3b4c-5d6e-7f8a9b0c1d2e"
+                    property_id: "3a4b8b21-5a11-4f37-9b7c-6f2e0d5c8b1a"
+                    source: "api"
+                    event_type: "consent_granted"
+                    purposes_accepted_count: 2
+                    purposes_rejected_count: 0
+                    identifier_type: "email"
+                    artefact_count: 2
+                    created_at: "2026-04-21T10:15:03Z"
+                next_cursor: "eyJjcmVhdGVkX2F0IjoiMjAyNi0wNC0yMVQxMDoxNTowM1oifQ"
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403":
           description: Key is valid but lacks read:consent scope.
@@ -983,6 +1034,13 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/DeletionTriggerRequest"
+            example:
+              property_id: "3a4b8b21-5a11-4f37-9b7c-6f2e0d5c8b1a"
+              data_principal_identifier: "alice@example.com"
+              identifier_type: "email"
+              reason: "erasure_request"
+              actor_type: "user"
+              actor_ref: "alice@example.com"
       responses:
         "202":
           description: Revocations inserted; deletion_receipts are being created asynchronously.
@@ -990,6 +1048,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DeletionTriggerResponse"
+              example:
+                reason: "erasure_request"
+                revoked_artefact_ids:
+                  - "art_01J5TZ8XQKVPKPYH7PZCTMFMH8"
+                  - "art_01J5TZ9AKVPKPYH7PZCTMFMH8"
+                revoked_count: 2
+                initial_status: "pending"
+                note: "Deletion receipts will be generated asynchronously by the orchestrator."
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403":
           description: Key is valid but lacks write:deletion scope.
@@ -1053,6 +1119,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DeletionReceiptsResponse"
+              example:
+                items:
+                  - id: "7d8e9f0a-1b2c-3d4e-5f6a-7b8c9d0e1f2a"
+                    trigger_type: "erasure_request"
+                    trigger_id: "5b8c9d0e-1f2a-3b4c-5d6e-7f8a9b0c1d2e"
+                    artefact_id: "art_01J5TZ8XQKVPKPYH7PZCTMFMH8"
+                    connector_id: "8e9f0a1b-2c3d-4e5f-6a7b-8c9d0e1f2a3b"
+                    target_system: "hubspot"
+                    status: "confirmed"
+                    retry_count: 0
+                    failure_reason: null
+                    requested_at: "2026-04-21T10:15:05Z"
+                    confirmed_at: "2026-04-21T10:15:42Z"
+                    created_at: "2026-04-21T10:15:03Z"
+                next_cursor: null
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403":
           description: Key is valid but lacks read:deletion scope.
@@ -1084,6 +1165,15 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/RecordRequest"
+            example:
+              property_id: "3a4b8b21-5a11-4f37-9b7c-6f2e0d5c8b1a"
+              data_principal_identifier: "alice@example.com"
+              identifier_type: "email"
+              purpose_definition_ids:
+                - "7f4b3b21-5a11-4f37-9b7c-6f2e0d5c8b1a"
+                - "9e2c8a0c-1d8a-4a2c-a4bf-2b0e6b1f3c9d"
+              captured_at: "2026-04-21T10:14:55Z"
+              client_request_id: "req_01J5TZ8XQKVPKPYH7PZCTMFMH8"
       responses:
         "201":
           description: Consent recorded; artefacts created.
@@ -1091,12 +1181,38 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RecordResponse"
+              example:
+                event_id: "5b8c9d0e-1f2a-3b4c-5d6e-7f8a9b0c1d2e"
+                created_at: "2026-04-21T10:15:03Z"
+                artefact_ids:
+                  - purpose_definition_id: "7f4b3b21-5a11-4f37-9b7c-6f2e0d5c8b1a"
+                    purpose_code: "marketing"
+                    artefact_id: "art_01J5TZ8XQKVPKPYH7PZCTMFMH8"
+                    status: "active"
+                  - purpose_definition_id: "9e2c8a0c-1d8a-4a2c-a4bf-2b0e6b1f3c9d"
+                    purpose_code: "analytics"
+                    artefact_id: "art_01J5TZ9AKVPKPYH7PZCTMFMH8"
+                    status: "active"
+                idempotent_replay: false
         "200":
           description: Idempotent replay — a prior call with the same client_request_id returned this envelope.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/RecordResponse"
+              example:
+                event_id: "5b8c9d0e-1f2a-3b4c-5d6e-7f8a9b0c1d2e"
+                created_at: "2026-04-21T10:15:03Z"
+                artefact_ids:
+                  - purpose_definition_id: "7f4b3b21-5a11-4f37-9b7c-6f2e0d5c8b1a"
+                    purpose_code: "marketing"
+                    artefact_id: "art_01J5TZ8XQKVPKPYH7PZCTMFMH8"
+                    status: "active"
+                  - purpose_definition_id: "9e2c8a0c-1d8a-4a2c-a4bf-2b0e6b1f3c9d"
+                    purpose_code: "analytics"
+                    artefact_id: "art_01J5TZ9AKVPKPYH7PZCTMFMH8"
+                    status: "active"
+                idempotent_replay: true
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -1141,6 +1257,14 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/VerifyBatchRequest"
+            example:
+              property_id: "3a4b8b21-5a11-4f37-9b7c-6f2e0d5c8b1a"
+              identifier_type: "email"
+              purpose_code: "marketing"
+              identifiers:
+                - "alice@example.com"
+                - "bob@example.com"
+                - "carol@example.com"
       responses:
         "200":
           description: Batch verification envelope.
@@ -1148,6 +1272,22 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/VerifyBatchResponse"
+              example:
+                property_id: "3a4b8b21-5a11-4f37-9b7c-6f2e0d5c8b1a"
+                identifier_type: "email"
+                purpose_code: "marketing"
+                evaluated_at: "2026-04-21T10:15:33Z"
+                results:
+                  - identifier: "alice@example.com"
+                    status: "granted"
+                    active_artefact_id: "art_01J5TZ8XQKVPKPYH7PZCTMFMH8"
+                    expires_at: "2027-03-14T08:12:00Z"
+                  - identifier: "bob@example.com"
+                    status: "never_consented"
+                  - identifier: "carol@example.com"
+                    status: "revoked"
+                    revoked_at: "2026-04-10T14:32:11Z"
+                    revocation_record_id: "6c9d0e1f-2a3b-4c5d-6e7f-8a9b0c1d2e3f"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":

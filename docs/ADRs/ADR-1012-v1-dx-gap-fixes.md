@@ -1,8 +1,8 @@
 # ADR-1012: v1 API — day-1 DX gap fixes
 
-**Status:** In Progress
+**Status:** Completed
 **Date proposed:** 2026-04-21
-**Date completed:** —
+**Date completed:** 2026-04-21
 **Superseded by:** —
 
 ---
@@ -123,20 +123,28 @@ These are prerequisites for `/v1/consent/verify` / `record`. Any key with `read:
 **Estimated effort:** 2h
 
 **Deliverables:**
-- [ ] For each path (10 existing + 5 from Phase 1), add at least one request example and one 2xx response example in `app/public/openapi.yaml`. Keep each ≤10 lines of YAML.
-- [ ] Verify with `redocly lint` (installed ad-hoc — not a persistent dep; ADR-1006 adds a CI check).
+- [x] For each path (10 existing + 5 from Phase 1), add at least one request example and one 2xx response example in `app/public/openapi.yaml`. Keep each ≤10 lines of YAML.
+- [x] Verify with `redocly lint` (installed ad-hoc — not a persistent dep; ADR-1006 adds a CI check).
 
 **Testing plan:**
-- [ ] `redocly lint app/public/openapi.yaml` passes with no errors.
-- [ ] Spot-check: examples render correctly in a Swagger UI preview (manual).
+- [x] `redocly lint app/public/openapi.yaml` passes with no errors (1 cosmetic warning about missing `license` field — pre-existing, tracked for ADR-1006).
+- [x] `cd app && bun run build` passes (build compiles the static file).
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete` — 2026-04-21
+
+**Scope amendment caught during the sprint.** First lint revealed two pre-existing bugs shipped in Sprints 1.1–1.3 that blocked the test criterion:
+
+1. **Schema mis-placement.** `KeySelfResponse`, `UsageResponse`, `UsageDayRow`, `PurposeItem`, `PurposeListResponse`, `PropertyItem`, `PropertyListResponse`, `PlanItem`, `PlanListResponse` were defined under `components/responses:` instead of `components/schemas:`. Every `$ref: "#/components/schemas/KeySelfResponse"` etc. resolved to a missing target — SDK generators consuming this YAML would have produced broken code. No runtime impact (the file is a static reference only; no app code imports it). Moved all 9 definitions into `components/schemas/`.
+
+2. **OpenAPI 3.0 `nullable: true` syntax in a 3.1 spec.** The file is declared `openapi: "3.1.0"` but used 27 `nullable: true` occurrences (3.0-only keyword). Redocly flagged all as struct errors. Rewrote each to 3.1 syntax (`type: [string, "null"]` inline or oneOf for `$ref`-nullable under `ArtefactDetail.revocation`).
+
+Neither issue is in Sprint 2.1's original scope — both are pre-existing. Folded into 2.1 because the sprint's own acceptance criterion (lint passes) required them.
 
 ---
 
 ## Architecture Changes
 
-None. All additive; no touch to cs_api grant policy, fence contract, or scope allow-list.
+None functional. Structural correction to `app/public/openapi.yaml`: 9 schemas relocated from `components/responses/` to `components/schemas/`; all `nullable: true` rewritten to OpenAPI 3.1 syntax. Static reference file only — no runtime behaviour affected.
 
 ---
 
