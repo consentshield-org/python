@@ -2,6 +2,18 @@
 
 API route changes.
 
+## [ADR-1012 Sprint 1.3] — 2026-04-21
+
+**ADR:** ADR-1012 — v1 API DX gap fixes
+**Sprint:** Phase 1 Sprint 1.3 — /v1/plans
+
+### Added
+- `GET /v1/plans` — public tier table. Active plans only, cheapest first, NULL-priced plans (enterprise "talk to us") last. No scope gate (any valid Bearer). Handler: `app/src/app/api/v1/plans/route.ts`. OpenAPI: new path + `PlanItem` + `PlanListResponse` schemas with a populated 5-row example.
+- `app/src/lib/api/plans.ts` — `listPlans()` helper over the cs_api pool.
+
+### Tested
+- [x] 4 new integration tests in `tests/integration/plans.test.ts` (envelope shape, ordering invariant, safe-subset, rate-tier triangulation with `TIER_LIMITS`).
+
 ## [ADR-1012 Sprint 1.2] — 2026-04-21
 
 **ADR:** ADR-1012 — v1 API DX gap fixes

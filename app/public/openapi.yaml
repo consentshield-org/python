@@ -610,6 +610,49 @@ components:
             omitted — it's a server-only key used by the Cloudflare Worker to verify
             inbound events and must never leak to API consumers.
 
+    PlanItem:
+      type: object
+      required: [plan_code, display_name, max_organisations, max_web_properties_per_org, trial_days, api_rate_limit_per_hour, api_burst]
+      properties:
+        plan_code:
+          type: string
+          example: "starter"
+        display_name:
+          type: string
+          example: "Starter"
+        max_organisations:
+          type: integer
+          example: 1
+        max_web_properties_per_org:
+          type: integer
+          example: 2
+        base_price_inr:
+          type: integer
+          nullable: true
+          example: 999
+          description: Monthly price in INR. `null` for enterprise tiers that are negotiated.
+        trial_days:
+          type: integer
+          example: 30
+        api_rate_limit_per_hour:
+          type: integer
+          example: 100
+        api_burst:
+          type: integer
+          example: 20
+
+    PlanListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlanItem"
+          description: >
+            Ordered cheapest first; plans with `base_price_inr = null` (enterprise
+            "talk to us") sort last. Only active plans are returned.
+
     UsageResponse:
       type: object
       required: [key_id, days, series]
@@ -1331,6 +1374,73 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
+        "410":
+          $ref: "#/components/responses/Gone"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /plans:
+    get:
+      operationId: planList
+      summary: List active plans with tier limits + pricing
+      description: >
+        Public tier table. Useful for SDK setup wizards ("which plan am I on?"),
+        checkout flows, and per-tier feature lists. No scope gate — any valid
+        Bearer can call.
+
+        The `razorpay_plan_id` field is deliberately NOT in the response — it's
+        an internal integration key for the Razorpay subscription service.
+      responses:
+        "200":
+          description: Active plans, cheapest first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlanListResponse"
+              example:
+                items:
+                  - plan_code: "trial_starter"
+                    display_name: "Trial (Starter limits)"
+                    max_organisations: 1
+                    max_web_properties_per_org: 1
+                    base_price_inr: 0
+                    trial_days: 30
+                    api_rate_limit_per_hour: 100
+                    api_burst: 20
+                  - plan_code: "starter"
+                    display_name: "Starter"
+                    max_organisations: 1
+                    max_web_properties_per_org: 2
+                    base_price_inr: 999
+                    trial_days: 0
+                    api_rate_limit_per_hour: 100
+                    api_burst: 20
+                  - plan_code: "growth"
+                    display_name: "Growth"
+                    max_organisations: 3
+                    max_web_properties_per_org: 5
+                    base_price_inr: 2999
+                    trial_days: 0
+                    api_rate_limit_per_hour: 1000
+                    api_burst: 100
+                  - plan_code: "pro"
+                    display_name: "Pro"
+                    max_organisations: 10
+                    max_web_properties_per_org: 10
+                    base_price_inr: 7999
+                    trial_days: 0
+                    api_rate_limit_per_hour: 10000
+                    api_burst: 500
+                  - plan_code: "enterprise"
+                    display_name: "Enterprise"
+                    max_organisations: 50
+                    max_web_properties_per_org: 25
+                    base_price_inr: null
+                    trial_days: 0
+                    api_rate_limit_per_hour: 100000
+                    api_burst: 2000
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "410":
           $ref: "#/components/responses/Gone"
         "429":

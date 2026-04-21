@@ -2,6 +2,17 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-1012 Sprint 1.3] — 2026-04-21
+
+**ADR:** ADR-1012 — v1 API DX gap fixes
+**Sprint:** Phase 1 Sprint 1.3 — /v1/plans
+
+### Added
+- `20260803000004_v1_plans_list_rpc.sql` — `rpc_plans_list() returns jsonb`. Reads active rows from `public.plans`, envelope: `{ items: [{ plan_code, display_name, max_organisations, max_web_properties_per_org, base_price_inr, trial_days, api_rate_limit_per_hour, api_burst }, ...] }` ordered by `base_price_inr` ASC NULLS LAST then `plan_code`. `razorpay_plan_id` deliberately excluded (internal integration key). GRANT to `cs_api`.
+
+### Tested
+- [x] 4/4 plans.test.ts PASS (envelope shape, cheapest-first ordering with null-prices last, no razorpay_plan_id leak, rate-tier triangulation against TIER_LIMITS).
+
 ## [ADR-1012 Sprint 1.2] — 2026-04-21
 
 **ADR:** ADR-1012 — v1 API DX gap fixes

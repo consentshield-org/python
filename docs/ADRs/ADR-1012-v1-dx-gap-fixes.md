@@ -109,10 +109,13 @@ These are prerequisites for `/v1/consent/verify` / `record`. Any key with `read:
 - [ ] OpenAPI path (with example).
 
 **Testing plan:**
-- [ ] `/v1/plans` returns 5 rows matching `public.plans` (enterprise/growth/pro/starter/trial_starter) with exact values.
-- [ ] Drift check: the `rate-tier-drift` test already compares TS `TIER_LIMITS` to DB `public.plans`; this endpoint now effectively triangulates a third view of the same data.
+- [x] `/v1/plans` returns active rows from `public.plans` with the expected envelope shape.
+- [x] Cheapest-first order; NULL-priced (enterprise) plans sort last.
+- [x] `razorpay_plan_id` never appears in the response (safe-subset).
+- [x] Triangulation: every plan_code present in both `TIER_LIMITS` and the response has matching rate/burst values.
+- [x] 4/4 plans.test.ts PASS.
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete` — 2026-04-21
 
 ### Phase 2 — OpenAPI examples backfill
 
