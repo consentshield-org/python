@@ -1,24 +1,23 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { csOrchestrator } from '@/lib/api/cs-orchestrator-client'
 import {
   dispatchInvitationById,
   resolveDispatchEnv,
 } from '@/lib/invitations/dispatch'
 
 // ADR-0058 follow-up — manual-fire invitation dispatcher.
+// ADR-1013 Phase 1 — runs as cs_orchestrator via direct Postgres (no JWT).
 //
-// The legacy AFTER INSERT trigger that called this route via
-// pg_net / Vault is gone (migration 20260803000007). Callers now:
+// Callers now:
 //   * /api/public/signup-intake          → synchronous in-process
 //   * admin createOperatorIntakeAction   → POST here with the id
 //   * manual operator retry              → POST here with the id
 //
-// Auth: the same shared bearer (INVITATION_DISPATCH_SECRET).
+// Auth: shared bearer (INVITATION_DISPATCH_SECRET). Same secret the
+// marketing send-email relay verifies.
 
 export const dynamic = 'force-dynamic'
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const ORCHESTRATOR_KEY = process.env.CS_ORCHESTRATOR_ROLE_KEY!
 const DISPATCH_SECRET = process.env.INVITATION_DISPATCH_SECRET ?? ''
 
 export async function POST(request: Request) {
@@ -52,12 +51,12 @@ export async function POST(request: Request) {
     )
   }
 
-  const supabase = createClient(SUPABASE_URL, ORCHESTRATOR_KEY, {
-    auth: { persistSession: false },
-  })
-
   const env = resolveDispatchEnv()
-  const result = await dispatchInvitationById(supabase, invitationId, env)
+  const result = await dispatchInvitationById(
+    csOrchestrator(),
+    invitationId,
+    env,
+  )
 
   switch (result.status) {
     case 'dispatched':

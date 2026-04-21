@@ -2,6 +2,27 @@
 
 API route changes.
 
+## [ADR-1013 Sprint 1.1 — cs_orchestrator direct-Postgres] — 2026-04-21
+
+**ADR:** ADR-1013 — cs_orchestrator direct-Postgres migration (Next.js runtime)
+**Sprint:** Phase 1 Sprint 1.1 — client + caller migration
+
+### Added
+- `app/src/lib/api/cs-orchestrator-client.ts` — direct port of `cs-api-client.ts`. Lazy-initialised `postgres.js` pool reading `SUPABASE_CS_ORCHESTRATOR_DATABASE_URL`. Same transaction-pool sizing + TLS + `prepare: false` settings as the cs_api client.
+
+### Changed
+- `app/src/app/api/public/signup-intake/route.ts` — drops `createClient(url, CS_ORCHESTRATOR_ROLE_KEY)` + `.rpc(...)`; switches to `csOrchestrator()` with tagged-template SQL against `public.create_signup_intake`. Error handling moves from `{data, error}` destructuring to try/catch. The explicit-branch contract (created / already_invited / existing_customer / admin_identity / invalid_email / invalid_plan) is unchanged.
+- `app/src/app/api/internal/invitation-dispatch/route.ts` — drops `createClient(...)` scaffolding; hands `csOrchestrator()` to `dispatchInvitationById`.
+- `app/src/lib/invitations/dispatch.ts::dispatchInvitationById` — accepts a `postgres.js` `Sql` instance instead of `SupabaseClient`. Three read/update operations against `public.invitations` migrated to tagged-template queries.
+
+### Removed
+- `CS_ORCHESTRATOR_ROLE_KEY` references (and the `SUPABASE_URL` const that only existed to feed it to `createClient`) from both routes. This env var is on Supabase's HS256 rotation kill-timer; ADR-1009 established direct-Postgres as the escape hatch.
+
+### Tested
+- [x] `cd app && bun run build` — clean.
+- [x] `cd app && bun run lint` — 0 errors, 0 warnings.
+- [ ] End-to-end — blocked on ADR-1013 Sprint 1.2 operator action (rotate cs_orchestrator password + paste into `SUPABASE_CS_ORCHESTRATOR_DATABASE_URL`). Connection URL template already written to `app/.env.local` with a `<PASTE-ROTATED-PW-HERE>` marker.
+
 ## [ADR-0058 follow-up — drop dispatch trigger, synchronous callers] — 2026-04-21
 
 **ADR:** ADR-0058 (follow-up; no new ADR)

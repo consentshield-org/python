@@ -1,8 +1,8 @@
-import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { verifyTurnstileToken } from '@/lib/rights/turnstile'
 import { checkRateLimit } from '@/lib/rights/rate-limit'
 import { logRateLimitHit } from '@/lib/rights/rate-limit-log'
+import { csOrchestrator } from '@/lib/api/cs-orchestrator-client'
 import {
   dispatchInvitationById,
   resolveDispatchEnv,
@@ -26,9 +26,6 @@ const ORIGIN_ALLOW_LIST = new Set([
   'https://www.consentshield.in',
   'http://localhost:3002',
 ])
-
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const ORCHESTRATOR_KEY = process.env.CS_ORCHESTRATOR_ROLE_KEY!
 
 const VALID_PLANS = new Set([
   'trial_starter',
@@ -78,8 +75,17 @@ export async function POST(request: Request) {
   // Per-IP rate limit. Tighter than rights-request (5/60s) — intake is
   // genuinely once-per-visitor, retry burst is rare. Same window keeps
   // tooling consistent.
+  //
+  // Dev bypass: `RATE_LIMIT_BYPASS=1` (or NODE_ENV !== 'production')
+  // skips both buckets so iterating on the form doesn't lock the
+  // developer's IP out for an hour. Never set this in prod.
+  const rateLimitBypass =
+    process.env.NODE_ENV !== 'production' ||
+    process.env.RATE_LIMIT_BYPASS === '1'
   const rateKey = `rl:signup-intake:${ip}`
-  const limit = await checkRateLimit(rateKey, 5, 60)
+  const limit = rateLimitBypass
+    ? { allowed: true as const, retryInSeconds: 0 }
+    : await checkRateLimit(rateKey, 5, 60)
   if (!limit.allowed) {
     logRateLimitHit({
       endpoint: '/api/public/signup-intake',
@@ -149,9 +155,12 @@ export async function POST(request: Request) {
 
   // Per-email bucket — prevents enumeration / inbox flooding by
   // spreading retries across IPs (the IP bucket above doesn't catch
-  // an attacker rotating IPs but hammering one email).
+  // an attacker rotating IPs but hammering one email). Bypassed in
+  // dev for the same reason as the IP bucket above.
   const emailKey = `rl:signup-intake-email:${email.toLowerCase()}`
-  const emailLimit = await checkRateLimit(emailKey, 3, 60 * 60)
+  const emailLimit = rateLimitBypass
+    ? { allowed: true as const, retryInSeconds: 0 }
+    : await checkRateLimit(emailKey, 3, 60 * 60)
   if (!emailLimit.allowed) {
     logRateLimitHit({
       endpoint: '/api/public/signup-intake',
@@ -164,22 +173,26 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true }, { status: 202, headers: cors })
   }
 
-  const orchestrator = createClient(SUPABASE_URL, ORCHESTRATOR_KEY, {
-    auth: { persistSession: false },
-  })
-
-  const { data, error } = await orchestrator.rpc('create_signup_intake', {
-    p_email: email,
-    p_plan_code: plan_code,
-    p_org_name: org_name ?? null,
-    p_ip: ip,
-  })
-
-  if (error) {
-    // RPC errors are infrastructure problems (DB unavailable, schema
-    // drift) — log + generic message. Do NOT echo the raw error to
-    // the client.
-    console.error('signup-intake.rpc.failed', error.message)
+  // ADR-1013: direct-Postgres as cs_orchestrator. RPC is SECURITY
+  // DEFINER so the cs_orchestrator role-grant + auth.users lookup
+  // both work through the pooler connection.
+  const sql = csOrchestrator()
+  let data: unknown
+  try {
+    const rows = await sql<Array<{ result: unknown }>>`
+      select public.create_signup_intake(
+        ${email}::text,
+        ${plan_code}::text,
+        ${org_name ?? null}::text,
+        ${ip}::inet
+      ) as result
+    `
+    data = rows[0]?.result ?? null
+  } catch (err) {
+    console.error(
+      'signup-intake.rpc.failed',
+      err instanceof Error ? err.message : String(err),
+    )
     return NextResponse.json(
       { error: 'Service temporarily unavailable' },
       { status: 503, headers: cors },
@@ -214,7 +227,7 @@ export async function POST(request: Request) {
     if (rpcResult.id) {
       try {
         const result = await dispatchInvitationById(
-          orchestrator,
+          sql,
           rpcResult.id,
           resolveDispatchEnv(),
         )

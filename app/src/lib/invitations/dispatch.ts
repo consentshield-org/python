@@ -1,10 +1,12 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type postgres from 'postgres'
 import {
   buildDispatchEmail,
   type InvitationRole,
 } from '@/lib/invitations/dispatch-email'
 
 // ADR-0058 follow-up — reusable invitation-email dispatch helper.
+// ADR-1013 Phase 1 — migrated off Supabase REST + HS256 JWT to the
+// cs_orchestrator direct-Postgres pool.
 //
 // Reads the invitation row, builds the email content, POSTs it to
 // marketing's Resend relay, and stamps the watermark columns on the
@@ -15,6 +17,8 @@ import {
 //     gated) kept for admin-side calls + ad-hoc retries.
 //
 // Idempotent — re-runs are no-ops once email_dispatched_at is stamped.
+
+type Sql = ReturnType<typeof postgres>
 
 export type DispatchResult =
   | { status: 'dispatched' }
@@ -32,8 +36,25 @@ interface DispatchEnv {
   dispatchSecret: string
 }
 
+interface InvitationRow {
+  id: string
+  token: string
+  role: string
+  invited_email: string
+  account_id: string | null
+  org_id: string | null
+  plan_code: string | null
+  default_org_name: string | null
+  origin: string | null
+  expires_at: string
+  accepted_at: string | null
+  revoked_at: string | null
+  email_dispatched_at: string | null
+  email_dispatch_attempts: number | null
+}
+
 export async function dispatchInvitationById(
-  supabase: SupabaseClient,
+  sql: Sql,
   invitationId: string,
   env: DispatchEnv,
 ): Promise<DispatchResult> {
@@ -41,17 +62,24 @@ export async function dispatchInvitationById(
     return { status: 'relay_unconfigured', error: 'dispatch_secret_missing' }
   }
 
-  const { data: invite, error: readErr } = await supabase
-    .from('invitations')
-    .select(
-      'id, token, role, invited_email, account_id, org_id, plan_code, default_org_name, origin, expires_at, accepted_at, revoked_at, email_dispatched_at, email_dispatch_attempts',
-    )
-    .eq('id', invitationId)
-    .maybeSingle()
-
-  if (readErr) {
-    return { status: 'read_failed', error: readErr.message }
+  let rows: InvitationRow[]
+  try {
+    rows = await sql<InvitationRow[]>`
+      select id, token, role, invited_email, account_id, org_id, plan_code,
+             default_org_name, origin, expires_at, accepted_at, revoked_at,
+             email_dispatched_at, email_dispatch_attempts
+        from public.invitations
+       where id = ${invitationId}
+       limit 1
+    `
+  } catch (err) {
+    return {
+      status: 'read_failed',
+      error: err instanceof Error ? err.message : 'read_failed',
+    }
   }
+
+  const invite = rows[0]
   if (!invite) return { status: 'not_found' }
   if (invite.accepted_at) return { status: 'already_accepted' }
   if (invite.revoked_at) return { status: 'revoked' }
@@ -59,7 +87,7 @@ export async function dispatchInvitationById(
 
   // ADR-0058: intakes land on the 7-step wizard; operator_invite rows
   // (member-add into an existing org) keep the /signup?invite= URL.
-  const origin = (invite.origin as string | null) ?? 'operator_invite'
+  const origin = invite.origin ?? 'operator_invite'
   const isIntake =
     origin === 'marketing_intake' || origin === 'operator_intake'
   const acceptUrl = isIntake
@@ -98,27 +126,27 @@ export async function dispatchInvitationById(
     const errBody = await resp.text().catch(() => '')
     const errCode =
       resp.status === 503 ? 'relay_unconfigured' : `relay_${resp.status}`
-    await supabase
-      .from('invitations')
-      .update({
-        email_dispatch_attempts: nextAttempts,
-        email_last_error: `${errCode}: ${errBody.slice(0, 500)}`,
-      })
-      .eq('id', invitationId)
+    const errText = `${errCode}: ${errBody.slice(0, 500)}`
+    await sql`
+      update public.invitations
+         set email_dispatch_attempts = ${nextAttempts},
+             email_last_error = ${errText}
+       where id = ${invitationId}
+    `
     if (resp.status === 503) {
       return { status: 'relay_unconfigured', error: errCode }
     }
     return { status: 'relay_failed', error: errCode }
   }
 
-  await supabase
-    .from('invitations')
-    .update({
-      email_dispatched_at: new Date().toISOString(),
-      email_dispatch_attempts: nextAttempts,
-      email_last_error: null,
-    })
-    .eq('id', invitationId)
+  const dispatchedAt = new Date().toISOString()
+  await sql`
+    update public.invitations
+       set email_dispatched_at = ${dispatchedAt},
+           email_dispatch_attempts = ${nextAttempts},
+           email_last_error = null
+     where id = ${invitationId}
+  `
 
   return { status: 'dispatched' }
 }
