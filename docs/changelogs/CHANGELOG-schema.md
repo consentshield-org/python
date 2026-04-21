@@ -2,6 +2,16 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-0058 follow-up — cs_orchestrator SELECT on public.plans] — 2026-04-21
+
+**ADR:** ADR-0058 (follow-up)
+
+### Added
+- `20260803000009_cs_orchestrator_select_plans.sql` — `grant select on public.plans to cs_orchestrator`. rpc_plan_limit_check (SECURITY DEFINER owned by cs_orchestrator) reads `max_web_properties_per_org` from `public.plans`; the grant was missing because plans landed in migration 20260428000002 after the bulk of cs_orchestrator's table grants. Confirmed via `has_table_privilege` audit that this was the only missing grant across (accounts, organisations, org_memberships, web_properties, integration_connectors, plans).
+
+### Tested
+- [x] `bunx supabase db push` — applied.
+
 ## [ADR-0058 follow-up — fix rpc_plan_limit_check auth-schema leak] — 2026-04-21
 
 **ADR:** ADR-0058 (follow-up)
