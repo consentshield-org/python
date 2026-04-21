@@ -2,6 +2,16 @@
 
 Documentation changes.
 
+## [Backlog sweep] — 2026-04-21
+
+### Added
+- `docs/ADRs/ADR-1010-cloudflare-worker-role-migration.md` — **Proposed** ADR scoping the Cloudflare Worker migration off HS256 scoped-role JWT. 4 phases / 6 sprints: research mechanism (Hyperdrive vs Supabase Data API vs hand-rolled) → cs_worker LOGIN readiness → Worker rewrite (read paths then write paths) → cutover + deprecation. Does not implement yet.
+- `docs/ADRs/ADR-1011-revoked-key-tombstone.md` — **Completed** ADR retroactively documenting the V2 C-1 fix (migration 20260801000010 + cs-api-role test + api-keys.e2e flipped assertion).
+
+### Changed
+- `docs/ADRs/ADR-index.md` — new rows for ADR-1010 (Proposed) and ADR-1011 (Completed).
+- `docs/V2-BACKLOG.md` — backlog sweep. 12 pre-existing closed items and the new C-1 / C-2 / ADR-1009-follow-up completions collapsed into a single "Closed (tracked in ADRs)" section. Remaining open items grouped by blocker type: pre-launch only (3), waiting on external platform (1), blocked on downstream ADR (1). "Open — actionable but small" section removed (its sole entry, C-2, shipped inline).
+
 ## [ADR-1009 Sprint 3.2 — ADR complete] — 2026-04-21
 
 **ADR:** ADR-1009 — v1 API role hardening (**COMPLETED**)

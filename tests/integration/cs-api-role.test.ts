@@ -118,6 +118,60 @@ describeIf('cs_api direct-Postgres role — ADR-1009 Phase 2', () => {
     ).rejects.toThrow(/property_not_found/i)
   })
 
+  it('rotated-then-revoked plaintext returns revoked, not not_found (ADR-1001 V2 C-1)', async () => {
+    // Simulate the scenario:
+    //   1. Seed key with plaintext P1 → hash H1.
+    //   2. Rotate: key_hash becomes H2 (new plaintext P2); previous_key_hash = H1.
+    //   3. Revoke: tombstone inserts both H1 and H2; api_keys clears previous_key_hash.
+    //   4. rpc_api_key_status(P1) → 'revoked' (via tombstone fallback).
+    //   5. rpc_api_key_status(P2) → 'revoked' (via slot-1 match on api_keys).
+    const admin = getServiceClient()
+
+    const p1 = `cs_live_${randomBytes(24).toString('base64url')}`
+    const p2 = `cs_live_${randomBytes(24).toString('base64url')}`
+    const h1 = createHash('sha256').update(p1, 'utf8').digest('hex')
+    const h2 = createHash('sha256').update(p2, 'utf8').digest('hex')
+
+    // Seed a fresh key with hash H1 (simulates initial create).
+    const fresh = await seedApiKey(org)
+
+    // Put hash H1 into key_hash.
+    await admin
+      .from('api_keys')
+      .update({ key_hash: h1, previous_key_hash: null, previous_key_expires_at: null, revoked_at: null })
+      .eq('id', fresh.keyId)
+
+    // Simulate rotation: H1 moves to previous, H2 becomes current.
+    await admin
+      .from('api_keys')
+      .update({
+        key_hash:                h2,
+        previous_key_hash:       h1,
+        previous_key_expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      })
+      .eq('id', fresh.keyId)
+
+    // Call the real rpc_api_key_revoke from the authenticated client (org_admin).
+    // cascade: tombstone gets H1 + H2; api_keys clears previous_key_hash.
+    const { error: revokeErr } = await org.client.rpc('rpc_api_key_revoke', { p_key_id: fresh.keyId })
+    expect(revokeErr).toBeNull()
+
+    // Both plaintexts now return 'revoked'.
+    const rows1 = await sql<Array<{ result: string }>>`select rpc_api_key_status(${p1}::text) as result`
+    expect(rows1[0].result).toBe('revoked')
+
+    const rows2 = await sql<Array<{ result: string }>>`select rpc_api_key_status(${p2}::text) as result`
+    expect(rows2[0].result).toBe('revoked')
+
+    // Sanity: the tombstone holds both hashes tied to this key_id.
+    const { data: tombstone } = await admin
+      .from('revoked_api_key_hashes')
+      .select('key_hash')
+      .eq('key_id', fresh.keyId)
+    const hashes = (tombstone ?? []).map((r) => r.key_hash).sort()
+    expect(hashes).toEqual([h1, h2].sort())
+  })
+
   it('service_role is NO LONGER granted EXECUTE on v1 RPCs (ADR-1009 Sprint 2.4)', async () => {
     // Call rpc_consent_verify through the Supabase REST service-role client.
     // Before Sprint 2.4: succeeds (service_role had EXECUTE). After: permission

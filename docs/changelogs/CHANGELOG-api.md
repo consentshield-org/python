@@ -2,6 +2,19 @@
 
 API route changes.
 
+## [V2 C-2 drift check] — 2026-04-21
+
+**ADR:** ADR-1001 V2 C-2 (no separate ADR; inline implementation)
+
+### Added
+- `tests/integration/rate-tier-drift.test.ts` — two assertions: (a) every row in `public.plans` has a matching `TIER_LIMITS` entry with identical `perHour` + `burst`; (b) every value in the `api_keys.rate_tier` CHECK enum has a `TIER_LIMITS` entry. Runs on every CI vitest pass.
+
+### Changed
+- `app/src/lib/api/rate-limits.ts` — `TIER_LIMITS` is now `export`ed (was module-local) so the drift test can read it directly.
+
+### Tested
+- [x] 2/2 drift assertions PASS against current `public.plans` (5 rows: enterprise/growth/pro/starter/trial_starter).
+
 ## [ADR-1009 Sprint 2.3] — 2026-04-21
 
 **ADR:** ADR-1009 — v1 API role hardening

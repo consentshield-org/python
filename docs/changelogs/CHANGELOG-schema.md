@@ -2,6 +2,21 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-1011 — revoked-key tombstone] — 2026-04-21
+
+**ADR:** ADR-1011 — rotate+revoke 401→410 fix (V2 C-1)
+
+### Added
+- `20260801000010_revoked_key_tombstone.sql`:
+  - `public.revoked_api_key_hashes (key_hash pk, key_id uuid fk, revoked_at)` — tombstone table; RLS on, zero policies, zero grants.
+  - `rpc_api_key_revoke` rewritten: inserts current `key_hash` + (if rotated) `previous_key_hash` into the tombstone BEFORE the UPDATE clears `previous_key_hash`.
+  - `rpc_api_key_status` rewritten: three-slot lookup — current `key_hash`, live `previous_key_hash`, tombstone. Every plaintext ever associated with a now-revoked key surfaces as `'revoked'` (→ 410 Gone) instead of `'not_found'` (→ 401).
+
+### Tested
+- [x] 108/108 integration suite PASS.
+- [x] New cs-api-role test: rotate H1→H2, revoke, both `rpc_api_key_status(P1)` and `rpc_api_key_status(P2)` return `'revoked'`; tombstone holds exactly `{H1, H2}` for the key_id.
+- [x] Existing api-keys.e2e assertion flipped from 401/invalid → 410/revoked for the rotated-then-revoked plaintext.
+
 ## [ADR-1009 Sprint 2.4] — 2026-04-21
 
 **ADR:** ADR-1009 — v1 API role hardening

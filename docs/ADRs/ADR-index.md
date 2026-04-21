@@ -70,6 +70,8 @@ All Architecture Decision Records for ConsentShield, in chronological order.
 | ADR-1007 | v2 Whitepaper Phase 7 — Connector ecosystem expansion (CleverTap, Razorpay, WebEngage/MoEngage, Intercom/Freshdesk, Shopify/WooCommerce, Segment) + WordPress + Shopify plugins | Proposed | 2026-04-19 | 3 | 9 |
 | ADR-1008 | v2 Whitepaper Phase 8 — Scale + audit polish + P3 hardening (load tests, verify SLO, audit CSV, tracker corpus, multi-channel re-consent, HMAC rotation, SOC 2, React Native, WYSIWYG decision) | Proposed | 2026-04-19 | 3 | 10 |
 | ADR-1009 | v1 API role hardening — DB tenant fence + `cs_api` direct-Postgres pool + service-role revoke (scope-amended 2026-04-21: direct Postgres, not HS256 JWT, due to Supabase key rotation) | Completed | 2026-04-20 | 3 | 8 |
+| ADR-1010 | Cloudflare Worker — scoped-role migration off HS256 JWT (Hyperdrive / direct Postgres; Supabase is rotating legacy HS256 signing secret → SUPABASE_WORKER_KEY is on a kill-timer) | Proposed | 2026-04-21 | 4 | 6 |
+| ADR-1011 | ADR-1001 V2 C-1 — rotate+revoke 401→410 fix (revoked_api_key_hashes tombstone); landed inline 2026-04-21 | Completed | 2026-04-21 | 1 | 1 |
 | ADR-0501 | ConsentShield marketing site (`marketing/`) — Bun workspace sibling; scaffold → content → downloads (PDF/DOCX/MD) → security hardening | In Progress | 2026-04-21 | 4 | 4+ |
 
 <!--

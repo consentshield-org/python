@@ -1,204 +1,77 @@
-# V2 Backlog — Deferred Items for Post-Phase-2 Review
+# V2 Backlog — Deferred Items
 
 (c) 2026 Sudhindra Anegondhi a.d.sudhindra@gmail.com
 
-**Purpose.** Single catalogue of items flagged for a later version
-while Phase-2 sprints 1–11 ship. Each entry has a pointer back to
-the originating ADR and the specific limitation / alternative that
-was consciously accepted.
+**Purpose.** Single catalogue of items flagged for a later version. Each entry has a pointer back to the originating ADR and the specific limitation / alternative that was consciously accepted.
 
-**Review cadence.** Revisit this list **after Phase 2 closes**, at
-which point we will:
-
-1. Review the existing code end-to-end.
-2. Pick **2–3 architecture decision points** to raise as ADRs in the
-   next phase.
-3. Move picked items into their own ADRs; the rest stay here or get
-   closed as "no longer relevant".
-
-Do not implement anything from this list during Phase 2 — it is a
-backlog, not a sprint queue.
+**Review cadence.** Reviewed each time a phase closes. After 2026-04-21 sweep: only genuinely-deferred items remain here. Everything already shipped is collapsed under *Closed (tracked in ADRs)*.
 
 ---
 
-## Test coverage
+## Closed (tracked in ADRs) — 2026-04-21 sweep
 
-### V2-T1. Signup idempotency regression test  → see ADR-0042
+One-line pointers to completed work. Originally had prose bodies; collapsed after implementation shipped.
+
+- **V2-T1** Signup idempotency regression test → ADR-0042
+- **V2-X3** Audit-export R2 upload pipeline → ADR-0040
+- **V2-P1** Headless-browser probe runner → ADR-0041
+- **V2-P2** Probe CRUD UI → ADR-0041
+- **V2-A1** Admin user invite + role change + disable → ADR-0045
+- **V2-O1** `check-stuck-buffers` Edge Function → ADR-0038 Sprint 1.1
+- **V2-O1** `run-security-scans` Edge Function → ADR-0015
+- **V2-O3** pg_cron failure detection → ADR-0038 Sprint 1.1
+- **V2-C1** OAuth flow for pre-built connectors → ADR-0039
+- **V2-D1** Expiry-triggered connector fan-out → ADR-0037 Sprint 1.1
+- **V2-D2** Per-requestor artefact binding in Rights Centre → ADR-0037 Sprint 1.2
+- **V2-D3** CSV export for Consent Artefacts list → ADR-0037 Sprint 1.3
+- **ADR-1001 C-1** rotate+revoke 401-vs-410 → ADR-1011 (tombstone; landed 2026-04-21)
+- **ADR-1001 C-2** rate-tier static map drift check → `tests/integration/rate-tier-drift.test.ts` (landed 2026-04-21)
+- **ADR-1009 follow-up** Cloudflare Worker HS256 migration → ADR-1010 (scoped 2026-04-21)
 
 ---
 
-## External services activation
+## Open — pre-launch only
+
+These are correctly deferred until real-customer traffic begins. Each has a trivial flip-at-launch remediation.
 
 ### V2-X1. Vercel Preview env vars  *(origin: ADR-0014)*
 
-Turnstile and Razorpay keys are set for Vercel **Production** only.
-The current Vercel CLI requires per-branch targeting for Preview
-env writes that our scripted approach doesn't hit cleanly, and the
-admin app only deploys from `main` (Production) today.
+Turnstile and Razorpay keys are set for Vercel **Production** only. Preview deploys happen only for non-`main` branches, and the dev team (one person) hasn't used Preview yet. No runtime impact on the live apps.
 
-**Why deferred.** Preview deploys happen only for non-`main`
-branches, and the dev team (one person) hasn't used Preview yet. No
-runtime impact on the live admin app.
-
-**Shape of the v2 fix.** Either upgrade the Vercel CLI push script
-to iterate through each feature branch, or flip the Marketplace
-integrations to "all environments" via the Vercel Dashboard once
-per integration.
-
-### V2-X3. Audit-export R2 upload pipeline  → see ADR-0040
+**Shape of fix.** Either upgrade the Vercel CLI push script to iterate through each feature branch, or flip the Marketplace integrations to "all environments" via the Vercel Dashboard once per integration.
 
 ### V2-X2. End-to-end billing checkout UX smoke  *(origin: ADR-0014)*
 
-Infrastructure is complete (Razorpay keys, plans, webhook secret).
-No test account has opened the checkout modal, completed the test
-card `4111 1111 1111 1111`, and seen `organisations.plan` update.
+Infrastructure is complete. No test account has opened the checkout modal, completed the test card `4111 1111 1111 1111`, and seen `organisations.plan` update. All server-side signing paths are verified.
 
-**Why deferred.** Requires a signed-in non-dev test account. Not a
-blocker for closing ADR-0014; all signing-and-server paths are
-verified (webhook returns 403 for bad signatures, key_id returns
-correctly from `/api/orgs/[orgId]/billing/checkout`).
-
----
-
-## Synthetic compliance (consent probes)
-
-### V2-P1. Headless-browser probe runner  → see ADR-0041
-
-### V2-P2. Probe CRUD UI  → see ADR-0041
-
----
-
-## Admin lifecycle
-
-### V2-A1. Admin user invite + role change  → see ADR-0045
-
-Only the one-shot `scripts/bootstrap-admin.ts` exists today. No
-runtime path can:
-
-- Invite a second admin operator.
-- Change an existing admin's `admin_role` (upgrade or downgrade).
-- Disable an admin in a way that immediately invalidates their JWT
-  claim (the existing `admin.disable_admin()` RPC touches only
-  `admin.admin_users`, not `auth.users.raw_app_meta_data`).
-
-**Why deferred.** One operator is enough for dev. ADR-0044 Phase 2.3
-(operator invite form for *customer* accounts) is not blocked — the
-bootstrap admin has `is_admin=true` already and can issue invites.
-
-**Shape of the v2 fix.** Promote ADR-0045 from stub to active when a
-second operator is needed. The two sources of truth (`auth.users`
-app_metadata + `admin.admin_users`) must be kept in sync via
-service-role Route Handlers; no SQL-only path exists because
-Supabase Auth gates `UPDATE auth.users` behind the service role.
-
----
-
-## Ops / platform
-
-### V2-O1. Unbuilt Edge Functions (cron slots reserved)  *(origin: ADR-0011 cleanup)*
-
-- `check-stuck-buffers` — **→ see ADR-0038 Sprint 1.1** (done 2026-04-17).
-- `run-security-scans` — **done** in ADR-0015.
-- `check-retention-rules` — still deferred. Retention-rule enforcement is a Phase-3 feature (no target rules exist today). Re-evaluate when retention enforcement ships.
+**Shape of fix.** Manual walkthrough on a test account.
 
 ### V2-O2. Vercel Deployment Protection  *(origin: session handoff)*
 
-Off on both Vercel projects (admin + demo sites). Fine for dev —
-no real traffic — but flip on before any real-customer onboarding.
-
-**Why deferred.** Single-dev project with no live customers.
-
-### V2-O3. pg_cron failure detection  → see ADR-0038 Sprint 1.1
+Off on both Vercel projects. Fine for dev; flip on before any real-customer onboarding.
 
 ---
 
-## Connectors
-
-### V2-C1. OAuth flow for pre-built connectors  → see ADR-0039
-
----
-
-## DEPA
-
-### V2-D1. Expiry-triggered connector fan-out  → see ADR-0037 Sprint 1.1
-
-### V2-D2. Per-requestor artefact binding in Rights Centre  → see ADR-0037 Sprint 1.2
-
-### V2-D3. CSV export for Consent Artefacts list  → see ADR-0037 Sprint 1.3
-
----
-
-## API key format
+## Open — waiting on external platform
 
 ### V2-K1. Edge Functions require `--no-verify-jwt`  *(origin: Edge Function gateway)*
 
-Every HTTP-invoked Edge Function ships with `--no-verify-jwt` today
-because the vault-stored `cs_orchestrator_key` is in the new
-`sb_secret_*` format and the Edge Function gateway still expects
-legacy JWT format. Function-internal PostgREST calls use the same
-key successfully; only the gateway layer is downstream of the
-bypass.
+Every HTTP-invoked Edge Function ships with `--no-verify-jwt` because the vault-stored `cs_orchestrator_key` is in the new `sb_secret_*` format and the Edge Function gateway still expects legacy JWT format. Function-internal PostgREST calls use the same key successfully; only the gateway layer is downstream of the bypass.
 
-**Why deferred.** Supabase will eventually close the format gap at
-the gateway. Watching for an announcement is cheaper than either
-issuing a legacy JWT manually or fronting every function with
-in-function auth verification.
+**Shape of fix.** Remove `--no-verify-jwt` from deploy commands once Supabase supports `sb_secret_*` keys at the gateway. No code change, just redeploy.
 
-**Shape of the v2 fix.** Remove `--no-verify-jwt` from deploy
-commands once Supabase supports sb_secret_* keys at the gateway.
-No code change, just redeploy.
+---
+
+## Open — blocked on downstream ADR
+
+### V2-O1. `check-retention-rules` Edge Function  *(origin: ADR-0011 cleanup)*
+
+Still deferred. Retention-rule enforcement is the Regulatory Exemption Engine surface planned in **ADR-1004** (v2 Whitepaper Phase 4). No target rules exist today; implementing the cron without rules to enforce is premature. Re-evaluate when ADR-1004 ships.
 
 ---
 
 ## How to maintain this file
 
-- Whenever an ADR consciously accepts a limitation or alternative,
-  add an entry here.
-- Entries are **write-once**: once an item is moved into its own
-  follow-up ADR, replace the body with a one-line "→ see ADR-NNNN"
-  pointer.
+- Add an entry whenever an ADR consciously accepts a limitation or alternative.
+- Entries are **write-once**: once an item is moved into its own follow-up ADR, replace the body with a one-line pointer in the *Closed (tracked in ADRs)* section.
 - Keep it short. Backlog documents that grow prose go unread.
-
----
-
-## ADR-1001: rotate+revoke plaintext returns 401 instead of 410 (C-1)
-
-**Origin.** ADR-1001 Sprint 3.1 security review, finding C-1.
-
-**Limitation.** When a key is rotated and then revoked, the *original* plaintext (before rotation) returns 401/invalid instead of 410/revoked. This is because revocation clears `previous_key_hash`, so the original hash is gone from both DB slots. `getKeyStatus` can't find it → 'not_found' → 401. The *rotated* plaintext correctly returns 410.
-
-**Why accepted.** Operators who rotate before revoking lose the original plaintext at rotation time anyway (plaintext shown once). The 401 vs 410 distinction is informational only; both block the call.
-
-**Shape of v2 fix.** Add a `revoked_key_hashes` tombstone table. `rpc_api_key_revoke` inserts both `key_hash` and `previous_key_hash` into it. `rpc_api_key_verify` checks the tombstone table before returning null. All plaintexts for a revoked key then return 410.
-
----
-
-## ADR-1001: rate-tier limits static map must stay in sync with DB (C-2)
-
-**Origin.** ADR-1001 Sprint 3.1 security review, finding C-2.
-
-**Limitation.** `app/src/lib/api/rate-limits.ts` is a static mirror of `public.plans.api_rate_limit_per_hour`. If a plan tier's limits change in the DB without updating the TS file, the proxy enforces stale limits.
-
-**Why accepted.** Querying the DB per API request in middleware is too expensive. The static map is acceptable because plan limits change rarely and via migration (where the TS file change is part of the same PR).
-
-**Shape of v2 fix.** Add a build-time integration test that queries `public.plans` and asserts the TS map values match. Runs in CI on every deploy.
-
----
-
-## ADR-1009 follow-up: migrate Cloudflare Worker off HS256 scoped-role JWT
-
-**Origin.** ADR-1009 Phase 2 (discovery 2026-04-21).
-
-**Limitation.** `SUPABASE_WORKER_KEY` is an HS256 JWT claiming `role: cs_worker`, signed with the project's legacy HS256 shared secret. Supabase has rotated its project JWT signing keys to ECC P-256; the HS256 key is flagged "Previously used" in the dashboard and will be revoked. When that happens, `SUPABASE_WORKER_KEY` stops working and every banner-serve + consent-event ingestion request breaks.
-
-**Why accepted (for now).** The legacy HS256 key is still alive (Supabase uses it to verify not-yet-expired tokens during the rotation window). The Worker keeps functioning today. This is a timer-driven break, not an immediate outage; we have weeks-to-months of runway.
-
-**Shape of v2 fix.** Follow the ADR-1009 Phase 2 pattern for cs_api:
-
-1. `alter role cs_worker with login` (already is — no change needed).
-2. Rotate the `cs_worker` password, store as `SUPABASE_WORKER_DATABASE_URL` (Supavisor pooler, transaction mode).
-3. Replace the Worker's `fetch(${SUPABASE_URL}/rest/v1/...)` calls with a Postgres client. Cloudflare Workers don't run `postgres.js` cleanly (sockets) — options: (a) Supabase REST via an anon JWT that PostgREST resolves through RLS (but cs_worker has no RLS-friendly anon surface), (b) a Cloudflare Hyperdrive connection, (c) a small Worker-native Postgres client over the Supabase Data API (when released). Research in the ADR.
-4. Update wrangler secrets; deprecate `SUPABASE_WORKER_KEY`.
-5. Same architectural note applies to any future scoped role activated from a Cloudflare Worker context.
-
-**Priority.** High — this is a dated break, not a deferred feature. Promote to ADR before the legacy HS256 key is revoked. Tracking in `.wolf/cerebrum.md` Key Learnings + Decision Log too.
