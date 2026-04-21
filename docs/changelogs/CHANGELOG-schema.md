@@ -2,6 +2,17 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-1009 Sprint 2.1 follow-up] — 2026-04-21
+
+**ADR:** ADR-1009 — v1 API role hardening
+**Sprint:** Phase 2 Sprint 2.1 follow-up — bootstrap RPC grants
+
+### Added
+- `20260801000007_cs_api_bootstrap_rpc_grants.sql` — grants EXECUTE on `rpc_api_key_verify(text)` and `rpc_api_request_log_insert(uuid, uuid, uuid, text, text, int, int)` to `cs_api`. These two sit BEFORE any v1 business RPC in the middleware request path; originally scoped for Sprint 2.2 but needed earlier to unlock the Sprint 2.1 smoke suite.
+
+### Tested
+- [x] 5/5 cs-api-role.test.ts PASS; 105/105 full integration suite PASS (no regression).
+
 ## [ADR-1009 Sprint 2.1 — scope amendment] — 2026-04-21
 
 **ADR:** ADR-1009 — v1 API role hardening

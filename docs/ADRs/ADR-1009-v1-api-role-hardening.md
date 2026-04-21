@@ -128,10 +128,11 @@ The abandoned `scripts/mint-role-jwt.ts` is removed in Sprint 2.1; its code and 
 
 **Testing plan:**
 - [x] `tests/integration/cs-api-role.test.ts` — 5 assertions: rpc_api_key_verify returns seeded context; rpc_api_key_status returns active / revoked / not_found correctly; cs_api cannot SELECT api_keys / consent_events / organisations; cs_api cannot (yet) execute rpc_consent_record (inverts in Sprint 2.2). Skips gracefully when `SUPABASE_CS_API_DATABASE_URL` is missing.
-- [x] Without env set: 5 tests skip, 100/100 existing integration tests still pass.
-- [ ] With env set: all 5 cs-api-role assertions pass (BLOCKED on user password rotation + env setup).
+- [x] Without env set: 5 tests skip, 100/100 existing integration tests pass.
+- [x] With env set (2026-04-21): 5/5 cs-api-role pass; 105/105 total integration suite green.
+- [x] Follow-up migration `20260801000007_cs_api_bootstrap_rpc_grants.sql` granted `rpc_api_key_verify` + `rpc_api_request_log_insert` EXECUTE to `cs_api` — these are the middleware bootstrap RPCs (called before any v1 business RPC fires); originally left for Sprint 2.2 but needed earlier for the smoke tests to pass.
 
-**Status:** `[~] in progress` — scaffolding shipped; closes once user rotates the placeholder password via psql and sets `SUPABASE_CS_API_DATABASE_URL` in `.secrets` + Vercel, then the 5 smoke tests run green.
+**Status:** `[x] complete` — 2026-04-21. Migrations 20260801000006 + 20260801000007 applied; password rotated; env set in `.secrets` + `app/.env.local` + root `.env.local` + Vercel preview + production.
 
 **User action to close Sprint 2.1:**
 ```sh
