@@ -110,17 +110,36 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   // Rule 12 — admin identities never reach the customer app. Sign the
-  // session out (the `setAll` cookie bridge above propagates the clear
-  // onto `supabaseResponse`) then redirect to /login.
+  // session out AND explicitly clear every Supabase auth cookie the
+  // browser is carrying. We don't rely on signOut()'s setAll-bridge
+  // propagation alone because in middleware context that path is
+  // flaky — cookie clears sometimes land on a response object that
+  // isn't the one we return.
   if (user?.app_metadata?.is_admin === true) {
     await supabase.auth.signOut()
     const loginUrl = request.nextUrl.clone()
     loginUrl.pathname = '/login'
     loginUrl.search = '?reason=operator_session_cleared'
     const redirect = NextResponse.redirect(loginUrl)
-    // Carry over whatever Set-Cookie headers the signOut cookie bridge
-    // set on `supabaseResponse` so the client-side redirect actually
-    // lands unauthenticated.
+    // Every cookie on the incoming request whose name looks like a
+    // Supabase auth token gets cleared on the response. Cookie names
+    // can use either `-` or `_` as separators depending on the SDK
+    // version + project-ref composition — match both. Chunked refresh
+    // tokens land under `…auth-token.0` / `…auth_token_0` etc.
+    for (const cookie of request.cookies.getAll()) {
+      const name = cookie.name
+      const isSupabase = name.startsWith('sb-') || name.startsWith('sb_')
+      const looksAuthy =
+        name.includes('auth-token') ||
+        name.includes('auth_token') ||
+        name.endsWith('-code-verifier') ||
+        name.endsWith('_code_verifier')
+      if (isSupabase && looksAuthy) {
+        redirect.cookies.delete(name)
+      }
+    }
+    // Carry across anything signOut's cookie bridge set (defence in
+    // depth; usually empty after the explicit deletes above).
     for (const cookie of supabaseResponse.cookies.getAll()) {
       redirect.cookies.set(cookie)
     }
