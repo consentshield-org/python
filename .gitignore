@@ -62,3 +62,15 @@ files.zip
 
 # Unzipped scratch dirs
 docs/design/consentshield-zip/
+
+# Claude Code telemetry / local usage tracking
+claude-usage/
+
+# Transient session dumps from Claude Code / OpenWolf — disposable
+session-context/
+
+# MS Office lockfiles
+~$*
+
+# sed -i.bak leftovers
+*.bak
