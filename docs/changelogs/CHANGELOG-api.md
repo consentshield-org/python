@@ -2,6 +2,19 @@
 
 API route changes.
 
+## [ADR-0058 follow-up — explicit signup-intake status + relay rewire] — 2026-04-21
+
+**ADR:** ADR-0058 (follow-up; no new ADR)
+
+### Changed
+- `app/src/app/api/public/signup-intake/route.ts` — existence-leak parity removed per product decision 2026-04-21. Response now carries an explicit `status` field (`created | already_invited | existing_customer | admin_identity | invalid_email | invalid_plan`) with matching HTTP status (202 / 200 / 409 / 409 / 400 / 400). Rationale: Turnstile + per-IP 5/60s + per-email 3/hour remain the enumeration ceiling; the UX win of "you already have an account" outweighs the residual leak.
+- `app/src/app/api/internal/invitation-dispatch/route.ts` — no longer calls Resend directly. Relays the rendered email payload (`{to, subject, html, text}`) to marketing's `/api/internal/send-email` with the shared `INVITATION_DISPATCH_SECRET` bearer. `RESEND_API_KEY` + `RESEND_FROM` removed from this file's env dependencies — those live on marketing/ now. New dev default for the marketing origin: `http://localhost:3002` (matches marketing dev port); prod default: `https://consentshield.in`; override via `NEXT_PUBLIC_MARKETING_URL`.
+- `app/src/app/api/internal/invitation-dispatch/route.ts` dispatch-failure telemetry now writes `relay_<status>` / `relay_unconfigured` instead of `resend_<status>` into `invitations.email_last_error`. The pg_cron safety-net still retries 503s (relay_unconfigured) naturally; 502s are Resend upstream errors.
+
+### Tested
+- [x] Build + lint clean on app/ and marketing/.
+- [ ] End-to-end dispatch — deferred until secrets land.
+
 ## [ADR-1012 Sprint 1.3] — 2026-04-21
 
 **ADR:** ADR-1012 — v1 API DX gap fixes

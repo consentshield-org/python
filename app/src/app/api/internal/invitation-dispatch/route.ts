@@ -24,12 +24,18 @@ import {
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const ORCHESTRATOR_KEY = process.env.CS_ORCHESTRATOR_ROLE_KEY!
 const DISPATCH_SECRET = process.env.INVITATION_DISPATCH_SECRET ?? ''
-const RESEND_API_KEY = process.env.RESEND_API_KEY ?? ''
-const RESEND_FROM = process.env.RESEND_FROM ?? 'noreply@consentshield.in'
 const APP_BASE_URL =
   process.env.NEXT_PUBLIC_APP_URL ??
   process.env.NEXT_PUBLIC_CUSTOMER_APP_URL ??
   'https://app.consentshield.in'
+// ADR-0058 follow-up — email send happens via marketing's Resend
+// relay, not directly from this workspace. RESEND_API_KEY lives only
+// on marketing/.
+const MARKETING_URL =
+  process.env.NEXT_PUBLIC_MARKETING_URL ??
+  (process.env.NODE_ENV === 'production'
+    ? 'https://consentshield.in'
+    : 'http://localhost:3002')
 
 export async function POST(request: Request) {
   if (!DISPATCH_SECRET) {
@@ -110,50 +116,40 @@ export async function POST(request: Request) {
     origin: origin as 'operator_invite' | 'operator_intake' | 'marketing_intake',
   })
 
-  if (!RESEND_API_KEY) {
-    // Dev / unconfigured environment — record the intent but don't
-    // mark dispatched. Operator can configure Resend later and the
-    // cron retry will pick this up.
-    await supabase
-      .from('invitations')
-      .update({
-        email_dispatch_attempts: (invite.email_dispatch_attempts ?? 0) + 1,
-        email_last_error: 'RESEND_API_KEY not configured',
-      })
-      .eq('id', invitationId)
-    return NextResponse.json(
-      { status: 'resend_not_configured' },
-      { status: 503 },
-    )
-  }
-
-  const resp = await fetch('https://api.resend.com/emails', {
+  // Relay the rendered email to marketing's /api/internal/send-email.
+  // Resend credentials live only on the marketing workspace; this
+  // app/ surface never carries RESEND_API_KEY.
+  const resp = await fetch(`${MARKETING_URL}/api/internal/send-email`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${RESEND_API_KEY}`,
+      Authorization: `Bearer ${DISPATCH_SECRET}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      from: `ConsentShield <${RESEND_FROM}>`,
       to: [invite.invited_email],
       subject: email.subject,
       html: email.html,
       text: email.text,
     }),
+    cache: 'no-store',
   })
 
   if (!resp.ok) {
     const errBody = await resp.text().catch(() => '')
+    const errCode =
+      resp.status === 503 ? 'relay_unconfigured' : `relay_${resp.status}`
     await supabase
       .from('invitations')
       .update({
         email_dispatch_attempts: (invite.email_dispatch_attempts ?? 0) + 1,
-        email_last_error: `resend ${resp.status}: ${errBody.slice(0, 500)}`,
+        email_last_error: `${errCode}: ${errBody.slice(0, 500)}`,
       })
       .eq('id', invitationId)
+    // 503 is "Resend not configured on marketing" — propagate as-is so
+    // the cron safety-net retries once the operator sets the key.
     return NextResponse.json(
-      { error: 'resend_failed', status: resp.status },
-      { status: 502 },
+      { error: errCode },
+      { status: resp.status === 503 ? 503 : 502 },
     )
   }
 

@@ -32,3 +32,13 @@ export const RESEND_ENABLED = RESEND_API_KEY.length > 0
 // default targets the local customer app; prod is set via Vercel env.
 export const APP_URL =
   process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+
+// ADR-0058 follow-up — shared bearer gating app → marketing email
+// relay (/api/internal/send-email). Must match the app's copy.
+export const INVITATION_DISPATCH_SECRET =
+  process.env.INVITATION_DISPATCH_SECRET ?? ''
+
+// ADR-0058 follow-up — From header for invitation emails (distinct
+// from CONTACT_FROM so reply-tos don't cross).
+export const INVITE_FROM =
+  process.env.INVITE_FROM || 'ConsentShield <noreply@consentshield.in>'

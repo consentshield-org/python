@@ -2,6 +2,28 @@
 
 Public marketing site (`marketing/` workspace → `consentshield.in`). New in 2026-04-21.
 
+## [ADR-0058 follow-up — email relay + explicit signup status] — 2026-04-21
+
+**ADR:** ADR-0058 (follow-up; no new ADR)
+
+### Added
+- `marketing/src/app/api/internal/send-email/route.ts` — thin Resend relay. Bearer-auth'd against `INVITATION_DISPATCH_SECRET`. Accepts `{to, subject, html, text, reply_to?, from?}`, caps recipients at 10 + bodies at 200 KB, returns `{ok, id?}` on success / `{error}` with mapped status on failure. Dev fallback logs the send intent when `RESEND_API_KEY` is unset.
+- `marketing/src/lib/env.ts` — added `INVITATION_DISPATCH_SECRET` + `INVITE_FROM` (default `ConsentShield <noreply@consentshield.in>`).
+- `marketing/.env.example` — documents the two new vars.
+
+### Changed
+- `marketing/src/components/sections/signup-form.tsx` — reads explicit `status` from the signup-intake response. Distinct outcome shells for:
+  - `created` → "Check your inbox" (unchanged copy; now keyed on status).
+  - `already_invited` → "We've sent this before" + resend-via-email link.
+  - `existing_customer` → "You already have an account" + Sign-in CTA.
+  - `admin_identity` / `invalid_email` / `invalid_plan` → inline error banner.
+  Turnstile + rate-limits still gate submission; the surfaced statuses don't add a new enumeration vector beyond what Turnstile already controls.
+
+### Tested
+- [x] `cd marketing && bun run build` — PASS; routes include `/api/internal/send-email`.
+- [x] `cd marketing && bun run lint` — 0 errors, 0 warnings.
+- [ ] End-to-end email send — deferred until `INVITATION_DISPATCH_SECRET` + `RESEND_API_KEY` are set on both env files and Vault URL repointed. Operator playtest flagged for next session.
+
 ## [ADR-0058 Sprint 1.2] — 2026-04-21
 
 **ADR:** ADR-0058 — Split-flow customer onboarding

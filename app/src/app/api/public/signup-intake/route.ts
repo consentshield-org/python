@@ -182,11 +182,63 @@ export async function POST(request: Request) {
     )
   }
 
-  // RPC always returns {status:'ok', branch:<...>}. We don't echo the
-  // branch — but we do log it for operator visibility.
-  if (data && typeof data === 'object' && 'branch' in (data as object)) {
-    console.log('signup-intake.branch', (data as { branch: string }).branch)
+  // Product decision (2026-04-21): break existence-leak parity. The
+  // RPC returns an explicit branch; we surface it so marketing/
+  // signup can render "already a customer" / "already invited"
+  // messages. Turnstile + rate-limit stay on; those are the real
+  // enumeration ceiling.
+  const rpcResult = (data ?? {}) as {
+    branch?:
+      | 'created'
+      | 'already_invited'
+      | 'existing_customer'
+      | 'admin_identity'
+      | 'invalid_email'
+      | 'invalid_plan'
+    id?: string
+    token?: string
   }
+  const branch = rpcResult.branch ?? 'invalid_email'
+  console.log('signup-intake.branch', branch)
 
-  return NextResponse.json({ ok: true }, { status: 202, headers: cors })
+  if (branch === 'created') {
+    return NextResponse.json(
+      { ok: true, status: 'created' },
+      { status: 202, headers: cors },
+    )
+  }
+  if (branch === 'already_invited') {
+    return NextResponse.json(
+      { ok: true, status: 'already_invited' },
+      { status: 200, headers: cors },
+    )
+  }
+  if (branch === 'existing_customer') {
+    return NextResponse.json(
+      { ok: false, status: 'existing_customer' },
+      { status: 409, headers: cors },
+    )
+  }
+  if (branch === 'admin_identity') {
+    return NextResponse.json(
+      { ok: false, status: 'admin_identity' },
+      { status: 409, headers: cors },
+    )
+  }
+  if (branch === 'invalid_email') {
+    return NextResponse.json(
+      { ok: false, status: 'invalid_email' },
+      { status: 400, headers: cors },
+    )
+  }
+  if (branch === 'invalid_plan') {
+    return NextResponse.json(
+      { ok: false, status: 'invalid_plan' },
+      { status: 400, headers: cors },
+    )
+  }
+  return NextResponse.json(
+    { ok: false, status: 'unknown' },
+    { status: 500, headers: cors },
+  )
 }
