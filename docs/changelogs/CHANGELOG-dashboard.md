@@ -2,6 +2,21 @@
 
 Next.js UI changes.
 
+## [ADR-0058 Sprint 1.5 close-out — resend-link form on /onboarding] — 2026-04-21
+
+**ADR:** ADR-0058 — Split-flow customer onboarding (Sprint 1.5 deferred item closed)
+
+### Added
+- `app/src/app/(public)/onboarding/_components/resend-link-form.tsx` — client island. Email input + "Resend" button + generic "if a pending invitation exists for {email}, we've sent it again" outcome shell. Rate-limit and network errors surface inline; success always shown regardless of branch (endpoint-side existence-leak parity).
+
+### Changed
+- `app/src/app/(public)/onboarding/page.tsx`:
+  - `NoTokenShell` — replaced the trailing "write to hello@consentshield.in" paragraph with `<ResendLinkForm />`. Users land here when they click an email-less URL (bookmark, manual navigation); resending the actual setup link is better UX than mailto.
+  - `InvalidShell` — for `not_found` and `expired` reasons, renders `<ResendLinkForm />` in place of the "Request a new link" mailto. `already_accepted` keeps its `/login` CTA unchanged (resend doesn't help a consumed invite).
+
+### Tested
+- [x] `cd app && bun run build / lint` — clean.
+
 ## [ADR-0058 follow-up — onboarding Step 5 + email-first /signup polish] — 2026-04-21
 
 **ADR:** ADR-0058 (follow-up)

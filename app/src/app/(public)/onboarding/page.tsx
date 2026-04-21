@@ -1,5 +1,6 @@
 import { createServerClient } from '@/lib/supabase/server'
 import { OnboardingWizard } from './_components/onboarding-wizard'
+import { ResendLinkForm } from './_components/resend-link-form'
 import type { InvitePreview, ResumeContext } from './_components/wizard-types'
 
 // ADR-0058 Sprint 1.3 — customer-app onboarding wizard entry.
@@ -114,16 +115,7 @@ function NoTokenShell() {
         </a>
         .
       </p>
-      <p className="mt-3 text-sm text-gray-700">
-        If you never received the email, or it expired, write to{' '}
-        <a
-          href="mailto:hello@consentshield.in"
-          className="font-medium text-black underline"
-        >
-          hello@consentshield.in
-        </a>{' '}
-        and we&apos;ll resend it.
-      </p>
+      <ResendLinkForm />
     </Shell>
   )
 }
@@ -142,22 +134,18 @@ function InvalidShell({
   return (
     <Shell title="Link unavailable">
       <p className="text-sm text-gray-700">{message}</p>
-      <div className="mt-4 flex gap-3">
-        {reason === 'already_accepted' ? (
+      {reason === 'already_accepted' ? (
+        <div className="mt-4">
           <a
             href="/login"
             className="inline-block rounded bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
           >
             Sign in
           </a>
-        ) : null}
-        <a
-          href="mailto:hello@consentshield.in"
-          className="inline-block rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:border-gray-500"
-        >
-          Request a new link
-        </a>
-      </div>
+        </div>
+      ) : (
+        <ResendLinkForm />
+      )}
     </Shell>
   )
 }

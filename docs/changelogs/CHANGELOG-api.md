@@ -23,6 +23,16 @@ API route changes.
 - [x] `cd app && bun run lint` — 0 errors, 0 warnings.
 - [x] End-to-end — verified 2026-04-21. cs_orchestrator password rotated, `SUPABASE_CS_ORCHESTRATOR_DATABASE_URL` wired, app dev restarted, marketing `/signup` → app `signup-intake` (direct-Postgres as cs_orchestrator) → create_signup_intake RPC → in-process dispatcher → marketing `/api/internal/send-email` relay → Resend → invite email landed in recipient inbox.
 
+## [ADR-0058 Sprint 1.5 close-out — resend-link endpoint] — 2026-04-21
+
+**ADR:** ADR-0058 — Split-flow customer onboarding (Sprint 1.5 `[ ]` resend-link form → `[x]`)
+
+### Added
+- `app/src/app/api/public/resend-intake-link/route.ts` — `POST`. Looks up the most-recent pending intake for the caller-supplied email via the cs_orchestrator direct-Postgres pool, clears the `email_dispatched_at` watermark, then fires `dispatchInvitationById` in-process so the marketing Resend relay re-sends the existing invite. Per-IP 5/60s + per-email 3/hour rate-limits mirror `/api/public/signup-intake`; dev-bypass active when `NODE_ENV !== 'production'` or `RATE_LIMIT_BYPASS=1`. Existence-leak parity: every non-rate-limit path returns `{ ok: true }` — no probe signal distinguishing "no such intake" from "sent".
+
+### Tested
+- [x] `cd app && bun run build / lint` — clean.
+
 ## [ADR-0058 follow-up — structured JSON errors + dev rate-limit bypass] — 2026-04-21
 
 **ADR:** ADR-0058 (follow-up)
