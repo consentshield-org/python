@@ -2,6 +2,16 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-0058 follow-up — lookup_pending_invitation_by_email RPC] — 2026-04-21
+
+**ADR:** ADR-0058 (follow-up; no new ADR)
+
+### Added
+- `20260803000005_lookup_pending_invitation.sql` — `public.lookup_pending_invitation_by_email(p_email text) returns table (token, origin)`. SECURITY DEFINER + stable. Returns at most one row: the most-recently-created pending/unaccepted/unrevoked/unexpired invitation for the given email. Granted to `anon` + `authenticated`; backs the email-first `/signup` lookup (commit `ec368ce`). Discloses pending-invitation existence by design (product decision 2026-04-21) — rate-limited upstream (5/60s per IP + 10/hour per email) to contain enumeration.
+
+### Tested
+- [x] `bunx supabase db push` — applied to remote dev DB.
+
 ## [ADR-0058 follow-up — cs_orchestrator SELECT on public.plans] — 2026-04-21
 
 **ADR:** ADR-0058 (follow-up)

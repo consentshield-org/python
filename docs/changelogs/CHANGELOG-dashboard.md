@@ -2,6 +2,21 @@
 
 Next.js UI changes.
 
+## [ADR-0058 follow-up — onboarding Step 5 + email-first /signup polish] — 2026-04-21
+
+**ADR:** ADR-0058 (follow-up)
+
+### Changed
+- `app/src/app/(public)/onboarding/_components/step-5-deploy.tsx` — `res.json()` replaced with `res.text()` + `JSON.parse` so empty-body 500s surface as readable error strings instead of a runtime syntax error. Network failures in `fetch()` now caught explicitly.
+- `app/src/app/(public)/onboarding/_components/step-7-first-consent.tsx` — HTML entity `&rsquo;` (rendered verbatim in JSX string literals) replaced with the Unicode right-single-quote character. Fixes "No consent yet — that&rsquo;s fine" → "No consent yet — that's fine" on the timeout screen.
+- `app/src/app/(public)/signup/page.tsx` — no-token state replaced with an email lookup form: user enters email → `/api/public/lookup-invitation` → client routes to `/signup?invite=<token>` (operator invite) or `/onboarding?token=<token>` (intake), or shows "We couldn't find an invitation for that email" with a retry button.
+- `app/src/app/(public)/login/page.tsx` — dropped the operator-session-cleared amber banner; subtitle clarified for existing customers.
+- `marketing/src/components/sections/signup-form.tsx` — explicit Turnstile render (vs. auto-scan) that survives site-key changes + dev hot-reloads. Token held in React state via the widget's `callback`; `error-callback` / `expired-callback` / `timeout-callback` clear it. Submit is guarded: if the widget hasn't resolved, user sees "Security challenge hasn't loaded yet" instead of a server-side "Missing Turnstile token".
+
+### Tested
+- [x] Build + lint clean on app/ and marketing/.
+- [x] End-to-end onboarding verified (2026-04-21): marketing signup → email → wizard → dashboard handoff.
+
 ## [ADR-0058 Sprint 1.5] — 2026-04-21
 
 **ADR:** ADR-0058 — Split-flow customer onboarding

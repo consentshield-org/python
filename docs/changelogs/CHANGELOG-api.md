@@ -23,6 +23,32 @@ API route changes.
 - [x] `cd app && bun run lint` — 0 errors, 0 warnings.
 - [x] End-to-end — verified 2026-04-21. cs_orchestrator password rotated, `SUPABASE_CS_ORCHESTRATOR_DATABASE_URL` wired, app dev restarted, marketing `/signup` → app `signup-intake` (direct-Postgres as cs_orchestrator) → create_signup_intake RPC → in-process dispatcher → marketing `/api/internal/send-email` relay → Resend → invite email landed in recipient inbox.
 
+## [ADR-0058 follow-up — structured JSON errors + dev rate-limit bypass] — 2026-04-21
+
+**ADR:** ADR-0058 (follow-up)
+
+### Changed
+- `app/src/app/api/orgs/[orgId]/properties/route.ts` — POST handler wrapped in top-level try/catch. Every error path now returns `{ error: message }` JSON (500) + `console.error('api.orgs.properties.post.failed', ...)`. Previously the `checkPlanLimit` RPC failure threw unhandled, Next.js served an empty 500 body without CORS headers, and the client saw "Unexpected end of JSON input" — root cause invisible.
+- `app/src/app/api/public/signup-intake/route.ts` — dev rate-limit bypass: when `NODE_ENV !== 'production'` (or explicit `RATE_LIMIT_BYPASS=1`), both buckets (5/60s per IP + 3/hour per email) are skipped. Prevents the developer from locking their own IP out for an hour during iteration. Never set in prod.
+
+### Tested
+- [x] `cd app && bun run build / lint` — clean.
+- [x] End-to-end Step 5 verified after the two follow-up RPC fixes landed (commits `588da52` + `c784237`).
+
+## [ADR-0058 follow-up — email-first /signup + /login polish] — 2026-04-21
+
+**ADR:** ADR-0058 (follow-up)
+
+### Added
+- `app/src/app/api/public/lookup-invitation/route.ts` — `POST`. Per-IP 5/60s + per-email 10/hour rate-limits (aggressive per-email probes get the same `{found: false}` shape as a real miss — no timing distinction). Calls `public.lookup_pending_invitation_by_email` via `cs_orchestrator` and returns `{found, token?, origin?}` so the client can route to `/signup?invite=…` (operator invite) or `/onboarding?token=…` (intake).
+
+### Changed
+- `app/src/app/(public)/signup/page.tsx` — no-token path replaced. Instead of "ConsentShield is invitation-only during our beta" copy, renders an email-lookup form. On match → client router pushes to the right URL based on `origin`; on miss → "We couldn't find an invitation for that email" + "Try a different email" button + mailto support.
+- `app/src/app/(public)/login/page.tsx` — dropped the `?reason=operator_session_cleared` amber banner (rare in prod, noise in dev). Subtitle reworded from "No password. We'll email you a one-time code" to "Use the email on your ConsentShield account — we'll send a one-time code" so it's unambiguous the flow is for existing customers.
+
+### Tested
+- [x] `cd app && bun run build / lint` — clean.
+
 ## [ADR-0058 follow-up — drop dispatch trigger, synchronous callers] — 2026-04-21
 
 **ADR:** ADR-0058 (follow-up; no new ADR)

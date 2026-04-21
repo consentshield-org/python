@@ -3,6 +3,26 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { APP_URL, TURNSTILE_SITE_KEY } from '@/lib/env'
 
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (
+        el: HTMLElement,
+        opts: {
+          sitekey: string
+          theme?: 'light' | 'dark' | 'auto'
+          callback?: (token: string) => void
+          'error-callback'?: () => void
+          'expired-callback'?: () => void
+          'timeout-callback'?: () => void
+        },
+      ) => string
+      remove: (widgetId: string) => void
+      reset: (widgetId: string) => void
+    }
+  }
+}
+
 // ADR-0058 Sprint 1.2 — marketing-site signup intake form.
 //
 // Posts cross-origin to the customer app's public endpoint
@@ -32,20 +52,71 @@ export function SignupForm({ defaultPlan = 'growth' }: { defaultPlan?: Plan }) {
   const [outcome, setOutcome] = useState<Outcome | null>(null)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
   const formRef = useRef<HTMLFormElement>(null)
+  const widgetHostRef = useRef<HTMLDivElement>(null)
+  const widgetIdRef = useRef<string | null>(null)
 
+  // Explicit Turnstile render — avoids the wedged-widget state the
+  // auto-scan gets into after site-key changes / dev hot-reloads.
   useEffect(() => {
     if (outcome) return
-    const existing = document.querySelector<HTMLScriptElement>(
-      `script[src="${TURNSTILE_SCRIPT}"]`,
-    )
-    if (existing) return
+    let cancelled = false
 
-    const s = document.createElement('script')
-    s.src = TURNSTILE_SCRIPT
-    s.async = true
-    s.defer = true
-    document.body.appendChild(s)
+    function renderWidget() {
+      if (cancelled) return
+      if (!widgetHostRef.current) return
+      const ts = window.turnstile
+      if (!ts) return
+      // Tear down any prior render (StrictMode double-mount, key swap).
+      if (widgetIdRef.current) {
+        try {
+          ts.remove(widgetIdRef.current)
+        } catch {
+          /* idempotent */
+        }
+        widgetIdRef.current = null
+      }
+      widgetIdRef.current = ts.render(widgetHostRef.current, {
+        sitekey: TURNSTILE_SITE_KEY,
+        theme: 'light',
+        callback: (token) => setTurnstileToken(token),
+        'error-callback': () => setTurnstileToken(null),
+        'expired-callback': () => setTurnstileToken(null),
+        'timeout-callback': () => setTurnstileToken(null),
+      })
+    }
+
+    if (window.turnstile) {
+      renderWidget()
+    } else {
+      const existing = document.querySelector<HTMLScriptElement>(
+        `script[src^="${TURNSTILE_SCRIPT}"]`,
+      )
+      if (!existing) {
+        const s = document.createElement('script')
+        s.src = TURNSTILE_SCRIPT
+        s.async = true
+        s.defer = true
+        s.addEventListener('load', renderWidget)
+        document.body.appendChild(s)
+      } else {
+        existing.addEventListener('load', renderWidget)
+      }
+    }
+
+    return () => {
+      cancelled = true
+      const ts = window.turnstile
+      if (ts && widgetIdRef.current) {
+        try {
+          ts.remove(widgetIdRef.current)
+        } catch {
+          /* noop */
+        }
+        widgetIdRef.current = null
+      }
+    }
   }, [outcome])
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
@@ -53,11 +124,19 @@ export function SignupForm({ defaultPlan = 'growth' }: { defaultPlan?: Plan }) {
     if (pending) return
 
     const data = new FormData(e.currentTarget)
+    const token =
+      turnstileToken ?? String(data.get('cf-turnstile-response') ?? '')
+    if (!token) {
+      setError(
+        'Security challenge hasn\u2019t loaded yet. Wait a moment and try again.',
+      )
+      return
+    }
     const payload = {
       email: String(data.get('email') ?? ''),
       org_name: String(data.get('org_name') ?? ''),
       plan_code: String(data.get('plan_code') ?? defaultPlan),
-      turnstile_token: String(data.get('cf-turnstile-response') ?? ''),
+      turnstile_token: token,
     }
 
     setPending(true)
@@ -295,9 +374,7 @@ export function SignupForm({ defaultPlan = 'growth' }: { defaultPlan?: Plan }) {
 
       <div style={{ marginTop: 18, marginBottom: 6 }}>
         <div
-          className="cf-turnstile"
-          data-sitekey={TURNSTILE_SITE_KEY}
-          data-theme="light"
+          ref={widgetHostRef}
           aria-label="Human-verification challenge"
         />
       </div>
