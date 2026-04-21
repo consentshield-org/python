@@ -2,6 +2,32 @@
 
 API route changes.
 
+## [ADR-0058 follow-up — drop dispatch trigger, synchronous callers] — 2026-04-21
+
+**ADR:** ADR-0058 (follow-up; no new ADR)
+
+### Removed
+- The AFTER INSERT trigger `invitations_dispatch_after_insert` (migration 20260803000007) — no longer needed; every caller now dispatches synchronously.
+- The pg_cron job `invitation-dispatch-retry` — same reason.
+
+### Added
+- `app/src/lib/invitations/dispatch.ts::dispatchInvitationById(supabase, invitationId, env)` — extracted helper: reads the row, renders the email, POSTs to marketing's relay, stamps the watermark columns. Tagged-union result. Idempotent.
+- `app/src/lib/invitations/dispatch.ts::resolveDispatchEnv()` — centralised env-var fallbacks for the three callers.
+
+### Changed
+- `app/src/app/api/internal/invitation-dispatch/route.ts` — now a thin wrapper over `dispatchInvitationById`. Still bearer-gated. Not called by the DB anymore; surfaces remain for admin-side + manual retry.
+- `app/src/app/api/public/signup-intake/route.ts` — on `created` branch, calls `dispatchInvitationById` in-process before responding. Failure is logged; the row write is not rolled back (operator can retry via the internal route).
+- `admin/src/app/(operator)/accounts/actions.ts::createOperatorIntakeAction` — after `admin.create_operator_intake` returns, POSTs to app's `/api/internal/invitation-dispatch` with the new id + shared bearer. Fire-and-forget; `console.warn` on non-2xx.
+
+### Env
+- Admin now needs `INVITATION_DISPATCH_SECRET` + `NEXT_PUBLIC_APP_URL` to dispatch.
+- Vault secrets `cs_invitation_dispatch_url` + `cs_invitation_dispatch_secret` are vestigial after this commit; can be dropped with `vault.delete_secret(...)` when the operator wants.
+
+### Tested
+- [x] Build + lint clean on app/, admin/, marketing/.
+- [x] `bunx supabase db push` — migration applied.
+- [ ] End-to-end email send — deferred until `RESEND_API_KEY` lands on marketing/.env.local.
+
 ## [ADR-0058 follow-up — explicit signup-intake status + relay rewire] — 2026-04-21
 
 **ADR:** ADR-0058 (follow-up; no new ADR)

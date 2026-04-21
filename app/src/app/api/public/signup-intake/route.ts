@@ -3,6 +3,10 @@ import { NextResponse } from 'next/server'
 import { verifyTurnstileToken } from '@/lib/rights/turnstile'
 import { checkRateLimit } from '@/lib/rights/rate-limit'
 import { logRateLimitHit } from '@/lib/rights/rate-limit-log'
+import {
+  dispatchInvitationById,
+  resolveDispatchEnv,
+} from '@/lib/invitations/dispatch'
 
 // ADR-0058 Sprint 1.1 — public marketing-site signup intake.
 //
@@ -202,6 +206,32 @@ export async function POST(request: Request) {
   console.log('signup-intake.branch', branch)
 
   if (branch === 'created') {
+    // Fire the email dispatch synchronously. The DB trigger that used
+    // to do this is gone (migration 20260803000007); every caller now
+    // owns its dispatch. Failure here is telemetry, not a UX blocker
+    // — the row is already persisted and the `email_last_error`
+    // column records what went wrong for operator retry.
+    if (rpcResult.id) {
+      try {
+        const result = await dispatchInvitationById(
+          orchestrator,
+          rpcResult.id,
+          resolveDispatchEnv(),
+        )
+        if (
+          result.status !== 'dispatched' &&
+          result.status !== 'already_dispatched'
+        ) {
+          console.warn('signup-intake.dispatch.nonfatal', result)
+        }
+      } catch (err) {
+        console.error(
+          'signup-intake.dispatch.threw',
+          err instanceof Error ? err.message : String(err),
+        )
+      }
+    }
+
     return NextResponse.json(
       { ok: true, status: 'created' },
       { status: 202, headers: cors },

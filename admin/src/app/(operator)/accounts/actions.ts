@@ -49,8 +49,54 @@ export async function createOperatorIntakeAction(input: {
     return { ok: false, error: 'RPC returned an unexpected shape.' }
   }
 
+  // ADR-0058 follow-up — synchronous dispatch. The old DB trigger
+  // that fired email via net.http_post is gone (migration
+  // 20260803000007); admin now tells the app to dispatch
+  // immediately. Failure here is telemetry, not a UX blocker — the
+  // invitation row is already written and the operator can manually
+  // re-fire from the admin console if needed.
+  await fireDispatch(record.id).catch((err) => {
+    console.error(
+      'admin.create_operator_intake.dispatch.threw',
+      err instanceof Error ? err.message : String(err),
+    )
+  })
+
   revalidatePath('/accounts')
   return { ok: true, data: { id: record.id, token: record.token } }
+}
+
+async function fireDispatch(invitationId: string): Promise<void> {
+  const appBase =
+    process.env.NEXT_PUBLIC_APP_URL ??
+    (process.env.NODE_ENV === 'production'
+      ? 'https://app.consentshield.in'
+      : 'http://localhost:3000')
+  const secret = process.env.INVITATION_DISPATCH_SECRET ?? ''
+  if (!secret) {
+    console.warn(
+      'admin.create_operator_intake.dispatch.skipped',
+      'INVITATION_DISPATCH_SECRET not set on admin env',
+    )
+    return
+  }
+  const res = await fetch(`${appBase}/api/internal/invitation-dispatch`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${secret}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ invitation_id: invitationId }),
+    cache: 'no-store',
+  })
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    console.warn(
+      'admin.create_operator_intake.dispatch.nonfatal',
+      res.status,
+      body.slice(0, 300),
+    )
+  }
 }
 
 export async function suspendAccountAction(input: {

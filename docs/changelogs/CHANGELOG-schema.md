@@ -2,6 +2,23 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-0058 follow-up — drop dispatch trigger + cron] — 2026-04-21
+
+**ADR:** ADR-0058 (follow-up)
+
+### Removed
+- `20260803000007_drop_invitation_dispatch_trigger.sql`:
+  - Dropped trigger `invitations_dispatch_after_insert` on `public.invitations`.
+  - Dropped function `public.invitations_after_insert_dispatch()` (unused after the trigger).
+  - Unscheduled pg_cron job `invitation-dispatch-retry`.
+
+### Kept (no changes)
+- `public.dispatch_invitation_email(uuid)` — retained so an operator can still fire dispatch from a SQL session if needed. No automatic callers.
+- `public.invitations.{email_dispatched_at, email_dispatch_attempts, email_last_error}` — still written by the synchronous dispatcher; useful for retry visibility.
+
+### Tested
+- [x] `bunx supabase db push` — applied to remote dev DB.
+
 ## [ADR-0058 follow-up — create_signup_intake explicit branches] — 2026-04-21
 
 **ADR:** ADR-0058 (follow-up; no new ADR)
