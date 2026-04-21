@@ -2,6 +2,33 @@
 
 Vercel, Cloudflare, Supabase config changes.
 
+## [ADR-1009 Sprint 2.1] — 2026-04-21
+
+**ADR:** ADR-1009 — v1 API role hardening
+**Sprint:** Phase 2 Sprint 2.1 — cs_api role activation (env + secrets)
+
+### Changed
+
+- **Supabase Postgres role:** `cs_api` rotated from `NOLOGIN` → `LOGIN` with a strong password (migration 20260801000006 set a placeholder; rotated out-of-band via psql with an `openssl rand -base64 32`-derived value).
+- **`.secrets`:** added `CS_API_PASSWORD` (raw) and `SUPABASE_CS_API_DATABASE_URL` (Supavisor transaction-mode pooler connection string).
+- **`app/.env.local` + repo-root `.env.local`:** `SUPABASE_CS_API_DATABASE_URL` added so local dev + vitest pick up the cs_api pool connection.
+- **Vercel (`consentshield` project):** `SUPABASE_CS_API_DATABASE_URL` set for both production and preview environments via `vercel env add`.
+
+### Discovery (2026-04-21)
+
+Supabase is rotating project JWT signing keys from HS256 (shared secret) to ECC P-256 (asymmetric). The legacy HS256 secret is flagged "Previously used" in the dashboard. This changes the scoped-role activation pattern permanently:
+
+- HS256-signed role JWTs (like `SUPABASE_WORKER_KEY`) are living off the legacy key's verification tail; they will stop working when it's revoked.
+- ECC P-256 is asymmetric — we cannot mint new role JWTs from our side.
+- **Going forward:** scoped roles activate via direct Postgres (LOGIN + password + Supavisor pooler), NOT via HS256-signed JWTs on Supabase REST. ADR-1009 Phase 2 establishes this pattern for cs_api; the Cloudflare Worker will need the same migration eventually.
+- `sb_secret_*` (new API-key format) is an opaque service-role token, **not** the JWT signing secret.
+
+Captured in `.wolf/cerebrum.md` (Key Learnings + Decision Log) and the `reference_supabase_platform_gotchas` memory for cross-session durability.
+
+### `.secrets` parsing gotcha
+
+`SUPABASE_DATABASE_PASSWORD=jxFENChEAG4cZdjZ\` in the file — the trailing `\` is line-continuation when bash sources. Naive `source .secrets` produces a 77-char mangled password and psql auth fails. Parse individual values with `grep "^KEY=" .secrets | sed 's/^KEY=//; s/\\$//'`. Captured in cerebrum Do-Not-Repeat.
+
 ## [Sprint 4.1 — ADR-0026, afternoon] — 2026-04-17
 
 **ADR:** ADR-0026 — Monorepo Restructure
