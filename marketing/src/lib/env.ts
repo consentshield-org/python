@@ -26,3 +26,9 @@ export const CONTACT_FROM =
 // submissions server-side and returns 202 so local dev still exercises
 // the success path.
 export const RESEND_ENABLED = RESEND_API_KEY.length > 0
+
+// ADR-0058 Sprint 1.2 — customer-app origin used for cross-origin POST
+// from the marketing /signup form to /api/public/signup-intake. Dev
+// default targets the local customer app; prod is set via Vercel env.
+export const APP_URL =
+  process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'

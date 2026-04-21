@@ -8,6 +8,9 @@ interface Tier {
   period: string
   annual: string
   cta: string
+  /** ADR-0058 Sprint 1.2: routing per tier. Starter / Growth / Pro
+   * are self-serve via /signup?plan=<code>; Enterprise is contact-only. */
+  ctaHref: string
   features: string[]
   featured?: boolean
 }
@@ -20,6 +23,7 @@ const TIERS: Tier[] = [
     period: '/mo',
     annual: 'or ₹24,000–50,000/yr',
     cta: 'Start free trial',
+    ctaHref: '/signup?plan=starter',
     features: [
       'Consent banner + DEPA artefacts',
       'Purpose Definition Registry',
@@ -33,7 +37,8 @@ const TIERS: Tier[] = [
     price: '5,999',
     period: '/mo',
     annual: 'or ₹50,000–1,00,000/yr',
-    cta: 'Book a demo',
+    cta: 'Start free trial',
+    ctaHref: '/signup?plan=growth',
     featured: true,
     features: [
       'Everything in Starter',
@@ -49,7 +54,8 @@ const TIERS: Tier[] = [
     price: '9,999',
     period: '/mo',
     annual: 'or ₹1,00,000–3,00,000/yr',
-    cta: 'Book a demo',
+    cta: 'Start free trial',
+    ctaHref: '/signup?plan=pro',
     features: [
       'Everything in Growth',
       'GDPR module',
@@ -65,6 +71,7 @@ const TIERS: Tier[] = [
     period: '+/mo',
     annual: 'or ₹3,00,000–5,00,000/yr',
     cta: 'Talk to us',
+    ctaHref: '/contact',
     features: [
       'Everything in Pro',
       'White-label + custom domains',
@@ -104,7 +111,7 @@ export function PricingPreview() {
                 <span className="price-period">{t.period}</span>
               </div>
               <div className="price-annual">{t.annual}</div>
-              <Link href={ROUTES.contact.href} className="price-cta">
+              <Link href={t.ctaHref} className="price-cta">
                 {t.cta}
               </Link>
               <ul className="price-features">

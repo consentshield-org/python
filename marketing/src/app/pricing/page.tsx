@@ -63,10 +63,10 @@ export default function PricingPage() {
 
       <CtaBand
         eyebrow="Quick to try, quick to decide"
-        title="14-day free trial on Starter and Growth."
+        title="14-day free trial on Starter, Growth, and Pro."
         body="No credit card. Full platform access. If your site runs trackers without matching consent artefacts, you'll see it in the first dashboard load."
       >
-        <Link href={ROUTES.contact.href} className="btn btn-primary">
+        <Link href="/signup?plan=growth" className="btn btn-primary">
           Start free trial
         </Link>
         <Link href={ROUTES.contact.href} className="btn btn-secondary">

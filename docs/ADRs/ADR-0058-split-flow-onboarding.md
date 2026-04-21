@@ -2,7 +2,7 @@
 
 (c) 2026 Sudhindra Anegondhi a.d.sudhindra@gmail.com
 
-**Status:** In Progress (Sprint 1.1 in flight)
+**Status:** In Progress (Sprints 1.1 + 1.2 shipped 2026-04-21; 1.3–1.5 pending)
 **Date:** 2026-04-21
 **Phases:** 1
 **Sprints:** 5
@@ -95,13 +95,19 @@ Email template + CTA URL branch on `origin`. Everything else stays as-is.
 
 **Deliverables:**
 
-- [ ] `marketing/src/app/signup/page.tsx` — server component reading `?plan=<code>`; renders `<SignupForm>`.
-- [ ] `marketing/src/components/sections/signup-form.tsx` — modelled on `contact-form.tsx`. Fields: email, org_name, 4-tier plan select (preselect from `?plan=`). Turnstile widget. Submits to `${NEXT_PUBLIC_APP_URL}/api/public/signup-intake`. Success state: "Check your inbox at <email> for a setup link. Link expires in 14 days." + "Try a different email" reset.
-- [ ] `marketing/src/components/sections/pricing-preview.tsx` — CTA routing per tier: Starter / Growth / Pro → `/signup?plan=<code>`; Enterprise → `/contact`.
-- [ ] `marketing/next.config.ts` — CSP `connect-src` adds `https://app.consentshield.in http://localhost:3000`.
-- [ ] `marketing/src/lib/env.ts` + `.env.example` — typed `NEXT_PUBLIC_APP_URL`.
+- [x] `marketing/src/app/signup/page.tsx` — server component reading `?plan=<code>`; normalises to whitelist (`starter | growth | pro`, default `growth`); renders `<SignupForm>` plus a 3-bullet "what to expect" sidebar.
+- [x] `marketing/src/components/sections/signup-form.tsx` — client; mirrors `contact-form.tsx`. Fields: email, company name, 3-tier plan select (preselect from prop). Turnstile widget loads on mount. Submits cross-origin to `${APP_URL}/api/public/signup-intake`. Success state: "Check your inbox" + "Try a different email" reset. Disabled state during submit.
+- [x] `marketing/src/components/sections/pricing-preview.tsx` — added per-tier `ctaHref`: Starter / Growth / Pro → `/signup?plan=<code>`; Enterprise → `/contact`. CTA labels normalised to "Start free trial" for self-serve tiers.
+- [x] `marketing/src/app/pricing/page.tsx` — final CTA band's primary button now points at `/signup?plan=growth`; secondary stays at `/contact`.
+- [x] `marketing/next.config.ts` — CSP `connect-src` adds `https://app.consentshield.in http://localhost:3000`.
+- [x] `marketing/src/lib/env.ts` — typed `APP_URL` constant with localhost dev default.
+- [x] `marketing/.env.example` — documents `NEXT_PUBLIC_APP_URL`.
 
-**Status:** `[ ] planned`
+**Tested:**
+- `cd marketing && bun run build` — clean; 16 routes (12 static + `/signup` dynamic + `/api/contact` dynamic + Sentry tunnel + source-map endpoint).
+- `cd marketing && bun run lint` — 0 errors, 0 warnings.
+
+**Status:** `[x] complete — 2026-04-21`
 
 ### Sprint 1.3 — Wizard shell + Steps 1–4
 

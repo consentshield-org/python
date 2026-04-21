@@ -18,7 +18,7 @@ const CSP_REPORT_ONLY = [
   "style-src 'self' 'unsafe-inline' https://api.fontshare.com https://cdn.fontshare.com",
   "img-src 'self' data: https:",
   "font-src 'self' https://cdn.fontshare.com data:",
-  "connect-src 'self' https://*.ingest.sentry.io https://*.sentry.io",
+  "connect-src 'self' https://*.ingest.sentry.io https://*.sentry.io https://app.consentshield.in http://localhost:3000",
   "frame-src https://challenges.cloudflare.com",
   "frame-ancestors 'none'",
   "form-action 'self'",
