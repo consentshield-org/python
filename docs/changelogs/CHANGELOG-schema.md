@@ -2,6 +2,19 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-1012 Sprint 1.2] — 2026-04-21
+
+**ADR:** ADR-1012 — v1 API DX gap fixes
+**Sprint:** Phase 1 Sprint 1.2 — discovery RPCs
+
+### Added
+- `20260803000003_v1_discovery_rpcs.sql`:
+  - `rpc_purpose_list(p_key_id uuid, p_org_id uuid) returns jsonb` — lists `purpose_definitions` for the caller's org, ordered by `purpose_code`. Fenced by `assert_api_key_binding`. Envelope: `{ items: [{ id, purpose_code, display_name, description, data_scope, default_expiry_days, auto_delete_on_expiry, is_required, framework, is_active, created_at, updated_at }, ...] }`. `abdm_hi_types` deliberately omitted (healthcare-specific; V2 exposure). GRANT to `cs_api`.
+  - `rpc_property_list(p_key_id uuid, p_org_id uuid) returns jsonb` — lists `web_properties` for the caller's org, ordered by `created_at` asc. Same fence. Envelope: `{ items: [{ id, name, url, allowed_origins, snippet_verified_at, snippet_last_seen_at, created_at, updated_at }, ...] }`. **`event_signing_secret` deliberately NOT in the envelope** — HMAC key; must not leak to API consumers. GRANT to `cs_api`.
+
+### Tested
+- [x] 9/9 discovery.test.ts PASS; 125/125 full integration PASS.
+
 ## [ADR-1012 Sprint 1.1] — 2026-04-21
 
 **ADR:** ADR-1012 — v1 API DX gap fixes

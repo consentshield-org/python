@@ -2,6 +2,23 @@
 
 API route changes.
 
+## [ADR-1012 Sprint 1.2] — 2026-04-21
+
+**ADR:** ADR-1012 — v1 API DX gap fixes
+**Sprint:** Phase 1 Sprint 1.2 — discovery endpoints
+
+### Added
+- `GET /v1/purposes` — lists purpose_definitions for the caller's org (ordered alphabetically by purpose_code). Scope: `read:consent`. Org-scoped Bearer required (account-scoped → 400). Handler: `app/src/app/api/v1/purposes/route.ts`. OpenAPI: new path + `PurposeItem` + `PurposeListResponse` schemas with examples.
+- `GET /v1/properties` — lists web_properties for the caller's org (ordered by created_at asc). Scope: `read:consent`. Org-scoped Bearer required. Handler: `app/src/app/api/v1/properties/route.ts`. OpenAPI: new path + `PropertyItem` + `PropertyListResponse` schemas with examples. `event_signing_secret` deliberately NOT in envelope.
+- `app/src/lib/api/discovery.ts` — `listPurposes(params)` and `listProperties(params)` helpers over the cs_api pool.
+
+### Tested
+- [x] 9 new integration tests in `tests/integration/discovery.test.ts` (both helpers, incl. cross-org fence probe + safe-subset assertion for property envelope).
+- [x] 125/125 full integration suite PASS.
+
+### Incidental
+- `tests/integration/mrs-sharma.e2e.test.ts` step 3 perf assertion relaxed from `<10s` to `<25s` — pre-existing flake under full-suite DB contention; tipped by adding one more test file. ADR-1008 owns the real p99 SLO.
+
 ## [ADR-1012 Sprint 1.1] — 2026-04-21
 
 **ADR:** ADR-1012 — v1 API DX gap fixes

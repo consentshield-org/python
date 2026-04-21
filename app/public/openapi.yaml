@@ -513,6 +513,103 @@ components:
           minimum: 0
           example: 47.2
 
+    PurposeItem:
+      type: object
+      required: [id, purpose_code, display_name, data_scope, default_expiry_days, framework, is_active, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        purpose_code:
+          type: string
+          example: "marketing"
+        display_name:
+          type: string
+          example: "Marketing communications"
+        description:
+          type: string
+          nullable: true
+        data_scope:
+          type: array
+          items:
+            type: string
+          example: ["email_address", "phone_number"]
+        default_expiry_days:
+          type: integer
+          example: 365
+        auto_delete_on_expiry:
+          type: boolean
+        is_required:
+          type: boolean
+          description: Whether this purpose is mandatory (required for the service to function; no opt-out under DPDP).
+        framework:
+          type: string
+          example: "dpdp"
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    PurposeListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PurposeItem"
+          description: Ordered alphabetically by purpose_code.
+
+    PropertyItem:
+      type: object
+      required: [id, name, url, allowed_origins, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "ACME production"
+        url:
+          type: string
+          example: "https://acme.example.com"
+        allowed_origins:
+          type: array
+          items:
+            type: string
+          example: ["https://acme.example.com", "https://www.acme.example.com"]
+        snippet_verified_at:
+          type: string
+          format: date-time
+          nullable: true
+        snippet_last_seen_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    PropertyListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PropertyItem"
+          description: >
+            Ordered by created_at asc. The HMAC `event_signing_secret` is deliberately
+            omitted — it's a server-only key used by the Cloudflare Worker to verify
+            inbound events and must never leak to API consumers.
+
     UsageResponse:
       type: object
       required: [key_id, days, series]
@@ -1123,5 +1220,118 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /purposes:
+    get:
+      operationId: purposeList
+      summary: List purposes configured for the caller's org
+      description: >
+        Returns every `purpose_definitions` row for the caller's org.
+        `/v1/consent/verify` and `/v1/consent/record` both require a valid
+        `purpose_code` or `purpose_definition_id` from this list.
+
+        Requires an org-scoped API key; account-scoped keys get 400.
+      responses:
+        "200":
+          description: Purposes for the caller's org.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurposeListResponse"
+              example:
+                items:
+                  - id: "7f4b3b21-5a11-4f37-9b7c-6f2e0d5c8b1a"
+                    purpose_code: "marketing"
+                    display_name: "Marketing communications"
+                    description: "Email, SMS, and in-app campaigns"
+                    data_scope: ["email_address", "phone_number"]
+                    default_expiry_days: 365
+                    auto_delete_on_expiry: true
+                    is_required: false
+                    framework: "dpdp"
+                    is_active: true
+                    created_at: "2026-03-14T08:12:00Z"
+                    updated_at: "2026-03-14T08:12:00Z"
+                  - id: "9e2c8a0c-1d8a-4a2c-a4bf-2b0e6b1f3c9d"
+                    purpose_code: "analytics"
+                    display_name: "Product analytics"
+                    description: null
+                    data_scope: ["page_views", "session_duration"]
+                    default_expiry_days: 180
+                    auto_delete_on_expiry: true
+                    is_required: false
+                    framework: "dpdp"
+                    is_active: true
+                    created_at: "2026-03-14T08:12:10Z"
+                    updated_at: "2026-03-14T08:12:10Z"
+        "400":
+          description: API key is account-scoped; this endpoint requires an org-scoped key.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Missing `read:consent` scope, or API key is not authorised for this organisation.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "410":
+          $ref: "#/components/responses/Gone"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /properties:
+    get:
+      operationId: propertyList
+      summary: List web properties configured for the caller's org
+      description: >
+        Returns every `web_properties` row for the caller's org.
+        `property_id` values used throughout `/v1/consent/*` come from here.
+
+        The HMAC `event_signing_secret` is **not** in the response — it's a
+        server-only key used by the Cloudflare Worker to verify inbound
+        events.
+
+        Requires an org-scoped API key; account-scoped keys get 400.
+      responses:
+        "200":
+          description: Web properties for the caller's org.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PropertyListResponse"
+              example:
+                items:
+                  - id: "3a4b8b21-5a11-4f37-9b7c-6f2e0d5c8b1a"
+                    name: "ACME production"
+                    url: "https://acme.example.com"
+                    allowed_origins:
+                      - "https://acme.example.com"
+                      - "https://www.acme.example.com"
+                    snippet_verified_at: "2026-03-15T10:00:00Z"
+                    snippet_last_seen_at: "2026-04-21T09:11:23Z"
+                    created_at: "2026-03-14T09:00:00Z"
+                    updated_at: "2026-03-15T10:00:00Z"
+        "400":
+          description: API key is account-scoped; this endpoint requires an org-scoped key.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Missing `read:consent` scope, or API key is not authorised for this organisation.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "410":
+          $ref: "#/components/responses/Gone"
         "429":
           $ref: "#/components/responses/TooManyRequests"
