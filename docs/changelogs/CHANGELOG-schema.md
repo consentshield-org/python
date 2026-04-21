@@ -2,6 +2,16 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-0058 follow-up — create_signup_intake explicit branches] — 2026-04-21
+
+**ADR:** ADR-0058 (follow-up; no new ADR)
+
+### Changed
+- `20260803000006_signup_intake_explicit_status.sql` — `public.create_signup_intake` rewritten. Returns `{branch, id?, token?}` instead of the previous `{status:'ok', branch:<hidden>}` envelope. Branches (closed enum): `created` | `already_invited` | `existing_customer` | `admin_identity` | `invalid_email` | `invalid_plan`. The `id` + `token` fields populate only on `created` so a caller can re-dispatch synchronously if needed. Added a pending-invitation lookup for the `already_invited` branch that scans intakes where `accepted_at is null and revoked_at is null and expires_at > now() and origin in ('marketing_intake','operator_intake')`. Function signature + grants unchanged.
+
+### Tested
+- [x] `bunx supabase db push` — applied to remote dev DB.
+
 ## [ADR-1012 Sprint 1.3] — 2026-04-21
 
 **ADR:** ADR-1012 — v1 API DX gap fixes
