@@ -2,6 +2,19 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-1009 Sprint 2.1 — scope amendment] — 2026-04-21
+
+**ADR:** ADR-1009 — v1 API role hardening
+**Sprint:** Phase 2 Sprint 2.1 — cs_api role activation (scope-amended)
+
+### Scope amendment
+Original Phase 2 minted an HS256 JWT for cs_api (same pattern as SUPABASE_WORKER_KEY). Supabase is rotating project JWT signing keys to ECC P-256; the legacy HS256 secret is flagged "Previously used" in the dashboard and will be revoked. HS256-signed scoped-role JWTs are on borrowed time. Direct Postgres connections as LOGIN roles are unaffected, so cs_api switches to that path — same pattern as cs_delivery / cs_orchestrator from Edge Functions. See ADR-1009 Phase 2 "Scope amendment" block for the rationale.
+
+### Added
+- `20260801000006_cs_api_login_and_key_status.sql`:
+  - `alter role cs_api with login password 'cs_api_change_me'` — placeholder password, same pattern as 20260413000010 cs_worker seed. User rotates out-of-band via psql.
+  - `public.rpc_api_key_status(text) returns text` — SECURITY DEFINER lookup of lifecycle state by plaintext (`'active' | 'revoked' | 'not_found'`). Handles current `key_hash` + dual-window `previous_key_hash` rotation path. Grants: `cs_api` + `service_role` (transition window).
+
 ## [ADR-1009 Sprint 1.2] — 2026-04-20
 
 **ADR:** ADR-1009 — v1 API role hardening

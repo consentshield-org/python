@@ -2,6 +2,23 @@
 
 API route changes.
 
+## [ADR-1009 Sprint 2.1 — scope amendment] — 2026-04-21
+
+**ADR:** ADR-1009 — v1 API role hardening
+**Sprint:** Phase 2 Sprint 2.1 — cs_api role activation
+
+### Added
+- `app/src/lib/api/cs-api-client.ts` — singleton `postgres.js` pool connecting as cs_api against the Supavisor transaction pooler (port 6543). Fluid-Compute-safe: module-scope instance reused across concurrent requests. Lazy-init throws on first use if `SUPABASE_CS_API_DATABASE_URL` is unset, so `next build` stays clean. `isCsApiConfigured()` lets test/smoke paths skip gracefully.
+- `postgres@3.4.9` — new dep (root + app), exact-pinned. Rule 15 justification in the ADR.
+- `tests/integration/cs-api-role.test.ts` — skip-when-env-missing smoke suite (5 assertions: rpc_api_key_verify context, rpc_api_key_status enum, api_keys SELECT denied, consent_events / organisations SELECT denied, rpc_consent_record not-yet-granted).
+
+### Removed
+- `scripts/mint-role-jwt.ts` — dead-on-arrival given the HS256 → ECC P-256 rotation. Preserved in history at commit `b6f41a2`.
+
+### Tested
+- [x] 100/100 integration tests pass + 5 skipped (cs_api smoke waits for env).
+- [x] `bun run lint` clean; `bun run build` clean.
+
 ## [ADR-1009 Sprint 1.2] — 2026-04-20
 
 **ADR:** ADR-1009 — v1 API role hardening
