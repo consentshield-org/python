@@ -66,7 +66,7 @@ export async function POST(request: Request) {
   const { data: invite, error: readErr } = await supabase
     .from('invitations')
     .select(
-      'id, token, role, invited_email, account_id, org_id, plan_code, default_org_name, expires_at, accepted_at, revoked_at, email_dispatched_at, email_dispatch_attempts',
+      'id, token, role, invited_email, account_id, org_id, plan_code, default_org_name, origin, expires_at, accepted_at, revoked_at, email_dispatched_at, email_dispatch_attempts',
     )
     .eq('id', invitationId)
     .maybeSingle()
@@ -87,14 +87,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ status: 'already_dispatched' })
   }
 
+  // ADR-0058: intakes (marketing self-serve OR operator-issued for new
+  // contracted customers) land on the 7-step wizard at /onboarding.
+  // Existing operator-invites (member-add into existing org) keep the
+  // original /signup?invite= URL since that flow is invite → OTP →
+  // existing-account-attach, no wizard.
+  const origin = (invite.origin as string | null) ?? 'operator_invite'
+  const isIntake =
+    origin === 'marketing_intake' || origin === 'operator_intake'
+  const acceptUrl = isIntake
+    ? `${APP_BASE_URL}/onboarding?token=${invite.token}`
+    : `${APP_BASE_URL}/signup?invite=${invite.token}`
+
   const email = buildDispatchEmail({
     role: invite.role as InvitationRole,
     invitedEmail: invite.invited_email,
-    acceptUrl: `${APP_BASE_URL}/signup?invite=${invite.token}`,
+    acceptUrl,
     planCode: invite.plan_code,
     defaultOrgName: invite.default_org_name,
     expiresAt: invite.expires_at,
     hasExistingAccount: invite.account_id !== null,
+    origin: origin as 'operator_invite' | 'operator_intake' | 'marketing_intake',
   })
 
   if (!RESEND_API_KEY) {

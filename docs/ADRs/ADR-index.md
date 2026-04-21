@@ -61,6 +61,7 @@ All Architecture Decision Records for ConsentShield, in chronological order.
 | ADR-0056 | Per-account feature-flag targeting — new 'account' scope in admin.feature_flags; resolver fallback org → account → global | Completed | 2026-04-21 | 1 | 2 |
 | ADR-0054 | Customer-facing billing portal (invoice history + billing profile) | Completed | 2026-04-20 | 1 | 2 |
 | ADR-0057 | Customer-facing sectoral template switcher (Settings → Account) | Completed | 2026-04-20 | 1 | 1 |
+| ADR-0058 | Split-flow customer onboarding — marketing-site intake + customer-app 7-step wizard reusing public.invitations | In Progress | 2026-04-21 | 1 | 5 |
 | ADR-1001 | v2 Whitepaper Phase 1 — Truth-in-marketing + Public API foundation (`cs_live_*` keys + Bearer middleware) | Completed | 2026-04-19 | 3 | 7 |
 | ADR-1002 | v2 Whitepaper Phase 2 — DPDP §6 runtime enforcement (`/v1/consent/verify` + `record` + artefact ops + deletion API) | Completed | 2026-04-19 | 5 | 8 |
 | ADR-1003 | v2 Whitepaper Phase 3 — Processor posture (`storage_mode` enforcement + BYOS + Zero-Storage + Healthcare seed + sandbox) | Proposed | 2026-04-19 | 5 | 8 |

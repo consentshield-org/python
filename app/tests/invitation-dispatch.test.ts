@@ -32,6 +32,43 @@ describe('buildDispatchEmail', () => {
     expect(e.text).toContain(base.acceptUrl)
   })
 
+  // ADR-0058 Sprint 1.1 — origin-aware copy.
+  it('marketing_intake (welcome voice)', () => {
+    const e = buildDispatchEmail({
+      ...base,
+      role: 'account_owner',
+      hasExistingAccount: false,
+      origin: 'marketing_intake',
+    })
+    expect(e.subject).toMatch(/welcome/i)
+    expect(e.html).toContain('Thanks for signing up')
+    expect(e.html).toContain('Acme Technologies')
+    expect(e.html).toContain('growth')
+  })
+
+  it('operator_intake (operator-provisioned voice)', () => {
+    const e = buildDispatchEmail({
+      ...base,
+      role: 'account_owner',
+      hasExistingAccount: false,
+      origin: 'operator_intake',
+    })
+    expect(e.subject).toMatch(/account is ready/i)
+    expect(e.html).toContain('operator has provisioned')
+    expect(e.html).toContain('Acme Technologies')
+  })
+
+  it('default origin (back-compat = operator_invite copy)', () => {
+    const e = buildDispatchEmail({
+      ...base,
+      role: 'account_owner',
+      hasExistingAccount: false,
+      // no `origin` passed — falls through to the old copy
+    })
+    expect(e.subject).toMatch(/invited/i)
+    expect(e.subject).not.toMatch(/welcome/i)
+  })
+
   it('add-account_owner (existing account)', () => {
     const e = buildDispatchEmail({
       ...base,

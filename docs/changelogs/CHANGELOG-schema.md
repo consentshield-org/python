@@ -2,6 +2,25 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-0058 Sprint 1.1] — 2026-04-21
+
+**ADR:** ADR-0058 — Split-flow customer onboarding
+**Sprint:** Sprint 1.1 — DB foundations + public intake endpoint
+
+### Added
+- `supabase/migrations/20260802000001_invitations_origin.sql` — `public.invitations.origin` column (`operator_invite | operator_intake | marketing_intake`); back-compat default `operator_invite` keeps existing rows + the legacy `create_invitation_from_marketing` RPC working unchanged. Partial index `invitations_pending_by_origin_idx` for the dispatcher's lookup pattern.
+- `supabase/migrations/20260802000002_create_signup_intake_rpc.sql` — `public.create_signup_intake(email, plan_code, org_name, ip)` SECURITY DEFINER. Existence-leak hardened (returns `{status:'ok'}` for every branch); refuses admin identities (Rule 12); only granted to `cs_orchestrator` + `service_role`.
+- `supabase/migrations/20260802000003_create_operator_intake_rpc.sql` — `admin.create_operator_intake(email, plan_code, org_name)`. Operator-facing equivalent: errors loudly (caller is an admin), gated by `admin.require_admin('platform_operator')`.
+- `supabase/migrations/20260802000004_seed_quick_data_inventory.sql` — `public.seed_quick_data_inventory(org_id, has_email, has_payments, has_analytics)` returns the count of newly-inserted rows. Backs Step 3 of the wizard. Idempotent via `WHERE NOT EXISTS` on `(org_id, data_category, source_type='quick_inventory_seed')`. Gated to `account_owner | org_admin` via `effective_org_role`.
+- `supabase/migrations/20260802000005_first_consent_at.sql` — adds `organisations.first_consent_at`, `onboarded_at`, `onboarding_step` columns. AFTER INSERT trigger on `consent_events` stamps `first_consent_at` once. Partial index on pending-onboarding orgs.
+- `supabase/migrations/20260802000006_intake_invitation_ttl.sql` — `public.fn_sweep_expired_intake_invitations()` deletes abandoned intakes older than their 14-day expiry, logs to `admin.admin_audit_log`. pg_cron job `adr-0058-sweep-intakes` schedules nightly at 21:00 UTC (02:30 IST).
+
+### Tested
+- [x] `cd app && bunx vitest run tests/invitation-dispatch.test.ts` — 11/11 PASS (includes 4 new origin-aware copy tests).
+- [x] `cd app && bun run build` — clean; 47 routes including the new `/api/public/signup-intake`.
+- [x] `cd app && bun run lint` — 0 errors, 0 warnings.
+- [ ] `bunx supabase db push` — pending user authorization (sandbox blocked the auto-apply); migrations + RLS test suite (`tests/rls/invitations-origin.test.ts`) ready to run once applied.
+
 ## [ADR-1009 Sprint 1.2] — 2026-04-20
 
 **ADR:** ADR-1009 — v1 API role hardening

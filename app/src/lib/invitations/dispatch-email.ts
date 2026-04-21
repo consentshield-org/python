@@ -10,6 +10,11 @@ export type InvitationRole =
   | 'admin'
   | 'viewer'
 
+export type InvitationOrigin =
+  | 'operator_invite'
+  | 'operator_intake'
+  | 'marketing_intake'
+
 export interface DispatchInput {
   role: InvitationRole
   invitedEmail: string
@@ -18,6 +23,8 @@ export interface DispatchInput {
   defaultOrgName: string | null
   expiresAt: string
   hasExistingAccount: boolean
+  /** ADR-0058: origin defaults to operator_invite for back-compat. */
+  origin?: InvitationOrigin
 }
 
 export interface DispatchEmail {
@@ -60,7 +67,7 @@ function ctaButton(url: string, label: string): string {
 }
 
 function roleCopy(input: DispatchInput): { subject: string; heading: string; body: string } {
-  const { role, planCode, defaultOrgName, hasExistingAccount } = input
+  const { role, planCode, defaultOrgName, hasExistingAccount, origin } = input
   switch (role) {
     case 'account_owner':
       if (!hasExistingAccount) {
@@ -68,6 +75,25 @@ function roleCopy(input: DispatchInput): { subject: string; heading: string; bod
           ? ` for <strong>${defaultOrgName}</strong>`
           : ''
         const planBit = planCode ? ` on the <strong>${planCode}</strong> plan` : ''
+
+        // ADR-0058: marketing self-serve gets a "welcome" voice; the
+        // operator-issued intake reads as "your contracted account is
+        // ready"; the legacy operator_invite branch (default) keeps the
+        // original copy unchanged.
+        if (origin === 'marketing_intake') {
+          return {
+            subject: 'Welcome to ConsentShield — continue your setup',
+            heading: 'Continue your ConsentShield setup',
+            body: `Thanks for signing up. Your ConsentShield workspace${orgBit}${planBit} is ready to configure. Click below to verify your email and walk the 7-step onboarding (about 5 minutes).`,
+          }
+        }
+        if (origin === 'operator_intake') {
+          return {
+            subject: 'Your ConsentShield account is ready to set up',
+            heading: 'Your ConsentShield account is ready',
+            body: `A ConsentShield operator has provisioned your workspace${orgBit}${planBit}. Click below to verify your email and walk the 7-step onboarding (about 5 minutes).`,
+          }
+        }
         return {
           subject: 'You have been invited to ConsentShield',
           heading: 'Create your ConsentShield account',

@@ -2,6 +2,21 @@
 
 API route changes.
 
+## [ADR-0058 Sprint 1.1] — 2026-04-21
+
+**ADR:** ADR-0058 — Split-flow customer onboarding
+**Sprint:** Sprint 1.1 — Public intake endpoint + origin-aware dispatch
+
+### Added
+- `app/src/app/api/public/signup-intake/route.ts` — `POST` + `OPTIONS`. Mirrors the rights-request pattern: per-IP rate limit (5/60s), per-email rate limit (3/hour) for anti-enumeration, Turnstile verify, then `create_signup_intake` RPC via service-role client. CORS allow-list hard-coded (`https://consentshield.in`, `https://www.consentshield.in`, `http://localhost:3002`). Always returns `{ok:true}` 202 on the success path regardless of internal branch (no existence leak).
+
+### Changed
+- `app/src/app/api/internal/invitation-dispatch/route.ts` — selects `origin` from the invitation row; routes the email CTA URL: `marketing_intake | operator_intake → ${APP_BASE_URL}/onboarding?token=`; `operator_invite` keeps the existing `/signup?invite=` URL.
+- `app/src/lib/invitations/dispatch-email.ts` — `DispatchInput` adds optional `origin`; new copy variants for `marketing_intake` ("Welcome to ConsentShield — continue your setup") and `operator_intake` ("Your ConsentShield account is ready to set up"). Default origin (unset) preserves the legacy `operator_invite` copy verbatim — back-compat for existing call sites.
+
+### Tested
+- [x] `bunx vitest run tests/invitation-dispatch.test.ts` — 11/11 PASS (4 new origin-aware copy tests added; legacy 7 unchanged).
+
 ## [ADR-1009 Sprint 1.2] — 2026-04-20
 
 **ADR:** ADR-1009 — v1 API role hardening
