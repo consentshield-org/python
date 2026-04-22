@@ -2,6 +2,38 @@
 
 Vercel, Cloudflare, Supabase config changes.
 
+## [ADR-1014 Sprint 1.3 — Worker harness + HMAC helper + first paired pipeline test] — 2026-04-22
+
+**ADR:** ADR-1014 — E2E test harness + vertical demo sites
+**Sprint:** Phase 1, Sprint 1.3 — Worker local harness
+
+### Added
+- `tests/e2e/utils/hmac.ts` — Node-side signer mirroring `worker/src/hmac.ts`. Message format `${orgId}${propertyId}${timestamp}`, HMAC-SHA256 hex. Exports `signConsentEvent`, `computeHmac`, `tamperSignature` (deterministic one-hex-char flip at position 17), `signWithStaleTimestamp` (10 min in the past, outside the Worker's ±5 min window).
+- `tests/e2e/utils/worker-harness.ts` — `startWorker()` spawns `bunx wrangler dev --local` on port 8787 from the worker/ workspace and waits for "Ready on"; short-circuits to `WORKER_URL` env if preset. Tear-down sends SIGTERM + SIGKILL after 5 s.
+- `tests/e2e/utils/supabase-admin.ts` — service-role client for observable-state DB assertions. `countConsentEventsSince(propertyId, cutoffIso)` + `latestConsentEvent(propertyId, cutoffIso)`. Test-only surface; path-excluded from the no-service-role grep gate.
+- `tests/e2e/worker-consent-event.spec.ts` — positive: signed event → 202 + 5-column assertion on the resulting `public.consent_events` row + row-count delta = 1.
+- `tests/e2e/worker-consent-event-tampered.spec.ts` — paired negative: one hex char flipped → 403 + body contains "Invalid signature" + row-count delta = 0.
+- `tests/e2e/specs/worker-consent-event.md` — normative spec for the pair (§5 pairing + §6 fake-positive defence + test-isolation invariant documenting why the two tests use different fixture properties).
+
+### Changed
+- `scripts/e2e-bootstrap.ts` — reads `web_properties.event_signing_secret` back alongside the id; seeds one `consent_banners` row per property (idempotent; required FK target for `consent_events.banner_id`). Writes `FIXTURE_<P>_PROPERTY_<n>_SECRET` and `FIXTURE_<P>_PROPERTY_<n>_BANNER_ID` for all 9 fixture properties. `.env.e2e` now has 63 keys (up from 45).
+- `tests/e2e/utils/fixtures.ts` — `VerticalFixture.properties[]` exposes `WebPropertyFixture { id, url, signingSecret, bannerId }`. `propertyIds` / `propertyUrls` retained for back-compat with older tests.
+- `tests/e2e/utils/env.ts` — `loadE2eEnv()` falls back to `.env.local` for keys not in `.env.e2e` (needed for `SUPABASE_SERVICE_ROLE_KEY` used by the admin client). Primary env wins; fallback only fills gaps.
+- Root `.gitignore` — added `worker/.dev.vars` and `worker/.dev.vars.local`.
+
+### Tested
+- [x] Paired positive + negative pass against `bunx wrangler dev --local` + fixture property 0 / property 1 respectively. Positive 591 ms, negative 1.4 s, combined parallel 1.9 s.
+- [x] Positive's five observable-state assertions all satisfied: `org_id`, `property_id`, `banner_id`, `event_type='consent_given'`, `origin_verified='hmac-verified'`.
+- [x] Negative observes 0 rows since cutoff after a 1 s settle window.
+- [x] Sacrificial control (`smoke-healthz-negative.spec.ts`) still fails red.
+- [x] `bunx tsc --noEmit` clean on both the scripts and the e2e workspace.
+
+### Setup requirement
+- `worker/.dev.vars` must contain `SUPABASE_WORKER_KEY=<value>` for local wrangler dev. The README in `tests/e2e/` documents the one-liner to seed this from `.env.local`'s service role key — test-code only, local-only, gitignored, mode 0600. Production deployments are unchanged (scoped `cs_worker` JWT via `wrangler secret put`).
+
+### Gotcha
+- First test run used the same fixture property for positive and negative. With Playwright's parallel execution, the positive's legitimate row showed up in the negative's count-since-cutoff query under Node↔Postgres clock skew. Fixed by splitting onto properties[0] vs properties[1] and documenting the invariant in the spec doc. The underlying pipeline was correct; this was test-isolation hygiene.
+
 ## [ADR-1014 Sprint 1.2 — e2e bootstrap + reset scripts + fixtures] — 2026-04-22
 
 **ADR:** ADR-1014 — E2E test harness + vertical demo sites

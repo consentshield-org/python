@@ -8,6 +8,13 @@ import { readEnv, type E2eEnv } from './env'
 
 export type VerticalSlug = 'ecommerce' | 'healthcare' | 'bfsi'
 
+export interface WebPropertyFixture {
+  id: string
+  url: string
+  signingSecret: string
+  bannerId: string
+}
+
 export interface VerticalFixture {
   slug: VerticalSlug
   accountId: string
@@ -17,6 +24,7 @@ export interface VerticalFixture {
   userPassword: string
   propertyIds: string[]
   propertyUrls: string[]
+  properties: WebPropertyFixture[]
   apiKey: string
   apiKeyId: string
 }
@@ -47,13 +55,15 @@ function readVerticalFromEnv(slug: VerticalSlug, prefix: string): VerticalFixtur
         `Run \`bunx tsx scripts/e2e-bootstrap.ts\` to seed.`
     )
   }
-  const propertyIds: string[] = []
-  const propertyUrls: string[] = []
+  const properties: WebPropertyFixture[] = []
   for (let i = 1; i <= 3; i++) {
     const id = process.env[`FIXTURE_${prefix}_PROPERTY_${i}_ID`]
     const url = process.env[`FIXTURE_${prefix}_PROPERTY_${i}_URL`]
-    if (id) propertyIds.push(id)
-    if (url) propertyUrls.push(url)
+    const signingSecret = process.env[`FIXTURE_${prefix}_PROPERTY_${i}_SECRET`]
+    const bannerId = process.env[`FIXTURE_${prefix}_PROPERTY_${i}_BANNER_ID`]
+    if (id && url && signingSecret && bannerId) {
+      properties.push({ id, url, signingSecret, bannerId })
+    }
   }
   return {
     slug,
@@ -62,8 +72,9 @@ function readVerticalFromEnv(slug: VerticalSlug, prefix: string): VerticalFixtur
     userId: process.env[`FIXTURE_${prefix}_USER_ID`]!,
     userEmail: process.env[`FIXTURE_${prefix}_USER_EMAIL`]!,
     userPassword: process.env[`FIXTURE_${prefix}_USER_PASSWORD`]!,
-    propertyIds,
-    propertyUrls,
+    propertyIds: properties.map((p) => p.id),
+    propertyUrls: properties.map((p) => p.url),
+    properties,
     apiKey: process.env[`TEST_API_KEY_${prefix}`]!,
     apiKeyId: process.env[`TEST_API_KEY_${prefix}_ID`]!
   }

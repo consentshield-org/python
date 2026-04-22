@@ -6,24 +6,34 @@ import { fileURLToPath } from 'node:url'
 const HERE = dirname(fileURLToPath(import.meta.url))
 
 // Single source of truth for which env file drives the run.
-//   Local:   .env.e2e       (gitignored)
-//   Partner: .env.partner   (gitignored, bootstrapped by scripts/partner-bootstrap.ts — Sprint 5.1)
-//   CI:      ambient GitHub Actions env (no file)
+//   Primary:  .env.e2e        (gitignored) or .env.partner (PLAYWRIGHT_PARTNER=1)
+//   Fallback: root .env.local (for SUPABASE_SERVICE_ROLE_KEY used by admin
+//             client in observable-state assertions; dotenv.config does
+//             NOT overwrite keys already set, so .env.e2e wins).
+//   CI:       ambient GitHub Actions env (no file)
 export function loadE2eEnv(): void {
   const isPartner = process.env.PLAYWRIGHT_PARTNER === '1'
   const filename = isPartner ? '.env.partner' : '.env.e2e'
-  const candidates = [
-    resolve(process.cwd(), filename),
-    resolve(HERE, '..', filename),
-    resolve(HERE, '..', '..', '..', filename)
-  ]
-  for (const path of candidates) {
-    if (existsSync(path)) {
-      config({ path })
-      return
+
+  const tryLoad = (fname: string): boolean => {
+    const candidates = [
+      resolve(process.cwd(), fname),
+      resolve(HERE, '..', fname),
+      resolve(HERE, '..', '..', '..', fname)
+    ]
+    for (const path of candidates) {
+      if (existsSync(path)) {
+        config({ path })
+        return true
+      }
     }
+    return false
   }
-  // In CI / partner-ambient mode missing file is acceptable — caller will assert required keys.
+
+  // Primary env first so its values win.
+  tryLoad(filename)
+  // Fallback for admin-client-only keys not emitted into .env.e2e.
+  tryLoad('.env.local')
 }
 
 export interface E2eEnv {

@@ -186,6 +186,8 @@ interface VerticalState {
   orgId: string
   userId: string
   propertyIds: string[]
+  propertySigningSecrets: string[]
+  bannerIds: string[]
   apiKeyPlaintext: string
   apiKeyId: string
 }
@@ -318,16 +320,24 @@ async function ensureVertical(spec: VerticalSpec): Promise<VerticalState> {
   }
 
   // ─── Web properties (3 per org) ───
+  // Signing secrets are read back alongside the id so the E2E HMAC helper
+  // can mirror the Worker's verifier. Secrets are written to .env.e2e in
+  // clear; the file is gitignored + mode 0600.
   const propertyIds: string[] = []
+  const propertySigningSecrets: string[] = []
+  const bannerIds: string[] = []
   for (const prop of spec.properties) {
     const { data: existingProp } = await admin
       .from('web_properties')
-      .select('id')
+      .select('id, event_signing_secret')
       .eq('org_id', orgId)
       .eq('name', prop.name)
       .maybeSingle()
+    let propertyId: string
+    let signingSecret: string
     if (existingProp) {
-      propertyIds.push(existingProp.id)
+      propertyId = existingProp.id
+      signingSecret = existingProp.event_signing_secret
     } else {
       const { data, error } = await admin
         .from('web_properties')
@@ -337,12 +347,52 @@ async function ensureVertical(spec: VerticalSpec): Promise<VerticalState> {
           url: prop.url,
           allowed_origins: prop.allowedOrigins
         })
-        .select('id')
+        .select('id, event_signing_secret')
         .single()
       if (error) throw new Error(`[${spec.slug}] createProperty: ${error.message}`)
-      propertyIds.push(data.id)
-      console.log(`[${spec.slug}] created web_property "${prop.name}" ${data.id}`)
+      propertyId = data.id
+      signingSecret = data.event_signing_secret
+      console.log(`[${spec.slug}] created web_property "${prop.name}" ${propertyId}`)
     }
+    propertyIds.push(propertyId)
+    propertySigningSecrets.push(signingSecret)
+
+    // One consent_banner per property (Sprint 1.3 — needed for the HMAC
+    // pipeline test; consent_events has a FK to consent_banners.id).
+    const { data: existingBanner } = await admin
+      .from('consent_banners')
+      .select('id')
+      .eq('property_id', propertyId)
+      .eq('version', 1)
+      .maybeSingle()
+    let bannerId: string
+    if (existingBanner) {
+      bannerId = existingBanner.id
+    } else {
+      const { data, error } = await admin
+        .from('consent_banners')
+        .insert({
+          org_id: orgId,
+          property_id: propertyId,
+          version: 1,
+          is_active: true,
+          headline: 'We value your consent',
+          body_copy: 'E2E fixture banner — seeded by scripts/e2e-bootstrap.ts.',
+          position: 'bottom-bar',
+          purposes: [
+            { code: 'essential', required: true },
+            { code: 'analytics', required: false },
+            { code: 'marketing', required: false }
+          ],
+          monitoring_enabled: true
+        })
+        .select('id')
+        .single()
+      if (error) throw new Error(`[${spec.slug}] createBanner: ${error.message}`)
+      bannerId = data.id
+      console.log(`[${spec.slug}] created consent_banner ${bannerId} for "${prop.name}"`)
+    }
+    bannerIds.push(bannerId)
   }
 
   // ─── API key (plaintext + hash) ───
@@ -407,6 +457,8 @@ async function ensureVertical(spec: VerticalSpec): Promise<VerticalState> {
     orgId,
     userId: userId!,
     propertyIds,
+    propertySigningSecrets,
+    bannerIds,
     apiKeyPlaintext: apiKeyPlaintext!,
     apiKeyId: apiKeyId!
   }
@@ -456,6 +508,8 @@ function writeEnvFile(states: VerticalState[]): void {
     state.propertyIds.forEach((id, i) => {
       lines.push(`FIXTURE_${p}_PROPERTY_${i + 1}_ID=${id}`)
       lines.push(`FIXTURE_${p}_PROPERTY_${i + 1}_URL=${state.spec.properties[i].url}`)
+      lines.push(`FIXTURE_${p}_PROPERTY_${i + 1}_SECRET=${state.propertySigningSecrets[i]}`)
+      lines.push(`FIXTURE_${p}_PROPERTY_${i + 1}_BANNER_ID=${state.bannerIds[i]}`)
     })
     lines.push(`TEST_API_KEY_${p}=${state.apiKeyPlaintext}`)
     lines.push(`TEST_API_KEY_${p}_ID=${state.apiKeyId}`)

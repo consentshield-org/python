@@ -110,15 +110,29 @@ Build a full-pipeline, partner-evidence-grade E2E test harness, delivered in fiv
 **Estimated effort:** 1 day
 
 **Deliverables:**
-- [ ] `tests/e2e/utils/worker-harness.ts` — spawns `wrangler dev` on an ephemeral port, seeds per-vertical web_property signing secrets, returns `{ port, signedRequest(payload) }`.
-- [ ] HMAC helper: `signConsentEvent(payload, secret)` — mirrors Worker-side verification.
-- [ ] Tear-down on test-suite exit.
+- [x] `tests/e2e/utils/worker-harness.ts` — `startWorker()` spawns `bunx wrangler dev --local` from `worker/` on port 8787 and waits for the "Ready on" log; falls back to `WORKER_URL` env if set. Tear-down via `stop()` sends SIGTERM + SIGKILL after 5s.
+- [x] `tests/e2e/utils/hmac.ts` — `signConsentEvent()` / `computeHmac()` / `tamperSignature()` / `signWithStaleTimestamp()`. Mirrors the Worker's `${orgId}${propertyId}${timestamp}` HMAC-SHA256 hex scheme from `worker/src/hmac.ts`. Drift between the two would cause the paired-positive test to fail red — intentional tripwire.
+- [x] Bootstrap extension (carried into Sprint 1.2 deliverables): `scripts/e2e-bootstrap.ts` now reads `web_properties.event_signing_secret` back and emits one `consent_banners` row per property (required FK target for `consent_events.banner_id`). `.env.e2e` gains `FIXTURE_<P>_PROPERTY_<n>_SECRET` and `FIXTURE_<P>_PROPERTY_<n>_BANNER_ID` for all 9 fixture properties.
+- [x] `tests/e2e/utils/fixtures.ts` extended with `WebPropertyFixture { id, url, signingSecret, bannerId }`; `VerticalFixture.properties[]` exposes the new shape.
+- [x] `tests/e2e/utils/supabase-admin.ts` — service-role client for observable-state assertions (`countConsentEventsSince`, `latestConsentEvent`). Test-code-only; excluded from the `scripts/check-no-service-role-in-customer-app.ts` grep gate by path.
+- [x] First paired pipeline test: `tests/e2e/worker-consent-event.spec.ts` + `worker-consent-event-tampered.spec.ts` + sibling spec doc at `specs/worker-consent-event.md`.
 
 **Testing plan:**
-- [ ] Send a valid signed event → receive 202 + see row in `public.consent_events`.
-- [ ] Send an unsigned event → receive 403 + confirm no row written (negative control; this is the first pair in the suite).
+- [x] Send a valid signed event → receive 202 + see row in `public.consent_events` (observable-state: 5 column assertions — `org_id`, `property_id`, `banner_id`, `event_type='consent_given'`, `origin_verified='hmac-verified'`) + row count delta = 1.
+- [x] Send a tampered event (one hex char of signature flipped) → receive 403 + body contains "Invalid signature" + row count delta = 0 after a 1s settle window.
+- [x] Paired positive + negative use **different fixture properties** (ecommerce.properties[0] vs [1]) so they can run in parallel without polluting each other's count-since-cutoff queries. Documented as an invariant in the spec doc.
+- [x] Sacrificial control (`controls/smoke-healthz-negative.spec.ts`) still fails red on every run.
+- [x] `bunx tsc --noEmit` clean on `tests/e2e/` + on scripts.
 
-**Status:** `[ ] planned`
+**Measured:**
+- Pipeline positive: 591 ms (wrangler-dev local, chromium).
+- Pipeline negative: 1.4 s (includes 1 s no-write settle window).
+- Combined parallel run: 1.9 s for the pair.
+
+**Setup requirement (documented):**
+- `worker/.dev.vars` must contain `SUPABASE_WORKER_KEY=<value>` for local wrangler dev to reach Supabase. For the test harness, a service-role value is an acceptable local stand-in (same `tests/rls/` pattern — test-code only, file is mode 0600 and gitignored). Production deployments continue to use the scoped `cs_worker` JWT set via `wrangler secret put`. `worker/.dev.vars` and `worker/.dev.vars.local` added to root `.gitignore`.
+
+**Status:** `[x] complete`
 
 #### Sprint 1.4: R2 evidence writer + static index
 

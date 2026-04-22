@@ -64,14 +64,39 @@ Per ADR-1014:
 4. **Every test emits a trace id** (the `traceId` fixture). The id threads through Worker logs, buffer rows, R2 manifests, and the evidence archive.
 5. **Controls MUST fail red.** A control that ever passes invalidates the whole run.
 
-## What's in this sprint (Sprint 1.1)
+## Running pipeline tests against the Worker
 
-- [x] Workspace scaffold (package.json, tsconfig.json)
-- [x] `playwright.config.ts` — chromium + webkit default; firefox nightly-gated (`PLAYWRIGHT_NIGHTLY=1`)
-- [x] `specs/README.md` — normative spec-doc template
-- [x] `utils/env.ts`, `utils/trace-id.ts`, `utils/fixtures.ts`
-- [x] Root `package.json` scripts: `test:e2e`, `test:e2e:smoke`, `test:e2e:full`, `test:e2e:partner`
-- [x] First smoke spec + sacrificial control
-- [ ] Verification — `bun run test:e2e:smoke` against running local servers
+Pipeline tests under `@pipeline @worker` hit a live Cloudflare Worker at `WORKER_URL`. Two ways to provide one:
 
-Sprint 1.2 (next) will wire the Supabase test-project bootstrap (`scripts/e2e-bootstrap.ts`) and fixture factory. Sprint 1.3 adds the Worker local harness. Sprint 1.4 adds the R2 evidence writer + static index.
+**Option A — local wrangler dev (preferred for partner reproduction).**
+
+```bash
+# One-time: give wrangler dev a Supabase secret that can reach your test project.
+# For local E2E harness use only (file is gitignored + mode 0600):
+printf 'SUPABASE_WORKER_KEY=%s\n' "$(grep '^SUPABASE_SERVICE_ROLE_KEY=' ../../.env.local | cut -d= -f2-)" \
+  > ../../worker/.dev.vars
+chmod 600 ../../worker/.dev.vars
+
+# In one terminal:
+cd ../../worker && bun run dev
+
+# In another:
+WORKER_URL=http://127.0.0.1:8787 bun run test
+```
+
+The dev-vars fallback uses the service-role key as a stand-in for `SUPABASE_WORKER_KEY` in LOCAL TEST runs only — this is the same pattern `tests/rls/` uses. Production deployments continue to use the scoped `cs_worker` JWT set via `wrangler secret put`.
+
+**Option B — deployed Worker.**
+
+```bash
+WORKER_URL=https://consentshield-cdn.<your-account>.workers.dev bun run test
+```
+
+If `WORKER_URL` is unset, pipeline tests skip cleanly with a pointer to this doc.
+
+## Sprint progress
+
+- Sprint 1.1 (complete) — workspace scaffold + smoke test + sacrificial control
+- Sprint 1.2 (complete) — Supabase bootstrap/reset scripts + vertical fixtures
+- Sprint 1.3 (complete) — Worker local harness + HMAC helper + first paired pos/neg pipeline test
+- Sprint 1.4 (next) — R2 evidence writer + static index at `testing.consentshield.in`
