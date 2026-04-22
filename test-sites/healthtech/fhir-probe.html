@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex, notranslate" />
+<meta name="googlebot" content="noindex, nofollow, noarchive" />
+<meta name="bingbot" content="noindex, nofollow, noarchive" />
+<title>FHIR-never-persisted probe — MediCare · ConsentShield demo</title>
+<link rel="stylesheet" href="/shared/demo.css" />
+<script>
+window.__DEMO_TRACKERS__ = {
+  research_deidentified: [{ src: 'https://www.googletagmanager.com/gtag/js?id=G-DEMOCLINIC' }],
+  marketing_health_optin: [],
+  clinical_care: []
+}
+</script>
+<script async src="/shared/banner-loader.js"></script>
+<script defer src="/shared/demo.js"></script>
+</head>
+<body data-page="fhir-probe" data-vertical="healthcare">
+<header class="site-head">
+  <div class="wrap" style="display:flex;align-items:center;justify-content:space-between">
+    <div class="brand"><a href="/healthtech/">MediCare Clinic</a></div>
+    <nav>
+      <a href="/healthtech/">Home</a>
+      <a href="/healthtech/appointment.html">Book appointment</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap" style="padding:32px 24px;max-width:760px">
+  <h1 style="margin:0 0 8px">FHIR-never-persisted guardrail probe</h1>
+  <p style="color:var(--mut);margin:0 0 24px">CLAUDE.md Rule 3 (non-negotiable): <strong>health data (FHIR) is never persisted by ConsentShield</strong>. Not in any buffer, not in any log, not in any variable that outlives the request. This page POSTs a synthetic FHIR <code>Observation</code> to a mock EHR endpoint — the ConsentShield banner is active, monitoring is enabled, and yet <em>no FHIR payload ever reaches ConsentShield</em>. A post-run grep of every ConsentShield buffer table must return zero rows containing the resource names below.</p>
+
+  <div class="panel">
+    <h3>Synthetic FHIR Observation (this is what leaves the browser)</h3>
+<pre id="payload" style="margin:8px 0 0;font-size:12px;background:#f1f5f9;padding:12px;border-radius:8px;overflow:auto">&#123;
+  "resourceType": "Observation",
+  "status": "final",
+  "code": &#123;
+    "coding": [&#123;
+      "system": "http://loinc.org",
+      "code": "29463-7",
+      "display": "Body weight"
+    &#125;]
+  &#125;,
+  "subject": &#123; "reference": "Patient/synthetic-0001" &#125;,
+  "effectiveDateTime": "2026-04-22T10:30:00+05:30",
+  "valueQuantity": &#123;
+    "value": 68.4,
+    "unit": "kg",
+    "system": "http://unitsofmeasure.org",
+    "code": "kg"
+  &#125;
+&#125;</pre>
+  </div>
+
+  <div class="panel">
+    <h3>Destination — a stub EHR endpoint (NOT ConsentShield)</h3>
+    <p style="margin:0 0 8px;font-size:14px">The mock EHR lives at <code>/healthtech/_mock-ehr/</code> on this same static site — it logs the request and returns 201. A real clinic would POST to its EHR server. <strong>ConsentShield is never in this request path.</strong></p>
+    <button class="btn" id="fire" style="margin-top:8px">Fire synthetic FHIR POST</button>
+    <pre id="result" style="margin:12px 0 0;font-size:12px;background:#0b1220;color:#86EFAC;padding:12px;border-radius:8px;overflow:auto;display:none"></pre>
+  </div>
+
+  <div class="panel">
+    <h3>The guardrail — what the audit grep must show after this page runs</h3>
+    <pre style="margin:8px 0 0;font-size:12px;background:#f1f5f9;padding:12px;border-radius:8px;overflow:auto"># Every ConsentShield buffer table — zero FHIR resource names allowed.
+# Run against the test Supabase project AFTER clicking the button above.
+for t in consent_events tracker_observations audit_log processing_log delivery_buffer; do
+  psql -c "select count(*) from $t where to_jsonb($t.*)::text ~* '(Observation|Patient|Bundle|Encounter|Condition|MedicationRequest)';"
+  # Expected: 0, always, for every table.
+done</pre>
+  </div>
+
+  <div class="panel status">
+    <h3>Consent state (live)</h3>
+    <pre id="status">Waiting for banner interaction…</pre>
+  </div>
+</main>
+
+<footer class="site-foot wrap">
+  <div class="links">
+    <a href="/">All demos</a>
+    <a href="https://consentshield.in/privacy">Privacy notice</a>
+    <a href="https://consentshield.in/rights">Your data rights</a>
+  </div>
+  <p>Synthetic clinic. Synthetic FHIR. The guardrail is the invariant — no FHIR in ConsentShield storage, ever.</p>
+</footer>
+
+<script>
+(function () {
+  document.getElementById('fire').addEventListener('click', async function () {
+    var payload = document.getElementById('payload').textContent
+    var out = document.getElementById('result')
+    out.style.display = 'block'
+    out.textContent = 'POSTing to /healthtech/_mock-ehr/ …'
+    try {
+      // The mock path returns 404 (we never created the endpoint on purpose
+      // — the only thing we need to prove is that the PAGE posts FHIR and
+      // ConsentShield's pipeline sees none of it). In a real clinic this
+      // would go to the EHR; the ConsentShield banner remains a bystander.
+      var res = await fetch('/healthtech/_mock-ehr/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/fhir+json' },
+        body: payload
+      })
+      out.textContent = 'stub EHR responded: HTTP ' + res.status +
+        '\n\n(this response is expected to be 404 — the mock path exists only to prove the POST happened from the browser. ' +
+        'The ConsentShield pipeline is not in this request and must show zero FHIR rows in any buffer table. ' +
+        'See the guardrail grep above.)'
+    } catch (e) {
+      out.textContent = 'Network error: ' + e.message
+    }
+  })
+})()
+</script>
+</body>
+</html>

@@ -60,6 +60,15 @@ const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 
 // ─── Fixture catalog ─────────────────────────────────────────────────────
 
+interface BannerPurpose {
+  code: string
+  required?: boolean
+  // `legal_basis` is carried on the banner config for DEPA-native parity
+  // with ADR-0023's purpose_definitions; the banner script itself reads
+  // only `code` + `required`.
+  legal_basis?: 'consent' | 'legal_obligation' | 'contract' | 'vital_interest'
+}
+
 interface VerticalSpec {
   slug: 'ecommerce' | 'healthcare' | 'bfsi'
   displayName: string
@@ -68,6 +77,10 @@ interface VerticalSpec {
   planCode: string
   demoHost: string
   properties: Array<{ name: string; url: string; allowedOrigins: string[] }>
+  /** Banner purpose set — vertical-specific. Seeded into every property's
+   *  consent_banner row so the rendered banner reflects the vertical's
+   *  actual consent landscape. */
+  purposes: BannerPurpose[]
   fixtureEmail: string
   fixturePassword: string
   envPrefix: string
@@ -104,6 +117,11 @@ const VERTICALS: VerticalSpec[] = [
         allowedOrigins: ['http://localhost:4001']
       }
     ],
+    purposes: [
+      { code: 'essential', required: true, legal_basis: 'contract' },
+      { code: 'analytics', required: false, legal_basis: 'consent' },
+      { code: 'marketing', required: false, legal_basis: 'consent' }
+    ],
     fixtureEmail: 'e2e-ecom@test.consentshield.in',
     fixturePassword: 'e2e-ECOM-pass-2026-04-22',
     envPrefix: 'ECOM'
@@ -138,6 +156,14 @@ const VERTICALS: VerticalSpec[] = [
         allowedOrigins: ['http://localhost:4002']
       }
     ],
+    // ABDM-adjacent purpose set per ADR-1014 Sprint 2.2. clinical_care is
+    // legal-basis:contract (required to deliver the care); research +
+    // marketing are opt-in under DPDP §6.
+    purposes: [
+      { code: 'clinical_care', required: true, legal_basis: 'contract' },
+      { code: 'research_deidentified', required: false, legal_basis: 'consent' },
+      { code: 'marketing_health_optin', required: false, legal_basis: 'consent' }
+    ],
     fixtureEmail: 'e2e-health@test.consentshield.in',
     fixturePassword: 'e2e-HEALTH-pass-2026-04-22',
     envPrefix: 'HEALTH'
@@ -171,6 +197,14 @@ const VERTICALS: VerticalSpec[] = [
         url: 'http://localhost:4003/sandbox',
         allowedOrigins: ['http://localhost:4003']
       }
+    ],
+    // BFSI purposes per ADR-1014 Sprint 2.3. KYC is legal-basis:
+    // legal_obligation (Aadhaar + PAN under RBI rules — not withdrawable);
+    // credit_bureau_share + marketing_sms require explicit consent.
+    purposes: [
+      { code: 'kyc_mandatory', required: true, legal_basis: 'legal_obligation' },
+      { code: 'credit_bureau_share', required: false, legal_basis: 'consent' },
+      { code: 'marketing_sms', required: false, legal_basis: 'consent' }
     ],
     fixtureEmail: 'e2e-bfsi@test.consentshield.in',
     fixturePassword: 'e2e-BFSI-pass-2026-04-22',
@@ -359,15 +393,27 @@ async function ensureVertical(spec: VerticalSpec): Promise<VerticalState> {
 
     // One consent_banner per property (Sprint 1.3 — needed for the HMAC
     // pipeline test; consent_events has a FK to consent_banners.id).
+    // Purposes are refreshed on every bootstrap so vertical-specific
+    // updates (ADR-1014 Sprint 2.2+) propagate without --force.
     const { data: existingBanner } = await admin
       .from('consent_banners')
-      .select('id')
+      .select('id, purposes')
       .eq('property_id', propertyId)
       .eq('version', 1)
       .maybeSingle()
     let bannerId: string
     if (existingBanner) {
       bannerId = existingBanner.id
+      const current = JSON.stringify(existingBanner.purposes ?? [])
+      const desired = JSON.stringify(spec.purposes)
+      if (current !== desired) {
+        const { error } = await admin
+          .from('consent_banners')
+          .update({ purposes: spec.purposes })
+          .eq('id', bannerId)
+        if (error) throw new Error(`[${spec.slug}] updateBanner purposes: ${error.message}`)
+        console.log(`[${spec.slug}] refreshed consent_banner ${bannerId} purposes for "${prop.name}"`)
+      }
     } else {
       const { data, error } = await admin
         .from('consent_banners')
@@ -379,11 +425,7 @@ async function ensureVertical(spec: VerticalSpec): Promise<VerticalState> {
           headline: 'We value your consent',
           body_copy: 'E2E fixture banner — seeded by scripts/e2e-bootstrap.ts.',
           position: 'bottom-bar',
-          purposes: [
-            { code: 'essential', required: true },
-            { code: 'analytics', required: false },
-            { code: 'marketing', required: false }
-          ],
+          purposes: spec.purposes,
           monitoring_enabled: true
         })
         .select('id')

@@ -2,6 +2,38 @@
 
 Vercel, Cloudflare, Supabase config changes.
 
+## [ADR-1014 Sprint 2.2 — healthcare demo site + FHIR guardrail probe + Railway deploy] — 2026-04-22
+
+**ADR:** ADR-1014 — E2E test harness + vertical demo sites
+**Sprint:** Phase 2, Sprint 2.2 — Healthcare demo
+
+### Added
+- `test-sites/healthtech/appointment.html` — ABHA-style booking form (name, mobile, optional ABHA ID, reason for visit, preferred slot).
+- `test-sites/healthtech/portal.html` — ABDM-style OTP-login stub. Describes what the post-login portal would show (appointments, prescriptions fetched from the EHR at request time, consent ledger, right-to-deletion path) — deliberately no persistent patient state in the demo.
+- `test-sites/healthtech/fhir-probe.html` — CLAUDE.md Rule 3 guardrail test surface. Presents a synthetic FHIR `Observation` payload and POSTs it to a deliberately-nonexistent `/healthtech/_mock-ehr/` endpoint on the same static site (returns 404 — the 404 is the point: the POST proves the browser made a network call without ever traversing any ConsentShield surface). Page body documents the buffer-table audit-grep a reviewer should run to confirm zero rows matching `Observation|Patient|Bundle|Encounter|Condition|MedicationRequest`.
+
+### Changed
+- `test-sites/healthtech/index.html` — rewritten to drop hardcoded org/prop IDs; routes through `shared/banner-loader.js` + `shared/demo.js`; healthcare-specific tracker mix (Google Analytics gated by `research_deidentified`); includes a dedicated callout explaining the CLAUDE.md Rule 3 constraint with a link to `fhir-probe.html`. Per-page `<meta name="robots">` + `googlebot` + `bingbot` noindex tags added to all four healthcare pages.
+- `scripts/e2e-bootstrap.ts` — added `BannerPurpose` interface + `purposes: BannerPurpose[]` on `VerticalSpec`. Ecommerce seeded with `essential / analytics / marketing`; healthcare with `clinical_care` (contract, required) / `research_deidentified` (consent) / `marketing_health_optin` (consent); BFSI with `kyc_mandatory` (legal_obligation) / `credit_bureau_share` (consent) / `marketing_sms` (consent). Banner-refresh logic: when `consent_banners.purposes` jsonb differs from the spec, UPDATE in place (no `--force` required, no version bump). Banner `id` is preserved across runs so tests can pin it.
+
+### Deployed
+- Railway service `healthcare` under project `ConsentShield` (service id `ba76be14-dfe7-40e1-b968-039525c780fc`). Service was created server-side by `railway add --service healthcare` despite the CLI returning "Project not found" at the tail of its wizard — verified live via Railway GraphQL (`Project-Access-Token`-scoped query for `project.services.edges`). `railway up --service healthcare --ci` from `test-sites/` built via Nixpacks (nodejs_22 + npm-9_x; start: `node server.js`) and deployed successfully. Live at **`https://healthcare-production-330c.up.railway.app`** — verified all four pages return 200 with the Sprint 2.1 hardening header set, plus `robots.txt` + `/.well-known/security.txt` carry over from the shared static server.
+
+### Tested
+- `bunx tsx scripts/e2e-bootstrap.ts` — 3 vertical fixtures refreshed, 9 banner rows UPDATE'd in place, 18.6 s wall time, zero errors.
+- `curl -sSI https://healthcare-production-330c.up.railway.app/healthtech/` — HTTP/2 200 with all 7 hardening response headers (X-Robots-Tag, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, Cross-Origin-Opener-Policy).
+- `curl -sS https://healthcare-production-330c.up.railway.app/robots.txt` — wildcard + named-crawler deny list served 200.
+- `curl -sS https://healthcare-production-330c.up.railway.app/.well-known/security.txt` — RFC 9116 record served 200.
+- `curl -sS <url> | grep 'name="robots"'` against all four healthcare pages — meta tags present on `/healthtech/`, `appointment.html`, `portal.html`, `fhir-probe.html`.
+
+### Deferred
+- DNS cutover to `demo-clinic.consentshield.in` — one-step Cloudflare CNAME to `healthcare-production-330c.up.railway.app`; fixture `allowed_origins` already lists the target hostname.
+- Automated buffer-table FHIR grep — moved to Sprint 3.7 (negative-control pair sweep) where the test harness can execute the grep as part of a CI stage. The demo-site probe page documents the manual-review version for now.
+- ABDM-scope DEPA-native opt-in assertion (`depa_native=true` on the stored artefact) — deferred to the Sprint 3.x end-to-end flows where the DEPA artefact surface lights up.
+
+### Why
+Healthcare is the vertical where the CLAUDE.md Rule 3 invariant (FHIR never persisted) is most load-bearing — a single leaked `Observation.valueQuantity` puts the entire compliance story at risk. Rather than embed the guardrail only in application code, the demo site carries an explicit probe page that makes the invariant auditable by a reviewer with just a browser + a `curl` against the buffer tables. The mismatched POST (404 response) is the proof: the browser fires the request to a synthetic `_mock-ehr` endpoint that ConsentShield does not, and will never, terminate — so any row appearing in the buffers with FHIR shape would itself be evidence of a leak. Bootstrap-seeded purposes (`clinical_care` / `research_deidentified` / `marketing_health_optin`) align with the ABDM-adjacent consent surface rather than the ecommerce GA/Hotjar/Meta trio, so downstream DEPA-native tests can exercise legal-basis-`contract` and legal-basis-`consent` paths side by side.
+
 ## [ADR-1014 Sprint 2.1 — demo site hardening (noindex + AI-bot deny)] — 2026-04-22
 
 **ADR:** ADR-1014 — E2E test harness + vertical demo sites

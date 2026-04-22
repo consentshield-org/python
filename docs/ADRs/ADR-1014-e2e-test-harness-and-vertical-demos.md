@@ -220,16 +220,26 @@ Each vertical site is a small standalone Next.js app deployed to Railway under a
 **Estimated effort:** 3 days
 
 **Deliverables:**
-- [ ] Clinic site: landing, appointment booking, patient portal login stub.
-- [ ] FHIR-never-persisted enforcement probe: a synthetic page that posts a minimal FHIR Observation to a mock EHR while the banner is watching — ConsentShield must record the consent artefact without ever serialising FHIR content.
-- [ ] ABDM-adjacent purpose set: `clinical_care`, `research_deidentified`, `marketing_health_optin`.
-- [ ] Realistic trackers: Google Analytics only (health sites rarely use Meta Pixel).
+- [x] Clinic site: landing (`test-sites/healthtech/index.html`), appointment booking (`appointment.html`), patient portal login stub (`portal.html`). Landing rewritten to drop hardcoded org/prop IDs and route through `shared/banner-loader.js` + `shared/demo.js`.
+- [x] FHIR-never-persisted enforcement probe: `test-sites/healthtech/fhir-probe.html`. Page presents a synthetic FHIR `Observation` payload, POSTs it to a deliberately-nonexistent `/healthtech/_mock-ehr/` endpoint on the same static site (returns 404 — the 404 is the point: the POST leaves the browser without ever touching any ConsentShield surface). Audit-grep instructions embedded in the page body document the buffer-table check a reviewer runs to confirm CLAUDE.md Rule 3 continues to hold (zero rows matching `Observation|Patient|Bundle|Encounter|Condition|MedicationRequest`).
+- [x] ABDM-adjacent purpose set seeded via bootstrap: `clinical_care` (legal_basis=contract, required=true), `research_deidentified` (legal_basis=consent), `marketing_health_optin` (legal_basis=consent). `scripts/e2e-bootstrap.ts` extended with a per-vertical `purposes` spec and banner-refresh logic: when `consent_banners.purposes` differs from the spec, UPDATE in place (no `--force` needed). Verified: re-running bootstrap refreshed all 9 fixture property banners (3 verticals × 3 properties) in 18.6 s.
+- [x] Realistic trackers: Google Analytics only (gated via `research_deidentified`), matching the reality that clinical sites rarely use Meta Pixel. Wired through `test-sites/shared/demo.js`.
+- [x] Railway service created (`healthcare`, service id `ba76be14-dfe7-40e1-b968-039525c780fc`, project `ConsentShield`). Service was created server-side by `railway add --service healthcare` despite the CLI returning "Project not found" at the tail of its wizard — confirmed live via Railway GraphQL (`Project-Access-Token`-scoped query for `project.services.edges`). `railway up --service healthcare --ci` from `test-sites/` built (Nixpacks nodejs_22 + npm-9_x) and deployed successfully. Railway-generated URL: **`https://healthcare-production-330c.up.railway.app`**.
+- [x] Demo-sites hardening carries over automatically — every page served by `test-sites/server.js` inherits the 7 hardening response headers (X-Robots-Tag with all 8 directives, X-Content-Type-Options, X-Frame-Options, HSTS, Referrer-Policy, Permissions-Policy, Cross-Origin-Opener-Policy). `robots.txt` wildcard + named deny-list of 40+ crawlers + `/.well-known/security.txt` RFC 9116 contact inherited from Sprint 2.1's `test-sites/` deploy. All four healthcare pages carry `<meta name="robots">` + `googlebot` + `bingbot` noindex tags — verified by `curl` against the live Railway URL.
+- [ ] DNS cutover to `demo-clinic.consentshield.in` — pending. The fixture `allowed_origins` already lists this hostname so the cutover is a Cloudflare-DNS-only step (`CNAME demo-clinic → healthcare-production-330c.up.railway.app`).
 
 **Testing plan:**
-- [ ] The FHIR-persistence guardrail: grep the buffer tables after the clinic-demo suite — zero rows contain FHIR fields (Observation, Patient, Bundle resource names).
-- [ ] ABDM-scope opt-in: explicit `clinical_care` consent → artefact stored with `depa_native=true`.
+- [ ] The FHIR-persistence guardrail: grep the buffer tables after the clinic-demo suite — zero rows contain FHIR fields (Observation, Patient, Bundle resource names). Page instructs the reviewer; automated sweep lives in Sprint 3.7.
+- [ ] ABDM-scope opt-in: explicit `clinical_care` consent → artefact stored with `depa_native=true`. Deferred to the Sprint 3.x end-to-end flows where the DEPA artefact surface lights up.
 
-**Status:** `[ ] planned`
+**Tested so far:**
+- [x] `scripts/e2e-bootstrap.ts` re-run against the dev Supabase: 3 fixtures refreshed, 9 banner rows updated in place, 18.6 s wall time, zero errors.
+- [x] `curl -sSI https://healthcare-production-330c.up.railway.app/healthtech/` returns HTTP/2 200 + the full 7-header hardening set.
+- [x] `curl -sS .../robots.txt` returns the wildcard + named deny-list.
+- [x] `curl -sS .../.well-known/security.txt` returns the RFC 9116 contact.
+- [x] All four healthcare pages (`/healthtech/`, `/healthtech/appointment.html`, `/healthtech/portal.html`, `/healthtech/fhir-probe.html`) carry `<meta name="robots">` + `googlebot` + `bingbot` noindex tags — verified via `curl | grep`.
+
+**Status:** `[x] complete for the demo + deploy axis — DNS cutover + automated FHIR grep deferred to Sprint 3.7 per ADR-1014's phase structure`
 
 #### Sprint 2.3: BFSI demo — `demo-fintech.consentshield.in`
 

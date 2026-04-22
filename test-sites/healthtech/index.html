@@ -3,26 +3,54 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>MediCare — ConsentShield demo</title>
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex, notranslate" />
+<meta name="googlebot" content="noindex, nofollow, noarchive" />
+<meta name="bingbot" content="noindex, nofollow, noarchive" />
+<title>MediCare Clinic — ConsentShield demo</title>
 <link rel="stylesheet" href="/shared/demo.css" />
-<script async
-  src="https://cdn.consentshield.in/v1/banner.js?org=432bca6d-8fce-415a-85e0-96397ddac666&prop=79591058-7544-4862-973b-dccfdabf54ee"></script>
+<script>
+// Healthcare tracker mix — GA-only by convention. No Meta Pixel on a
+// clinic site; even analytics is behind the research_deidentified purpose
+// to match DPDP §6 + ABDM expectations.
+window.__DEMO_TRACKERS__ = {
+  research_deidentified: [
+    { src: 'https://www.googletagmanager.com/gtag/js?id=G-DEMOCLINIC' }
+  ],
+  marketing_health_optin: [],
+  clinical_care: []
+}
+</script>
+<script async src="/shared/banner-loader.js"></script>
+<script defer src="/shared/demo.js"></script>
 </head>
-<body>
+<body data-page="home" data-vertical="healthcare">
 <header class="site-head">
   <div class="wrap" style="display:flex;align-items:center;justify-content:space-between">
-    <div class="brand"><a href="/healthtech/">MediCare</a></div>
-    <nav><a href="#">Find a doctor</a><a href="#">Appointments</a><a href="#">Records</a></nav>
+    <div class="brand"><a href="/healthtech/">MediCare Clinic</a></div>
+    <nav>
+      <a href="/healthtech/">Home</a>
+      <a href="/healthtech/appointment.html">Book appointment</a>
+      <a href="/healthtech/portal.html">Patient portal</a>
+    </nav>
   </div>
 </header>
 
-<main class="wrap" style="padding:32px 24px;max-width:720px">
-  <h1 style="margin:0 0 8px">Book a consultation</h1>
-  <p style="color:var(--mut);margin:0 0 24px">This site collects only what is strictly necessary to schedule your appointment. No analytics, no advertising, no third-party sharing. The banner is one button — there is nothing optional to consent to.</p>
+<main class="wrap" style="padding:32px 24px;max-width:760px">
+  <h1 style="margin:0 0 8px">Compassionate care, clearly consented.</h1>
+  <p style="color:var(--mut);margin:0 0 24px">ConsentShield E2E fixture site for the <strong>healthcare</strong> vertical. DPDP §6 applies — treatment-delivery data is processed under a contract legal basis; research and marketing remain opt-in. No tracker loads before the patient has read the banner below.</p>
 
   <div class="panel">
-    <h3>Why this page shows a banner at all</h3>
-    <p style="margin:0;color:var(--mut);font-size:14px">DPDP Section 5 still requires notice of what is collected, why, and for how long, even when only required data is processed. This banner satisfies that notice requirement.</p>
+    <h3>Purposes served on this property</h3>
+    <ul style="margin:8px 0 0 20px;color:var(--mut);font-size:14px">
+      <li><strong>clinical_care</strong> — required; legal basis: contract. Visit notes, prescriptions, ABDM health ID linkage if present.</li>
+      <li><strong>research_deidentified</strong> — optional. Aggregate statistics for peer-reviewed outcomes research.</li>
+      <li><strong>marketing_health_optin</strong> — optional. Reminder emails about upcoming check-ups and clinic news.</li>
+    </ul>
+  </div>
+
+  <div class="panel" style="border-left:3px solid #15803D">
+    <h3>FHIR data is never persisted in ConsentShield</h3>
+    <p style="margin:0;color:var(--mut);font-size:14px">Per CLAUDE.md Rule 3 (non-negotiable), no FHIR resource (Patient, Observation, Encounter, Bundle, etc.) is ever serialised by the ConsentShield pipeline. The platform records that consent was captured; the clinical payload stays inside the customer's EHR. See <a href="/healthtech/fhir-probe.html">the FHIR probe page</a> for the guardrail test.</p>
   </div>
 
   <div class="panel status">
@@ -33,19 +61,11 @@
 
 <footer class="site-foot wrap">
   <div class="links">
-    <a href="https://consentshield-one.vercel.app/privacy/432bca6d-8fce-415a-85e0-96397ddac666">Privacy notice</a>
-    <a href="https://consentshield-one.vercel.app/rights/432bca6d-8fce-415a-85e0-96397ddac666">Your data rights</a>
     <a href="/">All demos</a>
+    <a href="https://consentshield.in/privacy">Privacy notice</a>
+    <a href="https://consentshield.in/rights">Your data rights</a>
   </div>
+  <p>Synthetic clinic. Synthetic consent. No patient data here.</p>
 </footer>
-
-<script>
-const status = document.getElementById('status');
-window.addEventListener('consentshield:consent', (e) => {
-  const { event_type, accepted, rejected } = e.detail;
-  status.textContent =
-    `event: ${event_type}\naccepted: ${accepted.join(', ') || '(none — no optional cookies)'}\nrejected: ${rejected.join(', ') || '(none)'}\n\nNo trackers were loaded. Monitoring is disabled on this property.`;
-});
-</script>
 </body>
 </html>

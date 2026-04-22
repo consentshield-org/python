@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex, notranslate" />
+<meta name="googlebot" content="noindex, nofollow, noarchive" />
+<meta name="bingbot" content="noindex, nofollow, noarchive" />
+<title>Book an appointment — MediCare Clinic · ConsentShield demo</title>
+<link rel="stylesheet" href="/shared/demo.css" />
+<script>
+window.__DEMO_TRACKERS__ = {
+  research_deidentified: [{ src: 'https://www.googletagmanager.com/gtag/js?id=G-DEMOCLINIC' }],
+  marketing_health_optin: [],
+  clinical_care: []
+}
+</script>
+<script async src="/shared/banner-loader.js"></script>
+<script defer src="/shared/demo.js"></script>
+</head>
+<body data-page="appointment" data-vertical="healthcare">
+<header class="site-head">
+  <div class="wrap" style="display:flex;align-items:center;justify-content:space-between">
+    <div class="brand"><a href="/healthtech/">MediCare Clinic</a></div>
+    <nav>
+      <a href="/healthtech/">Home</a>
+      <a href="/healthtech/portal.html">Patient portal</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap" style="padding:32px 24px;max-width:640px">
+  <h1 style="margin:0 0 16px">Book an appointment</h1>
+  <p style="color:var(--mut);margin:0 0 24px;font-size:14px">Only the fields needed to schedule are collected (clinical_care purpose, required).</p>
+
+  <form class="panel" style="padding:20px" onsubmit="event.preventDefault(); alert('Demo only — no real booking placed.');">
+    <div class="field">
+      <label for="name">Full name</label>
+      <input id="name" name="name" type="text" autocomplete="name" placeholder="As on your ABHA" required>
+    </div>
+    <div class="field">
+      <label for="phone">Mobile number</label>
+      <input id="phone" name="phone" type="tel" autocomplete="tel" placeholder="+91 98000 00000" required>
+    </div>
+    <div class="field">
+      <label for="abha">ABHA / Health ID (optional)</label>
+      <input id="abha" name="abha" type="text" placeholder="XX-XXXX-XXXX-XXXX">
+    </div>
+    <div class="field">
+      <label for="reason">Reason for visit</label>
+      <input id="reason" name="reason" type="text" autocomplete="off" placeholder="Brief — we'll ask the rest in person" required>
+    </div>
+    <div class="field">
+      <label for="slot">Preferred slot</label>
+      <input id="slot" name="slot" type="text" autocomplete="off" placeholder="Mon 10:00, Tue afternoon…" required>
+    </div>
+    <button class="btn" type="submit" style="margin-top:8px">Request appointment</button>
+  </form>
+
+  <div class="panel status" style="margin-top:24px">
+    <h3>Consent state (live)</h3>
+    <pre id="status">Waiting for banner interaction…</pre>
+  </div>
+</main>
+
+<footer class="site-foot wrap">
+  <div class="links">
+    <a href="/">All demos</a>
+    <a href="https://consentshield.in/privacy">Privacy notice</a>
+    <a href="https://consentshield.in/rights">Your data rights</a>
+  </div>
+  <p>Synthetic clinic. Synthetic consent. No patient data here.</p>
+</footer>
+</body>
+</html>
