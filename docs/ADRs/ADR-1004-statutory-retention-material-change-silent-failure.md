@@ -175,24 +175,32 @@ When counsel is eventually engaged, this sprint's deliverables flip the affected
 
 ### Phase 2: Notice versioning + re-consent (G-012)
 
-#### Sprint 2.1: Notices schema
-
-**Estimated effort:** 1 day
+#### Sprint 2.1: Notices schema — **complete 2026-04-22**
 
 **Deliverables:**
-- [ ] Migration `<date>_notices.sql`:
-  - `public.notices`: `id`, `org_id`, `version`, `title`, `body_markdown`, `published_at`, `material_change_flag`, `published_by`
-  - Append-only (no UPDATE/DELETE from authenticated)
-  - RLS org-scoped
-- [ ] `consent_events.notice_version` becomes a foreign key to `notices.version` (existing nullable column now points at the new table)
+- [x] Migration `20260804000024_notices_schema.sql`:
+  - `public.notices` (`id`, `org_id`, `version`, `title`, `body_markdown`, `material_change_flag`, `affected_artefact_count`, `published_by`, `published_at`, `created_at`; unique `(org_id, version)`). Append-only: `revoke update, delete` from authenticated + cs_orchestrator; RLS `org_id = current_org_id()`.
+  - `public.consent_events.notice_version` added as nullable integer + composite FK `(org_id, notice_version) → notices(org_id, version)` DEFERRABLE INITIALLY DEFERRED.
+  - `public.publish_notice(p_org_id, p_title, p_body_markdown, p_material_change_flag)` SECURITY DEFINER RPC — auto-increments `version` per org; requires org_memberships row for the caller; computes `affected_artefact_count` on material publishes against consent_events rows on the prior version.
+- [x] Migration `20260804000025_notices_publish_fix.sql` — fixes latent bug: initial RPC body used `SELECT max(...) FOR UPDATE` which Postgres rejects (0A000 FOR UPDATE is not allowed with aggregate functions). Replaced with `pg_advisory_xact_lock(hash(org_id))` — same semantics, valid SQL.
 
 **Testing plan:**
-- [ ] Publish a notice, consent event captures the version, query joins both
-- [ ] Attempt to modify a published notice → rejected
+- [x] `tests/integration/notices-schema.test.ts` — 9/9 PASS:
+  - `publish_notice` auto-increments v1 → v2 per org.
+  - Non-member publish refused with `org_membership_required` (42501).
+  - Short title/body rejected with 22023.
+  - Append-only invariant — direct UPDATE + DELETE from authenticated denied.
+  - FK accepts valid `(org_id, notice_version)`; rejects unknown version.
+  - Material-change publish computes `affected_artefact_count` from prior version.
+  - RLS — orgA's authenticated client cannot SELECT orgB notices.
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete`
 
-#### Sprint 2.2: Material-change enumeration + CSV export
+#### Sprint 2.2: Material-change enumeration + CSV export — **blocked on wireframes (2026-04-22)**
+
+Tracked as `admin.ops_readiness_flags` row (source_adr `ADR-1004 Phase 2 Sprint 2.2`, severity `medium`, owner `Sudhindra (design) then claude-code (impl)`). Wireframe the `/dashboard/notices` list + publish form + material-change toggle + affected-artefact badge + CSV-export action in `docs/design/screen designs and ux/` before the ADR-1004 Phase 2 Sprint 2.2 build starts.
+
+
 
 **Estimated effort:** 2 days
 
@@ -209,7 +217,11 @@ When counsel is eventually engaged, this sprint's deliverables flip the affected
 
 **Status:** `[ ] planned`
 
-#### Sprint 2.3: Replaced-by chain + audit trail
+#### Sprint 2.3: Replaced-by chain + audit trail — **blocked on wireframes (2026-04-22)**
+
+Tracked as `admin.ops_readiness_flags` row (source_adr `ADR-1004 Phase 2 Sprint 2.3`, severity `medium`). Depends on Sprint 2.2 shipping first. UI lives at `/dashboard/notices/[id]/campaign` — needs wireframe first.
+
+
 
 **Estimated effort:** 2 days
 

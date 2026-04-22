@@ -2,6 +2,24 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-1004 Phase 2 Sprint 2.1 — notices schema + publish RPC] — 2026-04-22
+
+**ADR:** ADR-1004 — Statutory retention / material change / silent-failure detection
+**Sprint:** Phase 2 Sprint 2.1
+
+### Added
+- Migration `20260804000024_notices_schema.sql`:
+  - `public.notices` (append-only; unique `(org_id, version)`) — stores one row per published privacy-notice version.
+  - `public.consent_events.notice_version` integer + composite DEFERRABLE FK `(org_id, notice_version) → notices(org_id, version)`.
+  - `public.publish_notice(...)` SECURITY DEFINER RPC — auto-increments version per org, requires `org_memberships` row, computes `affected_artefact_count` on material changes from consent_events rows on the prior version.
+  - RLS `org_id = current_org_id()`; REVOKE update/delete from authenticated + cs_orchestrator.
+- Migration `20260804000025_notices_publish_fix.sql` — fixes latent 0A000 "FOR UPDATE is not allowed with aggregate functions" by replacing `SELECT max() FOR UPDATE` with `pg_advisory_xact_lock` keyed on org_id.
+- Migration `20260804000026_ops_readiness_adr1004_phase2_ui.sql` — seeds two `admin.ops_readiness_flags` rows tracking Sprint 2.2 + 2.3 UI work as blocked on wireframes (per `feedback_wireframes_before_adrs.md`).
+
+### Tested
+- [x] Applied to dev Supabase via `bunx supabase db push` — PASS
+- [x] `tests/integration/notices-schema.test.ts` — 9/9 PASS — auto-increment, membership gate, input validation, append-only invariant, FK accept/reject, material-change affected_artefact_count, RLS isolation.
+
 ## [ADR-1004 Phase 3 Sprint 3.1 — orphan consent-events metric] — 2026-04-22
 
 **ADR:** ADR-1004 — Statutory retention / material change / silent-failure detection

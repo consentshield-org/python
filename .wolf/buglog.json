@@ -9830,6 +9830,122 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-04-22T09:46:48.334Z"
+    },
+    {
+      "id": "bug-614",
+      "timestamp": "2026-04-22T10:02:06.033Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/ADRs/ADR-1005-operations-maturity.md",
+      "root_cause": "12 lines replaced/restructured",
+      "fix": "Rewrote 18→17 lines (12 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-22T10:02:06.033Z"
+    },
+    {
+      "id": "bug-615",
+      "timestamp": "2026-04-22T10:07:17.930Z",
+      "error_message": "Missing guard clause",
+      "file": "tests/integration/orphan-metric.test.ts",
+      "root_cause": "No early return/throw for edge case: bannerErr",
+      "fix": "Added guard clause: if (bannerErr)",
+      "tags": [
+        "auto-detected",
+        "guard-clause",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-22T10:07:17.931Z"
+    },
+    {
+      "id": "bug-616",
+      "timestamp": "2026-04-22T10:08:11.568Z",
+      "error_message": "Null/undefined access in ",
+      "file": "app/src/app/(dashboard)/dashboard/page.tsx",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check) | Also: {/* ADR-1004 Phase 3 Sprint 3.2 — Compliance Health widget *; <ComplianceHealthCard",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-04-22T10:08:17.698Z"
+    },
+    {
+      "id": "bug-617",
+      "timestamp": "2026-04-22T10:09:30.610Z",
+      "error_message": "Type error",
+      "file": "app/src/app/(dashboard)/dashboard/page.tsx",
+      "root_cause": "Missing or incorrect type annotation",
+      "fix": "Added type assertion/annotation",
+      "tags": [
+        "auto-detected",
+        "type-fix",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-22T10:09:30.610Z"
+    },
+    {
+      "id": "bug-618",
+      "timestamp": "2026-04-22T10:10:23.272Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/ADRs/ADR-1004-statutory-retention-material-change-silent-failure.md",
+      "root_cause": "9 lines replaced/restructured",
+      "fix": "Rewrote 15→36 lines (9 removed) | Also: #### Sprint 3.2: Compliance Health widget; **Estimated effort:** 3 days",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-04-22T10:10:33.084Z"
+    },
+    {
+      "id": "bug-619",
+      "timestamp": "2026-04-22T15:45:00.000Z",
+      "error_message": "FOR UPDATE is not allowed with aggregate functions (SQLSTATE 0A000) — publish_notice RPC could not serialise concurrent publishes",
+      "file": "supabase/migrations/20260804000024_notices_schema.sql",
+      "root_cause": "Initial publish_notice body used `select coalesce(max(version), 0) + 1 ... from notices where org_id = ... for update`. Postgres refuses FOR UPDATE alongside aggregate functions because the aggregate hides row identity; there is no row to lock.",
+      "fix": "New migration 20260804000025_notices_publish_fix.sql replaces the FOR UPDATE with pg_advisory_xact_lock keyed on md5(\"notice:\" || org_id). Concurrent publishes for the same org serialise via the advisory lock; different orgs do not block each other.",
+      "tags": [
+        "sql",
+        "postgres",
+        "aggregate",
+        "for-update",
+        "concurrency",
+        "advisory-lock",
+        "ADR-1004"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-22T15:45:00.000Z"
+    },
+    {
+      "id": "bug-620",
+      "timestamp": "2026-04-22T10:28:01.253Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/ADRs/ADR-1004-statutory-retention-material-change-silent-failure.md",
+      "root_cause": "10 lines replaced/restructured",
+      "fix": "Rewrote 16→20 lines (10 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-22T10:28:01.253Z"
     }
   ]
 }
