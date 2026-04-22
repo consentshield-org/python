@@ -2,6 +2,17 @@
 
 Documentation changes.
 
+## [ADR-1005 Phase 2 Sprint 2.1 — test_delete doc sync] — 2026-04-22
+
+**ADR:** ADR-1005 — Operations maturity
+**Sprint:** Phase 2 Sprint 2.1
+
+### Changed
+- `CLAUDE.md` Rule 5 — `cs_api` RPC count 22 → 23 (ADR-1005 Phase 2 Sprint 2.1 adds `rpc_test_delete_trigger`).
+- `docs/architecture/consentshield-definitive-architecture.md` §5.4 — cs_api leak-surface paragraph bumped to 23 with the per-ADR breakdown updated to include ADR-1005 Phase 2 Sprint 2.1: +1 test_delete.
+- `docs/ADRs/ADR-1005-operations-maturity.md` — Sprint 2.1 marked complete; deliverables + test results ticked; follow-up customer-docs task redirected to ADR-1015.
+- `docs/ADRs/ADR-index.md` — ADR-1005 row description appended with Phase 2 Sprint 2.1 landing.
+
 ## [ADR-1017 Sprint 1.3 — tests + runbook + ADR close-out] — 2026-04-22
 
 **ADR:** ADR-1017 — Admin ops-readiness flags

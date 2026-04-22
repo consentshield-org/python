@@ -102,24 +102,23 @@ Phase 1 sprints below are the MARKETING-asset scope. When a partner lands, this 
 **No longer gated on Phase 1** (per 2026-04-22 scope clarification). `test_delete` lets the customer's own webhook handler validate itself; the customer is the counterparty, not a ConsentShield-engaged partner. Can ship independently.
 
 
-#### Sprint 2.1: Public test endpoint
+#### Sprint 2.1: Public test endpoint — **complete 2026-04-22**
 
-**Estimated effort:** 2 days
+**Estimated effort:** 2 days (shipped in ~1h against existing cs_api scaffolding)
 
 **Deliverables:**
-- [ ] `POST /api/v1/integrations/{connector_id}/test_delete` behind G-036 middleware
-- [ ] Generates a deletion instruction with `data_principal.identifier='cs_test_principal_<random>'`, `reason='test'`
-- [ ] Customer-facing doc: handler branches on `reason==='test'` and skips actual deletion logic; returns success
-- [ ] Test deletions tagged in `deletion_receipts.metadata.is_test=true`; excluded from compliance audit aggregation
-- [ ] Rate limit: 10 test calls per connector per hour (prevents abuse)
-- [ ] Scope: `write:deletion`
+- [x] `POST /api/v1/integrations/{connector_id}/test_delete` — v1 cs_api surface; scope `write:deletion`; path param `connector_id`.
+- [x] `rpc_test_delete_trigger(p_key_id, p_org_id, p_connector_id)` — fenced by `assert_api_key_binding`; verifies connector belongs to caller's org; enforces 10-calls-per-connector-per-hour rate limit; synthesises `cs_test_principal_<uuid>` identifier; writes a `deletion_receipts` row with `trigger_type='test_delete'` and `request_payload.is_test=true`.
+- [x] Test rows carry `artefact_id=NULL` + `trigger_id=NULL` → `compute_depa_score` (which left-joins on `artefact_id`) naturally excludes them from compliance aggregation. No schema-level `metadata.is_test` column needed.
+- [x] `cs_api` surface 22 → 23 RPCs; grants in migration `20260804000022`.
+- [x] OpenAPI path + `TestDeleteResponse` schema + docs comment in CLAUDE.md Rule 5 + `consentshield-definitive-architecture.md §5.4`.
 
 **Testing plan:**
-- [ ] Invoke `test_delete` → partner endpoint receives signed instruction with `reason='test'`
-- [ ] Partner confirms → `deletion_receipts` row marked test; not counted in coverage metrics
-- [ ] 11th call within an hour → 429
+- [x] `tests/integration/test-delete-api.test.ts` — 6 assertions: happy-path receipt shape + DB row assertions (`trigger_type`, `request_payload.is_test`, `artefact_id=null`); cross-org connector → `connector_not_found`; inactive connector → `connector_inactive`; unknown id → `connector_not_found`; api_key-binding mismatch → `api_key_binding`; 11th call in hour → `rate_limit_exceeded`. All 6 PASS (11.8s).
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete`
+
+**Deferred to follow-up:** customer-facing markdown doc in `docs/customer-integrations/` showing the handler `reason==='test'` branch. The OpenAPI description already carries the behaviour spec; a richer cookbook belongs to ADR-1015 (developer docs) — added as a task there.
 
 ### Phase 3: Support model (G-014) + SE capacity (G-013)
 

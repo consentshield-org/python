@@ -2,6 +2,22 @@
 
 API route changes.
 
+## [ADR-1005 Phase 2 Sprint 2.1 — /v1/integrations/{connector_id}/test_delete] — 2026-04-22
+
+**ADR:** ADR-1005 — Operations maturity
+**Sprint:** Phase 2 Sprint 2.1
+
+### Added
+- `app/src/lib/consent/test-delete.ts` — `triggerTestDelete` helper over `rpc_test_delete_trigger`; discriminated error union (`api_key_binding`, `connector_not_found`, `connector_inactive`, `rate_limit_exceeded`, `unknown`).
+- `app/src/app/api/v1/integrations/[connector_id]/test_delete/route.ts` — POST handler, scope `write:deletion`; 422 on malformed `connector_id`, 404 on cross-org or unknown, 422 on inactive, 429 on rate-limit, 202 on success.
+- `app/public/openapi.yaml` — new path `/integrations/{connector_id}/test_delete` + `TestDeleteResponse` schema.
+
+### Tested
+- [x] `cd app && bun run lint` — PASS
+- [x] `cd app && bun run build` — PASS (route present in build output)
+- [x] `cd app && bunx tsc --noEmit` — PASS
+- [x] `bunx vitest run tests/integration/test-delete-api.test.ts` — 6/6 PASS
+
 ## [ADR-1004 Sprint 1.5 — /api/orgs/[orgId]/regulatory-exemptions] — 2026-04-22
 
 **ADR:** ADR-1004 — Statutory retention + material-change re-consent

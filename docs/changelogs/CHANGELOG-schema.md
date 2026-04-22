@@ -2,6 +2,19 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-1005 Phase 2 Sprint 2.1 — rpc_test_delete_trigger] — 2026-04-22
+
+**ADR:** ADR-1005 — Operations maturity
+**Sprint:** Phase 2 Sprint 2.1
+
+### Added
+- Migration `20260804000021_rpc_test_delete_trigger.sql` — `public.rpc_test_delete_trigger(p_key_id, p_org_id, p_connector_id)` SECURITY DEFINER RPC: fenced by `assert_api_key_binding`; asserts connector_id belongs to caller's org; enforces 10-calls-per-connector-per-hour rate limit; synthesises `cs_test_principal_<uuid>` identifier; writes a `deletion_receipts` row with `trigger_type='test_delete'`, `artefact_id=null`, `request_payload={is_test:true, reason:'test', ...}`. `compute_depa_score` naturally excludes these rows (left-joins on `artefact_id`).
+- Migration `20260804000022_cs_api_test_delete_grant.sql` — GRANT EXECUTE to `cs_api`; REVOKE from anon/authenticated. `cs_api` surface 22 → 23 RPCs.
+
+### Tested
+- [x] Applied to dev Supabase via `bunx supabase db push` — PASS
+- [x] `tests/integration/test-delete-api.test.ts` — 6/6 PASS (11.8s) — happy path, cross-org connector, inactive connector, unknown id, api-key binding mismatch, rate-limit exceeded at 11th call.
+
 ## [ADR-1017 Sprint 1.3 — audit-log column-misuse fix] — 2026-04-22
 
 **ADR:** ADR-1017 — Admin ops-readiness flags (+ ADR-1018 follow-up)

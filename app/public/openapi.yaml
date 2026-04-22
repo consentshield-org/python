@@ -374,6 +374,18 @@ components:
         initial_status:       { type: string, example: pending }
         note:                 { type: string }
 
+    TestDeleteResponse:
+      type: object
+      required: [receipt_id, data_principal_identifier, reason, connector_id, status]
+      properties:
+        receipt_id:                { type: string, format: uuid }
+        data_principal_identifier: { type: string, example: cs_test_principal_5fa8c1b2-3d4e-4a7b-9c0d-ef1234567890 }
+        reason:                    { type: string, enum: [test] }
+        connector_id:              { type: string, format: uuid }
+        connector_type:            { type: string }
+        status:                    { type: string, example: pending }
+        note:                      { type: string }
+
     DeletionReceiptRow:
       type: object
       required: [id, trigger_type, target_system, status, created_at]
@@ -1254,6 +1266,66 @@ paths:
         "429": { $ref: "#/components/responses/TooManyRequests" }
         "501":
           description: retention_expired mode is not yet implemented.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
+  /integrations/{connector_id}/test_delete:
+    post:
+      operationId: integrationsTestDelete
+      summary: Exercise a customer deletion-webhook handler without real data
+      description: >
+        Creates a synthetic deletion request against the named connector.
+        Generates a random `cs_test_principal_<uuid>` data_principal and
+        writes a `deletion_receipts` row with `trigger_type='test_delete'`
+        and `request_payload.is_test=true`. Customer handlers should
+        inspect `request_payload.reason=='test'` and short-circuit without
+        deleting real data.
+
+        Rate-limited to 10 calls per connector per hour. Test rows have
+        `artefact_id=null` so compliance aggregations exclude them.
+      tags: [Deletion]
+      parameters:
+        - in: path
+          name: connector_id
+          required: true
+          schema: { type: string, format: uuid }
+      security:
+        - bearerAuth: [write:deletion]
+      responses:
+        "202":
+          description: Test deletion receipt created; delivery is async.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestDeleteResponse"
+              example:
+                receipt_id: "9d8e7f6a-5b4c-3d2e-1f0a-9b8c7d6e5f4a"
+                data_principal_identifier: "cs_test_principal_5fa8c1b2-3d4e-4a7b-9c0d-ef1234567890"
+                reason: "test"
+                connector_id: "8e9f0a1b-2c3d-4e5f-6a7b-8c9d0e1f2a3b"
+                connector_type: "hubspot"
+                status: "pending"
+                note: "Customer webhook handler should inspect request_payload->>'reason'='test' and short-circuit without deleting real data."
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403":
+          description: Key is valid but lacks write:deletion scope or does not authorise the org.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "404":
+          description: connector_id does not belong to the key's org.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "410": { $ref: "#/components/responses/Gone" }
+        "422":
+          description: connector_id malformed or connector is not active.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429":
+          description: Rate limit — 10 test_delete calls per connector per hour.
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
