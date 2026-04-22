@@ -22,6 +22,7 @@ build/
 app/.env.local
 admin/.env.local
 .secrets
+.secrets*
 
 # Debug
 npm-debug.log*
@@ -43,6 +44,8 @@ Thumbs.db
 
 # Supabase
 supabase/.temp/
+# Supabase CLI auto-init cruft from shell-startup invocations while cwd is test-sites/
+test-sites/supabase/
 
 # Cloudflare
 worker/.wrangler/
