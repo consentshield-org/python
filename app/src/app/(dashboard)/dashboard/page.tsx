@@ -122,6 +122,33 @@ export default async function DashboardPage() {
   const verifiedProperties = properties.filter((p) => p.snippet_verified_at).length
   const activeProperties = properties.length
 
+  // ADR-1004 Phase 3 Sprint 3.1/3.2 — Compliance Health data.
+  //   * orphan_count  — refreshed by the orphan-consent-events-monitor cron
+  //     every 5 minutes; held in depa_compliance_metrics.orphan_count.
+  //   * overdueDeletions — deletion_receipts older than 24h still not confirmed;
+  //     test_delete rows are excluded (is_test deliveries never affect prod SLA).
+  // eslint-disable-next-line react-hooks/purity -- Server Component: Date.now() is intentional.
+  const overdueSince = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+  const [orphanMetricRes, overdueDeletionsRes] = await Promise.all([
+    supabase
+      .from('depa_compliance_metrics')
+      .select('orphan_count, orphan_computed_at')
+      .eq('org_id', membership.org_id)
+      .maybeSingle(),
+    supabase
+      .from('deletion_receipts')
+      .select('id', { count: 'exact', head: true })
+      .neq('trigger_type', 'test_delete')
+      .in('status', ['pending', 'failed'])
+      .lt('created_at', overdueSince),
+  ])
+  const orphanCount: number = Number(
+    (orphanMetricRes.data as { orphan_count: number } | null)?.orphan_count ?? 0,
+  )
+  const orphanComputedAt: string | null =
+    (orphanMetricRes.data as { orphan_computed_at: string } | null)?.orphan_computed_at ?? null
+  const overdueDeletions: number = overdueDeletionsRes.count ?? 0
+
   const score = computeComplianceScore({
     hasActiveBanner: (activeBannersRes.count ?? 0) > 0,
     hasVerifiedSnippet: verifiedProperties > 0,
@@ -247,6 +274,15 @@ export default async function DashboardPage() {
         </section>
       </div>
 
+      {/* ADR-1004 Phase 3 Sprint 3.2 — Compliance Health widget */}
+      <ComplianceHealthCard
+        coverageScore={depa.coverage_score}
+        orphanCount={orphanCount}
+        orphanComputedAt={orphanComputedAt}
+        overdueDeletions={overdueDeletions}
+        expiring30d={expiringArtefactsRes.count ?? 0}
+      />
+
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <Stat label="Active properties" value={activeProperties} />
         <Stat label="Snippets verified" value={verifiedProperties} />
@@ -360,6 +396,128 @@ function Stat({
       <p className="text-xs text-gray-500">{label}</p>
       <p className={`mt-1 text-2xl font-bold ${color}`}>{value}</p>
     </div>
+  )
+}
+
+// ADR-1004 Phase 3 Sprint 3.2 — Compliance Health widget.
+//
+// Four live metrics + drill-downs. The 5-minute refresh spec item
+// lands via the orphan-consent-events-monitor pg_cron (server-side,
+// every 5 min) + a fresh server fetch on dashboard navigation. A
+// per-metric threshold-alert configuration UI is deferred to a
+// follow-up sprint once the ADR-1005 Phase 6 adapters ship.
+
+function ComplianceHealthCard({
+  coverageScore,
+  orphanCount,
+  orphanComputedAt,
+  overdueDeletions,
+  expiring30d,
+}: {
+  coverageScore: number
+  orphanCount: number
+  orphanComputedAt: string | null
+  overdueDeletions: number
+  expiring30d: number
+}) {
+  const coveragePct = Math.round((coverageScore / 5) * 100)
+  const allGood = orphanCount === 0 && overdueDeletions === 0 && coveragePct === 100
+
+  return (
+    <section className="rounded border border-gray-200">
+      <header className="flex items-baseline justify-between px-4 py-3 border-b border-gray-200">
+        <div>
+          <h2 className="font-medium">Compliance Health</h2>
+          <p className="text-xs text-gray-500">
+            Coverage, orphan events, overdue deletions, upcoming expiries —
+            refreshed every 5 minutes.
+          </p>
+        </div>
+        <span
+          className={`rounded px-2 py-0.5 text-[11px] font-medium ${
+            allGood
+              ? 'bg-emerald-50 text-emerald-700'
+              : 'bg-amber-50 text-amber-700'
+          }`}
+        >
+          {allGood ? 'healthy' : 'attention'}
+        </span>
+      </header>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-0 divide-x divide-gray-200">
+        <HealthMetric
+          label="Coverage"
+          value={`${coveragePct}%`}
+          target="target: 100%"
+          tone={coveragePct === 100 ? 'green' : coveragePct >= 80 ? 'amber' : 'red'}
+          href="/dashboard/artefacts"
+          hint="DEPA coverage score"
+        />
+        <HealthMetric
+          label="Orphan events"
+          value={String(orphanCount)}
+          target="target: 0"
+          tone={orphanCount === 0 ? 'green' : 'red'}
+          href="/dashboard/probes"
+          hint={
+            orphanComputedAt
+              ? `refreshed ${new Date(orphanComputedAt).toLocaleTimeString()}`
+              : 'awaiting first refresh'
+          }
+        />
+        <HealthMetric
+          label="Overdue deletions"
+          value={String(overdueDeletions)}
+          target="target: 0"
+          tone={overdueDeletions === 0 ? 'green' : 'red'}
+          href="/dashboard/compliance/retention"
+          hint=">24h in pending/failed"
+        />
+        <HealthMetric
+          label="Expiring in 30d"
+          value={String(expiring30d)}
+          target="informational"
+          tone="neutral"
+          href="/dashboard/artefacts"
+          hint="Plan re-consent outreach"
+        />
+      </div>
+    </section>
+  )
+}
+
+function HealthMetric({
+  label,
+  value,
+  target,
+  tone,
+  href,
+  hint,
+}: {
+  label: string
+  value: string
+  target: string
+  tone: 'green' | 'amber' | 'red' | 'neutral'
+  href: string
+  hint: string
+}) {
+  const valueColor =
+    tone === 'green'
+      ? 'text-emerald-700'
+      : tone === 'amber'
+        ? 'text-amber-600'
+        : tone === 'red'
+          ? 'text-red-600'
+          : 'text-gray-900'
+  return (
+    <Link
+      href={href}
+      className="p-4 hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+    >
+      <p className="text-[11px] uppercase tracking-wide text-gray-500">{label}</p>
+      <p className={`mt-1 text-3xl font-bold tabular-nums ${valueColor}`}>{value}</p>
+      <p className="mt-1 text-[11px] text-gray-500">{target}</p>
+      <p className="text-[10px] text-gray-400">{hint}</p>
+    </Link>
   )
 }
 

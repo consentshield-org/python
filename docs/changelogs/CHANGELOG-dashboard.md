@@ -2,6 +2,24 @@
 
 Next.js UI changes.
 
+## [ADR-1004 Phase 3 Sprint 3.2 — Compliance Health widget] — 2026-04-22
+
+**ADR:** ADR-1004 — Statutory retention / material change / silent-failure detection
+**Sprint:** Phase 3 Sprint 3.2
+
+### Added
+- `app/src/app/(dashboard)/dashboard/page.tsx` — new `<ComplianceHealthCard>` above the stat strip. Four live metrics: Coverage (DEPA coverage_score %), Orphan events (from Sprint 3.1 metric column), Overdue deletions (pending/failed `deletion_receipts` >24h; test_delete excluded), Upcoming expiries in 30d. Each metric is a drill-down `<Link>` to the relevant panel. Tone-coloured per metric; overall "healthy" only when coverage=100% + orphan=0 + overdue=0.
+- `<HealthMetric>` + `<ComplianceHealthCard>` helper components co-located with the page.
+
+### Deferred (follow-up sprint)
+- Per-metric threshold-alert configuration UI (blocks on ADR-1005 Phase 6 Sprint 6.2/6.3 adapter landings).
+- Standalone customer-docs explainer (covered for now by hint text on each card).
+
+### Tested
+- [x] `cd app && bun run lint` — PASS (one Date.now() usage annotated with the existing `react-hooks/purity` disable pattern).
+- [x] `cd app && bun run build` — PASS.
+- [x] `cd app && bunx tsc --noEmit` — PASS.
+
 ## [ADR-1005 Phase 6 Sprint 6.1 — NotificationAdapter interface + mock] — 2026-04-22
 
 **ADR:** ADR-1005 — Operations maturity (non-email notification channels)

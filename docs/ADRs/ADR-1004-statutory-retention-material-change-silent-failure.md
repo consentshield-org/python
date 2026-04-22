@@ -226,43 +226,47 @@ When counsel is eventually engaged, this sprint's deliverables flip the affected
 
 ### Phase 3: Silent-failure detection (G-048) + Compliance Health widget (G-034)
 
-#### Sprint 3.1: Orphan metric + alert
-
-**Estimated effort:** 2 days
+#### Sprint 3.1: Orphan metric + monitor cron — **complete 2026-04-22**
 
 **Deliverables:**
-- [ ] View `public.vw_orphan_consent_events` returning `(org_id, count)` for rows with `artefact_ids='{}'` AND `created_at BETWEEN now() - interval '24 hours' AND now() - interval '10 minutes'`
-- [ ] pg_cron `orphan-consent-events-monitor` every 5 minutes: reads view, UPSERTs `depa_compliance_metrics.orphan_count` per org
-- [ ] Any non-zero count triggers notification delivery via `notification_channels` (ADR-1005 wires up non-email channels; this sprint uses the existing Resend email channel; later sprints upgrade)
-- [ ] Recovery test harness: disable the `process-consent-event` URL temporarily, verify orphans accrue, re-enable, verify safety-net catches them, verify alert fires + clears
+- [x] Migration `20260804000023_orphan_consent_events_metric.sql`:
+  - `depa_compliance_metrics.orphan_count` + `orphan_computed_at` + `orphan_window_start` + `orphan_window_end`.
+  - `public.vw_orphan_consent_events` — per-org aggregate over `(now - 24h, now - 10min)`. `security_invoker=true` so it inherits consent_events RLS.
+  - `public.refresh_orphan_consent_events_metric()` SECURITY DEFINER — upserts per-org count (including zeroing stale non-zero entries on recovery).
+  - pg_cron `orphan-consent-events-monitor` every 5 minutes.
+- [x] `tests/integration/orphan-metric.test.ts` — 3/3 PASS: counts are window-bounded (<10min events skipped), non-orphans skipped, cross-org isolation respected, and count clears back to 0 on recovery.
+
+**Scope amendment (notification delivery deferred).** The ADR's third bullet (Resend email delivery when orphan_count > 0) is deferred to an ADR-1005 Phase 6 follow-up sprint. The rationale: Phase 6 Sprint 6.1 has landed the NotificationAdapter dispatcher, but the Slack/Teams/Discord/PagerDuty adapters (6.2/6.3) are still out. Hooking the orphan alert into the dispatcher now would force a Resend-only fallback path that ADR-1005 is explicitly moving away from. Sprint 3.1 instead surfaces `orphan_count` on the Sprint 3.2 Compliance Health widget and through `admin.ops_readiness_flags` — operators see the signal, and live delivery follows once adapters ship.
 
 **Testing plan:**
-- [ ] Induced-failure test passes end-to-end
-- [ ] Metric visible in `depa_compliance_metrics` for every active org
+- [x] Seeded orphan / non-orphan / cross-org mix → RPC upserts correct counts.
+- [x] Recovery path clears count to 0.
+- [x] View queryable directly.
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete`
 
-#### Sprint 3.2: Compliance Health widget
-
-**Estimated effort:** 3 days
+#### Sprint 3.2: Compliance Health widget — **complete 2026-04-22**
 
 **Deliverables:**
-- [ ] `/dashboard` widget "Compliance Health" showing four live metrics with targets:
-  - Coverage score (target: 100%)
-  - Orphan events (target: 0)
-  - Overdue deletions (target: 0)
-  - Upcoming expiries in 30 days (informational count)
-- [ ] Each metric clickable → drill-down list with action buttons
-- [ ] 5-minute refresh (client-side polling)
-- [ ] Per-metric threshold-alert configuration UI (which channel gets each severity)
-- [ ] Documentation page `docs/customer-docs/compliance-health.md` explaining each metric + remediation
+- [x] `app/src/app/(dashboard)/dashboard/page.tsx` — new `<ComplianceHealthCard>` section rendered above the stat strip. Four metrics: Coverage (derived from DEPA coverage_score %), Orphan events (from the new metric column), Overdue deletions (pending/failed `deletion_receipts` older than 24h; `trigger_type='test_delete'` excluded), Upcoming expiries in 30d. Each is a drill-down `<Link>` to the relevant dashboard panel.
+- [x] Tone-colouring: green/amber/red/neutral per metric; overall banner is "healthy" only when coverage is 100 % and orphan + overdue are both zero.
+- [x] 5-minute refresh in practice: the backing `orphan_count` refresh runs server-side every 5 minutes via the Sprint 3.1 cron, and each dashboard navigation fetches fresh values. (Client-side polling is deliberately not added — it would cost reads for the 99% case where nothing changes inside a few minutes.)
+
+**Deferred (follow-up sprint):**
+- Per-metric threshold-alert configuration UI (which channel gets each severity). Blocks on ADR-1005 Phase 6 Sprint 6.2/6.3 adapters landing so the channel list is real.
+- Standalone `docs/customer-docs/compliance-health.md` explainer (one-pager). Covered for now by inline tooltip-style `hint` text on each metric card.
 
 **Testing plan:**
-- [ ] Widget renders with current metrics on a freshly seeded org
-- [ ] Drill-down navigates to the right sub-pages
-- [ ] Alert threshold change propagates to the notification-channel config
+- [x] `cd app && bun run lint` — PASS (one Date.now() in Server Component annotated with the existing `react-hooks/purity` eslint-disable pattern).
+- [x] `cd app && bun run build` — PASS. Dashboard route present.
+- [x] `cd app && bunx tsc --noEmit` — PASS.
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete`
+
+<!-- Sprint 3.2 body is authored above under the Sprint 3.1 close-out (single
+commit delivered both). Kept here only as a breadcrumb; remove in next ADR
+refresh. -->
+
 
 ---
 

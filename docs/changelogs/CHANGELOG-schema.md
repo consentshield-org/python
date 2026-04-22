@@ -2,6 +2,22 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-1004 Phase 3 Sprint 3.1 — orphan consent-events metric] — 2026-04-22
+
+**ADR:** ADR-1004 — Statutory retention / material change / silent-failure detection
+**Sprint:** Phase 3 Sprint 3.1
+
+### Added
+- Migration `20260804000023_orphan_consent_events_metric.sql`:
+  - `depa_compliance_metrics.orphan_count` + `orphan_computed_at` + `orphan_window_start` + `orphan_window_end` (all additive; defaults preserve existing rows).
+  - `public.vw_orphan_consent_events` — per-org count of `consent_events` with empty `artefact_ids` in the `(now - 24h, now - 10min)` window; `security_invoker=true`.
+  - `public.refresh_orphan_consent_events_metric()` SECURITY DEFINER — upserts per-org counts; zeroes metric rows on recovery; EXECUTE to authenticated, cs_orchestrator, service_role.
+  - pg_cron `orphan-consent-events-monitor` `*/5 * * * *`.
+
+### Tested
+- [x] Applied to dev Supabase via `bunx supabase db push` — PASS
+- [x] `tests/integration/orphan-metric.test.ts` — 3/3 PASS — window-bounded counting, non-orphan skipping, cross-org isolation, recovery-to-zero.
+
 ## [ADR-1005 Phase 2 Sprint 2.1 — rpc_test_delete_trigger] — 2026-04-22
 
 **ADR:** ADR-1005 — Operations maturity
