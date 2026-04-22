@@ -2,6 +2,29 @@
 
 API route changes.
 
+## [ADR-1005 Sprint 5.1 — v1 Rights API (POST + GET /v1/rights/requests)] — 2026-04-22
+
+**ADR:** ADR-1005 — Operations maturity
+**Sprint:** Phase 5, Sprint 5.1
+
+### Added
+- `app/src/app/api/v1/rights/requests/route.ts`:
+  - `POST /v1/rights/requests` (scope `write:rights`, org-scoped keys only) — creates a rights_requests row with identity attested by the API caller (no Turnstile/OTP). Body: `{ type, requestor_name, requestor_email, request_details?, identity_verified_by, captured_via? }`. Full field validation (422 problem+json on missing or malformed fields). Error mapping: `api_key_binding` → 403; `invalid_request_type` / `invalid_requestor_email` / `identity_verified_by_missing` / `requestor_name_missing` → 422; unknown → 500. Response: 201 with the created envelope.
+  - `GET /v1/rights/requests` (scope `read:rights`, org-scoped keys only) — keyset-paginated list. Query params: `status`, `request_type`, `captured_via`, `created_after`, `created_before`, `cursor`, `limit` (1..200, default 50). Date + enum validation upstream (422). Error mapping: `api_key_binding` → 403; `bad_cursor` → 422.
+- `app/src/lib/api/rights.ts`:
+  - `createRightsRequest(input)` — wraps `rpc_rights_request_create_api` via the cs_api pool. Discriminated error union covers fence + validation + unknown.
+  - `listRightsRequests(input)` — wraps `rpc_rights_request_list`. Same error shape.
+  - Full type envelope: `RightsRequestType`, `RightsRequestStatus`, `RightsCapturedVia`, `RightsRequestCreatedEnvelope`, `RightsRequestItem`, `RightsRequestListEnvelope`.
+- `app/public/openapi.yaml`:
+  - `POST /rights/requests` + `GET /rights/requests` paths with request + response examples.
+  - 4 new schemas: `RightsRequestCreateRequest`, `RightsRequestCreatedResponse`, `RightsRequestItem`, `RightsRequestListResponse`. All OpenAPI 3.1-compliant (`type: [X, "null"]` for nullable fields).
+
+### Tested
+- [x] `bunx @redocly/cli lint app/public/openapi.yaml` — 0 errors, 1 cosmetic warning (pre-existing missing info.license; tracked for ADR-1006).
+- [x] `cd app && bun run build` — pass. `bun run lint` — pass. `bunx tsc --noEmit` — pass.
+- [x] `tests/integration/rights-api.test.ts` — 17/17 PASS.
+- [x] Full integration suite — 146/146 PASS (was 129 pre-sprint).
+
 ## [ADR-1013 Sprint 1.1 — cs_orchestrator direct-Postgres] — 2026-04-21
 
 **ADR:** ADR-1013 — cs_orchestrator direct-Postgres migration (Next.js runtime)

@@ -1,6 +1,6 @@
 # ADR-1005: Operations Maturity — Webhook Reference, Support Model, Status Page, Multi-channel Alerts, Public Rights API
 
-**Status:** Proposed
+**Status:** In Progress
 **Date proposed:** 2026-04-19
 **Date completed:** —
 **Related plan:** `docs/plans/ConsentShield-V2-Whitepaper-Closure-Plan.md` Phase 5
@@ -189,17 +189,35 @@ Deliver seven operational-maturity outcomes:
 **Estimated effort:** 2 days
 
 **Deliverables:**
-- [ ] `GET /v1/rights/requests` paged + filtered (status, type, created_after/before)
-- [ ] `POST /v1/rights/requests` body: `{ type, data_principal, request_details, identity_verified_by, captured_via }` — bypasses Turnstile+OTP since API key holder attests verification; sets `identity_verified_at` to now
-- [ ] Separate audit-log trail marking API-created requests (for DPB audit filtering)
-- [ ] Scopes: `read:rights`, `write:rights`
+- [x] `GET /v1/rights/requests` paged + filtered (status, request_type, captured_via, created_after/before). Keyset cursor matches `rpc_event_list` format.
+- [x] `POST /v1/rights/requests` body: `{ type, requestor_name, requestor_email, request_details?, identity_verified_by, captured_via? }` — bypasses Turnstile+OTP since API key holder attests verification; sets `identity_verified=true`, `identity_verified_at=now()`, `identity_method=<attestation>`, `captured_via=api` (default) or caller-supplied operator channel (`branch`/`kiosk`/`call_center`/`mobile_app`/`email`/`other`), `created_by_api_key_id=p_key_id`.
+- [x] Separate audit-log trail marking API-created requests (for DPB audit filtering) — every POST inserts a `rights_request_events` row with `event_type='created_via_api'` and a `metadata` jsonb carrying `api_key_id`, `identity_verified_by`, `captured_via`.
+- [x] Scopes: `read:rights`, `write:rights` (already in `api_keys_scopes_valid`).
+
+**Schema additions (additive):**
+- `rights_requests.captured_via` text NOT NULL DEFAULT 'portal' — origin of the request. CHECK constraint covers portal / api / kiosk / branch / call_center / mobile_app / email / other.
+- `rights_requests.created_by_api_key_id` uuid NULL REFERENCES api_keys(id) ON DELETE SET NULL — audit attribution for API-created requests. ON DELETE SET NULL so key deletion never breaks the audit chain.
+- Two indexes: `(org_id, captured_via, created_at desc)` for filtered list queries; partial `(created_by_api_key_id) WHERE NOT NULL` for key-attribution lookups.
+
+**Migrations shipped:**
+- `20260804000001_rights_requests_captured_via.sql` — columns + CHECK + indexes.
+- `20260804000002_v1_rights_api_rpcs.sql` — `rpc_rights_request_create_api(p_key_id, p_org_id, p_request_type, p_requestor_name, p_requestor_email, p_request_details, p_identity_verified_by, p_captured_via)` + `rpc_rights_request_list(p_key_id, p_org_id, p_status, p_request_type, p_created_after, p_created_before, p_captured_via, p_cursor, p_limit)`. Both SECURITY DEFINER; both fenced by `assert_api_key_binding`.
+- `20260804000003_cs_api_rights_grants.sql` — EXECUTE to cs_api on both.
 
 **Testing plan:**
-- [ ] POST creates a rights_request row indistinguishable in lifecycle from portal-initiated requests
-- [ ] Audit trail clearly marks the captured-via channel
-- [ ] Missing `identity_verified_by` → 422
+- [x] POST creates a rights_request row indistinguishable in lifecycle from portal-initiated requests (same `rights_requests` table, same `status='new'`, same SLA default).
+- [x] Audit trail clearly marks the captured-via channel — `rights_request_events.event_type='created_via_api'` + `metadata.captured_via`.
+- [x] Missing `identity_verified_by` → 422 (`identity_verified_by_missing`).
+- [x] Invalid request_type → 422 (`invalid_request_type`).
+- [x] Invalid requestor_email → 422 (`invalid_requestor_email`).
+- [x] Cross-org fence — key bound to otherOrg cannot create in org (`api_key_binding` → 403).
+- [x] Caller-supplied captured_via=branch honoured.
+- [x] `created_by_api_key_id` is stamped correctly on the row.
+- [x] List filters by status / request_type / captured_via respected.
+- [x] Bad cursor → 422 (`bad_cursor`).
+- [x] 17/17 `rights-api.test.ts` PASS; 146/146 full integration PASS.
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete` — 2026-04-22
 
 ### Phase 6: Non-email notification channels (G-043)
 

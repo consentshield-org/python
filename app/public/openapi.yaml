@@ -402,6 +402,107 @@ components:
         next_cursor:
           type: [string, "null"]
 
+    RightsRequestCreateRequest:
+      type: object
+      required: [type, requestor_name, requestor_email, identity_verified_by]
+      properties:
+        type:
+          type: string
+          enum: [erasure, access, correction, nomination]
+          description: DPDP §11 rights-request type.
+        requestor_name:
+          type: string
+          description: Full name of the data principal (trimmed server-side).
+        requestor_email:
+          type: string
+          format: email
+          description: Email address of the data principal (lower-cased server-side).
+        request_details:
+          type: [string, "null"]
+          description: Optional free-text details captured from the requestor.
+        identity_verified_by:
+          type: string
+          description: >
+            Free-text attestation from the API caller describing how the data
+            principal's identity was verified. Examples: "internal_kyc_check",
+            "branch_officer_id_42", "existing_session_uid_abc123". Stored on the
+            rights_requests row as identity_method and echoed in the
+            created_via_api audit event.
+        captured_via:
+          type: string
+          enum: [api, kiosk, branch, call_center, mobile_app, email, other]
+          default: api
+          description: >
+            Channel through which the request was captured. Defaults to api.
+            Operator-side channels (branch, kiosk, call_center) are allowed so
+            the same API key can be used for in-person capture without losing
+            the audit trail of where the request came from.
+
+    RightsRequestCreatedResponse:
+      type: object
+      required: [id, status, request_type, captured_via, identity_verified, identity_verified_by, sla_deadline, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [new, in_progress, completed, rejected]
+        request_type:
+          type: string
+          enum: [erasure, access, correction, nomination]
+        captured_via:
+          type: string
+          enum: [api, kiosk, branch, call_center, mobile_app, email, other]
+        identity_verified:
+          type: boolean
+          description: Always true on a successful response (API caller attests).
+        identity_verified_by:
+          type: string
+        sla_deadline:
+          type: string
+          format: date-time
+          description: 30 days from creation per DPDP §11 default. Customer may override.
+        created_at:
+          type: string
+          format: date-time
+
+    RightsRequestItem:
+      type: object
+      required: [id, request_type, requestor_name, requestor_email, status, captured_via, identity_verified, sla_deadline, created_at, updated_at]
+      properties:
+        id:                    { type: string, format: uuid }
+        request_type:          { type: string, enum: [erasure, access, correction, nomination] }
+        requestor_name:        { type: string }
+        requestor_email:       { type: string, format: email }
+        status:                { type: string, enum: [new, in_progress, completed, rejected] }
+        captured_via:          { type: string, enum: [portal, api, kiosk, branch, call_center, mobile_app, email, other] }
+        identity_verified:     { type: boolean }
+        identity_verified_at:  { type: [string, "null"], format: date-time }
+        identity_method:       { type: [string, "null"] }
+        sla_deadline:          { type: string, format: date-time }
+        response_sent_at:      { type: [string, "null"], format: date-time }
+        created_by_api_key_id:
+          type: [string, "null"]
+          format: uuid
+          description: >
+            API key that created this request (non-null when captured_via=api).
+            Null for portal-initiated requests.
+        created_at:            { type: string, format: date-time }
+        updated_at:            { type: string, format: date-time }
+
+    RightsRequestListResponse:
+      type: object
+      required: [items, next_cursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/RightsRequestItem"
+        next_cursor:
+          type: [string, "null"]
+          description: Opaque keyset cursor; echo in the next request's `cursor` query param.
+
     KeySelfResponse:
       type: object
       required: [key_id, account_id, name, key_prefix, scopes, rate_tier, created_at]
@@ -1583,5 +1684,164 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "410":
           $ref: "#/components/responses/Gone"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /rights/requests:
+    post:
+      operationId: rightsRequestCreate
+      summary: Create a rights request on behalf of a verified data principal
+      description: >
+        Records a DPDP §11 rights request captured outside the public portal
+        (mobile app, call-centre, branch, kiosk, CRM/helpdesk integration,
+        in-person). Bypasses the portal's Cloudflare Turnstile and email-OTP
+        gate because the API-key holder attests identity via
+        `identity_verified_by` — a free-text attestation describing how
+        identity was verified (e.g. `internal_kyc_check`,
+        `branch_officer_id_42`). The attestation is stored on the row and
+        echoed in a dedicated `created_via_api` audit event for DPB audit
+        filtering.
+
+        Requires an org-scoped API key; account-scoped keys get 400. The
+        created request starts in `new` status with a 30-day SLA deadline.
+      tags: [Rights]
+      security:
+        - bearerAuth: [write:rights]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RightsRequestCreateRequest"
+            example:
+              type: "erasure"
+              requestor_name: "Alice Customer"
+              requestor_email: "alice@example.com"
+              request_details: "Please erase all data associated with my account."
+              identity_verified_by: "internal_kyc_check"
+              captured_via: "api"
+      responses:
+        "201":
+          description: Rights request created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RightsRequestCreatedResponse"
+              example:
+                id: "9c8f6e1a-3e5c-4c4f-90df-8d0a9b7f1e1c"
+                status: "new"
+                request_type: "erasure"
+                captured_via: "api"
+                identity_verified: true
+                identity_verified_by: "internal_kyc_check"
+                sla_deadline: "2026-05-22T10:15:03Z"
+                created_at: "2026-04-22T10:15:03Z"
+        "400":
+          description: API key is account-scoped; this endpoint requires an org-scoped key.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Missing `write:rights` scope, or API key is not authorised for this organisation.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "410":
+          $ref: "#/components/responses/Gone"
+        "422":
+          description: Missing/invalid field, malformed email, or unknown type/captured_via.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+    get:
+      operationId: rightsRequestList
+      summary: List rights requests for the caller's org (cursor-paginated)
+      description: >
+        Returns a keyset-paginated list of rights requests for the caller's
+        org. Includes both portal-initiated and API-initiated requests;
+        filter on `captured_via` to distinguish. `created_by_api_key_id` on
+        each item names the specific API key that created the request
+        (null for portal-initiated).
+
+        Requires an org-scoped API key; account-scoped keys get 400.
+      tags: [Rights]
+      security:
+        - bearerAuth: [read:rights]
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string, enum: [new, in_progress, completed, rejected] }
+        - in: query
+          name: request_type
+          schema: { type: string, enum: [erasure, access, correction, nomination] }
+        - in: query
+          name: captured_via
+          schema: { type: string, enum: [portal, api, kiosk, branch, call_center, mobile_app, email, other] }
+        - in: query
+          name: created_after
+          schema: { type: string, format: date-time }
+        - in: query
+          name: created_before
+          schema: { type: string, format: date-time }
+        - in: query
+          name: cursor
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+      responses:
+        "200":
+          description: Paged list envelope.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RightsRequestListResponse"
+              example:
+                items:
+                  - id: "9c8f6e1a-3e5c-4c4f-90df-8d0a9b7f1e1c"
+                    request_type: "erasure"
+                    requestor_name: "Alice Customer"
+                    requestor_email: "alice@example.com"
+                    status: "new"
+                    captured_via: "api"
+                    identity_verified: true
+                    identity_verified_at: "2026-04-22T10:15:03Z"
+                    identity_method: "internal_kyc_check"
+                    sla_deadline: "2026-05-22T10:15:03Z"
+                    response_sent_at: null
+                    created_by_api_key_id: "7f4b3b21-5a11-4f37-9b7c-6f2e0d5c8b1a"
+                    created_at: "2026-04-22T10:15:03Z"
+                    updated_at: "2026-04-22T10:15:03Z"
+                next_cursor: null
+        "400":
+          description: API key is account-scoped; this endpoint requires an org-scoped key.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Missing `read:rights` scope, or API key is not authorised for this organisation.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "410":
+          $ref: "#/components/responses/Gone"
+        "422":
+          description: Bad cursor, limit, date, or enum value.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         "429":
           $ref: "#/components/responses/TooManyRequests"

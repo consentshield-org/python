@@ -2,6 +2,20 @@
 
 Documentation changes.
 
+## [ADR-1005 Sprint 5.1 — Rights API doc sync] — 2026-04-22
+
+**ADR:** ADR-1005 — Operations maturity
+**Sprint:** Phase 5, Sprint 5.1
+
+### Changed
+- `docs/ADRs/ADR-1005-operations-maturity.md` — Sprint 5.1 deliverables + Testing plan boxes ticked. Top-line status flipped from **Proposed** to **In Progress** (Phases 1–4 + 6 remain). Sprint 5.1 body extended with schema-additions block, migrations-shipped list, and 11-point Tested block (17/17 rights-api + 146/146 full-suite).
+- `docs/ADRs/ADR-index.md` — ADR-1005 row flipped to **In Progress**; description extended to call out that Sprint 5.1 shipped.
+- `CLAUDE.md` Rule 5 — `cs_api` RPC count bumped from 12 to 19 (ADR-1009: 12 → ADR-1012: +5 → ADR-1005 Sprint 5.1: +2). Phrasing rewritten to point at the migrations rather than hard-coding a count (`see supabase/migrations/20260801000008… and subsequent *_grants.sql`), so the number doesn't go stale again.
+- `docs/architecture/consentshield-definitive-architecture.md` §5.4 — the cs_api credential-leak paragraph updated: "12 whitelisted RPCs" → "19 whitelisted v1 RPCs (ADR-1009: 9 business + 2 bootstrap + 1 key-status; ADR-1012: +5; ADR-1005 Sprint 5.1: +2)".
+
+### Tested
+- n/a (doc-only). Counts cross-checked against the migration grant files: `20260801000006` (1 key_status), `20260801000007` (2 bootstrap), `20260801000008` (9 business), `20260802000007` (2 introspection), `20260803000003` (2 discovery), `20260803000004` (1 plans), `20260804000003` (2 rights). Total 19.
+
 ## [ADR-1012 Sprint 2.1 — OpenAPI examples backfill + ADR CLOSED] — 2026-04-21
 
 **ADR:** ADR-1012 — v1 API day-1 DX gap fixes **(COMPLETED)**

@@ -2,6 +2,27 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-1005 Sprint 5.1 — v1 Rights API schema + RPCs] — 2026-04-22
+
+**ADR:** ADR-1005 — Operations maturity
+**Sprint:** Phase 5, Sprint 5.1 (public rights-request API)
+
+### Added
+- `20260804000001_rights_requests_captured_via.sql`:
+  - `rights_requests.captured_via` text NOT NULL DEFAULT 'portal'. Distinguishes portal-initiated submissions (Turnstile + OTP) from API-initiated submissions (ADR-1009 Bearer + identity attestation). CHECK constraint covers portal / api / kiosk / branch / call_center / mobile_app / email / other.
+  - `rights_requests.created_by_api_key_id` uuid NULL REFERENCES api_keys(id) ON DELETE SET NULL. Audit attribution for API-created requests; SET NULL so api_keys deletion never breaks the audit chain.
+  - Index `idx_rights_requests_captured_via (org_id, captured_via, created_at desc)` — filtered list queries.
+  - Partial index `idx_rights_requests_created_by_key (created_by_api_key_id) WHERE NOT NULL` — key-attribution lookups.
+- `20260804000002_v1_rights_api_rpcs.sql`:
+  - `rpc_rights_request_create_api(p_key_id, p_org_id, p_request_type, p_requestor_name, p_requestor_email, p_request_details, p_identity_verified_by, p_captured_via) returns jsonb` — SECURITY DEFINER; fenced by `assert_api_key_binding`. Validates request_type + email + non-empty identity_verified_by. Inserts with `identity_verified=true`, `identity_verified_at=now()`, `identity_method=<attestation>`, `turnstile_verified=true`, `email_verified=true`, `captured_via=p_captured_via ?? 'api'`, `created_by_api_key_id=p_key_id`. Appends a `rights_request_events` row of type `created_via_api` with metadata `{api_key_id, identity_verified_by, captured_via}`. Returns `{id, status, request_type, captured_via, identity_verified, identity_verified_by, sla_deadline, created_at}`.
+  - `rpc_rights_request_list(p_key_id, p_org_id, p_status, p_request_type, p_created_after, p_created_before, p_captured_via, p_cursor, p_limit) returns jsonb` — SECURITY DEFINER; fenced. Keyset cursor format matches `rpc_event_list` (base64 jsonb `{c: created_at, i: id}`). Returns `{items, next_cursor}`.
+- `20260804000003_cs_api_rights_grants.sql` — GRANT EXECUTE on both RPCs to `cs_api`; REVOKE from `anon`/`authenticated`. cs_api now has EXECUTE on 19 v1 RPCs (was 17 after ADR-1012).
+
+### Tested
+- [x] `bunx supabase db push --linked` — all 3 migrations applied cleanly.
+- [x] `bunx vitest run tests/integration/rights-api.test.ts` — 17/17 PASS (create happy path, caller-supplied captured_via, audit event emission, created_by_api_key_id stamping, invalid type/email/identity_verified_by, cross-org fence, list filters × 3, envelope shape, cross-org list fence, empty-org, invalid status, bad cursor).
+- [x] Full integration suite — 146/146 PASS (was 129/129 pre-sprint, +17 rights-api).
+
 ## [ADR-0058 follow-up — lookup_pending_invitation_by_email RPC] — 2026-04-21
 
 **ADR:** ADR-0058 (follow-up; no new ADR)
