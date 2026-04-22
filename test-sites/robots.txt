@@ -1,0 +1,104 @@
+# ConsentShield test / demo sites — NOT a production property.
+# Fake products, synthetic consent events, fixture data only.
+# We do not want these pages indexed, crawled, archived, or used
+# for model training under any circumstances.
+
+# ─── Baseline: deny everything to every user-agent ─────────────────────
+User-agent: *
+Disallow: /
+
+# ─── Search engines — explicit denials on top of the wildcard above ────
+User-agent: Googlebot
+Disallow: /
+User-agent: Bingbot
+Disallow: /
+User-agent: DuckDuckBot
+Disallow: /
+User-agent: Baiduspider
+Disallow: /
+User-agent: YandexBot
+Disallow: /
+User-agent: Sogou
+Disallow: /
+
+# ─── AI model-training + search-assistant crawlers ─────────────────────
+User-agent: GPTBot
+Disallow: /
+User-agent: ChatGPT-User
+Disallow: /
+User-agent: OAI-SearchBot
+Disallow: /
+User-agent: ClaudeBot
+Disallow: /
+User-agent: anthropic-ai
+Disallow: /
+User-agent: Claude-Web
+Disallow: /
+User-agent: Claude-SearchBot
+Disallow: /
+User-agent: Google-Extended
+Disallow: /
+User-agent: Googlebot-Extended
+Disallow: /
+User-agent: PerplexityBot
+Disallow: /
+User-agent: Perplexity-User
+Disallow: /
+User-agent: CCBot
+Disallow: /
+User-agent: Bytespider
+Disallow: /
+User-agent: ByteDanceBot
+Disallow: /
+User-agent: cohere-ai
+Disallow: /
+User-agent: Cohere-AI
+Disallow: /
+User-agent: Omgilibot
+Disallow: /
+User-agent: Omgili
+Disallow: /
+User-agent: FacebookBot
+Disallow: /
+User-agent: Meta-ExternalAgent
+Disallow: /
+User-agent: Meta-ExternalFetcher
+Disallow: /
+User-agent: ImagesiftBot
+Disallow: /
+User-agent: Applebot-Extended
+Disallow: /
+User-agent: Applebot
+Disallow: /
+User-agent: Diffbot
+Disallow: /
+User-agent: Bingbot-AI
+Disallow: /
+User-agent: Amazonbot
+Disallow: /
+User-agent: DataForSeoBot
+Disallow: /
+User-agent: AhrefsBot
+Disallow: /
+User-agent: SemrushBot
+Disallow: /
+User-agent: MJ12bot
+Disallow: /
+User-agent: PetalBot
+Disallow: /
+User-agent: YouBot
+Disallow: /
+User-agent: Timpibot
+Disallow: /
+User-agent: Kagibot
+Disallow: /
+User-agent: AwarioBot
+Disallow: /
+User-agent: AwarioRssBot
+Disallow: /
+User-agent: AwarioSmartBot
+Disallow: /
+User-agent: magpie-crawler
+Disallow: /
+
+# No sitemap — nothing to index.

@@ -1,0 +1,9 @@
+Contact: mailto:a.d.sudhindra@gmail.com
+Preferred-Languages: en
+Canonical: https://consentshield.in/.well-known/security.txt
+Policy: https://consentshield.in/security
+# This property is a non-production demo/test surface for ConsentShield
+# (https://consentshield.in). It serves synthetic fixture data only and
+# must not be indexed, archived, or used for model training. See
+# /robots.txt for the explicit crawler deny-list.
+Expires: 2027-04-22T00:00:00.000Z

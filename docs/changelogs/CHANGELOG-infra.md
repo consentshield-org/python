@@ -2,6 +2,36 @@
 
 Vercel, Cloudflare, Supabase config changes.
 
+## [ADR-1014 Sprint 2.1 — demo site hardening (noindex + AI-bot deny)] — 2026-04-22
+
+**ADR:** ADR-1014 — E2E test harness + vertical demo sites
+**Sprint:** Phase 2, Sprint 2.1 — hardening pass before public DNS cutover
+
+### Added
+- `test-sites/robots.txt` — baseline `User-agent: * → Disallow: /` plus explicit deny blocks for 40+ named crawlers covering search (Googlebot, Bingbot, DuckDuckBot, Baidu, Yandex, Sogou) and AI model-training / search-assistant bots (GPTBot, ChatGPT-User, OAI-SearchBot, ClaudeBot, anthropic-ai, Claude-Web, Claude-SearchBot, Google-Extended, Googlebot-Extended, PerplexityBot, Perplexity-User, CCBot, Bytespider, ByteDanceBot, cohere-ai, Omgilibot, FacebookBot, Meta-ExternalAgent, Meta-ExternalFetcher, Applebot, Applebot-Extended, Diffbot, Amazonbot, DataForSeoBot, AhrefsBot, SemrushBot, MJ12bot, PetalBot, YouBot, Timpibot, Kagibot, Awario*, magpie-crawler). No sitemap emitted.
+- `test-sites/.well-known/security.txt` — RFC 9116 record. Contact + canonical to consentshield.in; note that the property is a demo surface.
+- `<meta name="robots">` + `googlebot` + `bingbot` + `googlebot-news` tags on every ecommerce HTML page (index, product, cart, checkout) — second layer for scrapers that ignore X-Robots-Tag headers.
+
+### Changed
+- `test-sites/server.js` — every response now carries a hardened header set:
+  - `X-Robots-Tag: noindex, nofollow, noarchive, nosnippet, noimageindex, notranslate, noai, noimageai`
+  - `X-Content-Type-Options: nosniff`
+  - `X-Frame-Options: DENY`
+  - `Strict-Transport-Security: max-age=63072000; includeSubDomains`
+  - `Referrer-Policy: no-referrer`
+  - `Permissions-Policy: interest-cohort=(), browsing-topics=(), geolocation=(), microphone=(), camera=()`
+  - `Cross-Origin-Opener-Policy: same-origin`
+  - `Access-Control-Allow-Origin: *` retained so the banner can post (Worker does its own origin check anyway).
+
+### Tested
+- `curl -sI https://ecommerce-production-9332.up.railway.app/ecommerce/` — all 7 hardening headers present on the 200 response.
+- `curl https://ecommerce-production-9332.up.railway.app/robots.txt` — 200 with the deny list.
+- `curl https://ecommerce-production-9332.up.railway.app/.well-known/security.txt` — 200.
+- `curl https://ecommerce-production-9332.up.railway.app/ecommerce/ | grep 'name="robots"'` — meta tags present on every page I authored.
+
+### Why
+The demo site is intentionally public (fixture-scoped, fake products, synthetic consent events) so reviewers can browse it without auth. That doesn't mean it should end up in Google search results, Archive.org, or LLM training sets. The hardening applies X-Robots-Tag at the edge (every response, every bot that honours it) plus a dense robots.txt deny-list for the bots that prefer crawl-rules over response headers. Two layers.
+
 ## [ADR-1014 Sprint 2.1 — ecommerce demo site + Railway config + browser E2E] — 2026-04-22
 
 **ADR:** ADR-1014 — E2E test harness + vertical demo sites
