@@ -2,6 +2,31 @@
 
 Vercel, Cloudflare, Supabase config changes.
 
+## [ADR-1014 Sprint 2.3 close-out — demo-bfsi.consentshield.in DNS + TLS live] — 2026-04-22
+
+**ADR:** ADR-1014 — E2E test harness + vertical demo sites
+**Sprint:** Phase 2, Sprint 2.3 — DNS cutover reconciliation
+
+### Added
+- Railway-side custom-domain registration for **`demo-bfsi.consentshield.in`** on the `bfsi` service (dashboard action — project-level token can't do this via CLI / GraphQL).
+- Cloudflare CNAME reconciled: pointed at the freshly-issued Railway target `fq1jk2k4.up.railway.app` (not the first-attempt `yutv8hxk.up.railway.app`).
+- Let's Encrypt R12 certificate issued — CN=`demo-bfsi.consentshield.in`, valid 2026-04-22 09:42 UTC → 2026-07-21 09:42 UTC.
+
+### Tested
+- `openssl s_client` against `demo-bfsi.consentshield.in:443` returns the Let's Encrypt cert (not the `*.up.railway.app` wildcard).
+- Full 11-check matrix on the custom host: `/` → 302 `Location: /bfsi/`; `/bfsi/*` (4 pages) → 200; `/ecommerce/` + `/healthtech/` + `/index.html` → 404; `/shared/*` + `/robots.txt` + `/.well-known/security.txt` → 200; all 7 hardening response headers present.
+- GraphQL `customDomains.dnsRecords.status = DNS_RECORD_STATUS_PROPAGATED` across all 3 services (ecommerce + healthcare + bfsi).
+
+### Discovered / documented
+- **Railway CNAME target is ephemeral-per-registration.** Deleting + recreating a custom domain on Railway issues a NEW `<slug>.up.railway.app` CNAME target. Cloudflare's record for the old target becomes stale and blocks the ACME HTTP-01 challenge silently (no error shown to the operator; it just hangs). Fix: after any Railway-side delete + re-add of a custom domain, always re-copy the target Railway shows and update Cloudflare to match. Encountered during BFSI bring-up (first attempt target `yutv8hxk` → after re-add became `fq1jk2k4`; ~20 min stall until reconciled).
+- **Diagnostic path when a custom domain shows `ERR_CERT_COMMON_NAME_INVALID` or Railway 404:**
+  1. Query Railway GraphQL `customDomains.dnsRecords` — compare `requiredValue` vs `currentValue`. If they differ → Cloudflare CNAME is stale, update it.
+  2. `openssl s_client -servername <host> -connect <host>:443 | openssl x509 -subject` — if CN is `*.up.railway.app` (Certainly wildcard), cert hasn't issued yet. If CN matches the hostname and issuer is Let's Encrypt, cert is live.
+  3. `host <custom-domain>` — confirm the CNAME resolves to a Fastly IP (`151.101.*`), not Cloudflare (`104.*`). Cloudflare proxy (orange cloud) must be OFF for Railway ACME to work.
+
+### Why
+The operator-facing lesson is worth capturing in-place: Railway silently rotates the CNAME target on delete+recreate, and the resulting cert-issuance stall has no user-visible error anywhere (Railway dashboard says "pending"; Chrome says cert mismatch; the 404 that follows looks like a routing problem). The GraphQL diff-check between `requiredValue` and `currentValue` is the fastest diagnostic; the `openssl s_client` check confirms cert issuance state. Both are now recorded in the ADR + changelog so the next custom-domain rollout (e.g. `status.consentshield.in` in ADR-1018 Sprint 1.5) inherits the playbook.
+
 ## [ADR-1014 Sprint 2.3 — BFSI demo site + Railway deploy] — 2026-04-22
 
 **ADR:** ADR-1014 — E2E test harness + vertical demo sites
