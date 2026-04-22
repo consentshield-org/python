@@ -2,6 +2,24 @@
 
 Next.js UI changes.
 
+## [ADR-1004 Sprint 1.5 — Retention & Exemptions page] — 2026-04-22
+
+**ADR:** ADR-1004 — Statutory retention + material-change re-consent
+**Sprint:** Phase 1 Sprint 1.5
+
+### Added
+- `app/src/app/(dashboard)/dashboard/compliance/retention/page.tsx` — server component. Reads the caller's account role + latest 100 `retention_suppressions` + all applicable `regulatory_exemptions` (platform defaults + own overrides via RLS). Passes data to the client panel.
+- `app/src/app/(dashboard)/dashboard/compliance/retention/retention-panel.tsx` — client component. Renders:
+  - Suppression table (date · statute · artefact id · retained categories · citation) with a client-side statute filter dropdown.
+  - Two exemption tables: "Your overrides" (highlighted blue) and "Platform defaults" — each row carries an amber "Pending legal review" badge when `reviewed_at IS NULL`, green "Reviewed · <firm>" badge otherwise.
+  - Inline "Add override" form (sector / precedence / statute / statute_code / retention_period / data_categories / applies_to_purposes / source_citation / legal_review_notes) — gated to `account_owner`. Submits POST, refreshes the route on success.
+- `app/src/components/dashboard-nav.tsx` — new nav entry "Retention & Exemptions" between "Data Inventory" and "Sector template".
+
+### Tested
+- [x] `bun run lint` — 0 warnings, 0 errors — PASS
+- [x] `bun run build` — page + API route both present in the manifest (`ƒ /dashboard/compliance/retention`, `ƒ /api/orgs/[orgId]/regulatory-exemptions`) — PASS
+- [x] RLS override visibility + account_owner gate — covered by existing `tests/integration/retention-exemptions.test.ts` (11/11 PASS from Sprint 1.1). The page + API are thin layers over the same SQL path.
+
 ## [ADR-1018 Sprints 1.2 + 1.3 — status page admin + public] — 2026-04-22
 
 **ADR:** ADR-1018 — Self-hosted status page

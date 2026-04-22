@@ -14,6 +14,7 @@ const navItems = [
   { href: '/dashboard/enforcement', label: 'Enforcement' },
   { href: '/dashboard/probes', label: 'Consent Probes' },
   { href: '/dashboard/inventory', label: 'Data Inventory' },
+  { href: '/dashboard/compliance/retention', label: 'Retention & Exemptions' },
   { href: '/dashboard/template', label: 'Sector template' },
   { href: '/dashboard/rights', label: 'Rights Requests' },
   { href: '/dashboard/dpia', label: 'DPIA Records' },

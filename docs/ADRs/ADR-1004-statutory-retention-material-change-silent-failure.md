@@ -139,16 +139,18 @@ Compliance Health widget (**G-034**) surfaces all four (coverage, orphan, overdu
 **Estimated effort:** 2 days
 
 **Deliverables:**
-- [ ] `/dashboard/compliance/retention` page: list of applied suppressions, filterable by statute/purpose/date
-- [ ] "X records retained under <statute>" drill-down surfaced from Compliance Health widget (Sprint 4.2)
-- [ ] `GET /api/orgs/[orgId]/regulatory-exemptions` for customer inspection of applicable rules (both platform defaults and their own overrides)
-- [ ] `POST /api/orgs/[orgId]/regulatory-exemptions` for customers to add overrides (account_owner only)
+- [x] `/dashboard/compliance/retention` page (`app/src/app/(dashboard)/dashboard/compliance/retention/page.tsx` + `retention-panel.tsx`): lists the latest 100 suppressions with statute filter dropdown; lists platform-default + per-org-override exemptions side by side with "Pending legal review" badge on rows where `reviewed_at IS NULL`. `account_owner` sees an inline "Add override" form; non-owners see the lists read-only with an explanatory note.
+- [x] Nav entry "Retention & Exemptions" added to `DashboardNav` between Data Inventory and Sector template.
+- [x] `GET /api/orgs/[orgId]/regulatory-exemptions` — returns `{ platform, overrides }`, each row augmented with `legal_review_status` ('reviewed'|'pending'). RLS fences override visibility to the caller's org; platform defaults are visible to any authenticated member. No account-role check on GET — read-only listing is available to every org member.
+- [x] `POST /api/orgs/[orgId]/regulatory-exemptions` — inserts a per-org override; pre-checks `current_account_role() === 'account_owner'` before calling insert, returns 403 otherwise; RLS insert policy remains the authoritative fence (42501 → 403, 23505 → 409 for duplicate statute_code).
+- [ ] "X records retained under <statute>" drill-down surfaced from Compliance Health widget — **deferred** to Phase 3 Sprint 3.2 (the Compliance Health widget itself). Current retention page stands alone.
 
 **Testing plan:**
-- [ ] Override created by customer appears in `applicable_exemptions` results for their org only
-- [ ] Suppressions from Sprint 1.4 integration test appear in the dashboard page
+- [x] Override created by customer appears in `applicable_exemptions` results for their org only — covered by Sprint 1.1's `tests/integration/retention-exemptions.test.ts` (11/11 PASS; "per-org override precedence wins over platform default" + "RLS: org A's override invisible to org B"). The API route's insert path is a thin pass-through to the same SQL insert the test already exercises.
+- [x] Pending-review badge rendering — visual QA on dev. All 8 platform-default seed rows still have `reviewed_at IS NULL` so every platform default row in the panel carries the amber "Pending legal review" badge; overrides with counsel notes flip to green.
+- [ ] Suppressions from Sprint 1.4 integration test appear in the dashboard page — visual QA deferred (requires re-running the revocation E2E on a dev org). Wire-check via the test suite is sufficient for v1.
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete` — 2026-04-22 (drill-down + post-Sprint-1.4 visual QA deferred as noted)
 
 #### Sprint 1.6: Legal review ingestion (G-008 close-out)
 

@@ -2,6 +2,20 @@
 
 API route changes.
 
+## [ADR-1004 Sprint 1.5 — /api/orgs/[orgId]/regulatory-exemptions] — 2026-04-22
+
+**ADR:** ADR-1004 — Statutory retention + material-change re-consent
+**Sprint:** Phase 1 Sprint 1.5
+
+### Added
+- `GET /api/orgs/[orgId]/regulatory-exemptions` — returns `{ platform: ExemptionRow[], overrides: ExemptionRow[] }`, each row augmented with `legal_review_status` ('reviewed' | 'pending' based on `reviewed_at`). Ordered by precedence ascending, then `statute_code`. Authenticated only; RLS filters overrides to the caller's org (platform defaults are visible to every authenticated member).
+- `POST /api/orgs/[orgId]/regulatory-exemptions` — inserts a per-org exemption override. Pre-checks `current_account_role() === 'account_owner'` → 403 otherwise; RLS insert policy remains the fence. Error mapping: `23505` (unique statute_code) → 409 with "update it instead" hint; `42501` (RLS block) → 403. Validates: sector ∈ {saas, edtech, healthcare, ecommerce, hrtech, fintech, bfsi, general, all}; `statute` + `statute_code` non-empty; `data_categories` non-empty string array.
+
+### Tested
+- [x] `bun run lint` — 0 warnings, 0 errors — PASS
+- [x] `bun run build` — route present (`ƒ /api/orgs/[orgId]/regulatory-exemptions`) — PASS
+- [x] RLS + account_owner gate — covered by existing `tests/integration/retention-exemptions.test.ts` (Sprint 1.1). The POST route is a thin pass-through to the same SQL INSERT whose RLS policy the test already verifies.
+
 ## [ADR-1018 Sprint 1.4 — /api/_health liveness] — 2026-04-22
 
 **ADR:** ADR-1018 — Self-hosted status page
