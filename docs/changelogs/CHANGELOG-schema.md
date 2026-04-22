@@ -2,6 +2,25 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-1010 Phase 2 Sprint 2.1 — cs_worker BYPASSRLS + full activation] — 2026-04-22
+
+**ADR:** ADR-1010 — Cloudflare Worker scoped-role migration
+**Sprint:** Phase 2 Sprint 2.1 (amended to include the BYPASSRLS grant + password rotation)
+
+### Added
+- `20260804000008_cs_worker_bypassrls.sql` — `alter role cs_worker bypassrls`. Matches the cs_orchestrator + cs_delivery pattern (both of which already have `rolbypassrls=true`). Column-level grants remain the authoritative fence; BYPASSRLS does not broaden which tables/columns cs_worker can touch, it only skips the `current_org_id() → auth.jwt()` inlining that would otherwise fail because cs_worker has no USAGE on schema `auth`.
+
+### Changed (out-of-band, not a migration)
+- `cs_worker` password rotated from the seeded `cs_worker_change_me` default to a 64-hex-char random. Persisted to `.secrets` as `CS_WORKER_PASSWORD`.
+- `SUPABASE_CS_WORKER_DATABASE_URL` added to root `.env.local` and `app/.env.local`: `postgresql://cs_worker.<project_ref>:<password>@aws-1-ap-northeast-1.pooler.supabase.com:6543/postgres?sslmode=require`.
+
+### Tested
+- [x] `tests/integration/cs-worker-role.test.ts` — 11/11 PASS. Covers identity, SELECT web_properties / consent_banners (incl. event_signing_secret), INSERT consent_events / tracker_observations / worker_errors (no RETURNING — cs_worker is INSERT-only on those tables, matches the Worker's Prefer: return=minimal pattern), UPDATE snippet_last_seen_at, forbidden operations on non-granted columns / tables / DELETEs.
+- [x] Full integration suite 168/168 PASS; no regressions.
+
+### Flagged
+- Security finding: `worker/.dev.vars` + the wrangler secret `SUPABASE_WORKER_KEY` is byte-identical to the `sb_secret_*` service role key. The Worker has been running with service-role privileges — Rule 5 violation. ADR-1010 Phase 3 Sprint 3.1 now includes replacing the service-role key with the cs_worker direct-Postgres URL as its first deliverable.
+
 ## [ADR-1010 Phase 2 Sprint 2.1 — cs_worker LOGIN verification] — 2026-04-22
 
 **ADR:** ADR-1010 — Cloudflare Worker scoped-role migration off HS256

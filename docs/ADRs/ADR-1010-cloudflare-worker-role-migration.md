@@ -11,6 +11,8 @@
 
 The Cloudflare Worker (`worker/src/`) authenticates to Supabase REST using `SUPABASE_WORKER_KEY` — an HS256 JWT claiming `role: cs_worker`, signed with the project's **legacy HS256 shared secret**. PostgREST respects the `role` claim and executes subsequent queries as `cs_worker` (INSERT into `consent_events` / `tracker_observations`; SELECT from `consent_banners` / `web_properties`; UPDATE only `web_properties.snippet_last_seen_at`).
 
+**Update (2026-04-22 Sprint 2.1):** diagnosing the direct-Postgres prototype surfaced that `SUPABASE_WORKER_KEY` in `worker/.dev.vars` + wrangler is actually the **service role `sb_secret_*` key**, not an HS256 cs_worker JWT. The Worker has been running with service-role privileges since the `sb_secret_*` format rolled out — Rule 5 violation. ADR-1010's migration scope therefore covers two problems at once: (a) move the Worker onto a proper minimum-privilege credential (Phase 3), and (b) preserve continuity once Supabase revokes the legacy HS256 signing secret (which many triggers and Edge Functions also depend on — Sprint 1.4 of ADR-1004 hit this).
+
 Discovered during ADR-1009 Phase 2 (2026-04-21): Supabase has rotated the project's JWT signing keys from HS256 (shared secret) to **ECC P-256 (asymmetric)**. The dashboard now shows:
 
 - **Current key:** ECC P-256 (Supabase holds the private key — we cannot sign new role JWTs from our side).
@@ -83,24 +85,26 @@ Rule 5 (CLAUDE.md) reaffirmed — the Worker remains scoped to `cs_worker`, no s
 **Estimated effort:** 0.25 day
 
 **Deliverables:**
-- [x] Verified `cs_worker` is LOGIN-enabled via `select rolcanlogin from pg_roles where rolname='cs_worker'` → `t`. `rolconnlimit=-1`, `rolbypassrls=f`.
-- [x] Confirmed the existing grant set is intact (pooler query against `information_schema.role_column_grants`): INSERT on consent_events (all cols) + tracker_observations (all cols) + worker_errors (all cols); SELECT on consent_banners (all cols incl. purposes jsonb) + web_properties (all cols incl. event_signing_secret); UPDATE on `web_properties.snippet_last_seen_at` only; no access to api_keys / organisations / accounts.
-- [x] `tests/integration/cs-worker-role.test.ts` — skipped-on-missing-env test asserting every read + every write + every forbidden operation (same shape as `tests/integration/cs-api-role.test.ts`).
-- [ ] **Operator step (not in this session):** rotate `cs_worker` password out of the seeded `cs_worker_change_me` default. Open the Supabase SQL editor as `postgres` and run:
-  ```sql
-  alter role cs_worker with password '<new-long-random-value>';
-  ```
-  Then set two env vars:
-  - `.secrets` — `CS_WORKER_PASSWORD=<value>`
-  - Root `.env.local` + `app/.env.local` — `SUPABASE_CS_WORKER_DATABASE_URL=postgresql://cs_worker.<project_ref>:<urlencoded_password>@aws-1-<region>.pooler.supabase.com:6543/postgres?prepare=false&sslmode=require`
-  Once set, re-run `bunx vitest run tests/integration/cs-worker-role.test.ts` — the 11 skipped tests activate and should all pass.
-- [ ] **Operator step (Phase 4 cutover):** mirror the pooler URL (or Hyperdrive binding config) into Cloudflare `wrangler secret put`.
+- [x] Verified `cs_worker` is LOGIN-enabled (`pg_roles.rolcanlogin=t`, `rolconnlimit=-1`).
+- [x] Confirmed grant set is intact: INSERT on consent_events / tracker_observations / worker_errors (all cols); SELECT on consent_banners / web_properties (all cols incl. `event_signing_secret`); UPDATE on `web_properties.snippet_last_seen_at` only; no access to api_keys / organisations / accounts.
+- [x] Rotated `cs_worker` password out of the seeded `cs_worker_change_me` default via `alter role cs_worker with password '<64-hex-char-random>'`. Password persisted to `.secrets` as `CS_WORKER_PASSWORD` (gitignored).
+- [x] Built and wired `SUPABASE_CS_WORKER_DATABASE_URL` into both root `.env.local` and `app/.env.local`: `postgresql://cs_worker.<project_ref>:<password>@aws-1-ap-northeast-1.pooler.supabase.com:6543/postgres?sslmode=require`. Matches the cs_api URL shape (ADR-1009 Sprint 2.1).
+- [x] Confirmed `cs_worker` can connect via psql against the pooler; `select current_user;` returns `cs_worker`.
+- [x] `tests/integration/cs-worker-role.test.ts` — skipped-on-missing-env test now activated; 11/11 PASS.
+
+**Mid-flight schema amendment — BYPASSRLS.** First test run revealed that the direct-Postgres path (unlike PostgREST) cannot evaluate the existing SELECT RLS policies on `web_properties` / `consent_banners` / `consent_events` / `tracker_observations` / `worker_errors` — every policy inlines `public.current_org_id()` → `auth.jwt()`, and `cs_worker` has no USAGE on schema `auth` (consistent with its minimum-privilege posture). The existing PostgREST path sidestepped this because `SUPABASE_WORKER_KEY` has been resolving to the service role (see "Security finding" below), which has BYPASSRLS.
+
+Migration `20260804000008_cs_worker_bypassrls.sql` grants BYPASSRLS to cs_worker. This matches the pattern already established for cs_orchestrator + cs_delivery (both of which have `rolbypassrls=true`). Column-level grants remain the authoritative fence — cs_worker can only touch the tables and columns explicitly granted, regardless of RLS.
+
+Attack surface impact: near-zero. BYPASSRLS does not broaden which tables or columns cs_worker can access; it only skips policy evaluation on tables where it already has grants.
+
+**Security finding — `SUPABASE_WORKER_KEY` is the service role key.** While diagnosing the RLS issue, confirmed via `grep` that the value in `worker/.dev.vars` + the wrangler secret `SUPABASE_WORKER_KEY` is byte-identical to the `sb_secret_*` service role key (also stored in `.env.local` as `SUPABASE_SERVICE_ROLE_KEY`). The Worker has been running with service-role privileges — Rule 5 violation — since the `sb_secret_*` format rolled out. ADR-1010's original premise ("Worker uses HS256 cs_worker JWT") is inaccurate; the actual migration is "replace service-role shortcut with proper cs_worker credential". Phase 3 Sprint 3.1 will do this; until then the production Worker continues to run with over-broad privileges.
 
 **Testing plan:**
-- [x] Written: integration test skipped-on-missing-env (same pattern as `tests/integration/cs-api-role.test.ts`). Proves `cs_worker` via postgres.js can INSERT consent_events / tracker_observations / worker_errors, SELECT consent_banners / web_properties, UPDATE web_properties.snippet_last_seen_at, but cannot SELECT api_keys / organisations or DELETE buffer rows.
-- [ ] Activates on first run after the operator steps above land the env vars.
+- [x] All 11 tests in `cs-worker-role.test.ts` PASS: current_user identity, SELECT web_properties (incl. event_signing_secret), SELECT consent_banners, INSERT consent_events / tracker_observations / worker_errors, UPDATE snippet_last_seen_at, forbidden UPDATE on other columns (42501), forbidden SELECT on api_keys / organisations (42501), forbidden DELETE on consent_events (42501).
+- [x] Full integration suite 168/168 PASS.
 
-**Status:** `[~] partially complete` — engineering asserts + test harness in place; operator-side password rotation + env wiring pending. Phase 3 Worker rewrite is unblocked once those two env vars exist.
+**Status:** `[x] complete` — 2026-04-22. Phase 3 Worker source rewrite is unblocked.
 
 ### Phase 3 — Worker rewrite
 

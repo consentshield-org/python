@@ -101,9 +101,13 @@ describeIf('cs_worker direct-Postgres role — ADR-1010 Phase 2', () => {
     expect(rows[0].id).toBe(bannerId)
   })
 
+  // INSERTs use no RETURNING — cs_worker has INSERT-only column grants on
+  // these buffer tables (mirrors PostgREST's Prefer: return=minimal path
+  // used by the production Worker today). Assertion is "INSERT succeeded"
+  // via postgres.js .count and verified via the admin client.
   it('INSERT into consent_events succeeds', async () => {
     const fingerprint = `csw-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-    const rows = await sql<Array<{ id: string }>>`
+    const result = await sql`
       insert into consent_events
         (org_id, property_id, banner_id, banner_version,
          session_fingerprint, event_type, purposes_accepted, purposes_rejected,
@@ -111,33 +115,49 @@ describeIf('cs_worker direct-Postgres role — ADR-1010 Phase 2', () => {
       values (${org.orgId}::uuid, ${propertyId}::uuid, ${bannerId}::uuid, 1,
               ${fingerprint}, 'consent_given', ${sql.array([])}, ${sql.array([])},
               true)
-      returning id
     `
-    expect(rows[0].id).toBeTruthy()
+    expect(result.count).toBe(1)
+
+    const admin = getServiceClient()
+    const { data } = await admin
+      .from('consent_events').select('id').eq('session_fingerprint', fingerprint).maybeSingle()
+    expect(data?.id).toBeTruthy()
   })
 
   it('INSERT into tracker_observations succeeds', async () => {
     const fingerprint = `csw-obs-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-    const rows = await sql<Array<{ id: string }>>`
+    // consent_state + trackers_detected are jsonb; origin_verified is text on
+    // this table (unlike consent_events where it's boolean).
+    const result = await sql`
       insert into tracker_observations
         (org_id, property_id, session_fingerprint, page_url_hash,
          trackers_detected, consent_state, origin_verified)
       values (${org.orgId}::uuid, ${propertyId}::uuid, ${fingerprint},
-              'abc123', ${sql.json({})}::jsonb, 'granted', true)
-      returning id
+              'abc123', ${JSON.stringify([])}::jsonb,
+              ${JSON.stringify({ state: 'granted' })}::jsonb, 'hmac-v1')
     `
-    expect(rows[0].id).toBeTruthy()
+    expect(result.count).toBe(1)
+
+    const admin = getServiceClient()
+    const { data } = await admin
+      .from('tracker_observations').select('id').eq('session_fingerprint', fingerprint).maybeSingle()
+    expect(data?.id).toBeTruthy()
   })
 
   it('INSERT into worker_errors succeeds', async () => {
-    const rows = await sql<Array<{ id: string }>>`
+    const endpointTag = `/v1/events-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    const result = await sql`
       insert into worker_errors
         (org_id, property_id, endpoint, status_code, upstream_error)
-      values (${org.orgId}::uuid, ${propertyId}::uuid, '/v1/events',
+      values (${org.orgId}::uuid, ${propertyId}::uuid, ${endpointTag},
               500, 'cs_worker smoke')
-      returning id
     `
-    expect(rows[0].id).toBeTruthy()
+    expect(result.count).toBe(1)
+
+    const admin = getServiceClient()
+    const { data } = await admin
+      .from('worker_errors').select('id').eq('endpoint', endpointTag).maybeSingle()
+    expect(data?.id).toBeTruthy()
   })
 
   it('UPDATE on web_properties.snippet_last_seen_at succeeds', async () => {
