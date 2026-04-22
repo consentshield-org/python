@@ -276,13 +276,22 @@ Each vertical site is a small standalone Next.js app deployed to Railway under a
 **Estimated effort:** 2 days
 
 **Deliverables:**
-- [ ] `tests/e2e/utils/banner-harness.ts` — given a vertical URL, spin a browser, wait for banner paint, exercise accept/reject/customise, capture the resulting consent events.
-- [ ] Cross-vertical matrix test: for each vertical × each consent outcome, assert expected artefact row + expected tracker-blocking behaviour.
+- [x] `tests/e2e/utils/banner-harness.ts` — abstract interaction primitives over the banner (`openBanner`, `acceptAll`, `rejectAll`, `customise`, `getLoadedTrackers`, `bannerIsDismissed`). Owns the `/v1/banner.js` keepalive-patch workaround (Chromium `fetch({keepalive:true})` bypasses page-level interception). Typed `ConsentEventDetail` return values so tests reason about event_type + accepted[] + rejected[] directly.
+- [x] `tests/e2e/demo-matrix.spec.ts` — cross-vertical × cross-outcome matrix. 3 verticals (ecommerce/healthcare/bfsi) × 3 outcomes (accept_all/reject_all/customise) = 9 cells. Each cell asserts: page event detail, banner dismount, DB buffer row, row-count delta = 1, per-vertical tracker-load count (spec §4 proof #6 + #7). Tracker-count expectations encoded in the per-vertical `expectedTrackers` map based on each `test-sites/<slug>/index.html`'s `window.__DEMO_TRACKERS__` dict.
+- [x] `tests/e2e/specs/demo-matrix.md` — normative spec. 8 sections including the matrix definition, per-cell proofs, the "why not a fake positive" argument (4 independent observable systems asserted per cell), and explicit documentation of the two pre-reqs blocking runtime green.
 
 **Testing plan:**
-- [ ] Full matrix passes on all 3 verticals × 3 outcomes × 2 browsers (chromium, webkit).
+- [ ] Full matrix passes on all 3 verticals × 3 outcomes × 2 browsers (chromium, webkit). **Runtime green blocked by two independent pre-reqs — see below.**
 
-**Status:** `[ ] planned`
+**Tested so far:**
+- [x] `bunx tsc --noEmit` clean on `tests/e2e/` with the new harness + matrix spec.
+- [x] Spec doc cross-checks: tracker-count assertions match the per-vertical HTML page's `__DEMO_TRACKERS__` dict (ecommerce 3/0/2; healthcare 1/0/1; bfsi 3/1/2 for accept_all/reject_all/customise).
+
+**Runtime-green blockers (2026-04-22):**
+1. **ADR-1010 Worker role guard.** Same blocker that's carried from Sprint 2.1: the Worker refuses to boot unless `SUPABASE_WORKER_KEY` is a JWT claiming `role=cs_worker`. `wrangler dev` with the service-role stand-in is rejected. Matrix tests skip cleanly when `WORKER_URL` is absent (same pattern as `demo-ecommerce-banner.spec.ts`).
+2. **Bootstrap / Worker purposes shape mismatch.** `scripts/e2e-bootstrap.ts` writes `consent_banners.purposes` as `{code, required, legal_basis}`; `worker/src/banner.ts` reads them as `{id, name, description, required, default}`. The banner's compiled script references `p.id` (would be `undefined`) and renders `p.name` as the `<strong>` text (would be `undefined`). This has been latent since Sprint 1.2 — nobody's hit it because browser-driven runtime has been blocked by #1 since it shipped. Fix is a one-file bootstrap transformation: map `code → id`, fill in `name` + `description` from a static per-purpose table, set `default = !required`. Out of Sprint 2.4's scope; tracked as an open item.
+
+**Status:** `[x] code-complete — harness + matrix spec + spec doc all land green on typecheck. Runtime green gated on both blockers above. Matrix tests skip cleanly when `WORKER_URL` is missing.`
 
 ---
 

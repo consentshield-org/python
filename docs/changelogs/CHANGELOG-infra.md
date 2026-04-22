@@ -2,6 +2,31 @@
 
 Vercel, Cloudflare, Supabase config changes.
 
+## [ADR-1014 Sprint 2.4 — banner-embed testing framework per vertical] — 2026-04-22
+
+**ADR:** ADR-1014 — E2E test harness + vertical demo sites
+**Sprint:** Phase 2, Sprint 2.4 — Banner-embed testing framework
+
+### Added
+- `tests/e2e/utils/banner-harness.ts` — abstract interaction primitives over the ConsentShield banner: `openBanner` (nav + keepalive-patch route + init-script consent-event capture + wait for Accept-all button), `acceptAll` / `rejectAll` (consent_given / consent_withdrawn), `customise` (purpose_updated with a display-name-based checkbox toggle), `getLoadedTrackers` (reads `script[data-cs-tracker]` srcs), `bannerIsDismissed`. All typed via `ConsentEventDetail` (event_type + accepted + rejected arrays).
+- `tests/e2e/demo-matrix.spec.ts` — 3 verticals × 3 outcomes = 9 cells. Each cell asserts: page event detail (expected accepted/rejected), banner dismount, DB buffer row with matching `event_type + org_id + property_id + banner_id + origin_verified='origin-only'`, row-count delta = 1, and per-vertical tracker-load count. Per-cell trace-id + network log + consent event + observed row attached to the Playwright report for evidence.
+- `tests/e2e/specs/demo-matrix.md` — 8-section normative spec. Tracker-count table (ecommerce 3/0/2; healthcare 1/0/1; bfsi 3/1/2 for accept_all/reject_all/customise) derived from each `test-sites/<slug>/index.html`'s `window.__DEMO_TRACKERS__` dict plus `demo.js`'s pageload `loadFor(['essential'])`. §6 "why not a fake positive" names the four independent observable systems each cell asserts (banner DOM, tracker loader, Worker 202, DB row). §8 documents the two runtime-green blockers.
+
+### Discovered
+- **Bootstrap / Worker purposes shape mismatch** — `scripts/e2e-bootstrap.ts` writes `consent_banners.purposes` jsonb as `{code, required, legal_basis}` while `worker/src/banner.ts` reads it as `{id, name, description, required, default}`. The Worker's compiled banner script references `p.id` (would be `undefined`) and renders `p.name` (also `undefined`) as the `<strong>` text of each purpose row. Latent since Sprint 1.2 — never hit because browser-driven runtime has been blocked since it shipped by the ADR-1010 Worker role guard (so no cell has actually reached banner-render). Sprint 2.4 is code-complete but flags this as an open pre-req for runtime green. Fix scope: one-file transformation in `scripts/e2e-bootstrap.ts` — map `code → id`, fill `name` + `description` from a static per-purpose table, set `default = !required`. Not included in Sprint 2.4's commit to keep the harness/matrix change self-contained.
+
+### Tested
+- `bunx tsc --noEmit` clean on `tests/e2e/` with the new harness + matrix spec (one false-start caught: JSDoc comments containing `*/` glob patterns inside TypeScript; fixed by reshaping as `//` comments).
+- Tracker-count expectations verified by manual comparison against each vertical's HTML `__DEMO_TRACKERS__` dict and the `demo.js` load flow.
+
+### Deferred (runtime green)
+Matrix runtime green blocked by two independent pre-reqs; tests skip cleanly when `WORKER_URL` is missing (same pattern as `demo-ecommerce-banner.spec.ts`):
+1. **ADR-1010 Worker role guard.** Worker refuses to boot unless `SUPABASE_WORKER_KEY` is a cs_worker-claimed JWT. Unblocks when ADR-1010 Phase 3 lands OR a proper JWT is placed in `worker/.dev.vars` manually.
+2. **Purposes shape mismatch** (above). Unblocks when the bootstrap transformation ships.
+
+### Why
+Sprint 2.1 left ecommerce with a single-cell browser-driven test (`demo-ecommerce-banner.spec.ts`); Sprint 2.2 + 2.3 added healthcare + bfsi demo sites without extending test coverage to them. A per-vertical × per-outcome matrix catches regressions a single-cell test cannot — particularly the BFSI `kyc_mandatory` case, where a bug treating legal_obligation purposes as optional would show up as a failure in the bfsi × reject_all cell but leave the other eight cells green. The harness separates "how the banner is interacted with" from "what each cell asserts" so Sprint 3.x full-pipeline tests can consume the same primitives without duplicating the keepalive-patch + event-capture plumbing.
+
 ## [ADR-1014 Sprint 2.3 close-out — demo-bfsi.consentshield.in DNS + TLS live] — 2026-04-22
 
 **ADR:** ADR-1014 — E2E test harness + vertical demo sites
