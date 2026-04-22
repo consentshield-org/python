@@ -18,8 +18,8 @@ Database migrations, RLS policies, roles.
 - [x] `tests/integration/cs-worker-role.test.ts` — 11/11 PASS. Covers identity, SELECT web_properties / consent_banners (incl. event_signing_secret), INSERT consent_events / tracker_observations / worker_errors (no RETURNING — cs_worker is INSERT-only on those tables, matches the Worker's Prefer: return=minimal pattern), UPDATE snippet_last_seen_at, forbidden operations on non-granted columns / tables / DELETEs.
 - [x] Full integration suite 168/168 PASS; no regressions.
 
-### Flagged
-- Security finding: `worker/.dev.vars` + the wrangler secret `SUPABASE_WORKER_KEY` is byte-identical to the `sb_secret_*` service role key. The Worker has been running with service-role privileges — Rule 5 violation. ADR-1010 Phase 3 Sprint 3.1 now includes replacing the service-role key with the cs_worker direct-Postgres URL as its first deliverable.
+### Correction
+- An earlier draft of this entry flagged `SUPABASE_WORKER_KEY` as the service-role key in production. That claim is retracted: the byte-identical value I observed was in `worker/.dev.vars`, which per ADR-1014 Sprint 1.3 intentionally carries a service-role value as a **local** test-harness stand-in (mode 0600, gitignored, only reachable via `wrangler dev`). The production wrangler secret is opaque to local tooling; its value is expected to be the scoped `cs_worker` HS256 JWT per ADR-0001 / ADR-1009 Sprint 3.2 / ADR-1014 Sprint 1.3. No prod service-role leak was demonstrated.
 
 ## [ADR-1010 Phase 2 Sprint 2.1 — cs_worker LOGIN verification] — 2026-04-22
 
