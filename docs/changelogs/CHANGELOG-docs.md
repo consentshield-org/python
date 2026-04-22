@@ -2,6 +2,23 @@
 
 Documentation changes.
 
+## [ADR-1019 proposed — deliver-consent-events Edge Function] — 2026-04-23
+
+**ADR:** ADR-1019 (new; Proposed)
+**Status at docs level:** Proposed — no code yet, just the architectural decision.
+
+### Added
+- `docs/ADRs/ADR-1019-deliver-consent-events-edge-function.md` — full ADR proposing the missing R2 export Edge Function. 4 phases / 7 sprints. Closes the gap referenced by ADR-0022, ADR-0023, ADR-0012, and ADR-1014 Sprint 3.2 (all four ADRs assume `deliver-consent-events` exists; none of them ship it). Covers:
+  - Context: `delivery_buffer` + `export_configurations` + `cs_delivery` role + per-org credential encryption primitives have all existed for ~10 days; only the function itself is missing.
+  - Decision: trigger-fired primary path + `pg_cron` 60s safety net (mirrors `process-artefact-revocation`); per-row canonical JSON serialisation with content-hashable output; transaction-scoped UPDATE+DELETE on confirmed upload; exponential backoff with manual-review escalation after 10 failures.
+  - Event-type coverage table mapping producer ADRs to payload shapes (8 event_types today: `consent_event`, `artefact_revocation`, `artefact_expiry_deletion`, `consent_expiry_alert`, `tracker_observation`, `audit_log_entry`, `rights_request_event`, `deletion_receipt`).
+  - Integration with ADR-1018 status page (`delivery-pipeline` subsystem) and ADR-1017 readiness flags.
+  - Acceptance criteria tied to CLAUDE.md Rules 1, 2, 3, 5, 11, 18.
+- `docs/ADRs/ADR-index.md` — new row for ADR-1019.
+
+### Why
+Four ADRs currently reference a function that doesn't exist. Writing the proposal ADR first (rather than diving straight into code) surfaces the cross-ADR dependencies (particularly the ADR-1014 Sprint 3.2 blocker documented here just yesterday) and gates the subsequent implementation work on an operator review. No migrations, no function code, no schema changes land with this commit — proposal-only.
+
 ## [ADR-1005 Phase 2 Sprint 2.1 — test_delete doc sync] — 2026-04-22
 
 **ADR:** ADR-1005 — Operations maturity
