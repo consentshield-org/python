@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ConsentShield — Developer Documentation (Wireframe)</title>
+<meta name="description" content="Wireframe for the ConsentShield public developer docs on the marketing site — /docs/* surface rendered via Next.js MDX + @scalar/api-reference.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;0,900;1,500;1,700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════════
+   CONSENTSHIELD — DEVELOPER DOCS WIREFRAME
+   Marketing surface: /docs/* on consentshield.in
+   Tooling (implementation): Next.js 16 MDX + @scalar/api-reference
+   Inherits type + colour from consentshield-site.html (Editorial Enterprise)
+═══════════════════════════════════════════════════════════════════ */
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --navy:#0F2D5B;
+  --navy-dark:#091E3E;
+  --navy-light:#1A3F73;
+  --navy-soft:#E7ECF4;
+  --teal:#0D7A6B;
+  --teal-dark:#0A5C50;
+  --teal-mid:#14A090;
+  --teal-light:#E0F4F1;
+  --teal-pale:#F0FAF8;
+  --amber:#C97B00;
+  --amber-light:#FEF3C7;
+  --amber-mid:#F59E0B;
+  --red:#B91C1C;
+  --red-light:#FEE2E2;
+  --green:#15803D;
+  --green-light:#DCFCE7;
+  --blue:#1E40AF;
+  --blue-light:#EFF6FF;
+  --purple:#6D28D9;
+  --purple-light:#EDE9FE;
+
+  --paper:#FBFAF7;
+  --paper-deep:#F5F2EC;
+  --bg:#FFFFFF;
+  --surface:#FFFFFF;
+  --line:#E5E2DB;
+  --line-soft:#EDEAE3;
+  --line-strong:#CFC9BC;
+
+  --ink:#0B1220;
+  --ink-2:#384050;
+  --ink-3:#6B7280;
+  --ink-4:#9AA0AA;
+
+  --display:'Playfair Display',Georgia,serif;
+  --sans:'DM Sans',system-ui,-apple-system,sans-serif;
+  --mono:'DM Mono',ui-monospace,SFMono-Regular,monospace;
+
+  --r:6px;--r-md:10px;--r-lg:14px;
+  --shadow-sm:0 1px 2px rgba(15,45,91,.04),0 1px 1px rgba(15,45,91,.03);
+  --shadow:0 4px 12px rgba(15,45,91,.06),0 2px 4px rgba(15,45,91,.04);
+  --shadow-lg:0 24px 48px -12px rgba(15,45,91,.12),0 8px 16px rgba(15,45,91,.06);
+
+  --ease:cubic-bezier(.2,.8,.2,1);
+
+  /* Code-block theme — muted terminal, Editorial Enterprise-safe */
+  --code-bg:#0B1220;
+  --code-ink:#E5E7EB;
+  --code-comment:#64748B;
+  --code-keyword:#93C5FD;
+  --code-string:#86EFAC;
+  --code-number:#FCD34D;
+  --code-punctuation:#CBD5E1;
+}
+
+html,body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+
+/* ─── Wireframe ribbon ─── */
+.wf-banner{position:fixed;top:0;left:0;right:0;z-index:99;background:#0B1220;color:#FBFAF7;font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:6px 20px;display:flex;align-items:center;justify-content:space-between;font-family:var(--mono);border-bottom:1px solid rgba(255,255,255,.1)}
+.wf-banner-left{display:flex;align-items:center;gap:14px}
+.wf-banner-dot{width:7px;height:7px;background:var(--teal-mid);border-radius:50%;box-shadow:0 0 0 3px rgba(20,160,144,.2)}
+.wf-banner-right{display:flex;align-items:center;gap:16px;opacity:.5}
+.wf-banner-right a{color:inherit;text-decoration:none}
+
+/* ─── Marketing nav (shared with consentshield-site.html) ─── */
+.nav{position:sticky;top:26px;z-index:50;background:rgba(251,250,247,.85);backdrop-filter:saturate(180%) blur(14px);-webkit-backdrop-filter:saturate(180%) blur(14px);border-bottom:1px solid var(--line-soft)}
+.nav-inner{max-width:1440px;margin:0 auto;padding:0 32px;height:60px;display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit}
+.logo-icon{width:30px;height:30px;background:var(--teal);border-radius:7px;display:flex;align-items:center;justify-content:center}
+.logo-icon svg{width:16px;height:16px;fill:white}
+.logo-word{font-family:var(--display);font-size:18px;font-weight:700;letter-spacing:-.02em;color:var(--navy)}
+.logo-word em{color:var(--teal);font-style:normal}
+.logo-docs{font-size:12px;color:var(--ink-3);font-weight:500;padding:2px 8px;background:var(--paper-deep);border-radius:4px;margin-left:4px;letter-spacing:.03em}
+
+.nav-search{flex:0 1 460px;max-width:460px;margin:0 36px;position:relative}
+.nav-search input{width:100%;height:36px;padding:0 12px 0 36px;border:1px solid var(--line);border-radius:6px;background:white;font-family:var(--sans);font-size:13px;color:var(--ink);outline:none;transition:border-color .15s}
+.nav-search input:focus{border-color:var(--teal)}
+.nav-search input::placeholder{color:var(--ink-4)}
+.nav-search-icon{position:absolute;left:12px;top:10px;color:var(--ink-4)}
+.nav-search-kbd{position:absolute;right:10px;top:8px;font-family:var(--mono);font-size:11px;color:var(--ink-4);padding:2px 6px;background:var(--paper-deep);border:1px solid var(--line);border-radius:4px}
+
+.nav-right{display:flex;align-items:center;gap:6px}
+.nav-link{padding:7px 12px;font-size:13.5px;color:var(--ink-2);text-decoration:none;font-weight:500;border-radius:6px}
+.nav-link:hover{color:var(--navy);background:var(--paper-deep)}
+.nav-cta{padding:8px 16px;font-size:13.5px;font-weight:600;color:white;background:var(--teal);border-radius:6px;text-decoration:none}
+.nav-cta:hover{background:var(--teal-dark)}
+
+/* ─── Docs shell: 3-pane (sidebar / content / ToC) ─── */
+.shell{max-width:1440px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr) 240px;gap:0;min-height:calc(100vh - 86px)}
+
+.sidebar{border-right:1px solid var(--line-soft);padding:28px 20px 48px;background:var(--paper);position:sticky;top:86px;height:calc(100vh - 86px);overflow-y:auto}
+.sidebar::-webkit-scrollbar{width:6px}
+.sidebar::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
+.sb-group{margin-bottom:22px}
+.sb-title{font-family:var(--mono);font-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.08em;padding:0 10px 8px;font-weight:500}
+.sb-link{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:5px;text-decoration:none;color:var(--ink-2);font-size:13.5px;line-height:1.3;font-weight:450}
+.sb-link:hover{background:var(--paper-deep);color:var(--navy)}
+.sb-link.active{background:var(--teal-light);color:var(--teal-dark);font-weight:600}
+.sb-link.nested{padding-left:22px;font-size:13px}
+.sb-method{font-family:var(--mono);font-size:10px;font-weight:600;padding:1px 5px;border-radius:3px;letter-spacing:.03em;min-width:36px;text-align:center;flex:0 0 auto}
+.sb-method.get{background:var(--blue-light);color:var(--blue)}
+.sb-method.post{background:var(--green-light);color:var(--green)}
+.sb-method.put{background:var(--amber-light);color:var(--amber)}
+.sb-method.del{background:var(--red-light);color:var(--red)}
+.sb-pin{font-family:var(--mono);font-size:10px;color:var(--ink-4);padding:1px 5px;background:var(--paper-deep);border-radius:3px;margin-left:auto;flex:0 0 auto}
+
+/* ─── Content column ─── */
+.content{padding:48px 56px 120px;min-width:0}
+.page{display:none}
+.page.active{display:block;animation:pageIn .35s var(--ease)}
+@keyframes pageIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+.breadcrumb{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-3);font-family:var(--mono);margin-bottom:16px;letter-spacing:.02em}
+.breadcrumb a{color:inherit;text-decoration:none}
+.breadcrumb a:hover{color:var(--teal)}
+.breadcrumb .sep{opacity:.4}
+
+h1.page-title{font-family:var(--display);font-size:44px;font-weight:700;letter-spacing:-.02em;color:var(--navy);line-height:1.1;margin-bottom:14px}
+.page-sub{font-size:17px;color:var(--ink-2);line-height:1.55;max-width:720px;margin-bottom:32px}
+
+h2{font-family:var(--display);font-size:28px;font-weight:600;color:var(--navy);letter-spacing:-.01em;margin:48px 0 16px;line-height:1.25;scroll-margin-top:100px}
+h3{font-family:var(--sans);font-size:18px;font-weight:600;color:var(--navy);margin:32px 0 12px;letter-spacing:-.01em;scroll-margin-top:100px}
+h4{font-family:var(--sans);font-size:14.5px;font-weight:600;color:var(--navy);margin:24px 0 8px;letter-spacing:.02em;text-transform:uppercase;font-size:12.5px}
+
+p{color:var(--ink-2);margin-bottom:14px;max-width:760px}
+p strong{color:var(--navy);font-weight:600}
+a.inline{color:var(--teal);text-decoration:none;border-bottom:1px dotted var(--teal)}
+a.inline:hover{color:var(--teal-dark);border-bottom-style:solid}
+code.inline{font-family:var(--mono);font-size:13px;background:var(--paper-deep);padding:1px 6px;border-radius:4px;color:var(--navy);border:1px solid var(--line-soft)}
+
+ul.list{margin:10px 0 16px 22px}
+ul.list li{color:var(--ink-2);margin-bottom:6px}
+ul.list li::marker{color:var(--teal)}
+ol.list{margin:10px 0 16px 22px}
+ol.list li{color:var(--ink-2);margin-bottom:8px}
+
+/* ─── Code blocks ─── */
+.code-card{background:var(--code-bg);border-radius:var(--r-md);overflow:hidden;margin:16px 0 24px;box-shadow:var(--shadow-sm);max-width:760px}
+.code-head{display:flex;align-items:center;justify-content:space-between;padding:0 12px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06)}
+.code-tabs{display:flex;gap:2px}
+.code-tab{padding:10px 14px;font-family:var(--mono);font-size:12px;color:#94A3B8;border:none;background:transparent;cursor:pointer;border-bottom:2px solid transparent;letter-spacing:.02em}
+.code-tab.active{color:white;border-bottom-color:var(--teal-mid);font-weight:500}
+.code-tab:hover{color:#CBD5E1}
+.code-actions{display:flex;gap:4px}
+.code-btn{padding:6px 10px;font-family:var(--mono);font-size:11px;color:#94A3B8;border:none;background:transparent;cursor:pointer;border-radius:4px;letter-spacing:.02em}
+.code-btn:hover{color:white;background:rgba(255,255,255,.05)}
+.code-body{padding:18px 20px;font-family:var(--mono);font-size:13px;line-height:1.7;color:var(--code-ink);overflow-x:auto;white-space:pre}
+.tok-k{color:var(--code-keyword)}
+.tok-s{color:var(--code-string)}
+.tok-n{color:var(--code-number)}
+.tok-c{color:var(--code-comment);font-style:italic}
+.tok-p{color:var(--code-punctuation)}
+.tok-f{color:#FDA4AF}
+
+/* ─── Callouts ─── */
+.callout{border-left:3px solid var(--teal);background:var(--teal-pale);padding:14px 18px;border-radius:0 var(--r-md) var(--r-md) 0;margin:20px 0 24px;max-width:760px}
+.callout.warn{border-color:var(--amber-mid);background:var(--amber-light)}
+.callout.security{border-color:var(--red);background:var(--red-light)}
+.callout.info{border-color:var(--blue);background:var(--blue-light)}
+.callout-head{display:flex;align-items:center;gap:8px;font-weight:600;color:var(--navy);font-size:13px;margin-bottom:4px;font-family:var(--mono);letter-spacing:.04em;text-transform:uppercase}
+.callout.warn .callout-head{color:var(--amber)}
+.callout.security .callout-head{color:var(--red)}
+.callout.info .callout-head{color:var(--blue)}
+.callout p{color:var(--ink-2);margin:0;font-size:14px}
+
+/* ─── Card grids (dev hub) ─── */
+.card-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin:28px 0 40px;max-width:860px}
+.card{background:white;border:1px solid var(--line);border-radius:var(--r-md);padding:22px 24px;text-decoration:none;color:inherit;transition:all .2s var(--ease);display:block}
+.card:hover{border-color:var(--teal);transform:translateY(-2px);box-shadow:var(--shadow)}
+.card-icon{width:36px;height:36px;background:var(--teal-light);color:var(--teal);border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:14px}
+.card-title{font-family:var(--display);font-size:18px;font-weight:600;color:var(--navy);margin-bottom:6px;letter-spacing:-.01em}
+.card-sub{font-size:13.5px;color:var(--ink-3);line-height:1.5}
+.card-foot{margin-top:14px;font-family:var(--mono);font-size:11px;color:var(--teal);letter-spacing:.05em}
+
+/* ─── Endpoint header (API reference page) ─── */
+.endpoint-head{background:white;border:1px solid var(--line);border-radius:var(--r-md);padding:18px 22px;margin:8px 0 28px;max-width:760px;box-shadow:var(--shadow-sm)}
+.endpoint-url{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.method-pill{font-family:var(--mono);font-size:11px;font-weight:700;padding:3px 9px;border-radius:4px;letter-spacing:.04em}
+.method-pill.get{background:var(--blue-light);color:var(--blue)}
+.method-pill.post{background:var(--green-light);color:var(--green)}
+.endpoint-path{font-family:var(--mono);font-size:14.5px;color:var(--navy);font-weight:500}
+.endpoint-path .param{color:var(--amber)}
+.endpoint-meta{display:flex;gap:16px;margin-top:12px;font-family:var(--mono);font-size:11.5px;color:var(--ink-3);letter-spacing:.02em;flex-wrap:wrap}
+.endpoint-meta span strong{color:var(--ink-2);font-weight:500}
+
+/* ─── Parameter table ─── */
+.param-table{border:1px solid var(--line);border-radius:var(--r-md);background:white;margin:16px 0 24px;max-width:760px;overflow:hidden}
+.param-row{display:grid;grid-template-columns:200px 1fr;gap:0;border-bottom:1px solid var(--line-soft)}
+.param-row:last-child{border-bottom:none}
+.param-name-cell{padding:14px 18px;border-right:1px solid var(--line-soft);background:var(--paper)}
+.param-name{font-family:var(--mono);font-size:13px;color:var(--navy);font-weight:500}
+.param-type{font-family:var(--mono);font-size:11px;color:var(--ink-3);margin-top:3px}
+.param-required{display:inline-block;font-family:var(--mono);font-size:9.5px;color:var(--red);font-weight:600;padding:1px 5px;background:var(--red-light);border-radius:3px;letter-spacing:.05em;margin-left:6px}
+.param-desc-cell{padding:14px 18px;color:var(--ink-2);font-size:13.5px;line-height:1.55}
+.param-desc-cell code{font-family:var(--mono);font-size:12px;background:var(--paper-deep);padding:1px 5px;border-radius:3px;color:var(--navy)}
+.param-default{display:inline-block;font-family:var(--mono);font-size:11px;color:var(--ink-3);margin-top:6px}
+
+/* ─── Status grid ─── */
+.status-grid{display:grid;grid-template-columns:90px 1fr;gap:10px 18px;margin:14px 0 24px;max-width:760px}
+.status-chip{font-family:var(--mono);font-size:12px;font-weight:600;padding:4px 8px;border-radius:4px;text-align:center;height:fit-content;letter-spacing:.03em}
+.status-chip.s2xx{background:var(--green-light);color:var(--green)}
+.status-chip.s4xx{background:var(--amber-light);color:var(--amber)}
+.status-chip.s5xx{background:var(--red-light);color:var(--red)}
+.status-desc{font-size:13.5px;color:var(--ink-2);padding-top:4px;line-height:1.5}
+
+/* ─── ToC rail ─── */
+.toc{padding:48px 24px;position:sticky;top:86px;height:calc(100vh - 86px);overflow-y:auto;border-left:1px solid var(--line-soft);background:var(--paper)}
+.toc-title{font-family:var(--mono);font-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;font-weight:500}
+.toc-link{display:block;padding:4px 0;font-size:12.5px;color:var(--ink-3);text-decoration:none;line-height:1.4}
+.toc-link:hover{color:var(--teal)}
+.toc-link.active{color:var(--teal);font-weight:500}
+.toc-link.nested{padding-left:14px;font-size:12px}
+.toc-foot{margin-top:24px;padding-top:16px;border-top:1px solid var(--line-soft);font-size:12px;color:var(--ink-4);line-height:1.5}
+.toc-foot a{color:var(--teal);text-decoration:none}
+
+/* ─── Quickstart step strip ─── */
+.steps{display:grid;grid-template-columns:1fr;gap:0;margin:16px 0 32px;max-width:760px;border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;background:white}
+.step{padding:20px 24px;border-bottom:1px solid var(--line-soft);display:grid;grid-template-columns:44px 1fr;gap:16px;align-items:start}
+.step:last-child{border-bottom:none}
+.step-num{width:30px;height:30px;border-radius:50%;background:var(--teal);color:white;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:13px;font-weight:600}
+.step-body h3{margin:0 0 6px;color:var(--navy);font-size:16px}
+.step-body p{font-size:13.5px;margin-bottom:8px}
+
+/* ─── Cookbook recipe ─── */
+.recipe-meta{display:flex;gap:18px;margin:4px 0 20px;font-family:var(--mono);font-size:11.5px;color:var(--ink-3);letter-spacing:.03em;text-transform:uppercase;padding:10px 14px;background:var(--paper-deep);border-radius:var(--r-md);max-width:760px}
+.recipe-meta span strong{color:var(--ink-2);font-weight:500;text-transform:none}
+
+/* ─── Playground container ─── */
+.playground{background:white;border:1px solid var(--line);border-radius:var(--r-md);box-shadow:var(--shadow);overflow:hidden;margin:20px 0;height:720px;display:grid;grid-template-columns:280px 1fr 1fr;max-width:none}
+.pg-sidebar{background:var(--paper-deep);border-right:1px solid var(--line);padding:16px;overflow-y:auto}
+.pg-sidebar-title{font-family:var(--mono);font-size:10px;color:var(--ink-4);letter-spacing:.08em;text-transform:uppercase;margin:0 0 8px;padding:0 6px}
+.pg-sidebar .sb-link{font-size:12.5px;padding:5px 8px}
+.pg-request{padding:18px;background:var(--paper);border-right:1px solid var(--line);display:flex;flex-direction:column;gap:12px;overflow-y:auto}
+.pg-request h4{margin:0 0 4px}
+.pg-response{padding:18px;background:var(--code-bg);color:var(--code-ink);font-family:var(--mono);font-size:12.5px;line-height:1.7;overflow-y:auto}
+
+/* ─── "What's next" footer block ─── */
+.nextblock{margin-top:48px;padding:24px 28px;background:var(--navy);color:white;border-radius:var(--r-md);max-width:760px}
+.nextblock h4{color:var(--teal-mid);margin-top:0;letter-spacing:.1em;font-size:11px}
+.nextblock h3{color:white;margin-top:8px}
+.nextblock-links{display:flex;gap:16px;margin-top:12px;flex-wrap:wrap}
+.nextblock-links a{color:var(--teal-mid);font-size:13px;text-decoration:none;border-bottom:1px dotted rgba(20,160,144,.4)}
+.nextblock-links a:hover{color:white;border-bottom-color:white}
+
+/* ─── Feedback strip ─── */
+.feedback{margin-top:56px;padding:18px 22px;background:var(--paper-deep);border-radius:var(--r-md);max-width:760px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.feedback-text{font-size:13.5px;color:var(--ink-2)}
+.feedback-actions{display:flex;gap:8px}
+.feedback-btn{padding:6px 12px;font-size:12px;font-family:var(--mono);border:1px solid var(--line);background:white;color:var(--ink-2);border-radius:5px;cursor:pointer;letter-spacing:.02em}
+.feedback-btn:hover{border-color:var(--teal);color:var(--teal)}
+
+/* ─── Utility ─── */
+.muted{color:var(--ink-3)}
+.divider{height:1px;background:var(--line-soft);margin:40px 0 32px;max-width:760px}
+</style>
+</head>
+<body>
+
+<!-- ═════ WIREFRAME RIBBON ═════ -->
+<div class="wf-banner">
+  <div class="wf-banner-left">
+    <div class="wf-banner-dot"></div>
+    <span>Wireframe — /docs surface for ConsentShield marketing site</span>
+  </div>
+  <div class="wf-banner-right">
+    <span>ADR-1015</span>
+    <span>MDX + @scalar/api-reference</span>
+    <span>Normative spec — do not style-drift</span>
+  </div>
+</div>
+
+<!-- ═════ NAV ═════ -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="logo" href="#">
+      <div class="logo-icon"><svg viewBox="0 0 24 24"><path d="M12 2L3 6v6c0 5.5 3.8 10.7 9 12 5.2-1.3 9-6.5 9-12V6l-9-4z"/></svg></div>
+      <span class="logo-word">consent<em>shield</em></span>
+      <span class="logo-docs">Developer Docs</span>
+    </a>
+    <div class="nav-search">
+      <svg class="nav-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="search" placeholder="Search docs, endpoints, concepts…" />
+      <span class="nav-search-kbd">⌘K</span>
+    </div>
+    <div class="nav-right">
+      <a class="nav-link" href="#">Pricing</a>
+      <a class="nav-link" href="#">Dashboard ↗</a>
+      <a class="nav-cta" href="#">Get API key</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ═════ PAGE SHELL (sidebar + content + ToC) ═════ -->
+<div class="shell">
+
+  <!-- ─── Sidebar nav ─── -->
+  <aside class="sidebar">
+    <div class="sb-group">
+      <div class="sb-title">Get started</div>
+      <a class="sb-link" onclick="goto('hub')">Developer Hub</a>
+      <a class="sb-link" onclick="goto('quickstart')">Quickstart — 15 min</a>
+      <a class="sb-link" href="#">Authentication</a>
+      <a class="sb-link" href="#">Rate limits &amp; quotas</a>
+      <a class="sb-link" href="#">SDK availability</a>
+    </div>
+
+    <div class="sb-group">
+      <div class="sb-title">Core concepts</div>
+      <a class="sb-link" href="#">DPDP Act in 3 minutes</a>
+      <a class="sb-link" href="#">Artefacts vs. events</a>
+      <a class="sb-link" href="#">Purpose definitions</a>
+      <a class="sb-link" href="#">Rights requests lifecycle</a>
+      <a class="sb-link" href="#">Deletion connectors</a>
+      <a class="sb-link" href="#">Key rotation &amp; tombstones</a>
+    </div>
+
+    <div class="sb-group">
+      <div class="sb-title">Cookbook</div>
+      <a class="sb-link" onclick="goto('cookbook')">Record consent at checkout</a>
+      <a class="sb-link" href="#">Build a preference center</a>
+      <a class="sb-link" href="#">Handle a rights request end-to-end</a>
+      <a class="sb-link" href="#">Wire a deletion-connector webhook</a>
+      <a class="sb-link" href="#">Batch-verify consents server-side</a>
+      <a class="sb-link" href="#">Rotate an API key safely</a>
+      <a class="sb-link" href="#">Build a DPB audit export</a>
+    </div>
+
+    <div class="sb-group">
+      <div class="sb-title">API Reference</div>
+      <a class="sb-link" onclick="goto('playground')"><span class="sb-pin">Try</span>&nbsp;Interactive playground</a>
+
+      <div class="sb-title" style="margin-top:14px;padding:0 10px 6px;font-size:10px">Health</div>
+      <a class="sb-link nested"><span class="sb-method get">GET</span> _ping</a>
+
+      <div class="sb-title" style="margin-top:10px;padding:0 10px 6px;font-size:10px">Consent</div>
+      <a class="sb-link nested"><span class="sb-method get">GET</span> /consent/verify</a>
+      <a class="sb-link nested"><span class="sb-method post">POST</span> /consent/verify/batch</a>
+      <a class="sb-link nested active" onclick="goto('endpoint')"><span class="sb-method post">POST</span> /consent/record</a>
+      <a class="sb-link nested"><span class="sb-method get">GET</span> /consent/artefacts</a>
+      <a class="sb-link nested"><span class="sb-method get">GET</span> /consent/artefacts/&#123;id&#125;</a>
+      <a class="sb-link nested"><span class="sb-method post">POST</span> /consent/artefacts/&#123;id&#125;/revoke</a>
+      <a class="sb-link nested"><span class="sb-method get">GET</span> /consent/events</a>
+
+      <div class="sb-title" style="margin-top:10px;padding:0 10px 6px;font-size:10px">Deletion</div>
+      <a class="sb-link nested"><span class="sb-method post">POST</span> /deletion/trigger</a>
+      <a class="sb-link nested"><span class="sb-method get">GET</span> /deletion/receipts</a>
+
+      <div class="sb-title" style="margin-top:10px;padding:0 10px 6px;font-size:10px">Account &amp; plans</div>
+      <a class="sb-link nested"><span class="sb-method get">GET</span> /keys/self</a>
+      <a class="sb-link nested"><span class="sb-method get">GET</span> /usage</a>
+      <a class="sb-link nested"><span class="sb-method get">GET</span> /purposes</a>
+      <a class="sb-link nested"><span class="sb-method get">GET</span> /properties</a>
+      <a class="sb-link nested"><span class="sb-method get">GET</span> /plans</a>
+    </div>
+
+    <div class="sb-group">
+      <div class="sb-title">Reference</div>
+      <a class="sb-link" href="#">Error codes</a>
+      <a class="sb-link" href="#">Webhook signatures</a>
+      <a class="sb-link" href="#">OpenAPI spec (YAML)</a>
+      <a class="sb-link" href="#">API changelog</a>
+      <a class="sb-link" href="#">Status &amp; uptime</a>
+    </div>
+  </aside>
+
+  <!-- ─── Content ─── -->
+  <main class="content">
+
+    <!-- ═══ PAGE 1: DEVELOPER HUB ═══ -->
+    <section id="page-hub" class="page active">
+      <div class="breadcrumb">
+        <a href="#">Docs</a><span class="sep">/</span><span>Developer Hub</span>
+      </div>
+      <h1 class="page-title">Build DPDP-compliant consent flows — without building a compliance engine.</h1>
+      <p class="page-sub">The ConsentShield API lets you record, verify, revoke, and export consent artefacts that the <a class="inline" href="#">DPDP Act</a> treats as first-class evidence. This is the reference documentation for developers integrating the <code class="inline">/v1/*</code> surface. Pick a lane below.</p>
+
+      <div class="card-grid">
+        <a class="card" onclick="goto('quickstart')">
+          <div class="card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+          <div class="card-title">Quickstart</div>
+          <div class="card-sub">Record your first consent artefact in 15 minutes. From API key to verified receipt.</div>
+          <div class="card-foot">GET STARTED →</div>
+        </a>
+        <a class="card" href="#">
+          <div class="card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+          <div class="card-title">Core concepts</div>
+          <div class="card-sub">Artefacts, events, purposes, rights — the mental model behind the API. 10-minute read.</div>
+          <div class="card-foot">READ →</div>
+        </a>
+        <a class="card" onclick="goto('cookbook')">
+          <div class="card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2v6a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V2"/><path d="M6 22h12"/><path d="M8 10v12"/><path d="M16 10v12"/></svg></div>
+          <div class="card-title">Cookbook</div>
+          <div class="card-sub">Copy-paste recipes for the most common integrations — checkout, preference center, deletion.</div>
+          <div class="card-foot">BROWSE →</div>
+        </a>
+        <a class="card" onclick="goto('endpoint')">
+          <div class="card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
+          <div class="card-title">API reference</div>
+          <div class="card-sub">All 15 endpoints — authentication, request/response schemas, errors, and an inline playground.</div>
+          <div class="card-foot">EXPLORE →</div>
+        </a>
+      </div>
+
+      <h2>At a glance</h2>
+      <div class="param-table">
+        <div class="param-row">
+          <div class="param-name-cell"><div class="param-name">Base URL</div></div>
+          <div class="param-desc-cell"><code>https://api.consentshield.in/v1</code></div>
+        </div>
+        <div class="param-row">
+          <div class="param-name-cell"><div class="param-name">Authentication</div></div>
+          <div class="param-desc-cell"><code>Authorization: Bearer cs_live_&lt;api-key&gt;</code> — one key per organisation, rotatable without downtime.</div>
+        </div>
+        <div class="param-row">
+          <div class="param-name-cell"><div class="param-name">Endpoints</div></div>
+          <div class="param-desc-cell">15 REST endpoints across health · consent · deletion · account</div>
+        </div>
+        <div class="param-row">
+          <div class="param-name-cell"><div class="param-name">Rate limit</div></div>
+          <div class="param-desc-cell">Plan-scoped. <code>X-RateLimit-*</code> headers on every response. See <a class="inline" href="#">rate limits</a>.</div>
+        </div>
+        <div class="param-row">
+          <div class="param-name-cell"><div class="param-name">SDKs</div></div>
+          <div class="param-desc-cell">cURL-first. Node.js + Python samples inline. Typed TypeScript client: 2026-Q3.</div>
+        </div>
+        <div class="param-row">
+          <div class="param-name-cell"><div class="param-name">Data residency</div></div>
+          <div class="param-desc-cell">All processing in India. Buffer tables are ephemeral — see <a class="inline" href="#">stateless oracle architecture</a>.</div>
+        </div>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-head">⌁ Not a developer?</div>
+        <p>The ConsentShield dashboard covers 90% of the product surface without writing code — banner configuration, rights-request console, DEPA artefacts, reports. <a class="inline" href="#">Start a 14-day trial</a>.</p>
+      </div>
+
+      <h2>Stay in the loop</h2>
+      <p>The API is versioned and backwards-compatible. Subscribe to the <a class="inline" href="#">API changelog RSS</a> or follow <a class="inline" href="#">@consentshield/dev</a> for deprecation notices.</p>
+    </section>
+
+    <!-- ═══ PAGE 2: QUICKSTART ═══ -->
+    <section id="page-quickstart" class="page">
+      <div class="breadcrumb">
+        <a href="#">Docs</a><span class="sep">/</span><a href="#">Get started</a><span class="sep">/</span><span>Quickstart</span>
+      </div>
+      <h1 class="page-title">Quickstart — record your first consent artefact</h1>
+      <p class="page-sub">In 15 minutes you will issue an API key, call <code class="inline">POST /v1/consent/record</code>, and verify the resulting artefact. If you get stuck, <a class="inline" href="#">email dev-support</a> — we reply within one business day.</p>
+
+      <div class="recipe-meta">
+        <span><strong>TIME</strong> ≈ 15 min</span>
+        <span><strong>PREREQ</strong> ConsentShield account (<a class="inline" href="#">sign up</a>)</span>
+        <span><strong>DIFFICULTY</strong> Beginner</span>
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h3>Issue an API key</h3>
+            <p>In the dashboard go to <strong>Settings → API keys → New key</strong>. Give it a name (e.g. <em>staging-integration</em>) and copy the plaintext. You will only see it once — store it in a secret manager, never in source control.</p>
+            <p class="muted" style="font-size:12.5px">The key looks like <code class="inline">cs_live_01HRG…N7QZ</code>. Keys are scoped to one organisation; a separate <code class="inline">org_id</code> is embedded inside.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h3>Test the key</h3>
+            <p>Call the health endpoint to confirm authentication works.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="code-card">
+        <div class="code-head">
+          <div class="code-tabs">
+            <button class="code-tab active">cURL</button>
+            <button class="code-tab">Node.js</button>
+            <button class="code-tab">Python</button>
+          </div>
+          <div class="code-actions"><button class="code-btn">Copy</button></div>
+        </div>
+        <div class="code-body"><span class="tok-c"># Expect HTTP 200 + {"ok": true}</span>
+curl <span class="tok-s">"https://api.consentshield.in/v1/_ping"</span> \
+  -H <span class="tok-s">"Authorization: Bearer $CS_API_KEY"</span></div>
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h3>Record a consent</h3>
+            <p>The minimum viable request needs a data-principal identifier, a purpose code (fetched via <code class="inline">GET /v1/purposes</code>), and the consent outcome.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="code-card">
+        <div class="code-head">
+          <div class="code-tabs">
+            <button class="code-tab active">cURL</button>
+            <button class="code-tab">Node.js</button>
+            <button class="code-tab">Python</button>
+          </div>
+          <div class="code-actions"><button class="code-btn">Copy</button></div>
+        </div>
+        <div class="code-body">curl -X POST <span class="tok-s">"https://api.consentshield.in/v1/consent/record"</span> \
+  -H <span class="tok-s">"Authorization: Bearer $CS_API_KEY"</span> \
+  -H <span class="tok-s">"Content-Type: application/json"</span> \
+  -d <span class="tok-s">'{
+    "data_principal": { "email": "a@example.in" },
+    "purpose_code":   "marketing_email",
+    "outcome":        "granted",
+    "origin":         "https://shop.example.in/checkout"
+  }'</span></div>
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <h3>Verify &amp; archive</h3>
+            <p>The response contains an artefact id. Use it to re-verify consent on every subsequent transaction, and to produce DPB-facing audit exports.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout">
+        <div class="callout-head">✓ You're done</div>
+        <p>That artefact is now the system of record. It survives banner changes, session drops, and employee churn. To invalidate it, call <code class="inline">POST /v1/consent/artefacts/{id}/revoke</code> — never delete rows directly.</p>
+      </div>
+
+      <div class="nextblock">
+        <h4>WHAT'S NEXT</h4>
+        <h3>Three common integrations</h3>
+        <div class="nextblock-links">
+          <a href="#">Record consent at checkout →</a>
+          <a href="#">Build a preference center →</a>
+          <a href="#">Handle a rights request →</a>
+        </div>
+      </div>
+
+      <div class="feedback">
+        <div class="feedback-text">Was this page helpful?</div>
+        <div class="feedback-actions">
+          <button class="feedback-btn">👍 Yes</button>
+          <button class="feedback-btn">👎 Not really</button>
+          <button class="feedback-btn">✎ Edit on GitHub</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ PAGE 3: COOKBOOK RECIPE ═══ -->
+    <section id="page-cookbook" class="page">
+      <div class="breadcrumb">
+        <a href="#">Docs</a><span class="sep">/</span><a href="#">Cookbook</a><span class="sep">/</span><span>Record consent at checkout</span>
+      </div>
+      <h1 class="page-title">Record consent at checkout</h1>
+      <p class="page-sub">Capture marketing, analytics, and third-party-sharing consents at the point the data principal completes a purchase — without blocking the checkout submit.</p>
+
+      <div class="recipe-meta">
+        <span><strong>TIME</strong> ≈ 20 min</span>
+        <span><strong>STACK</strong> Node.js · any frontend</span>
+        <span><strong>VERTICAL</strong> E-commerce · BFSI · SaaS</span>
+      </div>
+
+      <h2>Problem</h2>
+      <p>Your checkout already submits a payment to Razorpay / Stripe. You need to record which marketing + analytics consents the customer granted — and be able to prove it later, with a <strong>timestamp the DPB will accept</strong> and a signed artefact that survives banner changes.</p>
+
+      <h2>The shape</h2>
+      <ol class="list">
+        <li>Frontend: the checkout form already has the consent checkboxes. On submit, stage the consent flags locally.</li>
+        <li>Backend: once the payment succeeds, fire <code class="inline">POST /v1/consent/record</code> for each granted purpose, in parallel with the order-confirmation email.</li>
+        <li>Non-blocking: the consent call never gates the checkout response. Retry with exponential backoff on 5xx.</li>
+      </ol>
+
+      <div class="callout security">
+        <div class="callout-head">⚠ Security</div>
+        <p>Never send the raw API key to the browser. The record-consent call is a <strong>server-side</strong> operation. Use <code class="inline">/v1/consent/verify</code> from the browser only if you need real-time banner-state queries — and even then prefer an edge proxy.</p>
+      </div>
+
+      <h2>Full example</h2>
+      <div class="code-card">
+        <div class="code-head">
+          <div class="code-tabs">
+            <button class="code-tab">cURL</button>
+            <button class="code-tab active">Node.js</button>
+            <button class="code-tab">Python</button>
+          </div>
+          <div class="code-actions"><button class="code-btn">Copy</button></div>
+        </div>
+        <div class="code-body"><span class="tok-c">// checkout.ts — after Razorpay payment.success webhook</span>
+<span class="tok-k">import</span> &#123; <span class="tok-p">fetch</span> &#125; <span class="tok-k">from</span> <span class="tok-s">"undici"</span>
+
+<span class="tok-k">const</span> CS_KEY = <span class="tok-p">process</span>.<span class="tok-p">env</span>.CS_API_KEY
+
+<span class="tok-k">export async function</span> <span class="tok-f">recordCheckoutConsents</span>(order: Order, consents: ConsentFlags) &#123;
+  <span class="tok-k">const</span> calls = Object.entries(consents)
+    .<span class="tok-p">filter</span>(([_, v]) =&gt; v === <span class="tok-k">true</span>)
+    .<span class="tok-p">map</span>(([purpose_code]) =&gt; <span class="tok-f">fetch</span>(
+      <span class="tok-s">"https://api.consentshield.in/v1/consent/record"</span>,
+      &#123;
+        method: <span class="tok-s">"POST"</span>,
+        headers: &#123;
+          <span class="tok-s">"Authorization"</span>: <span class="tok-s">`Bearer ${CS_KEY}`</span>,
+          <span class="tok-s">"Content-Type"</span>: <span class="tok-s">"application/json"</span>,
+          <span class="tok-s">"Idempotency-Key"</span>: <span class="tok-s">`${order.id}:${purpose_code}`</span>
+        &#125;,
+        body: <span class="tok-p">JSON</span>.<span class="tok-p">stringify</span>(&#123;
+          data_principal: &#123; email: order.customer_email &#125;,
+          purpose_code,
+          outcome: <span class="tok-s">"granted"</span>,
+          origin: order.checkout_url,
+          occurred_at: order.paid_at
+        &#125;)
+      &#125;
+    ))
+
+  <span class="tok-c">// Non-blocking — never fail checkout if ConsentShield is down.</span>
+  <span class="tok-k">await</span> <span class="tok-p">Promise</span>.<span class="tok-p">allSettled</span>(calls)
+&#125;</div>
+      </div>
+
+      <div class="callout">
+        <div class="callout-head">◉ Idempotency</div>
+        <p>Pass an <code class="inline">Idempotency-Key</code> header. If the request is retried after a network blip, ConsentShield returns the original 201 artefact rather than creating a duplicate. Keys are scoped to your API key and live for 24 hours.</p>
+      </div>
+
+      <h2>What the artefact looks like</h2>
+      <div class="code-card">
+        <div class="code-head">
+          <div class="code-tabs"><button class="code-tab active">201 Created</button></div>
+          <div class="code-actions"><button class="code-btn">Copy</button></div>
+        </div>
+        <div class="code-body">&#123;
+  <span class="tok-s">"artefact_id"</span>: <span class="tok-s">"cs_art_01HRG4FN7QZ3K8M2YD9XB5VJCT"</span>,
+  <span class="tok-s">"status"</span>:      <span class="tok-s">"active"</span>,
+  <span class="tok-s">"issued_at"</span>:   <span class="tok-s">"2026-04-21T14:02:11Z"</span>,
+  <span class="tok-s">"purpose"</span>: &#123;
+    <span class="tok-s">"code"</span>:         <span class="tok-s">"marketing_email"</span>,
+    <span class="tok-s">"display_name"</span>: <span class="tok-s">"Marketing emails about new products"</span>,
+    <span class="tok-s">"legal_basis"</span>:  <span class="tok-s">"consent"</span>
+  &#125;,
+  <span class="tok-s">"receipt_url"</span>: <span class="tok-s">"https://api.consentshield.in/v1/consent/artefacts/cs_art_01HRG…"</span>
+&#125;</div>
+      </div>
+
+      <h2>Gotchas</h2>
+      <ul class="list">
+        <li><strong>Timezone.</strong> Always send <code class="inline">occurred_at</code> in UTC. The DPB expects IST but we convert at render-time — storing IST will double-shift.</li>
+        <li><strong>Partial consents.</strong> If a customer grants marketing but declines analytics, record each purpose as its own row. Do not bundle into one artefact with a <code class="inline">purposes[]</code> array — that shape is reserved for DEPA bundled artefacts (see <a class="inline" href="#">artefacts vs events</a>).</li>
+        <li><strong>Data principal identity.</strong> For logged-in users prefer <code class="inline">data_principal.user_id</code>. For guest checkouts, <code class="inline">email</code> is acceptable but will be hashed on the wire.</li>
+      </ul>
+
+      <div class="nextblock">
+        <h4>RELATED RECIPES</h4>
+        <h3>Other integrations you might need next</h3>
+        <div class="nextblock-links">
+          <a href="#">Build a preference center →</a>
+          <a href="#">Handle a rights request →</a>
+          <a href="#">Batch-verify consents server-side →</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ PAGE 4: API REFERENCE — ENDPOINT ═══ -->
+    <section id="page-endpoint" class="page">
+      <div class="breadcrumb">
+        <a href="#">Docs</a><span class="sep">/</span><a href="#">API reference</a><span class="sep">/</span><a href="#">Consent</a><span class="sep">/</span><span>Record</span>
+      </div>
+      <h1 class="page-title">Record a consent</h1>
+      <p class="page-sub">Create a first-class consent artefact from a data principal's affirmative action. Idempotent when <code class="inline">Idempotency-Key</code> is provided.</p>
+
+      <div class="endpoint-head">
+        <div class="endpoint-url">
+          <span class="method-pill post">POST</span>
+          <span class="endpoint-path">https://api.consentshield.in/v1/consent/record</span>
+        </div>
+        <div class="endpoint-meta">
+          <span><strong>AUTH</strong> Bearer cs_live_*</span>
+          <span><strong>IDEMPOTENT</strong> Yes (via header)</span>
+          <span><strong>RATE LIMIT</strong> Plan-scoped</span>
+          <span><strong>STABILITY</strong> GA</span>
+          <span><strong>CHANGELOG</strong> v1 — unchanged since 2026-04-15</span>
+        </div>
+      </div>
+
+      <h2>Request body</h2>
+      <div class="param-table">
+        <div class="param-row">
+          <div class="param-name-cell"><div class="param-name">data_principal.email</div><div class="param-type">string</div></div>
+          <div class="param-desc-cell">Data-principal email, used as the hashed identifier in the artefact. Exactly one of <code>email</code> or <code>user_id</code> is required. <span class="param-required">REQUIRED*</span></div>
+        </div>
+        <div class="param-row">
+          <div class="param-name-cell"><div class="param-name">data_principal.user_id</div><div class="param-type">string</div></div>
+          <div class="param-desc-cell">Your opaque user id (preferred for logged-in flows). Hashed at rest.</div>
+        </div>
+        <div class="param-row">
+          <div class="param-name-cell"><div class="param-name">purpose_code</div><div class="param-type">string</div></div>
+          <div class="param-desc-cell">A purpose registered on your organisation — list via <code>GET /v1/purposes</code>. Case-sensitive. <span class="param-required">REQUIRED</span></div>
+        </div>
+        <div class="param-row">
+          <div class="param-name-cell"><div class="param-name">outcome</div><div class="param-type">"granted" | "denied" | "withdrawn"</div></div>
+          <div class="param-desc-cell">The consent decision. <code>withdrawn</code> is reserved for prior consents being revoked — use <code>POST /artefacts/&#123;id&#125;/revoke</code> for the full workflow. <span class="param-required">REQUIRED</span></div>
+        </div>
+        <div class="param-row">
+          <div class="param-name-cell"><div class="param-name">origin</div><div class="param-type">string (URL)</div></div>
+          <div class="param-desc-cell">Where the consent was captured. Must be a registered web property on your organisation, or the call is rejected <code>403</code>.</div>
+        </div>
+        <div class="param-row">
+          <div class="param-name-cell"><div class="param-name">occurred_at</div><div class="param-type">string (ISO-8601 UTC)</div></div>
+          <div class="param-desc-cell">When the consent was captured. Defaults to server receipt time. <span class="param-default">DEFAULT: now()</span></div>
+        </div>
+        <div class="param-row">
+          <div class="param-name-cell"><div class="param-name">metadata</div><div class="param-type">object ≤ 1 kB</div></div>
+          <div class="param-desc-cell">Free-form non-PII tags. Stored unencrypted; do not put personal data here.</div>
+        </div>
+      </div>
+
+      <h2>Response</h2>
+      <div class="status-grid">
+        <div class="status-chip s2xx">201</div>
+        <div class="status-desc">Artefact created. Body is the full artefact object (see below).</div>
+        <div class="status-chip s2xx">200</div>
+        <div class="status-desc">Idempotency-key replay. Original artefact returned unchanged.</div>
+        <div class="status-chip s4xx">400</div>
+        <div class="status-desc"><code>invalid_request</code> — validation failure. <code>error.field</code> names the offending property.</div>
+        <div class="status-chip s4xx">401</div>
+        <div class="status-desc"><code>unauthorised</code> — missing, malformed, or revoked API key. <code>410 Gone</code> instead if the plaintext was rotated.</div>
+        <div class="status-chip s4xx">403</div>
+        <div class="status-desc"><code>origin_not_registered</code> — the <code>origin</code> URL is not on the org's allowed_origins list.</div>
+        <div class="status-chip s4xx">404</div>
+        <div class="status-desc"><code>purpose_not_found</code> — <code>purpose_code</code> does not exist on this org.</div>
+        <div class="status-chip s4xx">429</div>
+        <div class="status-desc">Rate limit exceeded. <code>Retry-After</code> header present.</div>
+        <div class="status-chip s5xx">503</div>
+        <div class="status-desc"><code>buffer_unavailable</code> — retriable. Use exponential backoff.</div>
+      </div>
+
+      <h2>Example</h2>
+      <div class="code-card">
+        <div class="code-head">
+          <div class="code-tabs">
+            <button class="code-tab active">Request</button>
+            <button class="code-tab">Response 201</button>
+          </div>
+          <div class="code-actions"><button class="code-btn">Copy</button><button class="code-btn">Try ↗</button></div>
+        </div>
+        <div class="code-body">POST /v1/consent/record
+Authorization: Bearer cs_live_01HRG…N7QZ
+Content-Type:  application/json
+Idempotency-Key: order-42:marketing_email
+
+&#123;
+  <span class="tok-s">"data_principal"</span>: &#123; <span class="tok-s">"email"</span>: <span class="tok-s">"a@example.in"</span> &#125;,
+  <span class="tok-s">"purpose_code"</span>: <span class="tok-s">"marketing_email"</span>,
+  <span class="tok-s">"outcome"</span>:      <span class="tok-s">"granted"</span>,
+  <span class="tok-s">"origin"</span>:       <span class="tok-s">"https://shop.example.in/checkout"</span>,
+  <span class="tok-s">"occurred_at"</span>:  <span class="tok-s">"2026-04-21T14:02:11Z"</span>
+&#125;</div>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-head">◯ Want to try it now?</div>
+        <p>The <a class="inline" onclick="goto('playground')">interactive playground</a> has your key pre-loaded (if signed in) and shows raw request + response. No setup.</p>
+      </div>
+
+      <div class="feedback">
+        <div class="feedback-text">Missing something? <a class="inline" href="#">Open a docs issue</a> or <a class="inline" href="#">suggest an edit</a>.</div>
+        <div class="feedback-actions">
+          <button class="feedback-btn">👍 Helpful</button>
+          <button class="feedback-btn">👎 Needs work</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ PAGE 5: PLAYGROUND ═══ -->
+    <section id="page-playground" class="page">
+      <div class="breadcrumb">
+        <a href="#">Docs</a><span class="sep">/</span><a href="#">API reference</a><span class="sep">/</span><span>Playground</span>
+      </div>
+      <h1 class="page-title">Interactive playground</h1>
+      <p class="page-sub">Try every endpoint against a sandboxed ConsentShield environment. Rendered by <code class="inline">@scalar/api-reference</code> from our <a class="inline" href="#">public OpenAPI spec</a>; your API key is used only in-browser and never leaves your session.</p>
+
+      <div class="playground">
+        <!-- Endpoint list -->
+        <div class="pg-sidebar">
+          <div class="pg-sidebar-title">Consent</div>
+          <a class="sb-link"><span class="sb-method get">GET</span> /verify</a>
+          <a class="sb-link"><span class="sb-method post">POST</span> /verify/batch</a>
+          <a class="sb-link active"><span class="sb-method post">POST</span> /record</a>
+          <a class="sb-link"><span class="sb-method get">GET</span> /artefacts</a>
+          <a class="sb-link"><span class="sb-method get">GET</span> /artefacts/{id}</a>
+          <a class="sb-link"><span class="sb-method post">POST</span> /artefacts/{id}/revoke</a>
+          <a class="sb-link"><span class="sb-method get">GET</span> /events</a>
+          <div class="pg-sidebar-title" style="margin-top:14px">Deletion</div>
+          <a class="sb-link"><span class="sb-method post">POST</span> /trigger</a>
+          <a class="sb-link"><span class="sb-method get">GET</span> /receipts</a>
+          <div class="pg-sidebar-title" style="margin-top:14px">Account</div>
+          <a class="sb-link"><span class="sb-method get">GET</span> /keys/self</a>
+          <a class="sb-link"><span class="sb-method get">GET</span> /usage</a>
+          <a class="sb-link"><span class="sb-method get">GET</span> /purposes</a>
+          <a class="sb-link"><span class="sb-method get">GET</span> /properties</a>
+          <a class="sb-link"><span class="sb-method get">GET</span> /plans</a>
+        </div>
+
+        <!-- Request editor -->
+        <div class="pg-request">
+          <h4>POST /v1/consent/record</h4>
+          <div style="font-size:12px;color:var(--ink-3)">Create a consent artefact</div>
+          <div style="margin-top:8px">
+            <div style="font-family:var(--mono);font-size:10px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">HEADERS</div>
+            <div style="background:white;border:1px solid var(--line);border-radius:var(--r);padding:10px;font-family:var(--mono);font-size:12px;color:var(--ink-2);line-height:1.8">
+              Authorization: <span style="color:var(--teal)">Bearer cs_test_*********</span><br>
+              Content-Type: application/json<br>
+              Idempotency-Key: <span style="color:var(--amber)">order-42:marketing_email</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">BODY</div>
+            <div style="background:white;border:1px solid var(--line);border-radius:var(--r);padding:10px;font-family:var(--mono);font-size:12px;color:var(--ink-2);line-height:1.7;white-space:pre">&#123;
+  <span style="color:var(--green)">"data_principal"</span>: &#123;
+    <span style="color:var(--green)">"email"</span>: <span style="color:var(--amber)">"a@example.in"</span>
+  &#125;,
+  <span style="color:var(--green)">"purpose_code"</span>: <span style="color:var(--amber)">"marketing_email"</span>,
+  <span style="color:var(--green)">"outcome"</span>:     <span style="color:var(--amber)">"granted"</span>,
+  <span style="color:var(--green)">"origin"</span>:      <span style="color:var(--amber)">"https://shop.example.in/checkout"</span>
+&#125;</div>
+          </div>
+          <button class="nav-cta" style="margin-top:8px;align-self:flex-start;padding:10px 18px">Send request ↗</button>
+          <div style="font-size:11px;color:var(--ink-4);margin-top:4px">Sandbox org — no real data leaves your browser.</div>
+        </div>
+
+        <!-- Response viewer -->
+        <div class="pg-response">
+<span style="color:var(--teal-mid)">HTTP/1.1 201 Created</span>
+<span style="color:#94A3B8">Content-Type: application/json</span>
+<span style="color:#94A3B8">X-RateLimit-Remaining: 498</span>
+<span style="color:#94A3B8">X-RateLimit-Reset: 2026-04-21T15:00:00Z</span>
+<span style="color:#94A3B8">X-Request-Id: req_01HRG4FN7QZ3K8M2YD9XB5VJCT</span>
+
+&#123;
+  <span style="color:#86EFAC">"artefact_id"</span>: <span style="color:#FCD34D">"cs_art_01HRG4FN7QZ3K8M2YD9XB5VJCT"</span>,
+  <span style="color:#86EFAC">"status"</span>:      <span style="color:#FCD34D">"active"</span>,
+  <span style="color:#86EFAC">"issued_at"</span>:   <span style="color:#FCD34D">"2026-04-21T14:02:11Z"</span>,
+  <span style="color:#86EFAC">"purpose"</span>: &#123;
+    <span style="color:#86EFAC">"code"</span>:         <span style="color:#FCD34D">"marketing_email"</span>,
+    <span style="color:#86EFAC">"display_name"</span>: <span style="color:#FCD34D">"Marketing emails …"</span>,
+    <span style="color:#86EFAC">"legal_basis"</span>:  <span style="color:#FCD34D">"consent"</span>
+  &#125;,
+  <span style="color:#86EFAC">"receipt_url"</span>: <span style="color:#FCD34D">"https://api.consentshield.in/v1/consent/artefacts/cs_art_…"</span>,
+  <span style="color:#86EFAC">"trace_id"</span>:    <span style="color:#FCD34D">"trc_01HRG4FN8…"</span>
+&#125;</div>
+      </div>
+
+      <div class="callout info" style="margin-top:28px">
+        <div class="callout-head">◯ Sandbox vs live</div>
+        <p>The playground defaults to the <code class="inline">cs_test_*</code> sandbox. Flip the environment toggle in the top-right of the playground to point at live — you must be signed in and have an API key provisioned on your org.</p>
+      </div>
+
+      <h2>Export as cURL / Node / Python</h2>
+      <p>Each request you compose in the playground has an <strong>Export</strong> menu that drops a ready-to-paste snippet in cURL, Node.js (undici/fetch), or Python (httpx). Choose <strong>Copy as test-harness case</strong> to get a snippet wired for <code class="inline">tests/integration/v1-api.spec.ts</code>.</p>
+
+    </section>
+
+  </main>
+
+  <!-- ─── ToC rail ─── -->
+  <aside class="toc">
+    <div class="toc-title">On this page</div>
+    <a href="#" class="toc-link active">Overview</a>
+    <a href="#" class="toc-link">Request body</a>
+    <a href="#" class="toc-link nested">data_principal</a>
+    <a href="#" class="toc-link nested">purpose_code</a>
+    <a href="#" class="toc-link nested">outcome</a>
+    <a href="#" class="toc-link nested">origin</a>
+    <a href="#" class="toc-link">Response</a>
+    <a href="#" class="toc-link">Example</a>
+    <a href="#" class="toc-link">Try it</a>
+
+    <div class="toc-foot">
+      <div style="margin-bottom:8px"><strong>Implementation</strong></div>
+      Renders as <code>app/(marketing)/docs/…</code> on the marketing Next.js project. MDX files co-located with the page routes. The API Reference + Playground are one Scalar instance mounted at <code>/docs/api</code>.
+      <div style="margin-top:14px"><a href="#">Edit this page on GitHub ↗</a></div>
+    </div>
+  </aside>
+
+</div>
+
+<script>
+function goto(pg) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
+  document.getElementById('page-' + pg).classList.add('active')
+  document.querySelectorAll('.sb-link').forEach(l => l.classList.remove('active'))
+  event?.currentTarget?.classList?.add('active')
+  window.scrollTo({top:0, behavior:'smooth'})
+}
+</script>
+
+</body>
+</html>
