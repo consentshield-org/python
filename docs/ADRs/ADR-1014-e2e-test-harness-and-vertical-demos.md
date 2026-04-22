@@ -88,15 +88,22 @@ Build a full-pipeline, partner-evidence-grade E2E test harness, delivered in fiv
 **Estimated effort:** 2 days
 
 **Deliverables:**
-- [ ] `scripts/e2e-bootstrap.ts` — takes `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` (one-shot), runs `supabase db push` against it, seeds the scoped roles (cs_worker / cs_delivery / cs_orchestrator / cs_api / cs_admin), reads each role's password back into a local `.env.e2e`.
-- [ ] Idempotent cleanup: `scripts/e2e-reset.ts` truncates buffer tables + clears auth.users between test runs.
-- [ ] Fixture set: 3 organisations (one per vertical), 3 accounts, 9 web properties, seeded API keys.
+- [x] `scripts/e2e-bootstrap.ts` — reads `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` from the repo-root `.env.local`; verifies the `api_keys` table is reachable (schema applied); seeds 3 vertical fixtures (ecommerce / healthcare / bfsi) each with: auth.user + account + account_membership + organisation + org_membership + 3 web_properties + 1 real `cs_test_*` API key (SHA-256 hashed). Writes all ids + plaintext keys to a gitignored `.env.e2e`. Idempotent — re-running reuses existing fixtures, matches API keys by hash to reuse plaintext.
+- [x] Idempotent cleanup: `scripts/e2e-reset.ts` truncates buffer tables + DEPA artefact state generated during tests (FK-ordered: expiry_queue → revocations → artefact_index → artefacts → consent_events → independent buffers) + deletes non-fixture E2E-tagged auth.users. Fixture accounts explicitly preserved.
+- [x] Fixture set: 3 organisations (one per vertical), 3 accounts, 9 web properties (3 per org: production URL, checkout/portal, localhost sandbox probe), 3 seeded API keys with full scope + sandbox rate tier.
+- [x] `.env.e2e` + `.env.partner` added to root `.gitignore`.
+- [x] `tests/e2e/utils/fixtures.ts` extended with `ecommerce`, `healthcare`, `bfsi` fixtures that resolve from `.env.e2e` on first access.
+
+**Scope amendment:** The ADR's original deliverable said "seeds the scoped roles … reads each role's password back". Scoped-role password rotation is a _fresh-partner-project_ concern — against an existing dev Supabase it would invalidate app/admin/marketing `.env.local`. Moved to Sprint 5.1 (partner bootstrap). Sprint 1.2 scope is fixture seeding + `.env.e2e` emission, which is what the harness actually needs to start running.
 
 **Testing plan:**
-- [ ] Bootstrap on a fresh Supabase project completes in under 10 min.
-- [ ] Reset between runs completes in under 20 s.
+- [x] Bootstrap on dev Supabase completes in under 10 min — measured **7.6s** first run (fresh fixtures), **4.4s** re-run (full reuse).
+- [x] Reset between runs completes in under 20 s — measured **3.9s**.
+- [x] Idempotency: second bootstrap run reuses every fixture (3 × "reusing auth.user / account / organisation / api_key"), emits identical `.env.e2e`.
+- [x] `bunx playwright test --list` loads `.env.e2e` (45 env keys) + still discovers 8 tests.
+- [x] `bunx tsc --noEmit` clean on scripts + tests/e2e.
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete`
 
 #### Sprint 1.3: Worker local harness
 

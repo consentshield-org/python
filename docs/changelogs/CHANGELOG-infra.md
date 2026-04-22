@@ -2,6 +2,33 @@
 
 Vercel, Cloudflare, Supabase config changes.
 
+## [ADR-1014 Sprint 1.2 — e2e bootstrap + reset scripts + fixtures] — 2026-04-22
+
+**ADR:** ADR-1014 — E2E test harness + vertical demo sites
+**Sprint:** Phase 1, Sprint 1.2 — Supabase test-project bootstrap
+
+### Added
+- `scripts/e2e-bootstrap.ts` — seeds 3 vertical fixtures (ecommerce / healthcare / bfsi). Each fixture = auth.user + account + account_membership + organisation + org_membership + 3 web_properties + 1 `cs_test_*` API key with SHA-256 hash. Idempotent (reuses fixtures matched by account name `e2e-fixture-<vertical>`); `--force` flag supported for full rebuild. Writes a gitignored `.env.e2e` at repo root with all ids, plaintext keys, fixture user emails/passwords, app surface URLs.
+- `scripts/e2e-reset.ts` — clears 14 tables in FK order (expiry_queue → revocations → artefact_index → artefacts → consent_events → tracker_observations + independent buffers); deletes non-fixture E2E-tagged auth.users (matched on `user_metadata.e2e_run === true`). Fixture accounts/orgs preserved.
+- `tests/e2e/utils/fixtures.ts` — extended with `ecommerce`, `healthcare`, `bfsi` Playwright fixtures. Each reads `.env.e2e` on first access and returns `{ accountId, orgId, userId, userEmail, userPassword, propertyIds[], propertyUrls[], apiKey, apiKeyId }`. Tests that don't use a vertical never trigger its env lookup.
+
+### Changed
+- Root `.gitignore` — added `.env.e2e` + `.env.partner` alongside existing `.env*.local` entries.
+
+### Scope amendment
+- Original ADR Sprint 1.2 deliverable listed "seeds the scoped roles (cs_worker / cs_delivery / cs_orchestrator / cs_api / cs_admin) and reads each role's password back". That rotation is destructive against any existing dev Supabase project (invalidates app/admin/marketing `.env.local`). Moved to Sprint 5.1 (partner bootstrap) where it only runs against a fresh partner project. Sprint 1.2 scope is fixture seeding + `.env.e2e` emission — what the harness actually needs to start running. ADR body updated.
+
+### Tested
+- [x] Fresh bootstrap — 7.6s wall-clock (target: < 10 min). 3 accounts / 3 orgs / 9 web_properties / 3 api_keys created.
+- [x] Idempotent re-run — 4.4s. Every fixture reused (no duplicates in DB).
+- [x] Reset — 3.9s wall-clock (target: < 20 s). 14 tables cleared without FK errors.
+- [x] `bunx playwright test --list` loads `.env.e2e` (45 env keys injected) + still discovers 8 tests.
+- [x] `bunx tsc --noEmit` clean on scripts + tests/e2e.
+
+### Gotcha
+- Initial run used plan codes `trial_growth` / `trial_starter` mixed — only `trial_starter` exists in `public.plans`. Valid codes are `trial_starter`, `starter`, `growth`, `pro`, `enterprise`. All verticals now use `trial_starter`; real billing plans are out of scope for E2E fixtures.
+- First reset attempt failed on `consent_events` due to `consent_artefacts.consent_event_id_fkey`. Fixed by deleting artefact-family tables first (documented in CLEAR_TABLES ordering comment).
+
 ## [ADR-1014 Sprint 1.1 — e2e harness scaffold] — 2026-04-22
 
 **ADR:** ADR-1014 — E2E test harness + vertical demo sites (partner-evidence grade)
