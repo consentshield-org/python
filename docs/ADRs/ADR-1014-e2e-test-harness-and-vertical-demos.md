@@ -69,16 +69,19 @@ Build a full-pipeline, partner-evidence-grade E2E test harness, delivered in fiv
 **Estimated effort:** 1 day
 
 **Deliverables:**
-- [ ] New root workspace package `tests/e2e/` (Bun workspace member per ADR-0026).
-- [ ] `playwright.config.ts` with projects: `chromium`, `webkit`, `firefox` (firefox gated behind nightly).
-- [ ] `tests/e2e/specs/README.md` — normative test-spec template (intent / setup / invariants / expected proofs / pair-with-negative).
-- [ ] `tests/e2e/utils/` — env loader, trace-id helper, shared fixtures.
-- [ ] Root `package.json` scripts: `test:e2e` (PR subset), `test:e2e:full` (nightly), `test:e2e:partner` (with their env).
+- [x] New root workspace package `tests/e2e/` (Bun workspace member per ADR-0026).
+- [x] `playwright.config.ts` with projects: `chromium`, `webkit`, `firefox` (firefox gated behind nightly).
+- [x] `tests/e2e/specs/README.md` — normative test-spec template (intent / setup / invariants / expected proofs / pair-with-negative).
+- [x] `tests/e2e/utils/` — env loader, trace-id helper, shared fixtures.
+- [x] Root `package.json` scripts: `test:e2e` (PR subset), `test:e2e:full` (nightly), `test:e2e:partner` (with their env).
+- [x] First smoke spec (`smoke-healthz.spec.ts`) + sibling spec doc + sacrificial control (`controls/smoke-healthz-negative.spec.ts`).
 
 **Testing plan:**
-- [ ] `bun run test:e2e --smoke` executes the seeded `/healthz` probe against all three app surfaces.
+- [x] `bunx playwright test --list` discovers 8 tests (3 surfaces × 2 browsers + 1 control × 2 browsers).
+- [x] `bunx tsc --noEmit` clean in `tests/e2e/`.
+- [ ] `bun run test:e2e:smoke` against running local servers — deferred to Sprint 1.2 once bootstrap script seeds `.env.e2e` and servers are up.
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete`
 
 #### Sprint 1.2: Supabase test-project bootstrap
 

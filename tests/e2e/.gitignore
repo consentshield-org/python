@@ -1,0 +1,7 @@
+.tsbuild/
+test-results/
+playwright-report/
+blob-report/
+node_modules/
+.env.e2e
+.env.partner

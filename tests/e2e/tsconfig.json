@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "outDir": "./.tsbuild"
+  },
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules", ".tsbuild", "test-results", "playwright-report"]
+}

@@ -1,0 +1,22 @@
+{
+  "name": "@consentshield/e2e",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "ADR-1014 end-to-end test harness — partner-evidence-grade suite across customer app, admin app, marketing site, Cloudflare Worker, and Edge Functions.",
+  "scripts": {
+    "test": "playwright test",
+    "test:smoke": "playwright test --grep @smoke",
+    "test:full": "PLAYWRIGHT_NIGHTLY=1 playwright test",
+    "test:partner": "PLAYWRIGHT_PARTNER=1 playwright test",
+    "test:controls": "playwright test tests/e2e/controls",
+    "report": "playwright show-report",
+    "install:browsers": "playwright install chromium webkit firefox"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.52.0",
+    "@types/node": "20.19.39",
+    "dotenv": "17.4.2",
+    "typescript": "5.9.3"
+  }
+}

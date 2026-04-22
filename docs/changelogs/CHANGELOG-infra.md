@@ -2,6 +2,35 @@
 
 Vercel, Cloudflare, Supabase config changes.
 
+## [ADR-1014 Sprint 1.1 — e2e harness scaffold] — 2026-04-22
+
+**ADR:** ADR-1014 — E2E test harness + vertical demo sites (partner-evidence grade)
+**Sprint:** Phase 1, Sprint 1.1 — Workspace scaffold
+
+### Added
+- `tests/e2e/` — new Bun workspace (`@consentshield/e2e`). Added to root `package.json` `workspaces` array.
+- `tests/e2e/package.json` — exact-pinned `@playwright/test@1.52.0`, `dotenv@17.4.2`, `typescript@5.9.3`, `@types/node@20.19.39`. Scripts: `test`, `test:smoke`, `test:full`, `test:partner`, `test:controls`, `report`, `install:browsers`.
+- `tests/e2e/tsconfig.json` — extends `tsconfig.base.json`.
+- `tests/e2e/playwright.config.ts` — chromium + webkit projects default; firefox project gated behind `PLAYWRIGHT_NIGHTLY=1`. HTML + JSON + list reporters. Trace retain-on-failure. Nightly adds one retry + video. PR runs 0 retries (flakes must be diagnosed, not masked).
+- `tests/e2e/utils/env.ts` — env loader (`.env.e2e` local / `.env.partner` when `PLAYWRIGHT_PARTNER=1`), required-keys guard, ESM-safe path resolution via `fileURLToPath(import.meta.url)`.
+- `tests/e2e/utils/trace-id.ts` — ULID-shaped per-test trace id using `crypto.randomBytes`. Threads through Worker logs → buffer rows → R2 manifests → evidence archive (wire-up lands in Sprints 1.3 + 1.4).
+- `tests/e2e/utils/fixtures.ts` — extended Playwright `test` with `env`, `traceId`, `tracedRequest` fixtures. Attaches `trace-id.txt` to each test so the id is in the archive even on pass.
+- `tests/e2e/specs/README.md` — normative test-spec template. 8 sections: title / intent / setup / invariants / proofs / pair-with-negative / fake-positive defence / evidence outputs. Every `*.spec.ts` must have a sibling `specs/<slug>.md` (1:1 mapping enforced in review).
+- `tests/e2e/specs/smoke-healthz.md` — spec doc for the first smoke test.
+- `tests/e2e/smoke-healthz.spec.ts` — `@smoke`-tagged probe of `APP_URL` / `ADMIN_URL` / `MARKETING_URL` `/healthz` (falls back to `/`). Asserts status < 500 + non-empty body + trace id attachment.
+- `tests/e2e/controls/README.md` + `tests/e2e/controls/smoke-healthz-negative.spec.ts` — preview of the Sprint 5.4 sacrificial-control pattern. Control asserts `'ok' === 'not-ok'` — MUST fail red on every run.
+- `tests/e2e/README.md` — workspace orientation + discipline rules (spec 1:1, paired negatives, observable-state-only, trace-id threading, controls-must-fail).
+- `tests/e2e/.gitignore` — `test-results/`, `playwright-report/`, `blob-report/`, `.tsbuild/`, `.env.e2e`, `.env.partner`.
+- Root `package.json` — added scripts `test:e2e`, `test:e2e:smoke`, `test:e2e:full`, `test:e2e:partner`, `test:e2e:report` (all delegate to the workspace).
+
+### Tested
+- [x] `bun install` — workspace picked up, 12 packages resolved; `bun.lock` updated.
+- [x] `bunx tsc --noEmit` in `tests/e2e/` — clean.
+- [x] `bunx playwright test --list` — 8 tests discovered (3 surfaces × 2 browsers + 1 control × 2 browsers). Config loads; fixtures resolve.
+
+### Outcome
+Foundation is in place. Sprint 1.2 (Supabase test-project bootstrap + fixture factory) can start. `bun run test:e2e:smoke` against running local servers is deferred to Sprint 1.2 — the harness needs `.env.e2e` seeded and the 3 servers up.
+
 ## [ADR-1009 Sprint 2.4] — 2026-04-21
 
 **ADR:** ADR-1009 — v1 API role hardening
