@@ -81,6 +81,21 @@ main { padding: 48px 0 64px; }
 
 .field { margin: 12px 0; }
 .field label { display: block; font-size: 13px; color: var(--mut); margin-bottom: 4px; }
-.field input[type=text], .field input[type=email], .field input[type=tel] {
+.field input[type=text], .field input[type=email], .field input[type=tel], .field input[type=date] {
   width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; font-family: inherit; font-size: 14px; background: var(--card);
 }
+
+/* BFSI vertical — consent matrix + legal-basis badges + muted helper */
+.mut { color: var(--mut); }
+
+.consent-matrix { padding: 0; }
+.consent-matrix thead { background: rgba(15,23,42,0.04); }
+.consent-matrix th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--mut); font-weight: 600; border-bottom: 1px solid var(--line); }
+.consent-matrix tbody tr + tr td { border-top: 1px solid var(--line); }
+
+.badge-legal-obligation, .badge-consent {
+  display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.badge-legal-obligation { background: #FEF3C7; color: #92400E; border: 1px solid #FCD34D; }
+.badge-consent { background: #DBEAFE; color: #1E40AF; border: 1px solid #93C5FD; }

@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex, notranslate" />
+<meta name="googlebot" content="noindex, nofollow, noarchive" />
+<meta name="bingbot" content="noindex, nofollow, noarchive" />
+<title>NeoFin Credit — ConsentShield demo (BFSI)</title>
+<link rel="stylesheet" href="/shared/demo.css" />
+<script>
+// BFSI tracker mix per ADR-1014 Sprint 2.3. Three purposes:
+//   kyc_mandatory        — legal_obligation (Aadhaar + PAN under RBI KYC
+//                          Master Direction). Non-withdrawable. Razorpay
+//                          + core KYC scripts load on every pageview.
+//   credit_bureau_share  — consent. Fires the mock CIBIL / Experian
+//                          third-party share webhook.
+//   marketing_sms        — consent. Marketing analytics + SMS-retarget
+//                          pixel.
+window.__DEMO_TRACKERS__ = {
+  kyc_mandatory: [
+    { src: 'https://checkout.razorpay.com/v1/checkout.js' }
+  ],
+  credit_bureau_share: [
+    { src: 'https://demo-bfsi.consentshield.in/mock-cibil-share.js' }
+  ],
+  marketing_sms: [
+    { src: 'https://www.googletagmanager.com/gtag/js?id=G-DEMOFINTECH' }
+  ]
+}
+</script>
+<script async src="/shared/banner-loader.js"></script>
+<script defer src="/shared/demo.js"></script>
+</head>
+<body data-page="home" data-vertical="bfsi">
+<header class="site-head">
+  <div class="wrap" style="display:flex;align-items:center;justify-content:space-between">
+    <div class="brand"><a href="/bfsi/">NeoFin Credit</a></div>
+    <nav>
+      <a href="/bfsi/">Home</a>
+      <a href="/bfsi/kyc.html">Apply</a>
+      <a href="/bfsi/consent-matrix.html">Consent matrix</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap" style="padding:32px 24px;max-width:760px">
+  <h1 style="margin:0 0 8px">Personal loans, responsibly underwritten.</h1>
+  <p style="color:var(--mut);margin:0 0 24px">ConsentShield E2E fixture site for the <strong>BFSI</strong> vertical. RBI KYC Master Direction (2016) requires Aadhaar + PAN collection — processed under a <em>legal_obligation</em> basis, not withdrawable. Credit-bureau lookups and marketing SMS are separate purposes and require explicit consent under DPDP §6.</p>
+
+  <a class="btn" href="/bfsi/kyc.html" style="margin-bottom:24px">Apply for a loan</a>
+
+  <div class="panel">
+    <h3>Purposes served on this property</h3>
+    <ul style="margin:8px 0 0 20px;color:var(--mut);font-size:14px">
+      <li><strong>kyc_mandatory</strong> — required; legal basis: legal_obligation. PAN, Aadhaar, DOB, address. Retention: 10 years per RBI KYC Master Direction. Not withdrawable.</li>
+      <li><strong>credit_bureau_share</strong> — optional; legal basis: consent. Lets us fetch your CIBIL / Experian score to decide the offer. Revocable at any time under DPDP §13.</li>
+      <li><strong>marketing_sms</strong> — optional; legal basis: consent. Promotional SMS about new products and rate changes. Revocable via reply-STOP or the dashboard.</li>
+    </ul>
+  </div>
+
+  <div class="panel" style="border-left:3px solid #0B4E77">
+    <h3>Legal-basis split matters here</h3>
+    <p style="margin:0;color:var(--mut);font-size:14px">A "reject all" click on the banner does <strong>not</strong> withdraw <code>kyc_mandatory</code>. The ConsentShield artefact still records <code>outcome=granted</code> + <code>legal_basis=legal_obligation</code> for that purpose, because RBI — not the customer — authorises the processing. The banner reflects this: the <code>kyc_mandatory</code> toggle is locked on with a tooltip explaining why.</p>
+  </div>
+
+  <div class="panel status">
+    <h3>Consent state (live)</h3>
+    <pre id="status">Waiting for banner interaction…</pre>
+  </div>
+</main>
+
+<footer class="site-foot wrap">
+  <div class="links">
+    <a href="/">All demos</a>
+    <a href="https://consentshield.in/privacy">Privacy notice</a>
+    <a href="https://consentshield.in/rights">Your data rights</a>
+  </div>
+  <p>Synthetic fintech. Synthetic consent. No real NBFC, no real Aadhaar, no loans offered.</p>
+</footer>
+</body>
+</html>

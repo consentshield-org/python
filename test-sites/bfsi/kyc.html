@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex, notranslate" />
+<meta name="googlebot" content="noindex, nofollow, noarchive" />
+<meta name="bingbot" content="noindex, nofollow, noarchive" />
+<title>KYC — NeoFin Credit · ConsentShield demo</title>
+<link rel="stylesheet" href="/shared/demo.css" />
+<script>
+window.__DEMO_TRACKERS__ = {
+  kyc_mandatory: [
+    { src: 'https://checkout.razorpay.com/v1/checkout.js' }
+  ],
+  credit_bureau_share: [
+    { src: 'https://demo-bfsi.consentshield.in/mock-cibil-share.js' }
+  ],
+  marketing_sms: [
+    { src: 'https://www.googletagmanager.com/gtag/js?id=G-DEMOFINTECH' }
+  ]
+}
+</script>
+<script async src="/shared/banner-loader.js"></script>
+<script defer src="/shared/demo.js"></script>
+</head>
+<body data-page="kyc" data-vertical="bfsi">
+<header class="site-head">
+  <div class="wrap" style="display:flex;align-items:center;justify-content:space-between">
+    <div class="brand"><a href="/bfsi/">NeoFin Credit</a></div>
+    <nav>
+      <a href="/bfsi/">Home</a>
+      <a href="/bfsi/consent-matrix.html">Consent matrix</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap" style="padding:32px 24px;max-width:640px">
+  <ol class="flow-steps" style="list-style:none;padding:0;display:flex;gap:12px;margin:0 0 24px;font-size:13px;color:var(--mut)">
+    <li><strong>1. KYC</strong></li>
+    <li>→ 2. Consent matrix</li>
+    <li>→ 3. Account created</li>
+  </ol>
+
+  <h1 style="margin:0 0 8px">Who are you?</h1>
+  <p style="color:var(--mut);margin:0 0 24px;font-size:14px">RBI Master Direction on KYC (2016) requires this data before any NBFC can extend credit. Collected under <code>kyc_mandatory</code> — legal basis: legal_obligation.</p>
+
+  <form class="panel" style="padding:20px" onsubmit="event.preventDefault(); window.location.href='/bfsi/consent-matrix.html';">
+    <div class="field">
+      <label for="name">Full legal name (as on PAN)</label>
+      <input id="name" name="name" type="text" autocomplete="name" placeholder="As printed on your PAN card" required>
+    </div>
+    <div class="field">
+      <label for="pan">PAN</label>
+      <input id="pan" name="pan" type="text" autocomplete="off" pattern="[A-Z]{5}[0-9]{4}[A-Z]{1}" placeholder="ABCDE1234F" maxlength="10" required>
+    </div>
+    <div class="field">
+      <label for="aadhaar">Aadhaar number (last 4 digits)</label>
+      <input id="aadhaar" name="aadhaar" type="text" autocomplete="off" inputmode="numeric" pattern="[0-9]{4}" placeholder="XXXX" maxlength="4" required>
+      <p style="color:var(--mut);font-size:12px;margin:6px 0 0">Masked per UIDAI guidance. Full Aadhaar OTP flow in production.</p>
+    </div>
+    <div class="field">
+      <label for="dob">Date of birth</label>
+      <input id="dob" name="dob" type="date" required>
+    </div>
+    <div class="field">
+      <label for="address">Current address</label>
+      <input id="address" name="address" type="text" autocomplete="street-address" placeholder="House / street / locality" required>
+    </div>
+    <div class="field">
+      <label for="income">Annual income (declared)</label>
+      <input id="income" name="income" type="text" autocomplete="off" inputmode="numeric" placeholder="₹ 6,00,000" required>
+    </div>
+    <button class="btn" type="submit" style="margin-top:8px">Continue to consent matrix →</button>
+  </form>
+
+  <div class="panel" style="margin-top:24px;border-left:3px solid #0B4E77">
+    <h3>What happens to this data?</h3>
+    <ul style="margin:8px 0 0 20px;color:var(--mut);font-size:14px">
+      <li>Name + PAN + DOB + address — retained by NeoFin for 10 years per RBI KYC MD.</li>
+      <li>Aadhaar last 4 — stored masked; full-number capture happens via UIDAI OTP flow (not in this demo).</li>
+      <li>Income declaration — used only for underwriting; retained for the tenor of any loan + 8 years post-closure per RBI §45ZC of BR Act.</li>
+    </ul>
+    <p style="margin:12px 0 0;color:var(--mut);font-size:13px">None of these can be deleted via a DPDP §13 right-to-erasure request while the legal obligation is in force. The ConsentShield retention engine (ADR-1004) honours this by recording a <code>retention_suppression</code> with citation when such a revocation lands.</p>
+  </div>
+
+  <div class="panel status" style="margin-top:24px">
+    <h3>Consent state (live)</h3>
+    <pre id="status">Waiting for banner interaction…</pre>
+  </div>
+</main>
+
+<footer class="site-foot wrap">
+  <div class="links">
+    <a href="/">All demos</a>
+    <a href="https://consentshield.in/privacy">Privacy notice</a>
+    <a href="https://consentshield.in/rights">Your data rights</a>
+  </div>
+  <p>Synthetic fintech. Synthetic consent. No real NBFC, no real Aadhaar, no loans offered.</p>
+</footer>
+</body>
+</html>

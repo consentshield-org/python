@@ -174,21 +174,21 @@ const VERTICALS: VerticalSpec[] = [
     accountName: 'e2e-fixture-bfsi',
     orgName: 'Demo Fintech',
     planCode: 'trial_starter',
-    demoHost: 'demo-fintech.consentshield.in',
+    demoHost: 'demo-bfsi.consentshield.in',
     properties: [
       {
         name: 'Marketing site',
-        url: 'https://demo-fintech.consentshield.in',
+        url: 'https://demo-bfsi.consentshield.in',
         allowedOrigins: [
-          'https://demo-fintech.consentshield.in',
+          'https://demo-bfsi.consentshield.in',
           'http://localhost:4003'
         ]
       },
       {
         name: 'Onboarding',
-        url: 'https://demo-fintech.consentshield.in/onboarding',
+        url: 'https://demo-bfsi.consentshield.in/onboarding',
         allowedOrigins: [
-          'https://demo-fintech.consentshield.in',
+          'https://demo-bfsi.consentshield.in',
           'http://localhost:4003'
         ]
       },

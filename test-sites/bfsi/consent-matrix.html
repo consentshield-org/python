@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex, notranslate" />
+<meta name="googlebot" content="noindex, nofollow, noarchive" />
+<meta name="bingbot" content="noindex, nofollow, noarchive" />
+<title>Consent matrix — NeoFin Credit · ConsentShield demo</title>
+<link rel="stylesheet" href="/shared/demo.css" />
+<script>
+window.__DEMO_TRACKERS__ = {
+  kyc_mandatory: [
+    { src: 'https://checkout.razorpay.com/v1/checkout.js' }
+  ],
+  credit_bureau_share: [
+    { src: 'https://demo-bfsi.consentshield.in/mock-cibil-share.js' }
+  ],
+  marketing_sms: [
+    { src: 'https://www.googletagmanager.com/gtag/js?id=G-DEMOFINTECH' }
+  ]
+}
+</script>
+<script async src="/shared/banner-loader.js"></script>
+<script defer src="/shared/demo.js"></script>
+</head>
+<body data-page="consent-matrix" data-vertical="bfsi">
+<header class="site-head">
+  <div class="wrap" style="display:flex;align-items:center;justify-content:space-between">
+    <div class="brand"><a href="/bfsi/">NeoFin Credit</a></div>
+    <nav>
+      <a href="/bfsi/">Home</a>
+      <a href="/bfsi/kyc.html">KYC</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap" style="padding:32px 24px;max-width:780px">
+  <ol class="flow-steps" style="list-style:none;padding:0;display:flex;gap:12px;margin:0 0 24px;font-size:13px;color:var(--mut)">
+    <li>1. KYC</li>
+    <li>→ <strong>2. Consent matrix</strong></li>
+    <li>→ 3. Account created</li>
+  </ol>
+
+  <h1 style="margin:0 0 8px">Review your consent matrix</h1>
+  <p style="color:var(--mut);margin:0 0 24px;font-size:14px">ConsentShield records one consent artefact per purpose. Legal-basis differs per row — which affects whether you can revoke later. Purposes where you cannot revoke are not hidden; they're shown with their statutory citation so you know exactly what's being processed and why.</p>
+
+  <table class="consent-matrix panel" style="width:100%;border-collapse:collapse">
+    <thead>
+      <tr>
+        <th style="text-align:left;padding:10px 12px">Purpose</th>
+        <th style="text-align:left;padding:10px 12px">Legal basis</th>
+        <th style="text-align:left;padding:10px 12px">Retention</th>
+        <th style="text-align:left;padding:10px 12px">Your choice</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="padding:10px 12px;vertical-align:top">
+          <strong>kyc_mandatory</strong>
+          <p style="margin:4px 0 0;color:var(--mut);font-size:12px">PAN / Aadhaar / DOB / address</p>
+        </td>
+        <td style="padding:10px 12px;vertical-align:top">
+          <span class="badge-legal-obligation">legal_obligation</span>
+          <p style="margin:6px 0 0;color:var(--mut);font-size:12px">RBI KYC Master Direction 2016</p>
+        </td>
+        <td style="padding:10px 12px;vertical-align:top">10 years<br><span style="color:var(--mut);font-size:12px">from last transaction</span></td>
+        <td style="padding:10px 12px;vertical-align:top">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px"><input type="checkbox" checked disabled> Granted (locked)</label>
+          <p style="margin:4px 0 0;color:var(--mut);font-size:11px">Not revocable while the legal obligation is in force</p>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:10px 12px;vertical-align:top">
+          <strong>credit_bureau_share</strong>
+          <p style="margin:4px 0 0;color:var(--mut);font-size:12px">CIBIL / Experian soft pull</p>
+        </td>
+        <td style="padding:10px 12px;vertical-align:top">
+          <span class="badge-consent">consent</span>
+          <p style="margin:6px 0 0;color:var(--mut);font-size:12px">DPDP §6(1)</p>
+        </td>
+        <td style="padding:10px 12px;vertical-align:top">7 years<br><span style="color:var(--mut);font-size:12px">per CICRA 2005</span></td>
+        <td style="padding:10px 12px;vertical-align:top">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px"><input type="checkbox" checked> Allow soft pull</label>
+          <p style="margin:4px 0 0;color:var(--mut);font-size:11px">Revocable via dashboard or POST /v1/rights/requests</p>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:10px 12px;vertical-align:top">
+          <strong>marketing_sms</strong>
+          <p style="margin:4px 0 0;color:var(--mut);font-size:12px">Promotional SMS about new products</p>
+        </td>
+        <td style="padding:10px 12px;vertical-align:top">
+          <span class="badge-consent">consent</span>
+          <p style="margin:6px 0 0;color:var(--mut);font-size:12px">DPDP §6(1) + TRAI UCC rules</p>
+        </td>
+        <td style="padding:10px 12px;vertical-align:top">While consent is active</td>
+        <td style="padding:10px 12px;vertical-align:top">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px"><input type="checkbox"> Send me SMS offers</label>
+          <p style="margin:4px 0 0;color:var(--mut);font-size:11px">Revocable any time — reply STOP or use the dashboard</p>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <form style="margin-top:16px" onsubmit="event.preventDefault(); window.location.href='/bfsi/onboarding-complete.html';">
+    <button class="btn" type="submit">Finish sign-up →</button>
+  </form>
+
+  <div class="panel" style="margin-top:24px;border-left:3px solid #B75F00">
+    <h3>Why kyc_mandatory can't be turned off here</h3>
+    <p style="margin:0;color:var(--mut);font-size:14px">Under DPDP §7(a), an organisation may process personal data without explicit consent when doing so is necessary to comply with a law. RBI's KYC Master Direction is such a law for NBFCs. The consent artefact is still emitted (with <code>outcome=granted</code>) so the audit record is complete; the <code>legal_basis</code> field is <code>legal_obligation</code> rather than <code>consent</code>, and the <code>withdrawable</code> flag is false. Any DPDP §13 right-to-erasure request against these rows returns a 409 Conflict until the obligation lapses.</p>
+  </div>
+
+  <div class="panel status" style="margin-top:24px">
+    <h3>Consent state (live)</h3>
+    <pre id="status">Waiting for banner interaction…</pre>
+  </div>
+</main>
+
+<footer class="site-foot wrap">
+  <div class="links">
+    <a href="/">All demos</a>
+    <a href="https://consentshield.in/privacy">Privacy notice</a>
+    <a href="https://consentshield.in/rights">Your data rights</a>
+  </div>
+  <p>Synthetic fintech. Synthetic consent. No real NBFC, no real Aadhaar, no loans offered.</p>
+</footer>
+</body>
+</html>

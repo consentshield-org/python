@@ -2,6 +2,36 @@
 
 Vercel, Cloudflare, Supabase config changes.
 
+## [ADR-1014 Sprint 2.3 — BFSI demo site + Railway deploy] — 2026-04-22
+
+**ADR:** ADR-1014 — E2E test harness + vertical demo sites
+**Sprint:** Phase 2, Sprint 2.3 — BFSI demo
+
+### Added
+- `test-sites/bfsi/index.html` — landing / marketing page for "NeoFin Credit" fixture NBFC. Panels: purposes served (3 × purpose cards explaining legal-basis distinction), legal-basis split explainer, live consent-state panel.
+- `test-sites/bfsi/kyc.html` — KYC form (name, PAN with regex validation, Aadhaar last-4, DOB, address, declared income). Below-fold panel explains retention periods per field (10y KYC MD, 8y BR Act §45ZC for underwriting data) and notes that DPDP §13 erasure is rejected while the obligation is in force.
+- `test-sites/bfsi/consent-matrix.html` — tri-purpose consent matrix table with legal-basis badges (`badge-legal-obligation` amber; `badge-consent` blue), per-row retention period + statute citation, `kyc_mandatory` checkbox locked on with an explanatory tooltip. Below-fold explainer on DPDP §7(a) legal-obligation carve-out.
+- `test-sites/bfsi/onboarding-complete.html` — success page showing the three expected artefact rows (granted × legal_obligation; granted × consent; rejected × consent), what happens on revocation of `credit_bureau_share` (connector fan-out with signed receipts), and what happens on revocation of `kyc_mandatory` (409 Conflict with `retention_suppressions[]` + citations).
+
+### Changed
+- `test-sites/shared/demo.css` — added BFSI-adjacent styles: `.mut` utility (var-based muted color), `.consent-matrix` table layout, `.badge-legal-obligation` (amber pill) and `.badge-consent` (blue pill). Extended `.field` input type list to include `date` so the KYC DOB field is styled consistently.
+
+### Deployed
+- Railway service `bfsi` created (id `ea79f953-6cfd-48c8-ae7b-b84163dbe826`, project `ConsentShield`) via `railway add -s bfsi`. Service was created server-side despite the CLI returning "Project not found" at wizard tail — verified via Railway GraphQL `project.services.edges` (all 3 services now listed: ecommerce + healthcare + bfsi).
+- Env var set via `railway variables --service bfsi --set VERTICAL=bfsi --skip-deploys`.
+- `railway up --service bfsi --ci` from `test-sites/` built 57.96 s (Nixpacks nodejs_22 + npm-9_x). Live at **`https://bfsi-production-bed4.up.railway.app`**.
+
+### Tested
+- Local smoke: `VERTICAL=bfsi PORT=4211 node test-sites/server.js` — all 4 BFSI pages 200; `/ecommerce/` + `/healthtech/` both 404; `/` → 302 `Location: /bfsi/`; `/index.html` → 404 (multi-vertical landing blocked); `/shared/demo.css` + `/robots.txt` + meta-robots tags on every page all verified.
+- Live Railway: same 11-check matrix (own vertical 200 × 4 pages, sibling-vertical 404 × 2, `/` 302, `/index.html` 404, `/shared/demo.css` 200, `/robots.txt` 200, `/.well-known/security.txt` 200). All 7 hardening response headers present (X-Robots-Tag, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, Cross-Origin-Opener-Policy).
+
+### Deferred
+- Railway-side custom-domain registration for **`demo-bfsi.consentshield.in`** — Cloudflare CNAME is already live (operator set it up), but the Railway `bfsi` service still needs the hostname added via the dashboard so a matching TLS cert is provisioned. Until then the custom host trips `ERR_CERT_COMMON_NAME_INVALID` in Chrome. `customDomainCreate` GraphQL mutation via the project-level token returned `INTERNAL_SERVER_ERROR "please try again"` on two attempts — same auth scope limit that bit `railway link`. Dashboard route: Railway project ConsentShield → `bfsi` service → Settings → Domains → Add Custom Domain. Cert provisions within 1–5 min. Fixture `allowed_origins` + all BFSI HTML files + ADR + this changelog have been reconciled from the original `demo-fintech.consentshield.in` to `demo-bfsi.consentshield.in` so the Worker's origin check will pass once the cert is live.
+- Automated legal-basis assertions (revoke `credit_bureau_share` → fan-out; revoke `kyc_mandatory` → 409 Conflict with `retention_suppressions[]`) moved to ADR-1014 Sprint 3.3 where the full rights-request E2E flow lights up. Demo pages document the expected response shapes as specification.
+
+### Why
+BFSI closes out the Phase 2 three-vertical split. It's the highest-willingness-to-pay target segment (loan-origination + NBFC regulatory exposure) and the most complex consent surface because of the legal-basis distinction — a single page on the demo site can simultaneously show a row with `outcome=granted, legal_basis=legal_obligation, withdrawable=false` (the KYC path RBI mandates) alongside two `outcome=granted, legal_basis=consent, withdrawable=true` rows (credit-bureau soft pull + SMS marketing). Ecommerce doesn't carry this split; healthcare almost does (`clinical_care` is legal_basis=contract, not legal_obligation) but the contract basis is weaker than RBI's. Getting all three verticals live makes the per-vertical consent-scope narrative concrete for reviewers.
+
 ## [ADR-1014 Sprint 2.2 — healthcare fixture rename (demo-clinic → demo-healthcare)] — 2026-04-22
 
 **ADR:** ADR-1014 — E2E test harness + vertical demo sites

@@ -246,21 +246,30 @@ Each vertical site is a small standalone Next.js app deployed to Railway under a
 
 **Status:** `[x] complete — site + deploy + DNS + vertical-lock shipped. Fixture `allowed_origins` naming drift flagged. Automated FHIR grep deferred to Sprint 3.7 per ADR-1014's phase structure.`
 
-#### Sprint 2.3: BFSI demo — `demo-fintech.consentshield.in`
+#### Sprint 2.3: BFSI demo — `demo-bfsi.consentshield.in`
 
 **Estimated effort:** 4 days
 
 **Deliverables:**
-- [ ] Fintech onboarding flow: KYC form, terms, consent matrix (PAN / Aadhaar / credit-bureau-share), app signup.
-- [ ] Realistic trackers: Google Analytics, Razorpay, a mock credit-bureau third-party-share webhook.
-- [ ] Multi-purpose consent capture: `kyc_mandatory` (legal-basis: legal_obligation, outcome: always granted), `marketing_sms` (consent), `credit_bureau_share` (consent).
-- [ ] Separate legal-basis handling: kyc_mandatory row emitted as `outcome=granted` + `legal_basis=legal_obligation`, never withdrawable.
+- [x] Fintech onboarding flow — 4 pages: landing (`test-sites/bfsi/index.html`), KYC form (`kyc.html` — PAN + Aadhaar last-4 + DOB + address + income), consent matrix (`consent-matrix.html` — tri-purpose table with legal-basis badges), onboarding complete (`onboarding-complete.html` — shows the three artefact outcomes + what happens on revocation vs 409 on legal-obligation rows).
+- [x] Realistic trackers wired via `window.__DEMO_TRACKERS__`: Razorpay checkout.js under `kyc_mandatory` (essential for the KYC flow); mock credit-bureau share webhook (`demo-bfsi.consentshield.in/mock-cibil-share.js`) under `credit_bureau_share`; Google Analytics (`G-DEMOFINTECH`) under `marketing_sms`. The mock CIBIL script URL is a placeholder — the real resource 404s, which is fine for a demo where the browser's network log is the audit artefact.
+- [x] Multi-purpose consent capture aligns with bootstrap-seeded purposes from Sprint 2.2: `kyc_mandatory` (legal_obligation, required=true), `credit_bureau_share` (consent), `marketing_sms` (consent). Consent matrix page visually encodes the distinction — `kyc_mandatory` toggle is locked on with tooltip "Not revocable while the legal obligation is in force"; `credit_bureau_share` + `marketing_sms` are normal checkbox toggles.
+- [x] Separate legal-basis handling documented on both `consent-matrix.html` (matrix body explains why KYC is locked + cites RBI KYC MD / PMLA §12 / BR Act §45ZC) and `onboarding-complete.html` (shows what the expected 409 Conflict response body carries when a user tries to revoke `kyc_mandatory`). Automated assertion of the 409 path ships in Sprint 3.x rights-request E2E work.
+- [x] Railway service `bfsi` (id `ea79f953-6cfd-48c8-ae7b-b84163dbe826`) created via `railway add -s bfsi`. Same "Project not found at end of wizard" CLI quirk as healthcare — service created server-side; verified via Railway GraphQL `project.services.edges` (ecommerce + healthcare + bfsi all present). `VERTICAL=bfsi` env var set via `railway variables --set`; `railway up --service bfsi --ci` from `test-sites/` built in 57.96 s (Nixpacks nodejs_22 + npm-9_x). Live at **`https://bfsi-production-bed4.up.railway.app`**.
+- [x] Shared demo-sites hardening inherited (7 response headers + robots.txt + `/.well-known/security.txt` + per-page `<meta name="robots">`) — verified via `curl` on live URL.
+- [x] Per-vertical isolation verified: `/bfsi/` → 200; `/ecommerce/` → 404; `/healthtech/` → 404; `/` → 302 `Location: /bfsi/`; `/index.html` → 404 (multi-vertical landing blocked); `/shared/demo.css` → 200; `/robots.txt` → 200; `/.well-known/security.txt` → 200. All four BFSI pages return 200.
+- [~] DNS cutover to **`demo-bfsi.consentshield.in`** — Cloudflare CNAME is live (points at `bfsi-production-bed4.up.railway.app`). Railway-side custom-domain registration + TLS cert provisioning pending — requires account-level auth the project token doesn't carry (`customDomainCreate` GraphQL mutation returns `INTERNAL_SERVER_ERROR "please try again"` twice; same limitation as `railway link` on a project token). Fix: operator adds `demo-bfsi.consentshield.in` via the Railway dashboard (Settings → Domains → Add Custom Domain on the `bfsi` service). Cert provisions within 1–5 minutes of that click. Until then the custom hostname serves the Railway edge cert, which trips `ERR_CERT_COMMON_NAME_INVALID` in Chrome; the Railway-generated `bfsi-production-bed4.up.railway.app` hostname works fine.
 
 **Testing plan:**
-- [ ] Withdraw `credit_bureau_share` → downstream deletion-trigger fires; kyc_mandatory artefact remains active.
-- [ ] Revoke any `consent`-basis artefact → 200 OK; revoke a `legal_obligation`-basis artefact → 409 Conflict.
+- [ ] Withdraw `credit_bureau_share` → downstream deletion-trigger fires; kyc_mandatory artefact remains active. Deferred to Sprint 3.3 (rights-request end-to-end).
+- [ ] Revoke any `consent`-basis artefact → 200 OK; revoke a `legal_obligation`-basis artefact → 409 Conflict. Deferred to Sprint 3.3; the response-body shape is documented on `onboarding-complete.html` as the specification.
 
-**Status:** `[ ] planned`
+**Tested so far:**
+- [x] Local `VERTICAL=bfsi PORT=4211 node server.js` smoke: all 4 BFSI pages 200; `/ecommerce/` and `/healthtech/` both 404; `/` 302 → `/bfsi/`; `/index.html` 404; `/shared/demo.css` 200; `/robots.txt` 200; meta-robots tag present on all 4 pages.
+- [x] `curl -sSI https://bfsi-production-bed4.up.railway.app/bfsi/` — HTTP/2 200 with the full 7-header hardening set (`x-robots-tag`, HSTS, `x-frame-options`, `x-content-type-options`, `referrer-policy`, `permissions-policy`, `cross-origin-opener-policy`).
+- [x] Cross-vertical 404 matrix verified on the live Railway URL (ecommerce + healthtech paths both return 404; `/index.html` returns 404; `/` 302-redirects to `/bfsi/`).
+
+**Status:** `[x] complete for the demo + deploy + vertical-lock axis. DNS cutover + automated legal-basis assertions deferred to Sprint 3.3.`
 
 #### Sprint 2.4: Banner-embed testing framework per vertical
 

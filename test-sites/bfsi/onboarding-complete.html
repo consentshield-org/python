@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex, notranslate" />
+<meta name="googlebot" content="noindex, nofollow, noarchive" />
+<meta name="bingbot" content="noindex, nofollow, noarchive" />
+<title>Account created — NeoFin Credit · ConsentShield demo</title>
+<link rel="stylesheet" href="/shared/demo.css" />
+<script>
+window.__DEMO_TRACKERS__ = {
+  kyc_mandatory: [
+    { src: 'https://checkout.razorpay.com/v1/checkout.js' }
+  ],
+  credit_bureau_share: [
+    { src: 'https://demo-bfsi.consentshield.in/mock-cibil-share.js' }
+  ],
+  marketing_sms: [
+    { src: 'https://www.googletagmanager.com/gtag/js?id=G-DEMOFINTECH' }
+  ]
+}
+</script>
+<script async src="/shared/banner-loader.js"></script>
+<script defer src="/shared/demo.js"></script>
+</head>
+<body data-page="onboarding-complete" data-vertical="bfsi">
+<header class="site-head">
+  <div class="wrap" style="display:flex;align-items:center;justify-content:space-between">
+    <div class="brand"><a href="/bfsi/">NeoFin Credit</a></div>
+    <nav>
+      <a href="/bfsi/">Home</a>
+      <a href="/bfsi/consent-matrix.html">Consent matrix</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap" style="padding:32px 24px;max-width:720px">
+  <ol class="flow-steps" style="list-style:none;padding:0;display:flex;gap:12px;margin:0 0 24px;font-size:13px;color:var(--mut)">
+    <li>1. KYC</li>
+    <li>→ 2. Consent matrix</li>
+    <li>→ <strong>3. Account created</strong></li>
+  </ol>
+
+  <h1 style="margin:0 0 8px">You're in. 🎉</h1>
+  <p style="color:var(--mut);margin:0 0 24px">Your NeoFin account is active. Three consent artefacts were recorded via ConsentShield — the breakdown is below. You can revisit these choices any time from your <strong>Privacy settings</strong> in the app (or via <code>POST /v1/rights/requests</code> with the relevant purpose).</p>
+
+  <div class="panel" style="border-left:3px solid #0F766E">
+    <h3>What ConsentShield recorded</h3>
+    <table style="width:100%;border-collapse:collapse;margin-top:12px;font-size:14px">
+      <thead>
+        <tr>
+          <th style="text-align:left;padding:6px 10px">Purpose</th>
+          <th style="text-align:left;padding:6px 10px">Outcome</th>
+          <th style="text-align:left;padding:6px 10px">Legal basis</th>
+          <th style="text-align:left;padding:6px 10px">Withdrawable</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="padding:6px 10px"><code>kyc_mandatory</code></td>
+          <td style="padding:6px 10px">granted</td>
+          <td style="padding:6px 10px">legal_obligation</td>
+          <td style="padding:6px 10px" class="mut">no (RBI)</td>
+        </tr>
+        <tr>
+          <td style="padding:6px 10px"><code>credit_bureau_share</code></td>
+          <td style="padding:6px 10px">granted</td>
+          <td style="padding:6px 10px">consent</td>
+          <td style="padding:6px 10px">yes</td>
+        </tr>
+        <tr>
+          <td style="padding:6px 10px"><code>marketing_sms</code></td>
+          <td style="padding:6px 10px" class="mut">rejected</td>
+          <td style="padding:6px 10px">consent</td>
+          <td style="padding:6px 10px">yes</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="panel" style="margin-top:16px;border-left:3px solid #B75F00">
+    <h3>If you revoke <code>credit_bureau_share</code> later</h3>
+    <p style="margin:0;color:var(--mut);font-size:14px">The ConsentShield orchestrator fans out to every connector mapped to this purpose (our internal CIBIL client, any downstream marketing DMP). Each connector acknowledges the revocation via a signed receipt. You see the receipts in the dashboard within minutes — and they're exportable to R2 for a durable compliance trail.</p>
+  </div>
+
+  <div class="panel" style="margin-top:16px;border-left:3px solid #0B4E77">
+    <h3>If you try to revoke <code>kyc_mandatory</code></h3>
+    <p style="margin:0;color:var(--mut);font-size:14px">POST /v1/rights/requests with <code>purpose=kyc_mandatory, action=erase</code> returns <code>409 Conflict</code>. The response body carries <code>retention_suppressions[]</code> — citations to RBI KYC MD / PMLA §12 / BR Act §45ZC showing why the obligation overrides the request. The artefact remains; no partial state is left behind.</p>
+  </div>
+
+  <div class="panel status" style="margin-top:24px">
+    <h3>Consent state (live)</h3>
+    <pre id="status">Waiting for banner interaction…</pre>
+  </div>
+</main>
+
+<footer class="site-foot wrap">
+  <div class="links">
+    <a href="/">All demos</a>
+    <a href="https://consentshield.in/privacy">Privacy notice</a>
+    <a href="https://consentshield.in/rights">Your data rights</a>
+  </div>
+  <p>Synthetic fintech. Synthetic consent. No real NBFC, no real Aadhaar, no loans offered.</p>
+</footer>
+</body>
+</html>
