@@ -302,10 +302,16 @@ Each sprint delivers 1–2 positive tests and their paired negatives. All tests 
 #### Sprint 3.1: Signup → onboard → first consent (ADR-0058 closure)
 
 **Deliverables:**
-- [ ] Closes ADR-0058 Sprint 1.5's open `[ ]` integration test.
-- [ ] Test spec + positive + negative + evidence.
+- [x] Closes ADR-0058 Sprint 1.5's open `[ ]` integration test — `tests/integration/signup-intake.test.ts` (Vitest, 11 tests, 5.5 s) covering all 6 branches of `public.create_signup_intake` + edge cases (null/empty org_name trim, case-insensitive email dedupe, branch precedence, token shape + invitation-column assertions + 14-day expiry).
+- [x] Test spec + positive + negative + evidence: the file header comments document the 6 branches with source references. Positives + negatives share the suite (happy-path `created`, paired with `already_invited` / `existing_customer` / `admin_identity` / `invalid_email` / `invalid_plan`). Evidence: per-branch assertions on the resulting invitation row (or its absence) read back via service role. `afterAll` cleanup purges test-seeded invitations + `auth.users` rows by tracked-set.
 
-**Status:** `[ ] planned`
+**Tested so far:**
+- [x] `bunx vitest run tests/integration/signup-intake.test.ts` — 11/11 PASS in 5.54 s against the dev Supabase.
+- [x] Branch coverage: `created` (+ org_name-trim variant), `already_invited` (+ case-insensitive email dedupe variant), `existing_customer`, `admin_identity`, `invalid_email` (+ empty variant), `invalid_plan` (+ null variant), branch-precedence (plan before email).
+
+**Scope boundary:** this closes the RPC-level contract test. Route-handler-level concerns — Turnstile verification, the 5-req/60s per-IP rate limiter, the 3-req/hour per-email rate limiter, the dispatch-email Resend round-trip — are tested elsewhere (unit tests on the helpers; route handler relies on the tested primitives). A full browser-driven wizard test that exercises the OTP + multi-step progression is Sprint 3.2+ scope per the evidence-graded pipeline pattern.
+
+**Status:** `[x] complete 2026-04-22 — ADR-0058 Sprint 1.5 deferred item also flipped to [x].`
 
 #### Sprint 3.2: Banner → Worker HMAC → buffer → delivery → R2
 

@@ -2,6 +2,34 @@
 
 API route changes.
 
+## [ADR-1014 Sprint 3.1 — signup-intake RPC contract test (closes ADR-0058 Sprint 1.5 deferred item)] — 2026-04-22
+
+**ADR:** ADR-1014 — E2E test harness + vertical demo sites
+**Sprint:** Phase 3, Sprint 3.1 — Signup → onboard → first consent
+**Closes:** ADR-0058 Sprint 1.5's deferred `tests/integration/signup-intake.test.ts`
+
+### Added
+- `tests/integration/signup-intake.test.ts` — Vitest RPC-level contract test for `public.create_signup_intake(email, plan_code, org_name, ip)`. 11 tests covering all 6 branches defined by migration `20260803000006_signup_intake_explicit_status.sql`:
+  - `created` — fresh email + active plan returns `{branch, id, token}` with a 48-hex token; invitation row has `origin='marketing_intake'`, `role='account_owner'`, `account_id=null`, `org_id=null`, `accepted_at=null`, `revoked_at=null`, ~14-day expiry window.
+  - `created` (org_name trim variant) — whitespace-only `org_name` stores as null.
+  - `already_invited` — submitting the same email twice within the pending window returns the existing id; token is NOT leaked; only one row exists for the email.
+  - `already_invited` (case-insensitive variant) — upper-case email re-submission collides with a lower-case pending invitation.
+  - `existing_customer` — email belongs to a non-admin `auth.users` row → branch returned, no invitation row created.
+  - `admin_identity` — email belongs to an admin-flagged (`app_metadata.is_admin=true`) user → Rule 12 fence, no invitation row created.
+  - `invalid_email` — malformed input + empty string.
+  - `invalid_plan` — unknown plan_code + null plan_code.
+  - Branch precedence — `invalid_plan` is evaluated before `invalid_email`, matching the SQL function body order.
+
+### Tested
+- `bunx vitest run tests/integration/signup-intake.test.ts` — 11/11 PASS in 5.54 s against the dev Supabase.
+- Cleanup: `afterAll` purges test-seeded invitations (by tracked email set) + `auth.users` rows (by tracked id set); swallowed-error on deleteUser so one failed cleanup doesn't break the suite.
+
+### Scope boundary
+This closes the RPC-level contract test — the DB-side branching logic. Route-handler-level concerns (Turnstile verification, 5/60s per-IP rate limit, 3/hour per-email rate limit, Resend dispatch roundtrip) stay on unit/route-handler tests where mocks are tractable; this test exercises the authoritative branching source of truth.
+
+### Why
+ADR-0058 shipped the signup-intake RPC on 2026-04-12 with the integration test deferred twice (Sprint 1.1 → Sprint 1.5 → V2 backlog) because CI didn't yet have a headless-browser harness or an auth-mock. Sprint 3.1's scope reads as "close ADR-0058's deferred integration test" — and since the RPC is the authoritative branching surface (the route handler is a thin wrapper adding Turnstile + rate-limit), testing the RPC directly via service role gives the same coverage without the wizard-level plumbing. The wizard-level browser-driven test belongs in Sprint 3.2+ under the evidence-graded pipeline spec.
+
 ## [ADR-1005 Phase 2 Sprint 2.1 — /v1/integrations/{connector_id}/test_delete] — 2026-04-22
 
 **ADR:** ADR-1005 — Operations maturity
