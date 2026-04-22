@@ -8,12 +8,14 @@
 // Runtime dependencies (same skip-cleanly pattern as `demo-ecommerce-banner.spec.ts`):
 //   1. A reachable banner CDN — either `bunx wrangler dev` locally (WORKER_URL env)
 //      or the production Cloudflare Worker at `https://cdn.consentshield.in`.
-//   2. The Worker's `SUPABASE_WORKER_KEY` must be a valid cs_worker JWT
-//      (ADR-1010 Sprint 2.1 role guard). Local dev-vars service-role is rejected.
+//   2. ADR-1010 Worker role guard is CLEARED for local dev by the `ALLOW_SERVICE_ROLE_LOCAL=1`
+//      opt-in in `worker/.dev.vars` + Miniflare harness. Service-role stand-in per
+//      ADR-1014 Sprint 1.3 is permitted without tripping Rule 5.
 //   3. The banner's stored purposes must carry `{ id, name, required, default }`
 //      (the Worker's `Purpose` interface). The bootstrap currently stores
 //      `{ code, required, legal_basis }` — a shape-mismatch pre-req that
-//      blocks runtime green until reconciled. Tracked in ADR-1014 Sprint 2.4.
+//      blocks runtime green until reconciled. Tracked as the single remaining
+//      Sprint 2.4 pre-req (see specs/demo-matrix.md §8).
 
 import type { Page, Route } from '@playwright/test'
 import { expect } from '@playwright/test'

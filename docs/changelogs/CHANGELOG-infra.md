@@ -20,9 +20,9 @@ Vercel, Cloudflare, Supabase config changes.
 - Tracker-count expectations verified by manual comparison against each vertical's HTML `__DEMO_TRACKERS__` dict and the `demo.js` load flow.
 
 ### Deferred (runtime green)
-Matrix runtime green blocked by two independent pre-reqs; tests skip cleanly when `WORKER_URL` is missing (same pattern as `demo-ecommerce-banner.spec.ts`):
-1. **ADR-1010 Worker role guard.** Worker refuses to boot unless `SUPABASE_WORKER_KEY` is a cs_worker-claimed JWT. Unblocks when ADR-1010 Phase 3 lands OR a proper JWT is placed in `worker/.dev.vars` manually.
-2. **Purposes shape mismatch** (above). Unblocks when the bootstrap transformation ships.
+Matrix runtime green gated on ONE remaining blocker; tests skip cleanly when `WORKER_URL` is missing (same pattern as `demo-ecommerce-banner.spec.ts`):
+1. ~~ADR-1010 Worker role guard.~~ **CLEARED** — the guard's `ALLOW_SERVICE_ROLE_LOCAL=1` opt-in (shipped in `c55b661`) is already wired into both `worker/.dev.vars` and `app/tests/worker/harness.ts`. The E2E test harness can use the service-role stand-in per ADR-1014 Sprint 1.3 without tripping Rule 5. This correction supersedes my earlier claim in the Sprint 2.4 initial commit — thanks to operator for flagging.
+2. **Purposes shape mismatch.** `scripts/e2e-bootstrap.ts` writes `{code, required, legal_basis}`; `worker/src/banner.ts` reads `{id, name, description, required, default}`. Confirmed by querying the dev DB — all 9 fixture banner rows carry the wrong shape. Unblocks when a bootstrap transformation ships (per-purpose display-name + description table, `code → id`, `default = !required`). Tracked as the single remaining pre-req for Sprint 2.4 matrix runtime green.
 
 ### Why
 Sprint 2.1 left ecommerce with a single-cell browser-driven test (`demo-ecommerce-banner.spec.ts`); Sprint 2.2 + 2.3 added healthcare + bfsi demo sites without extending test coverage to them. A per-vertical × per-outcome matrix catches regressions a single-cell test cannot — particularly the BFSI `kyc_mandatory` case, where a bug treating legal_obligation purposes as optional would show up as a failure in the bfsi × reject_all cell but leave the other eight cells green. The harness separates "how the banner is interacted with" from "what each cell asserts" so Sprint 3.x full-pipeline tests can consume the same primitives without duplicating the keepalive-patch + event-capture plumbing.
