@@ -63,10 +63,108 @@ const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 interface BannerPurpose {
   code: string
   required?: boolean
-  // `legal_basis` is carried on the banner config for DEPA-native parity
-  // with ADR-0023's purpose_definitions; the banner script itself reads
-  // only `code` + `required`.
+  // `legal_basis` is a spec-level annotation for DEPA-native parity with
+  // ADR-0023's purpose_definitions; it's NOT stored on the banner row
+  // (`worker/src/banner.ts`'s `Purpose` interface has no legal_basis field,
+  // and nothing reads it from `consent_banners.purposes[*]`).
   legal_basis?: 'consent' | 'legal_obligation' | 'contract' | 'vital_interest'
+}
+
+// ─── Worker-shape mapping ─────────────────────────────────────────────────
+//
+// `worker/src/banner.ts` expects each purpose as { id, name, description,
+// required, default }. The bootstrap's spec-level `BannerPurpose` carries
+// { code, required, legal_basis } for human readability; we transform at
+// insert/update time. Display-name + description text per purpose is
+// curated here so the rendered banner reads well in each vertical.
+//
+// Latent bug pre-2026-04-22: bootstrap was writing {code, required,
+// legal_basis} verbatim, which meant the Worker rendered `<strong>undefined</strong>`
+// per row and the submit handler posted `purposes_accepted=['undefined',...]`.
+// Nobody hit it because browser-driven runtime was separately blocked by
+// the ADR-1010 role guard until Sprint 2.1 follow-up added the local-dev
+// opt-in (commit c55b661).
+
+interface PurposeCopy {
+  name: string
+  description: string
+}
+
+const PURPOSE_METADATA: Record<string, PurposeCopy> = {
+  // Ecommerce
+  essential: {
+    name: 'Essential',
+    description: 'Required for the site to function — cart, login, checkout.'
+  },
+  analytics: {
+    name: 'Analytics',
+    description: 'Helps us understand how the site is used. Aggregate only.'
+  },
+  marketing: {
+    name: 'Marketing',
+    description: 'Personalised ads and remarketing across third-party networks.'
+  },
+  // Healthcare
+  clinical_care: {
+    name: 'Clinical care',
+    description:
+      'Processing your visit, prescriptions, and ABHA linkage under a contract legal basis. Required to deliver care.'
+  },
+  research_deidentified: {
+    name: 'De-identified research',
+    description:
+      'Aggregate statistics for peer-reviewed outcomes research. Never links back to you.'
+  },
+  marketing_health_optin: {
+    name: 'Health reminders',
+    description:
+      'Reminder emails about upcoming check-ups and clinic news. Revoke any time.'
+  },
+  // BFSI
+  kyc_mandatory: {
+    name: 'KYC (RBI-mandated)',
+    description:
+      'PAN, Aadhaar, DOB, address collection under the RBI KYC Master Direction. Retained 10 years; not revocable while the legal obligation is in force.'
+  },
+  credit_bureau_share: {
+    name: 'Credit bureau check',
+    description:
+      'Share your details with CIBIL / Experian to compute your credit score. Revocable via the dashboard or POST /v1/rights/requests.'
+  },
+  marketing_sms: {
+    name: 'Promotional SMS',
+    description:
+      'Offers and rate changes via SMS. Revocable via reply-STOP or the dashboard.'
+  }
+}
+
+interface WorkerShapePurpose {
+  id: string
+  name: string
+  description: string
+  required: boolean
+  default: boolean
+}
+
+function toWorkerShape(p: BannerPurpose): WorkerShapePurpose {
+  const meta = PURPOSE_METADATA[p.code]
+  if (!meta) {
+    throw new Error(
+      `[e2e-bootstrap] purpose code "${p.code}" has no PURPOSE_METADATA entry — ` +
+        'add a { name, description } row in scripts/e2e-bootstrap.ts before seeding.'
+    )
+  }
+  return {
+    id: p.code,
+    name: meta.name,
+    description: meta.description,
+    required: p.required === true,
+    // `default` controls whether the checkbox starts on. Mirror `required`
+    // so required purposes default on; optional default off. This matches
+    // DPDP §6(3) — consent is an opt-in, not an opt-out, for non-required
+    // legal-basis purposes.
+    default: p.required === true
+  }
 }
 
 interface VerticalSpec {
@@ -424,14 +522,15 @@ async function ensureVertical(spec: VerticalSpec): Promise<VerticalState> {
       .eq('version', 1)
       .maybeSingle()
     let bannerId: string
+    const desiredPurposes = spec.purposes.map(toWorkerShape)
     if (existingBanner) {
       bannerId = existingBanner.id
       const current = JSON.stringify(existingBanner.purposes ?? [])
-      const desired = JSON.stringify(spec.purposes)
+      const desired = JSON.stringify(desiredPurposes)
       if (current !== desired) {
         const { error } = await admin
           .from('consent_banners')
-          .update({ purposes: spec.purposes })
+          .update({ purposes: desiredPurposes })
           .eq('id', bannerId)
         if (error) throw new Error(`[${spec.slug}] updateBanner purposes: ${error.message}`)
         console.log(`[${spec.slug}] refreshed consent_banner ${bannerId} purposes for "${prop.name}"`)
@@ -447,7 +546,7 @@ async function ensureVertical(spec: VerticalSpec): Promise<VerticalState> {
           headline: 'We value your consent',
           body_copy: 'E2E fixture banner — seeded by scripts/e2e-bootstrap.ts.',
           position: 'bottom-bar',
-          purposes: spec.purposes,
+          purposes: desiredPurposes,
           monitoring_enabled: true
         })
         .select('id')

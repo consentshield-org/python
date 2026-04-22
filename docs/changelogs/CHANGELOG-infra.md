@@ -2,6 +2,30 @@
 
 Vercel, Cloudflare, Supabase config changes.
 
+## [ADR-1014 Sprint 2.4 close-out — bootstrap purposes shape now matches Worker interface] — 2026-04-22
+
+**ADR:** ADR-1014 — E2E test harness + vertical demo sites
+**Sprint:** Phase 2, Sprint 2.4 — runtime-green pre-req close-out
+
+### Changed
+- `scripts/e2e-bootstrap.ts`:
+  - Added `PURPOSE_METADATA: Record<string, { name, description }>` with 9 curated entries (3 per vertical).
+  - Added `WorkerShapePurpose` interface + `toWorkerShape(BannerPurpose)` helper that emits `{ id: code, name, description, required, default: required }` — exactly the shape `worker/src/banner.ts`'s `Purpose` interface declares. `default = required` mirrors DPDP §6(3) (consent is opt-in; required purposes ship checked).
+  - Banner insert + update paths now pass `spec.purposes.map(toWorkerShape)` instead of `spec.purposes` verbatim. The drift-refresh JSON.stringify compare uses the Worker shape on both sides so re-runs are idempotent.
+  - Spec-level `BannerPurpose` shape (`{ code, required, legal_basis }`) is preserved for human readability of the VERTICALS definitions; `legal_basis` is not persisted on the banner row (nothing reads it there — confirmed via grep across app/admin/worker/packages/migrations).
+
+### Tested
+- Bootstrap re-run against the dev Supabase: 9 fixture banner rows refreshed in 10.3 s; zero errors.
+- DB verification query: stored shape on `consent_banners.purposes` is now `{ default, description, id, name, required }` on every fixture row. Sample:
+  ```
+  {"id":"essential","name":"Essential","default":true,"required":true,"description":"Required for the site to function — cart, login, checkout."}
+  ```
+
+### Why
+Closes the last remaining runtime-green pre-req for Sprint 2.4 matrix + Sprint 2.1 ecommerce browser test. Both tests have been blocked in the "skip if WORKER_URL missing" state since Sprint 2.1 shipped; both can now run live the next time `bunx wrangler dev` is started + Playwright is invoked.
+
+The latent bug was: Sprint 1.2's original bootstrap wrote `{code, required, legal_basis}` directly; the Worker has always read `{id, name, description, required, default}`. The mismatch would have produced a rendered banner showing `<strong>undefined</strong>` per purpose row and posted `purposes_accepted=['undefined', ...]`. Nobody hit it because browser-driven runtime was separately blocked (by the Worker role guard, until Sprint 2.1 follow-up added the local-dev opt-in). The fix is strictly to the bootstrap — no Worker / banner / schema changes — because the Worker's interface is the authoritative one.
+
 ## [ADR-1014 Sprint 2.4 — banner-embed testing framework per vertical] — 2026-04-22
 
 **ADR:** ADR-1014 — E2E test harness + vertical demo sites

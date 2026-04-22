@@ -79,12 +79,17 @@ The matrix structure (3 × 3) additionally catches per-vertical regressions that
 - Playwright trace on failure
 - Console log capture
 
-## 8. Runtime-green blockers (2026-04-22, corrected)
+## 8. Runtime-green blockers — ALL CLEARED (2026-04-22)
 
-Sprint 2.4's code is complete. Runtime green is gated on ONE remaining pre-req:
+Sprint 2.4 is end-to-end ready.
 
 **CLEARED — ADR-1010 Worker role guard.** The guard shipped with an `ALLOW_SERVICE_ROLE_LOCAL=1` opt-in (commit `c55b661`). `worker/.dev.vars` already sets it and `app/tests/worker/harness.ts` binds it in Miniflare — the E2E test harness can use the service-role stand-in per ADR-1014 Sprint 1.3 without tripping Rule 5.
 
-**OPEN — Bootstrap/Worker purposes shape mismatch.** `scripts/e2e-bootstrap.ts` writes `consent_banners.purposes` as `{code, required, legal_basis}`; `worker/src/banner.ts` reads them as `{id, name, description, required, default}`. Verified against the dev DB — all 9 fixture banner rows carry the wrong shape. The banner would render with `undefined` purpose names and post `purposes_accepted = ['undefined', 'undefined', 'undefined']`. Unblocks once the bootstrap writes the Worker-compatible shape (trivial transformation; one-file fix in a follow-up commit that's out of Sprint 2.4's scope).
+**CLEARED — Bootstrap/Worker purposes shape mismatch.** `scripts/e2e-bootstrap.ts` now transforms spec-level `{code, required, legal_basis}` into the Worker's `{id, name, description, required, default}` shape at insert + update time (via the `PURPOSE_METADATA` table + `toWorkerShape()` helper). Bootstrap re-run refreshed all 9 fixture banner rows; DB verification confirms every row carries the Worker-compatible shape.
 
-Tests skip cleanly when `WORKER_URL` is missing — same pattern as Sprint 2.1's `demo-ecommerce-banner.spec.ts`.
+Tests still skip cleanly when `WORKER_URL` is missing — same pattern as Sprint 2.1's `demo-ecommerce-banner.spec.ts`. To green the matrix live:
+
+```bash
+cd worker && bunx wrangler dev         # exports WORKER_URL=http://127.0.0.1:8787
+cd tests/e2e && bun run test           # runs all cells across chromium + webkit
+```
