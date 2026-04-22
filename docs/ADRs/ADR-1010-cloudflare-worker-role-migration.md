@@ -106,6 +106,34 @@ Attack surface impact: near-zero. BYPASSRLS does not broaden which tables or col
 
 **Status:** `[x] complete` — 2026-04-22. Phase 3 Worker source rewrite is unblocked.
 
+---
+
+#### Sprint 2.1 follow-up — Rule-5 runtime role guard (2026-04-22)
+
+**Context.** The earlier (retracted) "service-role leak" finding surfaced that we had no runtime check preventing the wrong key from reaching production. Even though ADR-1014 Sprint 1.3 documented the local stand-in pattern, nothing was stopping a future `wrangler secret put SUPABASE_WORKER_KEY=<wrong value>` from silently shipping service-role privileges to prod. This sprint adds the guard so that violation is impossible to introduce without seeing a 503.
+
+**Deliverables:**
+- [x] `worker/src/role-guard.ts` — `assertWorkerKeyRole(env)`: decodes the `SUPABASE_WORKER_KEY` JWT payload, rejects anything but `role === 'cs_worker'`, also rejects expired JWTs (via `exp`), refuses opaque `sb_secret_*`/`sb_publishable_*` keys, and rejects empty / missing keys. Zero npm deps (Rule 16).
+- [x] `worker/src/index.ts` — calls the guard once per instance (cached verdict); returns 503 `application/problem-style` JSON with `Cache-Control: no-store` on violation. `/v1/health` is exempt so operators can still probe a degraded Worker.
+- [x] `worker/.dev.vars` — adds `ALLOW_SERVICE_ROLE_LOCAL=1` to preserve the ADR-1014 Sprint 1.3 local test-harness pattern. Flag is strictly local — `wrangler dev` reads `.dev.vars`; `wrangler secret put` doesn't, so it can never cross into production.
+- [x] `app/tests/worker/harness.ts` — Miniflare bindings extended with the same flag so existing `banner.test.ts` / `blocked-ip.test.ts` / `events.test.ts` suites continue to pass with their `mock-worker-key` stand-in.
+- [x] `app/tests/worker/role-guard.test.ts` — 13 unit tests covering every branch.
+
+**Testing plan:**
+- [x] 13/13 role-guard tests PASS; 33/33 total worker-tests PASS (no regression).
+- [x] Worker `bunx tsc --noEmit` clean.
+
+**What this enforces:**
+- A future deploy with `SUPABASE_WORKER_KEY=<service-role JWT>` fails closed — every request gets a 503 with a diagnostic string. The Worker cannot silently run with broader privileges than Rule 5 permits.
+- An expired cs_worker JWT is called out explicitly instead of cycling through silent 401s from Supabase.
+- The ADR-1014 local test-harness pattern is explicitly preserved via the `ALLOW_SERVICE_ROLE_LOCAL` opt-in (documented in the guard + CHANGELOG + `.dev.vars` inline comment).
+
+**What this does NOT do:**
+- Does not verify the JWT signature — that's Supabase's job. An attacker who compromised the Worker deployment enough to control `wrangler secret put` can forge a `role: cs_worker` payload; the guard catches accidental mis-configuration, not active attack.
+- Does not migrate the Worker off HS256. That's Phase 3 (Worker source rewrite) + Phase 4 (cutover). The guard rides the existing PostgREST path until Phase 3 lands.
+
+**Status:** `[x] complete` — 2026-04-22.
+
 ### Phase 3 — Worker rewrite
 
 **Goal:** Swap the `fetch(${SUPABASE_URL}/rest/v1/...)` call sites in the Worker source to the chosen mechanism.

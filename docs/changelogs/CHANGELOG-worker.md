@@ -2,6 +2,28 @@
 
 Cloudflare Worker changes.
 
+## [ADR-1010 Sprint 2.1 follow-up — Rule-5 runtime role guard] — 2026-04-22
+
+**ADR:** ADR-1010 — Cloudflare Worker scoped-role migration off HS256 JWT
+**Sprint:** Phase 2 Sprint 2.1 follow-up (Rule-5 enforcement)
+
+### Added
+- `worker/src/role-guard.ts` — `assertWorkerKeyRole(env)`. Decodes the `SUPABASE_WORKER_KEY` JWT payload (no signature verification — that's Supabase's job) and throws `WorkerRoleGuardError` unless `role === 'cs_worker'`. Also rejects expired JWTs via the `exp` claim and refuses opaque `sb_secret_*` / `sb_publishable_*` keys. Zero npm deps (Rule 16) — base64url decode + `atob` + `JSON.parse` inline.
+- `worker/src/index.ts` — calls the guard on every non-`/v1/health` request, cached per Worker instance. Health endpoint stays open so operators can probe a degraded Worker and see the reason. Guard failures return 503 `application/json` with `{"error":"worker_misconfigured","reason":"<diagnostic>"}` and `Cache-Control: no-store`.
+- `worker/.dev.vars` — new `ALLOW_SERVICE_ROLE_LOCAL=1` line. Opt-in that lets the guard accept the service-role stand-in key the ADR-1014 Sprint 1.3 E2E test harness uses. The flag is strictly local: `wrangler dev` reads `.dev.vars`; `wrangler secret put` does not, so it can never reach production.
+- `app/tests/worker/harness.ts` — Miniflare binding set extended with `ALLOW_SERVICE_ROLE_LOCAL: '1'` so the existing `banner.test.ts` / `blocked-ip.test.ts` / `events.test.ts` suites continue passing with their `mock-worker-key` stand-in.
+- `app/tests/worker/role-guard.test.ts` — 13 unit tests: cs_worker JWT accept (no-exp / future-exp), past-exp reject, service_role / authenticated / no-role rejects, malformed-JWT reject, sb_secret_* reject-without-flag, sb_secret_* / sb_publishable_* / mock-junk accept-with-flag, missing-key reject (with and without flag).
+
+### Behaviour
+- Production wrangler deploy: any key that isn't a JWT claiming `role='cs_worker'` makes the Worker return 503 for every request. Operators see the diagnostic in the response body.
+- Local wrangler dev: `.dev.vars` has the opt-in; any key is accepted.
+- CI / Miniflare unit tests: harness binding has the opt-in; existing tests run unchanged.
+
+### Tested
+- [x] `bunx vitest run tests/worker/role-guard.test.ts` — 13/13 PASS.
+- [x] `bunx vitest run tests/worker/` — 33/33 PASS across 4 files (no regression).
+- [x] `bunx tsc --noEmit` from `worker/` — clean.
+
 ## [ADR-0048 Sprint 2.1] — 2026-04-18
 
 **ADR:** ADR-0048 — Worker HMAC + Origin 403 logging
