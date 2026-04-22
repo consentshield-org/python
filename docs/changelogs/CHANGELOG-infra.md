@@ -2,6 +2,22 @@
 
 Vercel, Cloudflare, Supabase config changes.
 
+## [ADR-1014 Sprint 2.2 — healthcare fixture rename (demo-clinic → demo-healthcare)] — 2026-04-22
+
+**ADR:** ADR-1014 — E2E test harness + vertical demo sites
+**Sprint:** Phase 2, Sprint 2.2 — naming drift resolution
+
+### Changed
+- `scripts/e2e-bootstrap.ts`: healthcare fixture renamed from `demo-clinic.consentshield.in` to `demo-healthcare.consentshield.in` — `demoHost` + 5 `url`/`allowedOrigins` occurrences. User decision adopted `demo-healthcare` (the name actually live on Cloudflare) as canonical, rather than renaming the CNAME back to the original ADR plan.
+- `scripts/e2e-bootstrap.ts`: added a web-property URL + allowed_origins refresh step. Mirrors the banner-purposes refresh shipped earlier in Sprint 2.2: when an existing `web_properties` row's `url` or `allowed_origins` differs from the spec, UPDATE in place. No `--force` needed; no signing-secret rotation; the property `id` is preserved so downstream fixtures (banner, api_key) stay stable.
+- ADR-1014 Sprint 2.2 heading retargeted to `demo-healthcare.consentshield.in`.
+
+### Tested
+- `bunx tsx scripts/e2e-bootstrap.ts` against the dev Supabase — both user-facing healthcare properties (`Clinic website` and `Patient portal`) logged `refreshed web_property ... url+allowed_origins`; sandbox probe (localhost-only) was a no-op as expected. 9.8 s wall time.
+
+### Why
+The Cloudflare CNAME landed on `demo-healthcare.consentshield.in` out-of-band before Sprint 2.2's DNS cutover step ran. `demo-healthcare` reads more naturally than `demo-clinic` for a reviewer ("clinic" implies a single business; "healthcare" implies the vertical). Updating the fixture is one file change; renaming the CNAME would require a Cloudflare edit + propagation wait. The bootstrap now owns the drift: any future fixture URL changes will propagate on the next run without requiring `--force` or manual DB edits.
+
 ## [ADR-1014 Sprint 2.2 follow-up — per-vertical isolation on shared demo server] — 2026-04-22
 
 **ADR:** ADR-1014 — E2E test harness + vertical demo sites

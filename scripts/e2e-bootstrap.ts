@@ -132,21 +132,21 @@ const VERTICALS: VerticalSpec[] = [
     accountName: 'e2e-fixture-healthcare',
     orgName: 'Demo Clinic Care',
     planCode: 'trial_starter',
-    demoHost: 'demo-clinic.consentshield.in',
+    demoHost: 'demo-healthcare.consentshield.in',
     properties: [
       {
         name: 'Clinic website',
-        url: 'https://demo-clinic.consentshield.in',
+        url: 'https://demo-healthcare.consentshield.in',
         allowedOrigins: [
-          'https://demo-clinic.consentshield.in',
+          'https://demo-healthcare.consentshield.in',
           'http://localhost:4002'
         ]
       },
       {
         name: 'Patient portal',
-        url: 'https://demo-clinic.consentshield.in/portal',
+        url: 'https://demo-healthcare.consentshield.in/portal',
         allowedOrigins: [
-          'https://demo-clinic.consentshield.in',
+          'https://demo-healthcare.consentshield.in',
           'http://localhost:4002'
         ]
       },
@@ -372,6 +372,28 @@ async function ensureVertical(spec: VerticalSpec): Promise<VerticalState> {
     if (existingProp) {
       propertyId = existingProp.id
       signingSecret = existingProp.event_signing_secret
+      // Refresh url + allowed_origins if the spec has drifted (e.g. custom
+      // domain renames like demo-clinic → demo-healthcare in Sprint 2.2).
+      // Banner purposes refresh below follows the same pattern.
+      const { data: freshProp } = await admin
+        .from('web_properties')
+        .select('url, allowed_origins')
+        .eq('id', propertyId)
+        .single()
+      if (freshProp) {
+        const urlDrift = freshProp.url !== prop.url
+        const originsDrift =
+          JSON.stringify((freshProp.allowed_origins ?? []).slice().sort()) !==
+          JSON.stringify(prop.allowedOrigins.slice().sort())
+        if (urlDrift || originsDrift) {
+          const { error } = await admin
+            .from('web_properties')
+            .update({ url: prop.url, allowed_origins: prop.allowedOrigins })
+            .eq('id', propertyId)
+          if (error) throw new Error(`[${spec.slug}] updateProperty: ${error.message}`)
+          console.log(`[${spec.slug}] refreshed web_property "${prop.name}" url+allowed_origins`)
+        }
+      }
     } else {
       const { data, error } = await admin
         .from('web_properties')
