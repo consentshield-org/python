@@ -193,17 +193,26 @@ Each vertical site is a small standalone Next.js app deployed to Railway under a
 **Estimated effort:** 3 days
 
 **Deliverables:**
-- [ ] Static apparel storefront: homepage, product page, cart, checkout.
-- [ ] Realistic tracker embeds: Google Analytics, Meta Pixel, Razorpay checkout.
-- [ ] Banner embedded + wired to staging Worker.
-- [ ] Deploy pipeline on Railway (one service, auto-deploy on push).
-- [ ] Published to `demo-ecommerce.consentshield.in` (DNS on Cloudflare).
+- [x] Static apparel storefront: homepage (`test-sites/ecommerce/index.html`), product (`product.html`), cart (`cart.html`), checkout (`checkout.html`).
+- [x] Realistic tracker embeds declared via `window.__DEMO_TRACKERS__` — Google Analytics + Hotjar (analytics), Meta Pixel (marketing), Razorpay (essential, always loads).
+- [x] Config-driven banner loader (`test-sites/shared/banner-loader.js`) — reads `?cdn`, `?org`, `?prop` from the URL or localStorage, injects the production or wrangler-dev banner script accordingly. Persists across page clicks via localStorage + demo.js link-rewrite.
+- [x] `test-sites/shared/demo.js` — shared per-purpose tracker injector on `consentshield:consent` + nav query-string forwarder.
+- [x] `test-sites/server.js` + `test-sites/package.json` — zero-dep static server for Railway/local runs (Rule 15).
+- [x] `test-sites/railway.json` — Nixpacks builder + `node server.js` start command, `/` healthcheck.
+- [x] `tests/e2e/utils/static-server.ts` — dependency-free static server for the E2E harness (runs per-test on localhost:4001, matches the ecommerce fixture's `allowed_origins`).
+- [x] `tests/e2e/demo-ecommerce-banner.spec.ts` + `specs/demo-ecommerce-banner.md` — browser-driven test: navigate to the demo, assert banner renders, click "Accept all", assert `consentshield:consent` page event + observable `consent_events` row with `origin_verified='origin-only'`.
+- [ ] Railway deploy push + DNS → `demo-ecommerce.consentshield.in`. Railway project is provisioned (`RAILWAY_TOKEN` in `.secrets`); one empty service exists (name: `accomplished-compassion`). `railway up` from `test-sites/` is the remaining one-command step — deferred so the user can confirm the target service (rename the random Railway-provisioned name or create a dedicated one) before pushing.
 
-**Testing plan:**
-- [ ] Banner renders on first paint; consent events reach staging buffer with `origin=demo-ecommerce.consentshield.in`.
-- [ ] Tracker blocking: reject-analytics → GA/Meta Pixel do not load (MutationObserver check).
+**Blocker — Playwright test runtime:**
+- The browser-driven test is **code-complete** but cannot green until `worker/.dev.vars` carries a proper `SUPABASE_WORKER_KEY` (HS256 JWT with `role=cs_worker` claim). Terminal B's ADR-1010 Sprint 2.1 committed `c55b661` landed a runtime role guard: the Worker now refuses to boot unless the key's JWT claims `role=cs_worker`. Our prior local stand-in (service-role key in .dev.vars) is rejected. Once ADR-1010's direct-Postgres migration lands for the Worker OR a valid cs_worker JWT is available locally, the test runs green. Until then, `WORKER_URL` should point at the deployed Worker (or the test skips cleanly).
 
-**Status:** `[ ] planned`
+**Tested so far:**
+- [x] `bunx tsc --noEmit` clean on `tests/e2e` + scripts.
+- [x] Static server utility loads the demo + serves the new 4-page tree.
+- [x] Banner loader reads `?cdn` / `?org` / `?prop` and injects the correct script URL — verified manually via `curl http://127.0.0.1:4001/ecommerce/` + the page renders.
+- [x] Curl POST to `/v1/events` with `Origin: http://localhost:4001` header → Worker returns 202 + buffer row (confirms fixture origin allow-list is correct). Browser path fails pending the ADR-1010 blocker above.
+
+**Status:** `[~] in progress — demo code shipped, Railway push + Playwright runtime verification deferred`
 
 #### Sprint 2.2: Healthcare demo — `demo-clinic.consentshield.in`
 

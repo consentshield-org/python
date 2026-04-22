@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Cart — DemoShop · ConsentShield demo</title>
+<link rel="stylesheet" href="/shared/demo.css" />
+<script>
+window.__DEMO_TRACKERS__ = {
+  analytics: [{ src: 'https://www.googletagmanager.com/gtag/js?id=G-DEMOSHOP' }],
+  marketing: [{ src: 'https://connect.facebook.net/en_US/fbevents.js' }],
+  essential: [{ src: 'https://checkout.razorpay.com/v1/checkout.js' }]
+}
+</script>
+<script async src="/shared/banner-loader.js"></script>
+<script defer src="/shared/demo.js"></script>
+</head>
+<body data-page="cart">
+<header class="site-head">
+  <div class="wrap" style="display:flex;align-items:center;justify-content:space-between">
+    <div class="brand"><a href="/ecommerce/">DemoShop</a></div>
+    <nav>
+      <a href="/ecommerce/">Home</a>
+      <a href="/ecommerce/cart.html">Cart</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap" style="padding:32px 24px;max-width:720px">
+  <h1 style="margin:0 0 16px">Your cart</h1>
+
+  <div class="panel" style="padding:16px 20px">
+    <div class="row">
+      <div class="name">Linen shirt — Azure × 1</div>
+      <div class="price">₹2,499</div>
+    </div>
+    <div class="row">
+      <div class="name">Sneakers — Off-white × 1</div>
+      <div class="price">₹3,899</div>
+    </div>
+  </div>
+
+  <div class="panel" style="padding:16px 20px">
+    <div class="sum"><span>Subtotal</span><span>₹6,398</span></div>
+    <div class="sum"><span>Shipping</span><span>Free</span></div>
+    <div class="sum"><span>GST (18%)</span><span>₹1,152</span></div>
+    <div class="sum total"><span>Total</span><span>₹7,550</span></div>
+  </div>
+
+  <div style="margin-top:16px;display:flex;gap:8px">
+    <a class="btn secondary" href="/ecommerce/">Continue shopping</a>
+    <a class="btn" href="/ecommerce/checkout.html" data-action="checkout">Checkout</a>
+  </div>
+
+  <div class="panel status" style="margin-top:32px">
+    <h3>Consent state (live)</h3>
+    <pre id="status">Waiting for banner interaction…</pre>
+  </div>
+</main>
+
+<footer class="site-foot wrap">
+  <div class="links">
+    <a href="/">All demos</a>
+    <a href="https://consentshield.in/privacy">Privacy notice</a>
+    <a href="https://consentshield.in/rights">Your data rights</a>
+  </div>
+  <p>Fake products. Real consent events.</p>
+</footer>
+</body>
+</html>

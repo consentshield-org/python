@@ -3,25 +3,44 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>DemoShop — ConsentShield demo</title>
+<title>DemoShop — Storefront · ConsentShield demo</title>
 <link rel="stylesheet" href="/shared/demo.css" />
-<script async
-  src="https://cdn.consentshield.in/v1/banner.js?org=432bca6d-8fce-415a-85e0-96397ddac666&prop=1cfb2928-763e-4a17-840a-db8078ce6d61"></script>
+<script>
+window.__DEMO_TRACKERS__ = {
+  analytics: [
+    { src: 'https://www.googletagmanager.com/gtag/js?id=G-DEMOSHOP' },
+    { src: 'https://static.hotjar.com/c/hotjar-0000000.js' }
+  ],
+  marketing: [
+    { src: 'https://connect.facebook.net/en_US/fbevents.js' }
+  ],
+  personalisation: [],
+  essential: [
+    { src: 'https://checkout.razorpay.com/v1/checkout.js' }
+  ]
+}
+</script>
+<script async src="/shared/banner-loader.js"></script>
+<script defer src="/shared/demo.js"></script>
 </head>
-<body>
+<body data-page="home">
 <header class="site-head">
   <div class="wrap" style="display:flex;align-items:center;justify-content:space-between">
     <div class="brand"><a href="/ecommerce/">DemoShop</a></div>
-    <nav><a href="#">Men</a><a href="#">Women</a><a href="#">Sale</a></nav>
+    <nav>
+      <a href="/ecommerce/">Home</a>
+      <a href="/ecommerce/product.html">Linen shirt</a>
+      <a href="/ecommerce/cart.html">Cart</a>
+    </nav>
   </div>
 </header>
 
 <main class="wrap" style="padding:32px 24px">
   <h1 style="margin:0 0 8px">Summer styles, shipped today</h1>
-  <p style="color:var(--mut);margin:0 0 24px">Click <strong>Accept all</strong>, <strong>Customise</strong>, or <strong>Reject all</strong> in the banner below. Trackers load only for purposes you accept.</p>
+  <p style="color:var(--mut);margin:0 0 24px">ConsentShield E2E fixture site. Click <strong>Accept all</strong>, <strong>Customise</strong>, or <strong>Reject all</strong> in the banner below — trackers load only for purposes you accept, and the consent event travels through the Worker → buffer → delivery pipeline.</p>
 
   <section class="prod-grid">
-    <div class="prod"><div class="ph"></div><div class="name">Linen shirt</div><div class="price">₹2,499</div></div>
+    <div class="prod"><a href="/ecommerce/product.html"><div class="ph"></div><div class="name">Linen shirt</div><div class="price">₹2,499</div></a></div>
     <div class="prod"><div class="ph"></div><div class="name">Denim jacket</div><div class="price">₹4,199</div></div>
     <div class="prod"><div class="ph"></div><div class="name">Cotton tee</div><div class="price">₹899</div></div>
     <div class="prod"><div class="ph"></div><div class="name">Sneakers</div><div class="price">₹3,899</div></div>
@@ -35,50 +54,11 @@
 
 <footer class="site-foot wrap">
   <div class="links">
-    <a href="https://consentshield-one.vercel.app/privacy/432bca6d-8fce-415a-85e0-96397ddac666">Privacy notice</a>
-    <a href="https://consentshield-one.vercel.app/rights/432bca6d-8fce-415a-85e0-96397ddac666">Your data rights</a>
     <a href="/">All demos</a>
+    <a href="https://consentshield.in/privacy">Privacy notice</a>
+    <a href="https://consentshield.in/rights">Your data rights</a>
   </div>
   <p>Fake products. Real consent events.</p>
 </footer>
-
-<script>
-// Trackers for this demo, grouped by purpose. Loaded only after consent.
-const TRACKERS = {
-  analytics: [
-    { src: 'https://www.googletagmanager.com/gtag/js?id=G-DEMO' },
-    { src: 'https://static.hotjar.com/c/hotjar-0000000.js' }
-  ],
-  marketing: [
-    { src: 'https://connect.facebook.net/en_US/fbevents.js' }
-  ],
-  personalisation: [],
-  // Functional trackers — fire regardless of consent (required for site function).
-  essential: [
-    { src: 'https://checkout.razorpay.com/v1/checkout.js' }
-  ]
-};
-
-function inject(src) {
-  const s = document.createElement('script');
-  s.src = src; s.async = true;
-  document.head.appendChild(s);
-}
-
-function loadFor(purposes) {
-  purposes.forEach(p => (TRACKERS[p] || []).forEach(t => inject(t.src)));
-}
-
-// Essential/functional trackers always.
-loadFor(['essential']);
-
-const status = document.getElementById('status');
-window.addEventListener('consentshield:consent', (e) => {
-  const { event_type, accepted, rejected } = e.detail;
-  status.textContent =
-    `event: ${event_type}\naccepted: ${accepted.join(', ') || '(none)'}\nrejected: ${rejected.join(', ') || '(none)'}`;
-  loadFor(accepted);
-});
-</script>
 </body>
 </html>

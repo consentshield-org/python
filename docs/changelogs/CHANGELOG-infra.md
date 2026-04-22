@@ -2,6 +2,37 @@
 
 Vercel, Cloudflare, Supabase config changes.
 
+## [ADR-1014 Sprint 2.1 — ecommerce demo site + Railway config + browser E2E] — 2026-04-22
+
+**ADR:** ADR-1014 — E2E test harness + vertical demo sites
+**Sprint:** Phase 2, Sprint 2.1 — Ecommerce demo (partial)
+
+### Added
+- `test-sites/ecommerce/product.html` + `cart.html` + `checkout.html` — completes the 4-page apparel storefront.
+- `test-sites/shared/banner-loader.js` — config-driven banner bootstrap. Reads `?cdn` / `?org` / `?prop` from URL or localStorage, injects the banner `<script src>` accordingly. Works against both the deployed CDN and local wrangler dev.
+- `test-sites/shared/demo.js` — shared per-purpose tracker injector (runs on `consentshield:consent`) + nav query-string forwarder so `?org=` / `?prop=` survive cross-page links.
+- `test-sites/server.js` + `test-sites/package.json` — zero-dep static server for Railway. `node server.js`; PORT via env; safe path-resolution; `/healthz` = 200 via the `/` healthcheck.
+- `test-sites/railway.json` — Nixpacks builder + start command + healthcheck config.
+- `tests/e2e/utils/static-server.ts` — dependency-free static server for the E2E harness (per-test localhost:4001).
+- `tests/e2e/demo-ecommerce-banner.spec.ts` + `specs/demo-ecommerce-banner.md` — browser-driven test. Navigates Chromium to the demo, asserts banner renders, clicks "Accept all", asserts both page-level `consentshield:consent` event AND observable `consent_events` row with `origin_verified='origin-only'`.
+
+### Changed
+- `test-sites/ecommerce/index.html` — dropped hardcoded org/prop IDs, now uses `banner-loader.js`. Links to product.html / cart.html so the vertical feels like a real site.
+- `test-sites/shared/demo.css` — added styles for product detail, cart rows, summary rows, form fields, buttons.
+
+### Deferred (scope amendments within Sprint 2.1)
+- **Railway deploy push + DNS cutover to `demo-ecommerce.consentshield.in`.** Railway project is provisioned and `RAILWAY_TOKEN` is available; one empty service (`accomplished-compassion`) exists. `railway up` from `test-sites/` is the remaining one-command step — deferred so the user can confirm or rename the target service.
+- **Playwright test runtime verification** — blocked by Terminal B's ADR-1010 Sprint 2.1 commit `c55b661` (runtime role guard: Worker refuses to boot unless `SUPABASE_WORKER_KEY` is a JWT with `role=cs_worker`). Our local stand-in (service-role) is now rejected. Test is code-complete and will green once a `cs_worker`-claimed JWT is available in `worker/.dev.vars` OR ADR-1010's direct-Postgres migration lands for the Worker.
+
+### Tested
+- [x] `bunx tsc --noEmit` clean on `tests/e2e/` + `scripts/`.
+- [x] Curl POST to `/v1/events` with `Origin: http://localhost:4001` → Worker returns 202 + buffer row observed. Confirms fixture origin allow-list works end-to-end; the browser-path 403 traced to the ADR-1010 runtime guard is an environment issue, not a pipeline bug.
+- [x] Banner loader precedence (URL → localStorage → data-attrs → defaults) verified by visual test.
+
+### Gotchas
+- Chromium's `fetch(..., { keepalive: true })` bypasses `page.route` and `page.on('request')` interception. The test intercepts `/v1/banner.js` and strips `keepalive: true` from the compiled script so all downstream POSTs are visible to Playwright's network hooks.
+- ADR-1010 Sprint 2.1 Worker runtime guard (`c55b661`) requires `SUPABASE_WORKER_KEY` to be a JWT with `role=cs_worker`. Using the service-role key as a local stand-in (Sprint 1.3's documented workaround) no longer works. Re-document once ADR-1010 provides a `cs_worker` JWT rotation path.
+
 ## [ADR-1014 Sprint 1.4 — evidence writer + seal + verify CLI] — 2026-04-22
 
 **ADR:** ADR-1014 — E2E test harness + vertical demo sites

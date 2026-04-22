@@ -1,0 +1,13 @@
+{
+  "name": "@consentshield/test-sites",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Static demo vertical sites (ecommerce / healthtech / bfsi / saas / blog / violator) that embed the ConsentShield banner for E2E testing. ADR-1014 Phase 2.",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
