@@ -2,23 +2,31 @@
 //
 // Creates + destroys the per-org R2 bucket and bucket-scoped S3 credentials
 // used by ADR-1019 `deliver-consent-events`. Zero npm deps — uses the
-// built-in `fetch` against Cloudflare's REST API under a single account-level
-// API token that lives in server-side secrets (never in client code).
+// built-in `fetch` against Cloudflare's REST API.
 //
-// Required env (all set by the operator in Phase 1 Sprint 1.1 before any of
-// these functions can run live):
+// Two tokens are required because CF R2 bucket-scoped tokens must be minted
+// via the USER-level endpoint (`POST /user/tokens`), which strictly rejects
+// account-level bearer tokens with 9109 "Valid user-level authentication not
+// found" regardless of scopes. Bucket CRUD operations stay on the account
+// endpoint, which requires an account token.
+//
+// Required env (all set by the operator in Phase 1 Sprint 1.1 before any
+// of these functions can run live):
 //   CLOUDFLARE_ACCOUNT_ID         — Cloudflare account id (not a secret; copy from dashboard)
-//   CLOUDFLARE_ACCOUNT_API_TOKEN  — account-level token with R2 Storage:Edit scope
-//   STORAGE_NAME_SALT     — base64 random (>= 16 bytes) — prevents bucket-name
-//                           reverse-engineering from a listed bucket back to org_id
+//   CLOUDFLARE_ACCOUNT_API_TOKEN  — account-level token (`cfat_` prefix) with R2 Storage:Edit scope
+//   CLOUDFLARE_API_TOKEN          — user-level token (`cfut_` prefix) with User API Tokens:Edit +
+//                                   Workers R2 Storage:Edit scopes (reused from existing KV/wrangler
+//                                   credential; scope added in Sprint 1.2 amendment 2026-04-23)
+//   STORAGE_NAME_SALT             — base64 random (>= 16 bytes) — prevents bucket-name
+//                                   reverse-engineering from a listed bucket back to org_id
 //
 // Rule 11: the per-bucket credentials this module returns are NEVER written to
 // logs. The caller is responsible for passing them to `encryptForOrg` before
 // persisting to `export_configurations.write_credential_enc`.
 //
-// Runtime-green gated on Sprint 1.1 (operator creates the token). Until then,
-// `requireEnv` throws `CfProvisionError('...', 'config')` on every call. Unit
-// tests mock the env + fetch; the mocks live in `app/tests/storage/cf-provision.test.ts`.
+// Runtime-green against a live CF account is tracked by
+// `scripts/verify-adr-1025-sprint-11.ts`. Unit tests mock the env + fetch;
+// the mocks live in `app/tests/storage/cf-provision.test.ts`.
 
 import { createHash } from 'node:crypto'
 
@@ -26,6 +34,12 @@ const CF_BASE_URL = 'https://api.cloudflare.com/client/v4'
 const MAX_ATTEMPTS = 3
 const INITIAL_BACKOFF_MS = 250
 const BUDGET_MS = 30_000
+
+// CF permission group UUID for "Workers R2 Storage Bucket Item Write" — includes
+// object_read + object_write + object_delete on a single bucket. Hardcoded because
+// CF's permission_groups endpoint requires a user-level token with "API Tokens: Read"
+// which we don't otherwise need, and the UUID is stable per CF's docs.
+const R2_BUCKET_ITEM_WRITE_PERMISSION_GROUP = '2efd5506f9c8494dacb1fa10a3e7d5b6'
 
 export class CfProvisionError extends Error {
   constructor(
@@ -46,24 +60,29 @@ export class CfProvisionError extends Error {
 
 interface CfConfig {
   accountId: string
-  token: string
+  accountToken: string
+  userToken: string
   salt: string
 }
 
 function requireEnv(): CfConfig {
   const accountId = process.env.CLOUDFLARE_ACCOUNT_ID
-  const token = process.env.CLOUDFLARE_ACCOUNT_API_TOKEN
+  const accountToken = process.env.CLOUDFLARE_ACCOUNT_API_TOKEN
+  const userToken = process.env.CLOUDFLARE_API_TOKEN
   const salt = process.env.STORAGE_NAME_SALT
   if (!accountId) {
     throw new CfProvisionError('CLOUDFLARE_ACCOUNT_ID not set', 'config')
   }
-  if (!token) {
+  if (!accountToken) {
     throw new CfProvisionError('CLOUDFLARE_ACCOUNT_API_TOKEN not set', 'config')
+  }
+  if (!userToken) {
+    throw new CfProvisionError('CLOUDFLARE_API_TOKEN not set', 'config')
   }
   if (!salt) {
     throw new CfProvisionError('STORAGE_NAME_SALT not set', 'config')
   }
-  return { accountId, token, salt }
+  return { accountId, accountToken, userToken, salt }
 }
 
 /**
@@ -83,23 +102,29 @@ export function deriveBucketName(orgId: string): string {
   return 'cs-cust-' + hash.subarray(0, 10).toString('hex')
 }
 
+export interface CfFetchOpts {
+  now?: () => number
+  sleep?: (ms: number) => Promise<void>
+  fetchFn?: typeof fetch
+  /** Which CF credential to present. `account` → CLOUDFLARE_ACCOUNT_API_TOKEN;
+   *  `user` → CLOUDFLARE_API_TOKEN (required for /user/tokens endpoints). */
+  auth?: 'account' | 'user'
+}
+
 /** Internal fetch wrapper with retry + exponential backoff + overall budget. */
 async function cfFetch<T>(
   path: string,
   init: RequestInit,
-  opts: {
-    now?: () => number
-    sleep?: (ms: number) => Promise<void>
-    fetchFn?: typeof fetch
-  } = {},
+  opts: CfFetchOpts = {},
 ): Promise<T> {
   const now = opts.now ?? Date.now
   const sleep = opts.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms)))
   const fetchFn = opts.fetchFn ?? fetch
-  const { token } = requireEnv()
+  const env = requireEnv()
+  const bearer = opts.auth === 'user' ? env.userToken : env.accountToken
   const started = now()
   const headers = new Headers(init.headers)
-  headers.set('Authorization', `Bearer ${token}`)
+  headers.set('Authorization', `Bearer ${bearer}`)
   if (init.body && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json')
   }
@@ -185,7 +210,7 @@ export interface Bucket {
 export async function createBucket(
   name: string,
   locationHint: string = 'apac',
-  opts?: Parameters<typeof cfFetch>[2],
+  opts?: CfFetchOpts,
 ): Promise<Bucket> {
   const { accountId } = requireEnv()
   try {
@@ -195,7 +220,7 @@ export async function createBucket(
         method: 'POST',
         body: JSON.stringify({ name, locationHint }),
       },
-      opts,
+      { ...opts, auth: 'account' },
     )
     return resp.result
   } catch (err) {
@@ -204,7 +229,7 @@ export async function createBucket(
       const resp = await cfFetch<{ result: Bucket }>(
         `/accounts/${accountId}/r2/buckets/${name}`,
         { method: 'GET' },
-        opts,
+        { ...opts, auth: 'account' },
       )
       return resp.result
     }
@@ -220,68 +245,82 @@ export interface BucketScopedToken {
 
 /**
  * Mint an S3-compatible bucket-scoped token for the given bucket.
- * Returns `secret_access_key` exactly once — the caller MUST encrypt and
- * persist it before this function's return value leaves scope. Subsequent
- * retrieval of the secret is not possible via the CF API.
  *
- * The token carries object-read + object-write permissions scoped to the
- * single named bucket. Delete-object is included so the verification probe
- * can clean up its sentinel.
+ * CF R2's S3-compat credentials are derived from a general account-API-token
+ * policy scoped to one bucket resource:
+ *   - `access_key_id` = the token's UUID `id`
+ *   - `secret_access_key` = sha256hex of the token's `value` (the raw
+ *     `cfut_*` bearer string). Returned exactly once on creation.
+ * The raw `value` itself is never used — only its sha256 hash reaches
+ * S3 sigv4 signing. We discard the raw value as soon as we've hashed it.
+ *
+ * The permission group `Workers R2 Storage Bucket Item Write` covers
+ * object_read + object_write + object_delete on the single bucket.
+ *
+ * Endpoint: `POST /user/tokens` (user-level — CF does not expose an
+ * account-level token-creation endpoint for R2 bucket scopes).
  */
 export async function createBucketScopedToken(
   bucketName: string,
-  opts?: Parameters<typeof cfFetch>[2],
+  opts?: CfFetchOpts,
 ): Promise<BucketScopedToken> {
   const { accountId } = requireEnv()
+  const resourceKey = `com.cloudflare.edge.r2.bucket.${accountId}_default_${bucketName}`
   const resp = await cfFetch<{
     result: {
       id: string
-      credentials?: {
-        accessKeyId?: string
-        secretAccessKey?: string
-      }
+      value: string
+      status?: string
     }
   }>(
-    `/accounts/${accountId}/r2/tokens`,
+    `/user/tokens`,
     {
       method: 'POST',
       body: JSON.stringify({
         name: `cs-bucket-${bucketName}`,
-        permissions: ['object_read', 'object_write', 'object_delete'],
-        buckets: [bucketName],
+        policies: [
+          {
+            effect: 'allow',
+            resources: { [resourceKey]: '*' },
+            permission_groups: [{ id: R2_BUCKET_ITEM_WRITE_PERMISSION_GROUP }],
+          },
+        ],
       }),
     },
-    opts,
+    { ...opts, auth: 'user' },
   )
 
-  const creds = resp.result.credentials
-  if (!creds?.accessKeyId || !creds?.secretAccessKey) {
+  const { id, value } = resp.result
+  if (!id || !value) {
     throw new CfProvisionError(
-      `CF token created (${resp.result.id}) but credentials missing in response`,
+      `CF token created (${id ?? 'no-id'}) but id or value missing in response`,
       'server',
     )
   }
+  const secretAccessKey = createHash('sha256').update(value).digest('hex')
   return {
-    token_id: resp.result.id,
-    access_key_id: creds.accessKeyId,
-    secret_access_key: creds.secretAccessKey,
+    token_id: id,
+    access_key_id: id,
+    secret_access_key: secretAccessKey,
   }
 }
 
 /**
  * Revoke a bucket-scoped token by id. Idempotent: 404 (already revoked /
  * never existed) is treated as success.
+ *
+ * Endpoint: `DELETE /user/tokens/{id}` (user-level, matches the minting
+ * endpoint — an account-level DELETE would 9109).
  */
 export async function revokeBucketToken(
   tokenId: string,
-  opts?: Parameters<typeof cfFetch>[2],
+  opts?: CfFetchOpts,
 ): Promise<void> {
-  const { accountId } = requireEnv()
   try {
     await cfFetch(
-      `/accounts/${accountId}/r2/tokens/${tokenId}`,
+      `/user/tokens/${tokenId}`,
       { method: 'DELETE' },
-      opts,
+      { ...opts, auth: 'user' },
     )
   } catch (err) {
     if (err instanceof CfProvisionError && err.code === 'not_found') {

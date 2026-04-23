@@ -2,6 +2,34 @@
 
 API route changes.
 
+## [ADR-1025 Sprint 1.2 amendment — /user/tokens endpoint + two-token architecture + live E2E verification] — 2026-04-23
+
+**ADR:** ADR-1025 — Customer storage auto-provisioning
+**Sprint:** Phase 1, Sprint 1.2 (amendment to commit 9c4f06c)
+
+### Why this amendment
+The first live end-to-end run (`scripts/verify-adr-1025-sprint-11.ts` against the real CF account) surfaced that Sprint 1.2's `createBucketScopedToken` was implemented against a hypothetical `/accounts/{id}/r2/tokens` endpoint that does not exist. CF R2 bucket-scoped S3 credentials are minted via the **general user-level account-API-tokens endpoint** (`POST /user/tokens`) with a specific policy shape, then derived from the response. Mocked unit tests didn't catch this — they matched the hypothetical shape. Only running against CF surfaced the 404. Per the docs-vs-code-drift memory, amending Sprint 1.2 in place rather than opening a new sprint.
+
+### Changed — cf-provision.ts
+- `createBucketScopedToken` now hits `POST /user/tokens` (user-level auth, `CLOUDFLARE_API_TOKEN` / `cfut_` prefix) with a policy payload: `policies=[{effect:"allow", resources:{com.cloudflare.edge.r2.bucket.<account>_default_<bucket>: "*"}, permission_groups:[{id:"2efd5506f9c8494dacb1fa10a3e7d5b6"}]}]` (Workers R2 Storage Bucket Item Write, covers object read/write/delete on a single bucket). Derives S3 credentials from the response: `access_key_id = result.id`, `secret_access_key = sha256hex(result.value)`. The raw token `value` is discarded after hashing — never persisted.
+- `revokeBucketToken` now hits `DELETE /user/tokens/{id}` with user-level auth (was `/accounts/{id}/r2/tokens/{id}` which 404s).
+- `cfFetch` gains an `auth: 'account' | 'user'` parameter (defaults to `'account'`). `createBucket` / `revokeBucket` use `'account'` against the cfat_ token; `createBucketScopedToken` / `revokeBucketToken` use `'user'` against the cfut_ token.
+- `requireEnv` now reads BOTH `CLOUDFLARE_ACCOUNT_API_TOKEN` (R2 bucket CRUD) and `CLOUDFLARE_API_TOKEN` (token mint/revoke). Clear error if either is missing.
+
+### Two-token architecture (platform constraint, not design choice)
+CF enforces this at the protocol level: `/user/tokens` strictly requires user-level auth and rejects account tokens with `9109 Valid user-level authentication not found` regardless of scopes. `/accounts/{id}/r2/buckets` strictly requires account-level auth. There's no single credential that covers both. The two tokens are:
+- `CLOUDFLARE_ACCOUNT_API_TOKEN` (cfat_) — account-level, scope `R2 Storage:Edit`. Bucket CRUD.
+- `CLOUDFLARE_API_TOKEN` (cfut_) — user-level, scopes `User API Tokens:Edit` + `Workers R2 Storage:Edit`. Token mint/revoke via /user/tokens. Shared with existing KV-invalidation + wrangler deploy uses.
+
+### Tested
+- `app/tests/storage/cf-provision.test.ts` — rewritten unit tests: 20 tests (was 18). New assertions: endpoint path must be `/user/tokens` (not `/accounts/{id}/...`), Authorization header carries the correct per-call token, body shape matches the CF policy format, `secret_access_key = sha256hex(result.value)`, raw `value` never surfaces in the returned envelope. Config-missing coverage for both tokens. `cd app && bunx vitest run tests/storage/` — 29/29 PASS in 146 ms.
+- `scripts/verify-adr-1025-sprint-11.ts` — new live E2E harness. 7 steps against the real CF account: derive bucket name → create bucket (APAC) → mint bucket-scoped token → 5-second propagation wait → run verification probe (1358 ms PUT/GET/hash/DELETE) → revoke token → poll up to 60 s for revocation to reach the R2 edge (took ~6 s) → sweep bucket via a fresh cleanup token + hand-rolled sigv4 ListObjectsV2 → delete bucket. All 7 steps PASS in 24.67 s. Script is idempotent — rerun against the same fixture org_id reuses the same bucket name and cleans up every stray.
+
+### Operational notes discovered during live E2E
+- **Token propagation delay:** newly-minted bucket-scoped tokens take ~5 s to reach the R2 edge before S3 sigv4 PUT succeeds. ADR-1025 Phase 2 Sprint 2.1's Edge Function must sleep ≥ 5 s after `createBucketScopedToken` (or retry the verification probe with backoff) before reporting provisioning success.
+- **Revocation propagation delay:** `DELETE /user/tokens/{id}` returns 200 immediately, but the R2 edge takes another ~5-10 s to reject sigv4 requests from the revoked credential. Not a correctness issue for ADR-1025 — the production flow revokes a token only as part of BYOK migration (ADR-1025 Phase 3) where the window is closed by a separate cutover barrier, or during rotation (Phase 4 Sprint 4.1) where overlap is fine.
+- **CF docs' S3-credential derivation is accurate:** `access_key_id = token.id` + `secret_access_key = sha256hex(token.value)`. No extra steps. Hex encoding (not base64).
+
 ## [ADR-1025 Sprint 1.1 — CF account API token + STORAGE_NAME_SALT provisioned; env-var rename] — 2026-04-23
 
 **ADR:** ADR-1025 — Customer storage auto-provisioning

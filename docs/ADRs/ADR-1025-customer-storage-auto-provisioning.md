@@ -139,18 +139,20 @@ Run on every provisioning, every credential rotation, and nightly-verify cron (r
 **Deliverables:**
 - [x] `app/src/lib/storage/cf-provision.ts` — TypeScript module exporting:
   - `deriveBucketName(orgId: string): string` — sha256(orgId + salt) → `cs-cust-<20 hex>`. Deterministic + idempotent. Salt prevents rainbow-table reversal.
-  - `createBucket(name, locationHint='apac', opts?)` → `Promise<Bucket>`. Idempotent: 409 → falls back to GET on the existing bucket.
-  - `createBucketScopedToken(bucketName, opts?)` → `Promise<BucketScopedToken>`. Returns `{token_id, access_key_id, secret_access_key}`. Secret returned once; caller MUST encrypt before it leaves scope.
-  - `revokeBucketToken(tokenId, opts?)` → `Promise<void>`. Idempotent: 404 swallowed as success.
+  - `createBucket(name, locationHint='apac', opts?)` → `Promise<Bucket>`. Idempotent: 409 → falls back to GET on the existing bucket. Uses account-level auth against `POST /accounts/{id}/r2/buckets`.
+  - `createBucketScopedToken(bucketName, opts?)` → `Promise<BucketScopedToken>`. Returns `{token_id, access_key_id, secret_access_key}`. Hits `POST /user/tokens` (user-level — see two-token note below) with a single-policy payload: `effect=allow`, `resources={com.cloudflare.edge.r2.bucket.<account>_default_<bucket>: "*"}`, `permission_groups=[{id: "2efd5506f9c8494dacb1fa10a3e7d5b6"}]` (Workers R2 Storage Bucket Item Write, covers object read/write/delete on the single bucket). Derives S3 credentials per CF spec: `access_key_id = response.result.id`, `secret_access_key = sha256hex(response.result.value)`. The raw `value` is discarded after hashing.
+  - `revokeBucketToken(tokenId, opts?)` → `Promise<void>`. Idempotent: 404 swallowed as success. Hits `DELETE /user/tokens/{id}` with user-level auth.
   - `r2Endpoint()` — account-scoped S3-compat endpoint URL.
   - `CfProvisionError` class with discriminator `code: 'auth' | 'conflict' | 'rate_limit' | 'server' | 'network' | 'config' | 'not_found'`.
-- [x] `cfFetch` internal retry shim: 3 attempts, 250ms × 2^(n-1) exponential backoff, 30s overall budget. Retries 429 + 5xx + network errors; 401/403/404/409 fail fast. Bearer token on Authorization header; request body stays in-memory only.
-- [x] `app/tests/storage/cf-provision.test.ts` — Vitest, 18 tests covering every documented branch: derive deterministic + collision-resistant + salt-sensitive + config-missing; createBucket 201 / 409-idempotent / 429-retry / 5xx-retry / 5xx-exhaust / 401-no-retry / network-retry; createBucketScopedToken 200 / missing-credentials-in-200; revokeBucketToken 200 / 404-idempotent / 401-surface; r2Endpoint happy + config-missing. 177 ms wall time.
+- [x] `cfFetch` internal retry shim: 3 attempts, 250ms × 2^(n-1) exponential backoff, 30s overall budget. Retries 429 + 5xx + network errors; 401/403/404/409 fail fast. Bearer token on Authorization header; request body stays in-memory only. Accepts `auth: 'account' | 'user'` in opts to select the appropriate credential per-call (account-level for R2 bucket CRUD; user-level for token create/revoke — CF enforces this separation at the protocol level).
+- [x] `app/tests/storage/cf-provision.test.ts` — Vitest, 20 tests covering every documented branch against the corrected API contract: derive deterministic + collision-resistant + salt-sensitive + config-missing; createBucket 201 (+ asserts account-token in Authorization header) / 409-idempotent / 429-retry / 5xx-retry / 5xx-exhaust / 401-no-retry / network-retry; createBucketScopedToken 200 (asserts `secret_access_key = sha256hex(value)`, `/user/tokens` endpoint, user-token in header, policy body shape) / missing-value-in-200 / 401-auth; revokeBucketToken 200 (asserts `/user/tokens/{id}` + user-token in header) / 404-idempotent / 401-surface; r2Endpoint happy + config-missing; config errors for each env var (account token, user token). Under 200 ms wall time.
+
+**Two-token architecture (note):** CF requires user-level auth (`cfut_` prefix) for `POST /user/tokens` and rejects account-level tokens with `9109 Valid user-level authentication not found` regardless of scopes. Bucket CRUD (`/accounts/{id}/r2/buckets`) only accepts account-level auth. The module therefore reads both `CLOUDFLARE_ACCOUNT_API_TOKEN` (cfat_, R2:Edit) and `CLOUDFLARE_API_TOKEN` (cfut_, User API Tokens:Edit + Workers R2) and picks per-call. The two-token model is a platform constraint, not a design choice — documented in `docs/runbooks/cf-account-token-rotation.md` once Phase 2 Sprint 2.1 ships.
 
 **Testing plan:**
-- [ ] Against the dev CF account, provision one throwaway bucket end-to-end. Verify via the dashboard. Revoke the token. Verify revocation takes effect (subsequent PUT returns 403). **Pending — can now run; Sprint 1.1 operator step closed 2026-04-23.**
+- [x] Against the dev CF account, provision one throwaway bucket end-to-end. Verified 2026-04-23 via `scripts/verify-adr-1025-sprint-11.ts`: bucket create (APAC) → token mint → probe PUT/GET/hash/DELETE (1358 ms) → revoke → 6-second propagation window before revocation reaches R2 edge → bucket empty (via list-objects + bulk delete through a cleanup token) → bucket delete. All 7 script steps passed. Total wall time 24.67 s.
 
-**Status:** `[x] code + mocked unit tests shipped 2026-04-23. Runtime-green against a real CF account is gated on Sprint 1.1's operator step; Sprint 1.2's library correctness is proven by the 18-test mocked matrix.`
+**Status:** `[x] complete 2026-04-23 — 20-test mocked matrix + live E2E via scripts/verify-adr-1025-sprint-11.ts both green. Sprint 1.2 was originally shipped in commit 9c4f06c against a hypothetical /r2/tokens endpoint; amended 2026-04-23 after the live verification surfaced that R2 bucket-scoped tokens are minted via /user/tokens (user-level auth) with the general account-API-tokens policy shape — see "Two-token architecture" note above.`
 
 #### Sprint 1.3 — Verification probe + failure capture
 
@@ -164,10 +166,10 @@ Run on every provisioning, every credential rotation, and nightly-verify cron (r
 - [ ] `runVerificationProbe` emits an `admin.ops_readiness_flags` row on failure — **deferred to Phase 2 Sprint 2.1** where the Edge Function that calls the probe wires the flag emission. Keeping the probe pure (no DB side-effects) is the cleaner boundary.
 
 **Testing plan:**
-- [x] Happy path + every failure branch covered via mocked S3 deps. 18 + 8 = 26 unit tests across Sprints 1.2 + 1.3 all pass.
-- [ ] Runtime-green against a real CF bucket — pending; Sprint 1.1 operator step closed 2026-04-23.
+- [x] Happy path + every failure branch covered via mocked S3 deps. 20 + 8 = 28 unit tests across Sprints 1.2 + 1.3 all pass (amended count after Sprint 1.2 API-shape correction).
+- [x] Runtime-green against a real CF bucket — verified 2026-04-23 by `scripts/verify-adr-1025-sprint-11.ts` Step 4 (1358 ms probe, four-step round-trip against a real R2 bucket).
 
-**Status:** `[x] code + migration + 8 mocked unit tests shipped 2026-04-23. Readiness-flag emission deferred to Phase 2 Sprint 2.1 where the Edge Function wraps the probe.`
+**Status:** `[x] complete 2026-04-23 — 8 mocked unit tests + live E2E probe against a real bucket both green. Readiness-flag emission still deferred to Phase 2 Sprint 2.1 (cleaner boundary — probe stays side-effect-free; Edge Function wraps it).`
 
 ### Phase 2 — Managed auto-provision at onboarding
 
