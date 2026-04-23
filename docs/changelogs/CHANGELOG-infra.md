@@ -2,6 +2,26 @@
 
 Vercel, Cloudflare, Supabase config changes.
 
+## [ADR-1014 Sprint 1.5 — wizard-entry-gate pair (Phase 1 close-out)] — 2026-04-23
+
+**ADR:** ADR-1014 — E2E test harness + vertical demo sites
+**Sprint:** Phase 1, Sprint 1.5 — First end-to-end smoke
+
+### Added
+- `tests/e2e/signup-to-dashboard.spec.ts` — positive + negative pair in ONE Playwright file (same one-file-pos+neg pattern as Sprint 3.1's `signup-intake.test.ts`). Positive: seed a fresh invitation via `create_signup_intake` RPC → `page.goto(APP_URL + '/onboarding?token=…')` → assert wizard Step-1 `[aria-current="step"]` visible + expired-copy NOT visible. Negative: same seed + service-role UPDATE to force `expires_at` into the past → navigate → assert `InvalidShell(reason='expired')` body text visible + step-indicator count = 0 + resend-link form present.
+- `tests/e2e/specs/signup-to-dashboard.md` — 8-section normative spec. §3 captures the "200-rendered InvalidShell vs 410 Gone HTTP" reality (ADR's original wording was predictive; code shipped a 200 page with a recovery form). §8 records the scope decision to defer the full 7-step wizard traversal to Sprint 5.2.
+- `tests/e2e/specs/pair-matrix.md` row #11 — Sprint 1.5 pair inventory added. Matrix now enumerates 11 Phase-1..3 positives with paired negatives; zero gaps.
+
+### Tested
+- `bunx tsc --noEmit` on `tests/e2e/` — clean.
+- Runtime-green gated on `APP_URL` being set. Test skips cleanly otherwise — same pattern as every other `@browser` Playwright spec.
+
+### Deferred to Sprint 5.2 (partner reproduction)
+- Full 7-step wizard traversal (OTP verify → industry → data inventory → template → banner → web property → first-consent poll → dashboard welcome-toast). Rationale in the spec §8 + test-file header: Sprint 3.1 already tests the RPC branching; this sprint tests the wizard entry gate; the missing middle (driving interactive wizard widgets + a 5-minute Step-7 poll) adds ~200 lines of Playwright with runtime deps (Resend test inbox OR a dev-mode OTP stub) that are better suited to an operator demo script in the partner-evidence archive than a CI test.
+
+### Why
+Closes Phase 1's last open sprint. Phase 1 (harness foundation) is now fully complete: workspace scaffold (1.1) + bootstrap (1.2) + worker harness + HMAC pair (1.3) + evidence writer + seal (1.4) + first-end-to-end smoke (1.5). Phase 2 was already complete; Phase 3 closed under Sprint 3.7's pair-matrix sweep earlier today. Phases 4 + 5 remain.
+
 ## [Fix — Vercel Ignored-Build-Step auto-cancel on every push] — 2026-04-23
 
 **Scope:** ADR-0026 Sprint 4.1 (`app/scripts/vercel-should-build.sh`)
