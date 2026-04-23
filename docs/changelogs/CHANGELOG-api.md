@@ -2,6 +2,31 @@
 
 API route changes.
 
+## [ADR-1014 Sprint 3.5 — DEPA artefact full-lifecycle composition test] — 2026-04-23
+
+**ADR:** ADR-1014 — E2E test harness + vertical demo sites
+**Sprint:** Phase 3, Sprint 3.5 — DEPA artefact lifecycle
+
+### Added
+- `tests/depa/artefact-lifecycle.test.ts` — Vitest, 4 tests, 8.67 s. Walks a single artefact through every state transition end-to-end via the cs_api library helpers (no raw service-role RPC calls — migration 20260801000009 revoked service_role EXECUTE on the v1 RPCs):
+  - **Full lifecycle** — `recordConsent` → verify `granted` → `revokeArtefact` → verify `revoked` → double-revoke returns `idempotent_replay:true` with the original `revocation_record_id` + exactly one `artefact_revocations` row → third revoke still idempotent.
+  - **Expiry cron simulation** — a separate active artefact has `expires_at` forced into the past + `enforce_artefact_expiry()` invoked → `consent_artefacts.status='expired'` + `consent_artefact_index` row DELETEd + `verifyConsent` returns `never_consented` (documented semantics — the `expired` status only surfaces in the race window before the enforce tick runs).
+  - **Post-expiry revoke** — `revokeArtefact` on the expired artefact returns `{ok:false, kind:'artefact_terminal_state', detail:'expired'}`; zero new revocation rows written.
+  - **Never-consented** — verify against a fresh identifier returns `status='never_consented', active_artefact_id=null`.
+
+### Architectural observation
+Sprint 3.5's test surfaces the intentional-but-subtle expire-then-verify semantics: the expiry cascade DELETEs the index row, so `verifyConsent` falls into its "not found" branch and returns `never_consented`. The `expired` status from verify only fires in the race window between `expires_at < now()` and the next `enforce_artefact_expiry` tick, when the index row still exists with `validity_state='active'`. The authoritative `consent_artefacts` row is preserved with `status='expired'` for audit. Captured in the test body + the ADR-1014 Sprint 3.5 section so future refactors don't silently flip the semantics.
+
+### Scope boundary
+Sprint 3.5 complements — does not duplicate — the existing DEPA coverage:
+- `tests/integration/consent-revoke.test.ts` (ADR-1002 Sprint 3.2) — 10 branch-level revoke negatives (cross-org, reason_code_missing, unknown_actor_type, already-replaced terminal-state, etc.).
+- `tests/depa/revocation-pipeline.test.ts` (ADR-0022 Sprint 1.4) — cascade precision + replacement-chain freeze.
+- `tests/depa/expiry-pipeline.test.ts` (ADR-0023) — enforce cascade + `send_expiry_alerts` idempotency.
+Sprint 3.5 owns the full-lifecycle composition proof across the four states.
+
+### Why
+Phase 3's pattern is "one canonical full-pipeline test per surface" — Sprint 3.1 for signup intake, 3.3 for public rights-request, 3.4 for deletion callback. Sprint 3.5 closes the DEPA artefact lane with a single end-to-end transition proof that threads the user-visible helpers (`recordConsent`, `verifyConsent`, `revokeArtefact`) through every terminal state. When a future refactor breaks any single hop, this one test fails with a clear message about which transition drifted.
+
 ## [ADR-1014 Sprint 3.4 — deletion-receipt callback RPC + signature helper tests] — 2026-04-23
 
 **ADR:** ADR-1014 — E2E test harness + vertical demo sites

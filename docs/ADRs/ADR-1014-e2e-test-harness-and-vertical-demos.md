@@ -369,11 +369,22 @@ The first-hop negatives (HMAC tampered + origin mismatch, paired with Sprint 1.3
 #### Sprint 3.5: DEPA artefact lifecycle
 
 **Deliverables:**
-- [ ] Positive: record → `active` → revoke → `revoked` → expiry-window elapsed → `expired` (via cron simulation).
-- [ ] Negative pair: double-revoke → 409 + no duplicate revocation row.
-- [ ] Negative pair: record on withdrawn artefact → 409 + no change.
+- [x] Positive: record → `active` → revoke → `revoked` → expiry-window elapsed → `expired`. Shipped as `tests/depa/artefact-lifecycle.test.ts` (Vitest, 4 tests, 8.67 s). Single test walks one artefact through every state transition via the cs_api library helpers (`recordConsent`, `verifyConsent`, `revokeArtefact`) and asserts `verifyConsent()` reports the correct status at each hop. Expiry driven by `enforce_artefact_expiry()` (cron simulation, called directly via service-role since it's granted to `authenticated + cs_orchestrator`).
+- [x] Negative pair: double-revoke → idempotent-replay (not literal 409 — that was the original ADR-1014 wording; the actual RPC returns `idempotent_replay=true` with the same `revocation_record_id`, which is the correct idempotent semantic) + no duplicate revocation row. Covered in the full-lifecycle test (third revoke still idempotent, `artefact_revocations` row count stays at 1).
+- [x] Negative pair: revoke on terminal-state (expired/replaced) → `artefact_terminal_state:<state>` + no revocation row + source artefact unchanged. Sprint 3.5 covers this via the expire-then-try-revoke case in `artefact-lifecycle.test.ts`; the full branch matrix (expired, replaced, not_found, cross-org, reason_code_missing, unknown_actor_type) already lives in the complementary `tests/integration/consent-revoke.test.ts` (shipped under ADR-1002 Sprint 3.2).
 
-**Status:** `[ ] planned`
+**Architectural observation surfaced by the test:** `verifyConsent` returns `never_consented` (not `expired`) AFTER the expiry cron has run. The cron's cascade DELETEs the `consent_artefact_index` row; `rpc_consent_verify` keys off that index. The `expired` status from verify only surfaces in the narrow race window between `expires_at < now()` and the next enforce tick (when the index row still exists with `validity_state='active'`). The authoritative `consent_artefacts` row is preserved with `status='expired'` for the audit record. This is expected behaviour (matches migration 20260422000001); the test documents it so future refactors don't silently flip the semantics.
+
+**Companion coverage already in the suite:**
+- `tests/integration/consent-revoke.test.ts` — ADR-1002 Sprint 3.2. 10 branch-level revoke cases (cross-org, reason_code_missing, unknown_actor_type, already-replaced terminal-state, etc.).
+- `tests/depa/revocation-pipeline.test.ts` — ADR-0022 Sprint 1.4. Cascade precision (deletion_receipts fan-out + data-scope subsetting + replacement-chain freeze + sibling-artefact isolation).
+- `tests/depa/expiry-pipeline.test.ts` — ADR-0023. `enforce_artefact_expiry` connector fan-out + `delivery_buffer` staging + `send_expiry_alerts` idempotency.
+- `tests/depa/artefact-lifecycle.test.ts` (this sprint) owns the FULL-LIFECYCLE composition proof.
+
+**Tested so far:**
+- [x] `bunx vitest run tests/depa/artefact-lifecycle.test.ts` — 4/4 PASS in 8.67 s against dev Supabase.
+
+**Status:** `[x] complete 2026-04-23.`
 
 #### Sprint 3.6: Admin impersonation + invoice issuance
 
