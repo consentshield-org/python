@@ -27,6 +27,7 @@ const navItems = [
   { href: '/dashboard/settings/account', label: 'Account settings' },
   { href: '/dashboard/settings/members', label: 'Team & invites' },
   { href: '/dashboard/settings/api-keys', label: 'API keys' },
+  { href: '/dashboard/settings/notifications', label: 'Notification channels' },
   { href: '/dashboard/settings/billing', label: 'Billing settings' },
 ]
 

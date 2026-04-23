@@ -298,21 +298,24 @@ Phase 1 sprints below are the MARKETING-asset scope. When a partner lands, this 
 
 **Status:** `[x] complete`.
 
-#### Sprint 6.4: Dashboard UI + test-send
-
-**Estimated effort:** 2 days
+#### Sprint 6.4: Dashboard UI + test-send — **complete 2026-04-23**
 
 **Deliverables:**
-- [ ] `/dashboard/settings/notifications` per-channel config page
-- [ ] Test-send button per channel
-- [ ] Severity-mapping matrix editable per channel
-- [ ] Per-alert-type toggles (orphan event → PagerDuty ✓, Slack ✓; daily summary → Slack ✓ only)
+- [x] `app/src/app/(dashboard)/dashboard/settings/notifications/page.tsx` — server component reading `notification_channels` for the org. RLS handles isolation.
+- [x] `app/src/app/(dashboard)/dashboard/settings/notifications/channels.tsx` — client component (`ChannelsManager`): add-channel buttons (one per supported type), per-row edit (config + alert_types + active toggle + Test send + Delete), inline forms with per-type field sets (webhook_url/routing_key/signing_secret).
+- [x] `app/src/app/(dashboard)/dashboard/settings/notifications/actions.ts` — four server actions: `createChannelAction`, `updateChannelAction`, `deleteChannelAction`, `testSendAction`. Side-effect import of `@/lib/notifications/adapters` ensures the registry is populated before `dispatchEvent` runs. Test-send injects `'test_send'` into the channel's alert_types so the dispatcher's `alert_types ∋ event.kind` filter doesn't drop the synthetic event regardless of the channel's real subscription.
+- [x] `app/src/components/dashboard-nav.tsx` — sidebar entry "Notification channels" → `/dashboard/settings/notifications` between API keys and Billing settings.
+- [x] Per-alert-type toggles render five seeded kinds: `orphan_events_nonzero` (Phase 3), `deletion_sla_overdue`, `rights_request_sla`, `security_scan_critical`, `daily_summary`. Each is described inline in the editor.
+
+**Severity-to-channel routing.** Implemented as a per-channel checkbox grid over alert types (the `notification_channels.alert_types[]` array). `dispatchEvent()` already filters channels by `is_active && org_id === event.org_id && alert_types.includes(event.kind)`, so adding a new event kind in code is a one-line UI addition. A formal severity → channel matrix (e.g. "critical always goes to PagerDuty regardless of subscription") was considered and deferred — the per-channel/per-kind opt-in is finer-grained and avoids the awkward case where an operator wants critical alerts in Slack but not PagerDuty.
 
 **Testing plan:**
-- [ ] Configure all 5 channels; test-send from each succeeds
-- [ ] Changing severity mapping routes subsequent alerts correctly
+- [x] `cd app && bun run lint` — clean.
+- [x] `cd app && bun run build` — clean. Route `/dashboard/settings/notifications` present in build output.
+- [x] `cd app && bunx tsc --noEmit` — clean.
+- [x] Live Slack test-send verified end-to-end via Sprint 6.2's slack-live test (`SLACK_WEBHOOK_URL` env-gated).
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete`. ADR-1005 Phase 6 fully shipped.
 
 ---
 

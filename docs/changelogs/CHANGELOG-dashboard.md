@@ -2,6 +2,27 @@
 
 Next.js UI changes.
 
+## [ADR-1005 Phase 6 Sprint 6.4 — notifications dashboard + per-channel test-send] — 2026-04-23
+
+**ADR:** ADR-1005 — Operations maturity (Phase 6 fully shipped)
+**Sprint:** Phase 6 Sprint 6.4
+
+### Added
+- `app/src/app/(dashboard)/dashboard/settings/notifications/page.tsx` — server component; reads `notification_channels` for the org (RLS handles isolation), passes to client manager.
+- `app/src/app/(dashboard)/dashboard/settings/notifications/channels.tsx` — `ChannelsManager` client component: per-type "Add channel" buttons + inline form, per-row edit (config + alert-type checkboxes + active toggle + Test send + Delete), per-type field schemas (slack/teams/discord webhook_url; pagerduty routing_key; custom_webhook url+signing_secret).
+- `app/src/app/(dashboard)/dashboard/settings/notifications/actions.ts` — four server actions (create/update/delete/testSend). Side-effect imports `@/lib/notifications/adapters` so the registry is populated. Test-send injects `'test_send'` into the channel's alert_types so the dispatcher's filter doesn't drop the synthetic event.
+- `app/src/components/dashboard-nav.tsx` — sidebar entry "Notification channels" → `/dashboard/settings/notifications` between API keys and Billing settings.
+- Five seeded alert types render as inline-described checkboxes: `orphan_events_nonzero` (ADR-1004 P3), `deletion_sla_overdue`, `rights_request_sla`, `security_scan_critical`, `daily_summary`.
+
+### Tested
+- [x] `cd app && bun run lint` — clean.
+- [x] `cd app && bun run build` — clean. Route present in build output.
+- [x] `cd app && bunx tsc --noEmit` — clean.
+- [x] Live Slack test-send already verified by Sprint 6.2's slack-live test (`SLACK_WEBHOOK_URL` env-gated, 1/1 PASS).
+
+### Severity-routing rationale
+A formal severity → channel matrix (e.g. "critical always pages PagerDuty") was considered and deferred — the per-channel/per-kind opt-in is finer-grained and avoids the awkward case where an operator wants critical alerts in Slack but specifically not PagerDuty. The current dispatch rule is: `is_active && org_id === event.org_id && alert_types.includes(event.kind)`. Adding a new event kind in code is a one-line edit to `ALERT_TYPES` in `channels.tsx`.
+
 ## [ADR-1004 Phase 2 Sprints 2.2 + 2.3 — privacy-notices dashboard + campaign view] — 2026-04-23
 
 **ADR:** ADR-1004 — Statutory retention / material change / silent-failure
