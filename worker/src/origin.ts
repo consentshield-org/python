@@ -67,7 +67,7 @@ async function getPropertyConfigRest(
     `${env.SUPABASE_URL}/rest/v1/web_properties?id=eq.${propertyId}&select=allowed_origins,event_signing_secret`,
     {
       headers: {
-        apikey: env.SUPABASE_WORKER_KEY,
+        apikey: env.SUPABASE_WORKER_KEY ?? '',
         Authorization: `Bearer ${env.SUPABASE_WORKER_KEY}`,
       },
     },

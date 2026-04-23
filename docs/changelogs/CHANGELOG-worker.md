@@ -2,6 +2,40 @@
 
 Cloudflare Worker changes.
 
+## [ADR-1010 Phase 3 Sprint 3.2 + Phase 4 — write paths + cutover] — 2026-04-23
+
+**ADR:** ADR-1010 — Cloudflare Worker scoped-role migration **(COMPLETED)**
+**Sprint:** Phase 3 Sprint 3.2 (write paths) + Phase 4 (cutover)
+
+### Changed
+- `worker/src/events.ts` — `insertConsentEventSql` (postgres.js + `sql.json()` for jsonb purposes_*); REST fallback retained behind `hasHyperdrive(env)` for the Miniflare harness.
+- `worker/src/observations.ts` — `insertObservationSql` for tracker_observations (jsonb consent_state / trackers_detected / violations via `sql.json()`).
+- `worker/src/worker-errors.ts` — `logWorkerError` dual-path; best-effort outer try/catch preserved.
+
+### Removed
+- `worker/src/role-guard.ts` — Sprint 2.1's runtime safety net policing the now-deleted `SUPABASE_WORKER_KEY`. Gone.
+- `worker/src/prototypes/` — entire directory (probe-rest, probe-hyperdrive, probe-raw-tcp, types, README). Was the Sprint 1.1 mechanism-comparison scratchpad.
+- `/v1/_cs_api_probe` route + handler in `worker/src/index.ts`.
+- `Env.SUPABASE_WORKER_KEY` is now optional (`?: string`) — production no longer sets it.
+- `Env.ALLOW_SERVICE_ROLE_LOCAL` removed (only meaningful with the role guard).
+- `app/tests/worker/role-guard.test.ts` (13 tests) and `app/tests/worker/probe-route.test.ts` (6 tests). Miniflare suite count 39 → 20.
+
+### Operator action
+- `wrangler secret delete SUPABASE_WORKER_KEY` — done. Production Worker no longer carries the legacy HS256 JWT.
+
+### Bug fixed during Sprint 3.2
+- `${JSON.stringify(value)}::jsonb` was storing the JSON-encoded *string* as a jsonb scalar string instead of the parsed object (`"{\"a\":true}"` rather than `{a: true}`). The correct postgres.js pattern is `${sql.json(value)}` which sets the jsonb OID directly. Fixed at every jsonb call site.
+
+### Tested
+- [x] `tests/integration/worker-hyperdrive-writes.test.ts` — 4/4 PASS: jsonb purposes; jsonb consent_state/trackers/violations; worker_errors INSERT; RETURNING denied 42501 (cs_worker INSERT-only column grants).
+- [x] `app/tests/worker/` — 20/20 PASS unchanged (REST fallback exercised via Miniflare mock-server).
+- [x] `bunx tsc --noEmit` worker/ — clean.
+- [x] Live smoke against deployed worker (`https://consentshield-cdn.a-d-sudhindra.workers.dev/v1/banner.js?org=...&prop=...`) — 5/5 HTTP=200, cold 2.9s, warm 60-100ms. Worker version `3db2f123-725f-431f-b964-5280b9172bdc`.
+
+### Known follow-ups (tracked on `admin.ops_readiness_flags`)
+- Sprint 4.2 — share request-scoped postgres.js client + `ctx.waitUntil(sql.end())` cleanup (currently each call site opens its own client and closes in `finally`; works but churns the Hyperdrive pool, particularly visible in the 2.9s cold-start figure).
+- Sprint 4.3 — strip the REST fallback once Miniflare tests are migrated to a Hyperdrive mock or to integration tests against dev Supabase.
+
 ## [ADR-1010 Phase 3 Sprint 3.1 — Worker read paths on Hyperdrive] — 2026-04-22
 
 **ADR:** ADR-1010 — Cloudflare Worker scoped-role migration

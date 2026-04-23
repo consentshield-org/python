@@ -1,9 +1,11 @@
 # ADR-1010: Cloudflare Worker — scoped-role migration off HS256 JWT
 
-**Status:** In Progress
+**Status:** Completed
 **Date proposed:** 2026-04-21
-**Date completed:** —
+**Date completed:** 2026-04-23
 **Superseded by:** —
+
+**Sprint 4.2 (connection-lifecycle refinement) and Sprint 4.3 (REST fallback strip) tracked as follow-ups on `admin.ops_readiness_flags` — neither is blocking the cutover, which is fully live.**
 
 ---
 
@@ -203,35 +205,62 @@ Attack surface impact: near-zero. BYPASSRLS does not broaden which tables or col
 
 **Status:** `[x] complete`.
 
-#### Sprint 3.2 — events.ts + observations.ts + worker-errors.ts (write paths)
-**Estimated effort:** 0.5 day
+#### Sprint 3.2 — events.ts + observations.ts + worker-errors.ts (write paths) — **complete 2026-04-23**
 
 **Deliverables:**
-- [ ] Replace the REST fetches in `worker/src/events.ts`, `observations.ts`, `worker-errors.ts` with the chosen mechanism.
-- [ ] Preserve Rule 16 — Worker's npm-dep budget remains zero (either no dep, or the chosen mechanism's Worker-native library).
+- [x] `worker/src/events.ts` — `insertConsentEventSql` (postgres.js + `sql.json()` for jsonb purposes_*); `insertConsentEventRest` retained for Miniflare. Dual-path branch on `hasHyperdrive(env)`. cs_worker has INSERT-only column grants — no RETURNING.
+- [x] `worker/src/observations.ts` — `insertObservationSql` (postgres.js + `sql.json()` for consent_state / trackers_detected / violations); REST fallback retained.
+- [x] `worker/src/worker-errors.ts` — `logWorkerError` dual-path (Hyperdrive INSERT + REST fallback). Wrapped in outer try/catch — best-effort either way.
+- [x] Rule 16 preserved: still one Worker dep — `postgres@3.4.9` exact-pinned, per the carve-out landed in Sprint 3.1.
+
+**Bug surfaced + fixed during Sprint 3.2:** `${JSON.stringify(value)}::jsonb` casts the *string* as a jsonb scalar string (it stores `"{\"a\":true}"` literally, not the parsed object). Confirmed by reading the row back via supabase-js. The correct postgres.js pattern is `${sql.json(value)}` which sets the jsonb OID directly. Fixed at every jsonb call site in events.ts + observations.ts; integration test re-passes 4/4.
 
 **Testing plan:**
-- [ ] Consent event ingestion integration test (full HMAC + origin + INSERT path) passes.
-- [ ] Tracker observation ingestion test passes.
-- [ ] Worker-error INSERT test: a deliberately-malformed event produces a `worker_errors` row.
+- [x] `tests/integration/worker-hyperdrive-writes.test.ts` — 4/4 PASS: INSERT consent_events with jsonb purposes; INSERT tracker_observations with jsonb consent_state/trackers/violations; INSERT worker_errors; RETURNING denied for cs_worker (42501).
+- [x] Existing `app/tests/worker/` — 20/20 PASS unchanged (REST mock-server path still exercises the legacy code).
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete`.
 
 ### Phase 4 — Cutover + deprecation
 
-#### Sprint 4.1 — Wrangler secret swap + legacy removal
-**Estimated effort:** 0.25 day
+#### Sprint 4.1 — Wrangler secret swap + legacy removal — **complete 2026-04-23**
 
 **Deliverables:**
-- [ ] `wrangler secret put SUPABASE_WORKER_DATABASE_URL` (or Hyperdrive binding config).
-- [ ] `wrangler secret delete SUPABASE_WORKER_KEY` — remove the HS256 JWT. Redeploy.
-- [ ] `.wolf/cerebrum.md` — update the "Worker uses cs_worker via HS256 JWT" Key Learning to "Worker uses cs_worker via direct Postgres / Hyperdrive (ADR-1010)."
-- [ ] `docs/architecture/consentshield-definitive-architecture.md` §5.4 — update cs_worker block to note the direct-Postgres connection.
-- [ ] V2-BACKLOG — ADR-1009 follow-up entry moves to the Closed section with "→ ADR-1010".
+- [x] **Hyperdrive binding** (not a wrangler secret) is the production connection mechanism — landed in Sprint 1.2 (`[[hyperdrive]]` block in `wrangler.toml`, id `00926f5243a849f08af2cf01d32adbee`).
+- [x] `wrangler secret delete SUPABASE_WORKER_KEY` — done. The legacy HS256 JWT is gone from production.
+- [x] `worker/src/role-guard.ts` deleted. Was the Sprint 2.1 runtime safety net policing the now-deleted key.
+- [x] `worker/src/prototypes/` directory deleted (`probe-rest.ts`, `probe-hyperdrive.ts`, `probe-raw-tcp.ts`, `types.ts`, `README.md`). Was the Sprint 1.1 mechanism-comparison scratchpad.
+- [x] `/v1/_cs_api_probe` route + handler in `worker/src/index.ts` deleted along with the prototype imports.
+- [x] `app/tests/worker/role-guard.test.ts` (13 tests) and `app/tests/worker/probe-route.test.ts` (6 tests) deleted. Total Miniflare test count 39 → 20.
+- [x] `worker/src/index.ts` — `Env.SUPABASE_WORKER_KEY` is now optional (`?: string`) since prod no longer sets it. The REST fallback helpers in banner / origin / signatures / events / observations / worker-errors keep the field-typed reference (with `?? ''` defensive default at the apikey line) so Miniflare tests can still run the legacy path. `Env.ALLOW_SERVICE_ROLE_LOCAL` removed entirely (only meaningful with the role guard).
+- [x] `app/tests/worker/harness.ts` — `ALLOW_SERVICE_ROLE_LOCAL` binding removed. `SUPABASE_WORKER_KEY` mock retained because the REST fallback (which tests still exercise) reads it.
 
 **Testing plan:**
-- [ ] Production smoke: fetch a deployed banner.js from a seeded property; POST a signed test event; verify `consent_events` row appears.
-- [ ] Synthetic HS256 revoke: there isn't an easy local reproduction, but the Phase 1 probe already established the new mechanism doesn't depend on HS256. Document the canary in the ADR.
+- [x] Production smoke: 5/5 banner.js requests from the dev Worker (`https://consentshield-cdn.a-d-sudhindra.workers.dev/v1/banner.js?org=...&prop=...`) — all `HTTP=200`. Cold-start 2.9s, warm 60-100ms (KV cache hits). Worker version `3db2f123-725f-431f-b964-5280b9172bdc`. The compiled banner script payload matches the in-DB consent_banners + web_properties rows.
+- [x] HS256 revoke is now structurally moot — there is no HS256 key in the Worker's secrets to revoke.
+- [x] Miniflare regression: 20/20 PASS unchanged.
+
+**Status:** `[x] complete`.
+
+#### Sprint 4.2 — Connection-lifecycle refinement (follow-up) — pending
+
+**Discovered during Sprint 4.1 smoke:** each call site opens its own postgres.js client and closes it in a `finally` block. A banner.js request opens up to 4 clients serially (banner config + property config + signatures + snippet last-seen). This works (5/5) but is per-request connection churn — Cloudflare's recommended pattern is one request-scoped client + `ctx.waitUntil(sql.end())` so cleanup runs AFTER the response is sent. Refactor should reduce cold-start latency (currently 2.9s) and avoid Hyperdrive pool churn.
+
+**Deliverables:**
+- [ ] `worker/src/db.ts` — accept `ctx` and return both the client + a cleanup hook the caller registers via `ctx.waitUntil`.
+- [ ] Refactor banner / origin / signatures / events / observations / worker-errors to share one client per request.
+- [ ] Drop `await sql.end()` from the request hot path.
+- [ ] Live smoke: cold-start should drop noticeably; warm path stays at KV-cache speed.
+
+Tracked on `admin.ops_readiness_flags` (source_adr `ADR-1010 Phase 4 follow-up (connection lifecycle)`, severity `low`).
+
+#### Sprint 4.3 — Strip the REST fallback (deferred)
+
+**Out of scope for the immediate Phase 4 close.** The REST fallback helpers stay in source for the existing 20 Miniflare tests. Removing them requires either:
+- Mock-Hyperdrive in Miniflare (Cloudflare's Miniflare supports `hyperdrives` config that routes to a real local Postgres), OR
+- Migrating the 20 tests to integration tests that hit dev Supabase directly.
+
+Both are real work but neither is Phase-4-blocking. Open a separate sprint when the REST fallback's existence becomes a maintenance burden.
 
 **Status:** `[ ] planned`
 

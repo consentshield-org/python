@@ -2,6 +2,7 @@ import type { Env } from './index'
 import { sha256, verifyHMAC, isTimestampValid } from './hmac'
 import { getPropertyConfig, getPreviousSigningSecret, validateOrigin, rejectOrigin } from './origin'
 import { logWorkerError } from './worker-errors'
+import { getDb, hasHyperdrive } from './db'
 
 interface ConsentEventPayload {
   org_id: string
@@ -168,31 +169,99 @@ export async function handleConsentEvent(
     origin_verified: originVerified,
   }
 
-  // Step 4: Write to consent_events buffer via cs_worker role
-  const bufferRes = await fetch(`${env.SUPABASE_URL}/rest/v1/consent_events`, {
+  // Step 4: Write to consent_events buffer via cs_worker role.
+  // ADR-1010 Phase 3 Sprint 3.2 — Hyperdrive SQL when bound; REST
+  // fallback otherwise (Miniflare harness). cs_worker has INSERT-only
+  // column grants — no RETURNING, no SELECT on this table.
+  const writeResult = hasHyperdrive(env)
+    ? await insertConsentEventSql(event, env)
+    : await insertConsentEventRest(event, env)
+
+  if (!writeResult.ok) {
+    console.error('Buffer write failed:', writeResult.error)
+    ctx.waitUntil(
+      logWorkerError(env, {
+        org_id: body.org_id,
+        property_id: body.property_id,
+        endpoint: '/v1/events',
+        status_code: writeResult.status,
+        upstream_error: writeResult.error,
+      }),
+    )
+  }
+
+  return new Response(null, { status: 202, headers: CORS_HEADERS })
+}
+
+type WriteResult = { ok: true } | { ok: false; status: number; error: string }
+
+async function insertConsentEventSql(
+  event: ConsentEventRow,
+  env: Env,
+): Promise<WriteResult> {
+  const sql = getDb(env)
+  try {
+    await sql`
+      insert into public.consent_events (
+        org_id, property_id, banner_id, banner_version,
+        session_fingerprint, event_type,
+        purposes_accepted, purposes_rejected,
+        ip_truncated, user_agent_hash, origin_verified
+      ) values (
+        ${event.org_id}::uuid,
+        ${event.property_id}::uuid,
+        ${event.banner_id}::uuid,
+        ${event.banner_version}::int,
+        ${event.session_fingerprint},
+        ${event.event_type},
+        ${sql.json(event.purposes_accepted)},
+        ${sql.json(event.purposes_rejected)},
+        ${event.ip_truncated},
+        ${event.user_agent_hash},
+        ${event.origin_verified}
+      )
+    `
+    return { ok: true }
+  } catch (e) {
+    const err = e as { code?: string; message?: string }
+    return {
+      ok: false,
+      status: 500,
+      error: `hyperdrive_insert_failed: ${err.code ?? ''} ${err.message ?? ''}`.trim(),
+    }
+  } finally {
+    await sql.end({ timeout: 1 }).catch(() => {})
+  }
+}
+
+async function insertConsentEventRest(
+  event: ConsentEventRow,
+  env: Env,
+): Promise<WriteResult> {
+  const res = await fetch(`${env.SUPABASE_URL}/rest/v1/consent_events`, {
     method: 'POST',
     headers: {
-      apikey: env.SUPABASE_WORKER_KEY,
+      apikey: env.SUPABASE_WORKER_KEY ?? '',
       Authorization: `Bearer ${env.SUPABASE_WORKER_KEY}`,
       'Content-Type': 'application/json',
       Prefer: 'return=minimal',
     },
     body: JSON.stringify(event),
   })
+  if (res.ok) return { ok: true }
+  return { ok: false, status: res.status, error: await res.text() }
+}
 
-  if (!bufferRes.ok) {
-    const upstreamError = await bufferRes.text()
-    console.error('Buffer write failed:', upstreamError)
-    ctx.waitUntil(
-      logWorkerError(env, {
-        org_id: body.org_id,
-        property_id: body.property_id,
-        endpoint: '/v1/events',
-        status_code: bufferRes.status,
-        upstream_error: upstreamError,
-      }),
-    )
-  }
-
-  return new Response(null, { status: 202, headers: CORS_HEADERS })
+interface ConsentEventRow {
+  org_id: string
+  property_id: string
+  banner_id: string
+  banner_version: number
+  session_fingerprint: string
+  event_type: string
+  purposes_accepted: string[]
+  purposes_rejected: string[]
+  ip_truncated: string
+  user_agent_hash: string
+  origin_verified: 'origin-only' | 'hmac-verified'
 }

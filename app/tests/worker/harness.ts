@@ -83,10 +83,12 @@ export async function createWorker(opts: HarnessOptions): Promise<{
     kvNamespaces: { BANNER_KV: 'banner-kv' },
     bindings: {
       SUPABASE_URL: 'https://mock.supabase.co',
+      // ADR-1010 Phase 4 — production no longer sets SUPABASE_WORKER_KEY
+      // (the wrangler secret was deleted at cutover). The harness still
+      // sets a mock value because the REST fallback helpers in the
+      // Worker source reference it; Hyperdrive (env.HYPERDRIVE) is
+      // intentionally NOT bound here so the REST mock-server path runs.
       SUPABASE_WORKER_KEY: 'mock-worker-key',
-      // ADR-1010 Sprint 2.1 follow-up — test-harness opt-in for the
-      // runtime role guard. Production wrangler secrets never carry this.
-      ALLOW_SERVICE_ROLE_LOCAL: '1',
     },
     outboundService: (request: Request): Response | Promise<Response> =>
       handleMockSupabase(request, opts.state),

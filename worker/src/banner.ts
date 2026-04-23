@@ -158,7 +158,7 @@ async function getBannerConfigRest(propertyId: string, env: Env): Promise<Banner
     `${env.SUPABASE_URL}/rest/v1/consent_banners?property_id=eq.${propertyId}&is_active=eq.true&select=*`,
     {
       headers: {
-        apikey: env.SUPABASE_WORKER_KEY,
+        apikey: env.SUPABASE_WORKER_KEY ?? '',
         Authorization: `Bearer ${env.SUPABASE_WORKER_KEY}`,
       },
     },
@@ -190,7 +190,7 @@ async function updateSnippetLastSeen(propertyId: string, env: Env): Promise<void
   await fetch(`${env.SUPABASE_URL}/rest/v1/web_properties?id=eq.${propertyId}`, {
     method: 'PATCH',
     headers: {
-      apikey: env.SUPABASE_WORKER_KEY,
+      apikey: env.SUPABASE_WORKER_KEY ?? '',
       Authorization: `Bearer ${env.SUPABASE_WORKER_KEY}`,
       'Content-Type': 'application/json',
       Prefer: 'return=minimal',

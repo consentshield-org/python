@@ -17,8 +17,14 @@ import type { Env, HyperdriveBinding } from './index'
 
 /**
  * Returns a postgres.js tagged-template SQL client connected through
- * Hyperdrive. Caller MUST close the client via `sql.end({ timeout: 1 })`
- * when done — do not leak connections across requests.
+ * Hyperdrive. Caller MUST close the client via `await sql.end({ timeout: 1 })`
+ * in a finally block — without it, postgres.js holds the local connection
+ * map open and subsequent requests against the same Worker isolate hang
+ * because postgres.js cannot acquire a fresh slot. (Confirmed empirically
+ * 2026-04-23 in Phase 4 cutover smoke testing — see ADR-1010 Phase 4
+ * follow-up: "share request-scoped postgres.js client + ctx.waitUntil
+ * cleanup" for the architectural fix that lets us drop sql.end inside
+ * the request path.)
  *
  * Throws if env.HYPERDRIVE is not bound. Callers should branch on
  * `hasHyperdrive(env)` BEFORE calling this helper when the REST

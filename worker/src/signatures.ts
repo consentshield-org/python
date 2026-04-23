@@ -70,7 +70,7 @@ async function getTrackerSignaturesRest(env: Env): Promise<TrackerSignature[]> {
     `${env.SUPABASE_URL}/rest/v1/tracker_signatures?select=service_name,service_slug,category,detection_rules,is_functional`,
     {
       headers: {
-        apikey: env.SUPABASE_WORKER_KEY,
+        apikey: env.SUPABASE_WORKER_KEY ?? '',
         Authorization: `Bearer ${env.SUPABASE_WORKER_KEY}`,
       },
     },

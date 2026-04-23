@@ -2,6 +2,7 @@ import type { Env } from './index'
 import { sha256, verifyHMAC, isTimestampValid } from './hmac'
 import { getPropertyConfig, getPreviousSigningSecret, validateOrigin, rejectOrigin } from './origin'
 import { logWorkerError } from './worker-errors'
+import { getDb, hasHyperdrive } from './db'
 
 interface ObservationPayload {
   org_id: string
@@ -140,30 +141,90 @@ export async function handleObservation(
     origin_verified: originVerified,
   }
 
-  const bufferRes = await fetch(`${env.SUPABASE_URL}/rest/v1/tracker_observations`, {
-    method: 'POST',
-    headers: {
-      apikey: env.SUPABASE_WORKER_KEY,
-      Authorization: `Bearer ${env.SUPABASE_WORKER_KEY}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=minimal',
-    },
-    body: JSON.stringify(observation),
-  })
+  // ADR-1010 Phase 3 Sprint 3.2 — Hyperdrive-backed INSERT; REST
+  // fallback for the Miniflare harness.
+  const writeResult = hasHyperdrive(env)
+    ? await insertObservationSql(observation, env)
+    : await insertObservationRest(observation, env)
 
-  if (!bufferRes.ok) {
-    const upstreamError = await bufferRes.text()
-    console.error('Observation write failed:', upstreamError)
+  if (!writeResult.ok) {
+    console.error('Observation write failed:', writeResult.error)
     ctx.waitUntil(
       logWorkerError(env, {
         org_id: body.org_id,
         property_id: body.property_id,
         endpoint: '/v1/observations',
-        status_code: bufferRes.status,
-        upstream_error: upstreamError,
+        status_code: writeResult.status,
+        upstream_error: writeResult.error,
       }),
     )
   }
 
   return new Response(null, { status: 202, headers: CORS_HEADERS })
+}
+
+type WriteResult = { ok: true } | { ok: false; status: number; error: string }
+
+interface ObservationRow {
+  org_id: string
+  property_id: string
+  session_fingerprint: string
+  consent_state: Record<string, boolean>
+  trackers_detected: unknown[]
+  violations: unknown[]
+  page_url_hash: string | null
+  origin_verified: 'origin-only' | 'hmac-verified'
+}
+
+async function insertObservationSql(
+  row: ObservationRow,
+  env: Env,
+): Promise<WriteResult> {
+  const sql = getDb(env)
+  try {
+    await sql`
+      insert into public.tracker_observations (
+        org_id, property_id, session_fingerprint,
+        consent_state, trackers_detected, violations,
+        page_url_hash, origin_verified
+      ) values (
+        ${row.org_id}::uuid,
+        ${row.property_id}::uuid,
+        ${row.session_fingerprint},
+        ${sql.json(row.consent_state as Parameters<typeof sql.json>[0])},
+        ${sql.json(row.trackers_detected as Parameters<typeof sql.json>[0])},
+        ${sql.json(row.violations as Parameters<typeof sql.json>[0])},
+        ${row.page_url_hash},
+        ${row.origin_verified}
+      )
+    `
+    return { ok: true }
+  } catch (e) {
+    const err = e as { code?: string; message?: string }
+    return {
+      ok: false,
+      status: 500,
+      error: `hyperdrive_insert_failed: ${err.code ?? ''} ${err.message ?? ''}`.trim(),
+    }
+  } finally {
+    await sql.end({ timeout: 1 }).catch(() => {})
+  }
+}
+
+async function insertObservationRest(
+  row: ObservationRow,
+  env: Env,
+): Promise<WriteResult> {
+  const res = await fetch(`${env.SUPABASE_URL}/rest/v1/tracker_observations`, {
+    method: 'POST',
+    headers: {
+      apikey: env.SUPABASE_WORKER_KEY ?? '',
+      Authorization: `Bearer ${env.SUPABASE_WORKER_KEY}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=minimal',
+    },
+    body: JSON.stringify(row),
+  })
+  if (res.ok) return { ok: true }
+  return { ok: false, status: res.status, error: await res.text() }
 }

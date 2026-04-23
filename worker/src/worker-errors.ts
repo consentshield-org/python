@@ -1,4 +1,5 @@
 import type { Env } from './index'
+import { getDb, hasHyperdrive } from './db'
 
 // N-S1 fix: persist Worker → Supabase write failures to the worker_errors
 // operational table so operators see ingestion breakage from the dashboard,
@@ -32,11 +33,33 @@ export async function logWorkerError(
   env: Env,
   record: WorkerErrorRecord,
 ): Promise<void> {
+  // ADR-1010 Phase 3 Sprint 3.2 — Hyperdrive-backed INSERT; REST
+  // fallback for the Miniflare harness. Best-effort either way.
+  const upstreamCapped = record.upstream_error.slice(0, 1000)
   try {
+    if (hasHyperdrive(env)) {
+      const sql = getDb(env)
+      try {
+        await sql`
+          insert into public.worker_errors (
+            org_id, property_id, endpoint, status_code, upstream_error
+          ) values (
+            ${record.org_id}::uuid,
+            ${record.property_id ?? null}::uuid,
+            ${record.endpoint},
+            ${record.status_code}::int,
+            ${upstreamCapped}
+          )
+        `
+      } finally {
+        await sql.end({ timeout: 1 }).catch(() => {})
+      }
+      return
+    }
     await fetch(`${env.SUPABASE_URL}/rest/v1/worker_errors`, {
       method: 'POST',
       headers: {
-        apikey: env.SUPABASE_WORKER_KEY,
+        apikey: env.SUPABASE_WORKER_KEY ?? '',
         Authorization: `Bearer ${env.SUPABASE_WORKER_KEY}`,
         'Content-Type': 'application/json',
         Prefer: 'return=minimal',
@@ -46,9 +69,7 @@ export async function logWorkerError(
         property_id: record.property_id ?? null,
         endpoint: record.endpoint,
         status_code: record.status_code,
-        // Cap the upstream error text — Supabase REST errors can be verbose
-        // and we don't need novella-length payloads in an ops table.
-        upstream_error: record.upstream_error.slice(0, 1000),
+        upstream_error: upstreamCapped,
       }),
     })
   } catch (e) {
