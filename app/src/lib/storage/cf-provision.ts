@@ -7,8 +7,8 @@
 //
 // Required env (all set by the operator in Phase 1 Sprint 1.1 before any of
 // these functions can run live):
-//   CF_ACCOUNT_ID         — Cloudflare account id (not a secret; copy from dashboard)
-//   CF_ACCOUNT_API_TOKEN  — account-level token with R2 Storage:Edit scope
+//   CLOUDFLARE_ACCOUNT_ID         — Cloudflare account id (not a secret; copy from dashboard)
+//   CLOUDFLARE_ACCOUNT_API_TOKEN  — account-level token with R2 Storage:Edit scope
 //   STORAGE_NAME_SALT     — base64 random (>= 16 bytes) — prevents bucket-name
 //                           reverse-engineering from a listed bucket back to org_id
 //
@@ -51,14 +51,14 @@ interface CfConfig {
 }
 
 function requireEnv(): CfConfig {
-  const accountId = process.env.CF_ACCOUNT_ID
-  const token = process.env.CF_ACCOUNT_API_TOKEN
+  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID
+  const token = process.env.CLOUDFLARE_ACCOUNT_API_TOKEN
   const salt = process.env.STORAGE_NAME_SALT
   if (!accountId) {
-    throw new CfProvisionError('CF_ACCOUNT_ID not set', 'config')
+    throw new CfProvisionError('CLOUDFLARE_ACCOUNT_ID not set', 'config')
   }
   if (!token) {
-    throw new CfProvisionError('CF_ACCOUNT_API_TOKEN not set', 'config')
+    throw new CfProvisionError('CLOUDFLARE_ACCOUNT_API_TOKEN not set', 'config')
   }
   if (!salt) {
     throw new CfProvisionError('STORAGE_NAME_SALT not set', 'config')

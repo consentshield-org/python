@@ -21,14 +21,14 @@ const STUB_TOKEN = 'cf-api-token-' + 'a'.repeat(32)
 const STUB_SALT = 'c2FsdC1iYXNlNjQtMjAyNi0wNC0yMw==' // base64("salt-base64-2026-04-23")
 
 function setEnv() {
-  vi.stubEnv('CF_ACCOUNT_ID', STUB_ACCOUNT)
-  vi.stubEnv('CF_ACCOUNT_API_TOKEN', STUB_TOKEN)
+  vi.stubEnv('CLOUDFLARE_ACCOUNT_ID', STUB_ACCOUNT)
+  vi.stubEnv('CLOUDFLARE_ACCOUNT_API_TOKEN', STUB_TOKEN)
   vi.stubEnv('STORAGE_NAME_SALT', STUB_SALT)
 }
 
 function unsetEnv() {
-  vi.stubEnv('CF_ACCOUNT_ID', '')
-  vi.stubEnv('CF_ACCOUNT_API_TOKEN', '')
+  vi.stubEnv('CLOUDFLARE_ACCOUNT_ID', '')
+  vi.stubEnv('CLOUDFLARE_ACCOUNT_API_TOKEN', '')
   vi.stubEnv('STORAGE_NAME_SALT', '')
 }
 
@@ -369,7 +369,7 @@ describe('r2Endpoint', () => {
     )
   })
 
-  it('throws if CF_ACCOUNT_ID is missing', async () => {
+  it('throws if CLOUDFLARE_ACCOUNT_ID is missing', async () => {
     unsetEnv()
     const { r2Endpoint, CfProvisionError } = await load()
     expect(() => r2Endpoint()).toThrow(CfProvisionError)

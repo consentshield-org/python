@@ -39,7 +39,7 @@ Implement a two-tier storage model:
 
 ### Tier 1 — CS-managed R2 (the default, auto-provisioned at onboarding)
 
-- ConsentShield operates a single Cloudflare account configured with an account-level API token (`CF_ACCOUNT_API_TOKEN`) carrying `R2 Storage:Edit` scope. The token lives in the customer-app's Vercel project secrets + the Edge Function secret store (`supabase secrets set CF_ACCOUNT_API_TOKEN=...`).
+- ConsentShield operates a single Cloudflare account configured with an account-level API token (`CLOUDFLARE_ACCOUNT_API_TOKEN`) carrying `R2 Storage:Edit` scope. The token lives in the customer-app's Vercel project secrets + the Edge Function secret store (`supabase secrets set CLOUDFLARE_ACCOUNT_API_TOKEN=...`).
 - At onboarding, after Step 4 (template) of the ADR-0058 wizard, a background job `provision_managed_storage(org_id)` fires. The job:
   1. Derives a globally-unique bucket name: `cs-cust-<first 20 chars of base32(sha256(org_id || STORAGE_NAME_SALT))>`. Using a hash-prefix avoids leaking org UUIDs via bucket listings; using a salt avoids rainbow-table reversal from bucket → org.
   2. Creates the bucket via Cloudflare's `POST /accounts/{account_id}/r2/buckets` API with `locationHint` set based on the customer's primary region (APAC for Indian tenants per DPDP §10 data-residency rule; configurable per plan for enterprise).
@@ -85,7 +85,7 @@ Run on every provisioning, every credential rotation, and nightly-verify cron (r
 
 - **Cost centre:** CS pays for R2 storage on behalf of all Tier-1 customers. Budget: CF R2 is $0.015/GB-month with zero egress. Buffer-delete-on-deliver (Rule 2) + customer retention window (default 30 days for consent_events, longer for audit_log / rights_request_events) puts the per-customer monthly cost in cents for SMB volumes, dollars for BFSI scale. Absorb into the plan base price for Starter/Growth; meter for Pro/Enterprise.
 - **Blast radius on CF API outage:** onboarding stalls for new signups until CF recovers. Existing orgs unaffected (their provisioning already completed). Mitigation: retry loop with exponential backoff; ops-readiness flag fires after 10 min of consecutive failures so the operator sees the incident + can temporarily flip new-customer provisioning to a queued state rather than a blocking one.
-- **Account API token rotation:** `CF_ACCOUNT_API_TOKEN` rotation needs to happen without breaking existing per-bucket tokens. Per-bucket tokens are independent; rotating the account-level token only affects NEW provisioning + NEW per-bucket token issuance. Straightforward.
+- **Account API token rotation:** `CLOUDFLARE_ACCOUNT_API_TOKEN` rotation needs to happen without breaking existing per-bucket tokens. Per-bucket tokens are independent; rotating the account-level token only affects NEW provisioning + NEW per-bucket token issuance. Straightforward.
 - **Bucket-name collision:** the sha256-prefix space is effectively collision-free for the org count we'll ever have. No lookup needed.
 - **CF account limits:** CF R2 has a soft per-account limit of ~1000 buckets. Design accommodates this with a budget alert at 80% capacity; path to multi-CF-account sharding exists if ever needed (partition orgs by a hash of org_id).
 
@@ -118,17 +118,19 @@ Run on every provisioning, every credential rotation, and nightly-verify cron (r
 **Estimated effort:** 0.25 day
 
 **Deliverables:**
-- [ ] Operator step (deferred; gates all live-bucket testing): create `CF_ACCOUNT_API_TOKEN` via Cloudflare dashboard with `Account:R2 Storage:Edit` scope (account-level, no zone scope). Token stored in:
-  - Vercel project env (app, admin): prod + preview.
-  - Supabase function secret (`supabase secrets set CF_ACCOUNT_API_TOKEN=...`).
-  - `.env.local` for dev.
-- [ ] `STORAGE_NAME_SALT` generated + stored alongside.
-- [ ] Documentation: `docs/runbooks/cf-account-token-rotation.md` — step-by-step rotation procedure that preserves existing per-bucket tokens.
+- [x] Operator step: created `CLOUDFLARE_ACCOUNT_API_TOKEN` (prefix `cfat_`) via Cloudflare dashboard with `Account:R2 Storage:Edit` scope. Token stored in:
+  - `.env.local` (root + `app/`) for dev.
+  - `.secrets` reference file.
+  - Vercel project env + Supabase function secret — to be propagated when Phase 2 Sprint 2.1 Edge Function lands.
+- [x] `STORAGE_NAME_SALT` — 32-byte base64 random generated + stored in `.secrets`, `.env.local`, `app/.env.local`.
+- [x] Code rename: `cf-provision.ts` + unit tests now read `CLOUDFLARE_ACCOUNT_ID` / `CLOUDFLARE_ACCOUNT_API_TOKEN` (was `CF_ACCOUNT_ID` / `CF_ACCOUNT_API_TOKEN`) — aligns with project convention and the existing `CLOUDFLARE_*` secrets layout. Note: the legacy `CLOUDFLARE_API_TOKEN` (user-level `cfut_` prefix) remains in place for KV cache invalidation + `wrangler deploy`; the new `CLOUDFLARE_ACCOUNT_API_TOKEN` (account-level `cfat_`) is R2-only. Two tokens, two scopes.
+- [ ] Documentation: `docs/runbooks/cf-account-token-rotation.md` — step-by-step rotation procedure that preserves existing per-bucket tokens. **Deferred to close with Phase 2 Sprint 2.1.**
 
 **Testing plan:**
-- [ ] `curl -H "Authorization: Bearer $CF_ACCOUNT_API_TOKEN" https://api.cloudflare.com/client/v4/accounts/<account_id>/r2/buckets` returns 200 + the existing bucket list.
+- [x] `curl -H "Authorization: Bearer $CLOUDFLARE_ACCOUNT_API_TOKEN" https://api.cloudflare.com/client/v4/accounts/<account_id>/r2/buckets` returns 200 + the existing bucket list (verified 2026-04-23).
+- [x] 26 mocked unit tests remain green with new env var names (`tests/storage/cf-provision.test.ts` + `tests/storage/verify.test.ts`).
 
-**Status:** `[ ] planned — operator step; gates Sprint 1.2 + 1.3 runtime-green but not their code + unit tests.`
+**Status:** `[x] complete 2026-04-23 — operator step done, salt provisioned, code aligned to CLOUDFLARE_* convention, 26/26 unit tests green. Runbook deferred to Phase 2 Sprint 2.1 close-out.`
 
 #### Sprint 1.2 — Provisioning primitives library
 
@@ -146,7 +148,7 @@ Run on every provisioning, every credential rotation, and nightly-verify cron (r
 - [x] `app/tests/storage/cf-provision.test.ts` — Vitest, 18 tests covering every documented branch: derive deterministic + collision-resistant + salt-sensitive + config-missing; createBucket 201 / 409-idempotent / 429-retry / 5xx-retry / 5xx-exhaust / 401-no-retry / network-retry; createBucketScopedToken 200 / missing-credentials-in-200; revokeBucketToken 200 / 404-idempotent / 401-surface; r2Endpoint happy + config-missing. 177 ms wall time.
 
 **Testing plan:**
-- [ ] Against the dev CF account, provision one throwaway bucket end-to-end. Verify via the dashboard. Revoke the token. Verify revocation takes effect (subsequent PUT returns 403). **Deferred — gated on Sprint 1.1 operator step.**
+- [ ] Against the dev CF account, provision one throwaway bucket end-to-end. Verify via the dashboard. Revoke the token. Verify revocation takes effect (subsequent PUT returns 403). **Pending — can now run; Sprint 1.1 operator step closed 2026-04-23.**
 
 **Status:** `[x] code + mocked unit tests shipped 2026-04-23. Runtime-green against a real CF account is gated on Sprint 1.1's operator step; Sprint 1.2's library correctness is proven by the 18-test mocked matrix.`
 
@@ -163,7 +165,7 @@ Run on every provisioning, every credential rotation, and nightly-verify cron (r
 
 **Testing plan:**
 - [x] Happy path + every failure branch covered via mocked S3 deps. 18 + 8 = 26 unit tests across Sprints 1.2 + 1.3 all pass.
-- [ ] Runtime-green against a real CF bucket — gated on Sprint 1.1 operator step.
+- [ ] Runtime-green against a real CF bucket — pending; Sprint 1.1 operator step closed 2026-04-23.
 
 **Status:** `[x] code + migration + 8 mocked unit tests shipped 2026-04-23. Readiness-flag emission deferred to Phase 2 Sprint 2.1 where the Edge Function wraps the probe.`
 

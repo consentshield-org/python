@@ -2,6 +2,28 @@
 
 API route changes.
 
+## [ADR-1025 Sprint 1.1 — CF account API token + STORAGE_NAME_SALT provisioned; env-var rename] — 2026-04-23
+
+**ADR:** ADR-1025 — Customer storage auto-provisioning
+**Sprint:** Phase 1, Sprint 1.1
+
+### Operator work (completed)
+- Minted a new account-level Cloudflare API token `CLOUDFLARE_ACCOUNT_API_TOKEN` (`cfat_` prefix) carrying `Account → R2 Storage → Edit`. Stored in `.secrets`, `.env.local`, `app/.env.local`.
+- Verified scope: `curl -H "Authorization: Bearer $CLOUDFLARE_ACCOUNT_API_TOKEN" https://api.cloudflare.com/client/v4/accounts/<account_id>/r2/buckets` returns 200.
+- The pre-existing `CLOUDFLARE_API_TOKEN` (`cfut_` user-level) stays in place for its existing KV-invalidation + `wrangler deploy` uses. Two tokens, two scopes — no consolidation.
+- Generated `STORAGE_NAME_SALT` — 32-byte base64 random, `crypto.randomBytes(32).toString('base64')`. Stored in the same three env files.
+
+### Changed
+- `app/src/lib/storage/cf-provision.ts` — env reads renamed from `CF_ACCOUNT_ID` / `CF_ACCOUNT_API_TOKEN` to `CLOUDFLARE_ACCOUNT_ID` / `CLOUDFLARE_ACCOUNT_API_TOKEN`. Aligns with the project-wide `CLOUDFLARE_*` secret-naming convention already used for `CLOUDFLARE_ACCOUNT_ID` / `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_KV_NAMESPACE_ID`.
+- `app/tests/storage/cf-provision.test.ts` — `vi.stubEnv` calls + one test-name string updated to match.
+- `.secrets` — fixed two pre-existing typos: `CLOURDFLARE_API_TOKEN` → `CLOUDFLARE_API_TOKEN` (key on line 16; token value unchanged), `CLOUDFLADE_S3_CREDENTIALS_SECRET_ACCESS_KEY` → `CLOUDFLARE_S3_CREDENTIALS_SECRET_ACCESS_KEY` (key on line 21; secret value unchanged). Nothing in code was reading the typo'd forms, so these are purely reference-file corrections — no runtime impact.
+
+### Tested
+- `cd app && bunx vitest run tests/storage/cf-provision.test.ts tests/storage/verify.test.ts` — 26/26 PASS in 238 ms after rename.
+
+### Scope boundary
+Sprint 1.1 closes the operator step that Sprint 1.2 + 1.3 (shipped earlier today in commit `9c4f06c`) flagged as gating runtime-green. Live end-to-end bucket provisioning against the dev CF account (create bucket → mint token → PUT-GET-DELETE via sigv4 → revoke token → verify revocation) remains pending but is no longer blocked — the `cfat_` token + salt are in place. The rotation runbook (`docs/runbooks/cf-account-token-rotation.md`) is deferred to close with Phase 2 Sprint 2.1's Edge Function landing.
+
 ## [ADR-1025 Sprint 1.2 + 1.3 — CF R2 provisioning primitives + verification probe] — 2026-04-23
 
 **ADR:** ADR-1025 — Customer storage auto-provisioning
