@@ -4,7 +4,7 @@
 **Date proposed:** 2026-04-23
 **Date completed:** —
 **Superseded by:** —
-**Upstream dependency:** ADR-1022 (customer storage auto-provisioning) — this function delivers to `export_configurations.bucket_name`; ADR-1022 is what populates + verifies those rows. ADR-1019's Phase 1 Sprint 1.1 row-audit step now assumes ADR-1022 provisioning is live.
+**Upstream dependency:** ADR-1025 (customer storage auto-provisioning) — this function delivers to `export_configurations.bucket_name`; ADR-1025 is what populates + verifies those rows. ADR-1019's Phase 1 Sprint 1.1 row-audit step now assumes ADR-1025 provisioning is live.
 
 ---
 

@@ -2,22 +2,22 @@
 
 Documentation changes.
 
-## [ADR-1022 proposed — customer storage auto-provisioning (hybrid managed R2 + BYOK)] — 2026-04-23
+## [ADR-1025 proposed — customer storage auto-provisioning (hybrid managed R2 + BYOK)] — 2026-04-23
 
-**ADR:** ADR-1022 (new; Proposed)
+**ADR:** ADR-1025 (new; Proposed)
 
 ### Added
-- `docs/ADRs/ADR-1022-customer-storage-auto-provisioning.md` — 4-phase / 7-sprint proposal for populating `public.export_configurations` without operator intervention. Upstream of ADR-1019: `deliver-consent-events` can't ship until every paying org has a verified storage configuration; ADR-1022 is how they get one. Two tiers:
+- `docs/ADRs/ADR-1025-customer-storage-auto-provisioning.md` — 4-phase / 7-sprint proposal for populating `public.export_configurations` without operator intervention. Upstream of ADR-1019: `deliver-consent-events` can't ship until every paying org has a verified storage configuration; ADR-1025 is how they get one. (Originally drafted as ADR-1022 — renumbered later the same day so ADR-1020's reserved 1022 / 1023 / 1024 slots for multilingual Phase 2 / 3 / 4 stay coherent.) Two tiers:
   - **Tier 1 — CS-managed R2 default:** at onboarding Step 4, a background Edge Function derives a sha256-prefixed per-org bucket name, creates it via Cloudflare R2 REST API under a single CS-operated CF account, generates a bucket-scoped R2 token, encrypts both with the per-org HMAC-derived key (CLAUDE.md Rule 11), runs a PUT/GET/DELETE verification probe, flips `is_verified=true`. Zero user interaction. Wizard is non-blocking; Step 7 renders a soft banner if provisioning is still in flight.
   - **Tier 2 — BYOK escape hatch:** `/dashboard/settings/storage` (account_owner-gated) accepts R2 / S3 credentials, runs the same probe, then offers copy-existing-and-cutover or cutover-forward-only migration modes. `migrate-customer-storage` Edge Function streams historical objects across resumably (`ListObjectsV2` with `StartAfter`), atomically swaps the `export_configurations` pointer, revokes the CS-managed token.
-- `docs/ADRs/ADR-1019-deliver-consent-events-edge-function.md` — upstream-dependency line added in the header front-matter pointing at ADR-1022.
-- `docs/ADRs/ADR-index.md` — row for ADR-1022 inserted after ADR-1021.
+- `docs/ADRs/ADR-1019-deliver-consent-events-edge-function.md` — upstream-dependency line added in the header front-matter pointing at ADR-1025.
+- `docs/ADRs/ADR-index.md` — row for ADR-1025 inserted after ADR-1021.
 
 ### Rule-4 re-framing captured in the ADR
 CLAUDE.md Rule 4 ("customer owns the compliance record, exports must pull from customer-owned storage") is re-read as being about the locus of the canonical record (R2, not buffer tables), NOT about which Cloudflare account pays the monthly bill. The DPA layer + per-tenant bucket isolation + scoped tokens + customer export + move-out rights satisfy Rule 4 in both tiers. The tier split is a commercial / procurement concern that rides on top — enterprise BFSI / healthcare customers exercise Tier 2; self-serve SMB customers default to Tier 1 and never notice.
 
 ### Why
-This closes the last structural gap that was keeping ADR-1019 from being buildable. Without auto-provisioning, ADR-1019 + every downstream ADR that assumes R2 export (ADR-0022 revocation receipts, ADR-0023 expiry alerts, ADR-0040 audit R2 pipeline, Rule 4 itself) are aspirational. ADR-1022 makes the `export_configurations` table go from "defined schema with zero rows" to "one verified row per paying org at onboarding completion".
+This closes the last structural gap that was keeping ADR-1019 from being buildable. Without auto-provisioning, ADR-1019 + every downstream ADR that assumes R2 export (ADR-0022 revocation receipts, ADR-0023 expiry alerts, ADR-0040 audit R2 pipeline, Rule 4 itself) are aspirational. ADR-1025 makes the `export_configurations` table go from "defined schema with zero rows" to "one verified row per paying org at onboarding completion".
 
 ### Not decided yet
 - CF account bucket-soft-limit sharding strategy (~1000 buckets per account). Sprint 4.2 adds the 80%-capacity alert; a multi-account partitioning scheme is a V2 entry if and when we approach the ceiling.

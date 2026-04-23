@@ -1,4 +1,6 @@
-# ADR-1022: Customer storage auto-provisioning — hybrid managed R2 default + BYOK escape hatch
+# ADR-1025: Customer storage auto-provisioning — hybrid managed R2 default + BYOK escape hatch
+
+**Numbering note:** originally drafted as ADR-1022. Renumbered to 1025 on 2026-04-23 so ADR-1020's reserved slots for multilingual Phase 2 / 3 / 4 (ADR-1022 / 1023 / 1024) stay coherent.
 
 **Status:** Proposed
 **Date proposed:** 2026-04-23
