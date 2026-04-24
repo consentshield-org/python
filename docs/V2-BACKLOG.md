@@ -68,6 +68,12 @@ Every HTTP-invoked Edge Function ships with `--no-verify-jwt` because the vault-
 
 Still deferred. Retention-rule enforcement is the Regulatory Exemption Engine surface planned in **ADR-1004** (v2 Whitepaper Phase 4). No target rules exist today; implementing the cron without rules to enforce is premature. Re-evaluate when ADR-1004 ships.
 
+### ADR-1010 Sprint 4.3. Strip the Worker REST fallback  *(origin: ADR-1010 Phase 4)*
+
+Every Worker source file (`banner.ts`, `origin.ts`, `signatures.ts`, `events.ts`, `observations.ts`, `worker-errors.ts`) still carries a dual-path branch: Hyperdrive SQL when `env.HYPERDRIVE` is bound, REST against Supabase PostgREST otherwise. Production uses only the Hyperdrive path (ADR-1010 Phase 4 closed); the REST fallback exists solely to keep the 20 Miniflare tests in `app/tests/worker/` passing against a mock Supabase.
+
+**Shape of fix.** Either (a) wire Miniflare's `hyperdrives` config to a local Postgres so the Hyperdrive path runs in the test harness too, or (b) migrate those 20 tests to `tests/integration/` where they can hit dev Supabase directly. Both are real work; neither is Phase-4-blocking — promote only when the fallback's drift becomes a maintenance burden.
+
 ---
 
 ## How to maintain this file

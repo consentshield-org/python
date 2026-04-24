@@ -2,12 +2,12 @@
 
 **Status:** Completed
 **Date proposed:** 2026-04-21
-**Date completed:** 2026-04-23
+**Date completed:** 2026-04-24 (through Sprint 4.2; Sprint 4.3 deferred to V2-BACKLOG)
 **Superseded by:** —
 
-**Sprint 4.2 (connection-lifecycle refinement) — complete 2026-04-24. Cold start 2.9 s → ~800 ms; warm p50 60–100 ms → 55–60 ms.**
+**Sprint 4.2 (connection-lifecycle refinement) — complete 2026-04-24. Cold start 2.9 s → ~800 ms; warm p50 60–100 ms → 55–60 ms. `admin.ops_readiness_flags` row for the Phase 4 follow-up resolved at this close.**
 
-**Sprint 4.3 (REST fallback strip) still tracked as a follow-up on `admin.ops_readiness_flags` — not blocking.**
+**Sprint 4.3 (REST fallback strip) — deferred to V2-BACKLOG. Miniflare still needs the REST path for the 20 existing Worker-tests; removing it requires either Miniflare's `hyperdrives` config or migrating those tests to integration. Not Phase-4-blocking.**
 
 ---
 
@@ -295,9 +295,9 @@ Recovery:
 - Mock-Hyperdrive in Miniflare (Cloudflare's Miniflare supports `hyperdrives` config that routes to a real local Postgres), OR
 - Migrating the 20 tests to integration tests that hit dev Supabase directly.
 
-Both are real work but neither is Phase-4-blocking. Open a separate sprint when the REST fallback's existence becomes a maintenance burden.
+Both are real work but neither is Phase-4-blocking. Tracked in `docs/V2-BACKLOG.md` as ADR-1010 Sprint 4.3; promote to an active sprint (or roll into a Miniflare-modernisation ADR) if the REST fallback's existence becomes a maintenance burden.
 
-**Status:** `[ ] planned`
+**Status:** `[~] deferred to V2-BACKLOG (2026-04-24).`
 
 ---
 
