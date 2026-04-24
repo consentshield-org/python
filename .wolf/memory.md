@@ -5205,3 +5205,5 @@
 | 18:53 | Edited docs/ADRs/ADR-1015-v1-api-integration-tests-and-developer-docs.md | 8→8 lines | ~268 |
 | 18:53 | Edited docs/changelogs/CHANGELOG-docs.md | expanded (+17 lines) | ~754 |
 | 18:53 | Edited docs/ADRs/ADR-index.md | "/docs/*" → "#slug" | ~159 |
+| 18:54 | Edited docs/changelogs/CHANGELOG-marketing.md | expanded (+32 lines) | ~967 |
+| 18:54 | Session end: 71 writes across 29 files (20260804000052_adr1003_s13_zero_storage_artefact_index.sql, zero-storage-bridge.ts, zero-storage-bridge.test.ts, cs-vault-setup.sql, zero-storage-invariant.test.ts) | 45 reads | ~328517 tok |

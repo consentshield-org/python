@@ -1,0 +1,88 @@
+name: Docs issue
+description: Report a problem with, or suggest an improvement to, the /docs/* surface on consentshield.in
+title: "docs: "
+labels:
+  - docs
+  - triage
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting an issue with the ConsentShield docs.
+
+        If this form was opened from a docs page, the page path and the
+        👍/👎 signal are pre-filled below — you can leave them as-is.
+
+        For security issues in ConsentShield itself (not the docs),
+        please write to security@consentshield.in instead.
+
+  - type: input
+    id: page
+    attributes:
+      label: Page
+      description: Path on disk (relative to repo root) of the page the issue is about.
+      placeholder: marketing/src/app/docs/quickstart/page.mdx
+    validations:
+      required: true
+
+  - type: dropdown
+    id: vote
+    attributes:
+      label: Overall signal
+      description: |
+        How did you get here? Pre-filled by the 👍/👎 strip at the bottom of each docs page.
+        - **yes** — the page was useful, but there's a specific issue below.
+        - **no** — the page needs work.
+        - **other** — not from a feedback strip; just opening an issue directly.
+      options:
+        - yes
+        - no
+        - other
+      default: 0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: issue_type
+    attributes:
+      label: Issue type
+      options:
+        - Wrong — documented behaviour disagrees with the API
+        - Missing — I needed something that isn't documented
+        - Unclear — I had to read it twice
+        - Broken — link, code sample, or playground doesn't work
+        - Suggestion — not a bug, but could be better
+      default: 2
+    validations:
+      required: true
+
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: |
+        What were you trying to do? What did the docs say? What actually happened?
+        If a code sample is wrong, paste the snippet and the error.
+      placeholder: |
+        I tried to follow the "Record consent at checkout" recipe with a Node.js
+        back-end. The cURL sample uses `purpose_code` but the Node sample uses
+        `purpose_definition_ids` — which is correct?
+    validations:
+      required: true
+
+  - type: input
+    id: integration_context
+    attributes:
+      label: Integration context (optional)
+      description: Language / framework / deployment target, if relevant. Helps us prioritise.
+      placeholder: Node 20 · Next.js 16 · Vercel production
+
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Confirm
+      options:
+        - label: I searched existing issues before opening this.
+          required: false
+        - label: This is about the docs surface, not about a bug in the ConsentShield product itself.
+          required: true

@@ -1,6 +1,6 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-24T13:23:39.055Z
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-24T13:24:08.881Z
 > Files: 1391 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../tmp/
@@ -1440,7 +1440,7 @@
 - `CHANGELOG-docs.md` — Changelog — Documentation (~13030 tok)
 - `CHANGELOG-edge-functions.md` — Changelog — Edge Functions (~4251 tok)
 - `CHANGELOG-infra.md` — Changelog — Infrastructure (~20809 tok)
-- `CHANGELOG-marketing.md` — Changelog — Marketing (~12016 tok)
+- `CHANGELOG-marketing.md` — Changelog — Marketing (~12875 tok)
 - `CHANGELOG-schema.md` — Changelog — Schema (~50818 tok)
 - `CHANGELOG-worker.md` — Changelog — Worker (~6025 tok)
 

@@ -2,6 +2,38 @@
 
 Public marketing site (`marketing/` workspace → `consentshield.in`). New in 2026-04-21.
 
+## [ADR-1015 Sprint 4.1 + 4.3 — Cross-link audit + docs-issue template] — 2026-04-24
+
+**ADR:** ADR-1015 — v1 API integration tests + customer developer documentation
+**Sprint:** Phase 4, Sprint 4.1 (cross-link audit) + Sprint 4.3 (docs-issue template + feedback-strip wiring)
+
+### Added
+- `.github/ISSUE_TEMPLATE/docs-issue.yml` — GitHub Issue Forms template receiving deep-links from the FeedbackStrip on every `/docs/*` page. Structured fields: `page` (path pre-fill), `vote` (dropdown `yes`/`no`/`other`, pre-fill from thumb button), `issue_type` (dropdown: Wrong / Missing / Unclear / Broken / Suggestion), `details` (required textarea), `integration_context` (optional). Two confirmation checkboxes (de-duped before filing + docs-vs-product distinction).
+
+### Changed
+- `marketing/src/app/docs/api/[...path]/page.tsx` — ENDPOINTS map expanded from 15 to 21 entries. Added `deletion/test-delete`, `rights/requests`, `rights/requests-list`, `audit/list`, `security/scans`, `score`. Previously these cookbook-referenced deep-links fell back to the generic playground root; they now redirect to the correct Scalar anchor.
+- `marketing/src/app/docs/cookbook/build-dpb-audit-export/page.mdx` — "Related" section link `/docs/api/account/audit` → `/docs/api/audit/list` (semantic; matches the Audit tag in the OpenAPI spec rather than the sidebar's Account & plans grouping).
+
+### Verified (cross-link audit)
+- Extracted every `[label](/docs/*)` and `href="/docs/*"` pattern across all 23 `/docs/*` MDX + TSX pages via grep; resolved each against the live page manifest + `/docs/api/[...path]` ENDPOINTS mapping.
+- Found 3 broken API deep-links: `/docs/api/account/audit`, `/docs/api/deletion/test-delete`, `/docs/api/rights/requests`. All fixed (one URL rewrite, two ENDPOINTS additions).
+- Verified 5 in-page `#slug` anchors (`changelog#…`, `errors#…` ×2, `webhook-signatures#…` ×2) against `grep -oE 'id="[^"]+"' .next/server/app/docs/*.html` on the rendered HTML. Zero drift — rehype-slug's output matches author intent, including double-dashes from em-dashes and embedded parens.
+
+### Tested
+- [x] `cd marketing && bunx tsc --noEmit` — PASS.
+- [x] `cd marketing && bun run lint` — PASS.
+- [x] `cd marketing && bun run build` — PASS. All 22 static `/docs/*` routes intact + 1 dynamic catchall.
+
+### Why
+Sprint 2.x authored rich cross-references to support non-linear navigation (cookbook → API reference, cookbook → concept, cookbook → other cookbook, cookbook → changelog anchor). Until Sprint 4.1 those links were never end-to-end verified. The audit caught three broken deep-links that would have silently fallen back to the playground root — OK as a graceful fallback, but noisy in developer experience. Sprint 4.3 closes the feedback loop: clicking 👍/👎 at the bottom of any docs page now lands in a pre-filled GitHub Issue Form with the page path and signal already set — no copy-paste, no wondering what "report issue" does.
+
+Phase 3 (integration tests under `tests/integration/v1-api/`) remains blocked on ADR-1014's partner-bootstrap fixture endpoint. Phase 4 Sprint 4.2 (wireframe reconciliation — visual QA against `docs/design/screen designs and ux/consentshield-developer-docs.html`) is deferred; requires an eyes-on-screen pass not amenable to autonomous execution.
+
+### Architecture Changes
+None at the doc-surface level. The ENDPOINTS catchall change is a pure data-table expansion in an existing shim component.
+
+---
+
 ## [ADR-1015 Sprint 2.2 — Cookbook: 7 recipes × 3 languages] — 2026-04-24
 
 **ADR:** ADR-1015 — v1 API integration tests + customer developer documentation

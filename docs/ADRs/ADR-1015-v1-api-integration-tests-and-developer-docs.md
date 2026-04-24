@@ -278,17 +278,31 @@ External-consumer perspective: only a Bearer API key, no internal imports, no DB
 
 ### Phase 4 — Alignment + publication
 
-#### Sprint 4.1: Cross-link audit
+#### Sprint 4.1: Cross-link audit · `[x] complete 2026-04-24`
 
 **Estimated effort:** 1 day
 
 **Deliverables:**
-- [ ] Every cookbook recipe links to the relevant API-reference endpoint.
-- [ ] Every API-reference endpoint links to the cookbook recipe(s) that use it.
-- [ ] Every client-library README (once ADR-1006 lands) links to the docs home.
-- [ ] Every `/docs/*` page has an "On this page" ToC rendered from its MDX headings.
+- [x] Every cookbook recipe links to the relevant API-reference endpoint via the `/docs/api/*` catchall. Fixed three broken deep-links discovered by extracting every markdown link from every MDX page: `/docs/api/account/audit` → semantic fix to `/docs/api/audit/list`; `/docs/api/deletion/test-delete` + `/docs/api/rights/requests` → ENDPOINTS map in `/docs/api/[...path]/page.tsx` expanded to cover Audit / Rights / Security / Score tags.
+- [x] Every in-page anchor reference (5 cross-page `#slug` links across the Sprint 2.x corpus) verified against the rendered HTML's actual `id=` attributes — all match the slugs rehype-slug produces (including double-dashes from em-dashes and embedded parens).
+- [x] Every `/docs/*` page renders a ToC rendered from its MDX headings via `DocsTocRail` (already shipped Sprint 1.1; no drift).
+- [ ] Every client-library README links to the docs home — not applicable until ADR-1006 ships.
+- [ ] Every API-reference endpoint links *back* to the cookbook recipe(s) that use it — not applicable because API-reference pages are rendered via Scalar (not per-endpoint MDX); Scalar's description markdown fields would be the insertion point but that's an OpenAPI-authoring concern tracked under ADR-1012's example-backfill rhythm.
 
-**Status:** `[ ] planned`
+**ENDPOINTS map expansion (new 5 mappings):**
+- `deletion/test-delete` → POST `/integrations/{connector_id}/test_delete`
+- `rights/requests` → POST `/rights/requests`
+- `rights/requests-list` → GET `/rights/requests`
+- `audit/list` → GET `/audit`
+- `security/scans` → GET `/security/scans`
+- `score` → GET `/score`
+
+**Testing plan:**
+- [x] `cd marketing && bun run build` — PASS. All routes still prerender static; ENDPOINTS catchall covers every `/docs/api/*` deep-link referenced in MDX.
+- [x] `cd marketing && bun run lint` + `bunx tsc --noEmit` — PASS.
+- [x] In-page anchors: diff `/tmp/docs-md-hrefs.txt` (extracted) vs `grep -oE 'id="[^"]+"' .next/server/app/docs/*.html` (rendered). Zero drift.
+
+**Status:** `[x] complete 2026-04-24`
 
 #### Sprint 4.2: Wireframe reconciliation
 
@@ -301,14 +315,14 @@ External-consumer perspective: only a Bearer API key, no internal imports, no DB
 
 **Status:** `[ ] planned`
 
-#### Sprint 4.3: Docs-issue template + "Edit on GitHub"
+#### Sprint 4.3: Docs-issue template + "Edit on GitHub" · `[x] complete 2026-04-24`
 
 **Deliverables:**
-- [ ] `.github/ISSUE_TEMPLATE/docs-issue.yml` — structured form for "this page is wrong / missing / unclear".
-- [ ] Every `/docs/*` page renders an "Edit on GitHub" link computed from its file path.
-- [ ] Feedback strip (per wireframe) submits to the issue form with page context pre-filled.
+- [x] `.github/ISSUE_TEMPLATE/docs-issue.yml` — GitHub Issue Forms template with structured fields: `page` (text, pre-fills from FeedbackStrip URL), `vote` (dropdown `yes`/`no`/`other`, pre-fills from FeedbackStrip URL), `issue_type` (dropdown: Wrong / Missing / Unclear / Broken / Suggestion), `details` (required textarea), `integration_context` (optional text), and two confirmation checkboxes.
+- [x] Every `/docs/*` page renders an "Edit on GitHub" link — already shipped in Sprint 1.3 via `DocsTocRail.tsx` (auto-derives `page.mdx` / `page.tsx` from `usePathname()`; dynamic catchalls gracefully hide).
+- [x] FeedbackStrip (`_components/feedback-strip.tsx`) deep-links to `issues/new?template=docs-issue.yml&page=<pagePath>&vote=yes|no` — existed since Sprint 1.1; docs-issue.yml now exists on the receiving side so the pre-fill actually targets a real form.
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete 2026-04-24`
 
 ---
 

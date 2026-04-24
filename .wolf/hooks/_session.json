@@ -211,6 +211,21 @@
       "count": 1,
       "tokens": 2611,
       "first_read": "2026-04-24T13:10:56.055Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/src/app/docs/_components/feedback-strip.tsx": {
+      "count": 1,
+      "tokens": 366,
+      "first_read": "2026-04-24T13:18:43.788Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/src/app/docs/api/[...path]/page.tsx": {
+      "count": 1,
+      "tokens": 1004,
+      "first_read": "2026-04-24T13:20:18.859Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/changelogs/CHANGELOG-docs.md": {
+      "count": 1,
+      "tokens": 12354,
+      "first_read": "2026-04-24T13:23:13.721Z"
     }
   },
   "files_written": [
@@ -543,6 +558,102 @@
       "action": "edit",
       "tokens": 482,
       "at": "2026-04-24T13:11:19.645Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/tests/storage/byok-validate-route.test.ts",
+      "action": "edit",
+      "tokens": 356,
+      "at": "2026-04-24T13:11:31.260Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/tests/storage/byok-validate-route.test.ts",
+      "action": "edit",
+      "tokens": 296,
+      "at": "2026-04-24T13:11:43.645Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/tests/storage/byok-validate-route.test.ts",
+      "action": "edit",
+      "tokens": 471,
+      "at": "2026-04-24T13:11:58.087Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/.github/ISSUE_TEMPLATE/docs-issue.yml",
+      "action": "create",
+      "tokens": 761,
+      "at": "2026-04-24T13:19:12.327Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/.github/ISSUE_TEMPLATE/docs-issue.yml",
+      "action": "edit",
+      "tokens": 143,
+      "at": "2026-04-24T13:19:26.273Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/customer-docs/byos-aws-s3.md",
+      "action": "create",
+      "tokens": 2371,
+      "at": "2026-04-24T13:20:50.084Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/src/app/docs/api/[...path]/page.tsx",
+      "action": "edit",
+      "tokens": 575,
+      "at": "2026-04-24T13:21:18.272Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/src/app/docs/cookbook/build-dpb-audit-export/page.mdx",
+      "action": "edit",
+      "tokens": 20,
+      "at": "2026-04-24T13:21:25.749Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/customer-docs/byos-cloudflare-r2.md",
+      "action": "create",
+      "tokens": 2169,
+      "at": "2026-04-24T13:21:34.494Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/runbooks/standard-to-insulated-migration.md",
+      "action": "create",
+      "tokens": 2637,
+      "at": "2026-04-24T13:22:46.510Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-1003-processor-posture-and-healthcare-unlock.md",
+      "action": "edit",
+      "tokens": 457,
+      "at": "2026-04-24T13:23:09.378Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-1015-v1-api-integration-tests-and-developer-docs.md",
+      "action": "edit",
+      "tokens": 604,
+      "at": "2026-04-24T13:23:12.914Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-1015-v1-api-integration-tests-and-developer-docs.md",
+      "action": "edit",
+      "tokens": 288,
+      "at": "2026-04-24T13:23:28.595Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/changelogs/CHANGELOG-docs.md",
+      "action": "edit",
+      "tokens": 808,
+      "at": "2026-04-24T13:23:34.701Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-index.md",
+      "action": "edit",
+      "tokens": 170,
+      "at": "2026-04-24T13:23:39.065Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/changelogs/CHANGELOG-marketing.md",
+      "action": "edit",
+      "tokens": 1036,
+      "at": "2026-04-24T13:24:08.889Z"
     }
   ],
   "edit_counts": {
@@ -556,14 +667,14 @@
     "docs/changelogs/CHANGELOG-schema.md": 1,
     "marketing/src/app/docs/errors/page.mdx": 1,
     "docs/changelogs/CHANGELOG-api.md": 2,
-    "docs/ADRs/ADR-1003-processor-posture-and-healthcare-unlock.md": 2,
+    "docs/ADRs/ADR-1003-processor-posture-and-healthcare-unlock.md": 3,
     "marketing/src/app/docs/changelog/page.mdx": 1,
     "marketing/src/app/docs/webhook-signatures/page.mdx": 1,
     "marketing/src/app/docs/status/page.mdx": 1,
     "marketing/src/app/docs/_data/search-index.ts": 2,
-    "docs/ADRs/ADR-1015-v1-api-integration-tests-and-developer-docs.md": 4,
-    "docs/changelogs/CHANGELOG-marketing.md": 2,
-    "docs/ADRs/ADR-index.md": 2,
+    "docs/ADRs/ADR-1015-v1-api-integration-tests-and-developer-docs.md": 6,
+    "docs/changelogs/CHANGELOG-marketing.md": 3,
+    "docs/ADRs/ADR-index.md": 3,
     "marketing/src/app/docs/cookbook/record-consent-at-checkout/page.mdx": 1,
     "marketing/src/app/docs/cookbook/build-a-preference-center/page.mdx": 1,
     "app/src/lib/storage/sigv4.ts": 1,
@@ -576,13 +687,19 @@
     "marketing/src/app/docs/cookbook/rotate-api-key-safely/page.mdx": 1,
     "app/tests/storage/sigv4.test.ts": 2,
     "app/tests/storage/validate.test.ts": 1,
-    "marketing/src/app/docs/cookbook/build-dpb-audit-export/page.mdx": 1,
+    "marketing/src/app/docs/cookbook/build-dpb-audit-export/page.mdx": 2,
     "docs/changelogs/CHANGELOG-dashboard.md": 1,
-    "app/tests/storage/byok-validate-route.test.ts": 1
+    "app/tests/storage/byok-validate-route.test.ts": 4,
+    ".github/ISSUE_TEMPLATE/docs-issue.yml": 2,
+    "docs/customer-docs/byos-aws-s3.md": 1,
+    "marketing/src/app/docs/api/[...path]/page.tsx": 1,
+    "docs/customer-docs/byos-cloudflare-r2.md": 1,
+    "docs/runbooks/standard-to-insulated-migration.md": 1,
+    "docs/changelogs/CHANGELOG-docs.md": 1
   },
-  "anatomy_hits": 39,
+  "anatomy_hits": 42,
   "anatomy_misses": 3,
   "repeated_reads_warned": 11,
   "cerebrum_warnings": 0,
-  "stop_count": 7
+  "stop_count": 10
 }
