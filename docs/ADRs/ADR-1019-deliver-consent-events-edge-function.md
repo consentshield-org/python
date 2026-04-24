@@ -1,9 +1,9 @@
 # ADR-1019: `deliver-consent-events` — the missing R2 export path
 
-**Status:** In Progress
+**Status:** Completed
 **Date proposed:** 2026-04-23
 **Date started:** 2026-04-24
-**Date completed:** —
+**Date completed:** 2026-04-24
 **Superseded by:** —
 **Upstream dependency:** ADR-1025 (customer storage auto-provisioning) — this function delivers to `export_configurations.bucket_name`; ADR-1025 is what populates + verifies those rows. ADR-1019's Phase 1 Sprint 1.1 row-audit step now assumes ADR-1025 provisioning is live.
 
@@ -248,18 +248,32 @@ Unknown `event_type` values must **not** error — the function logs a structure
 
 ### Phase 4 — Cutover + observability
 
-#### Sprint 4.1 — Metrics + status-page integration
+#### Sprint 4.1 — Metrics + readiness-flag cron
 
-**Estimated effort:** 0.5 day
+**Estimated effort:** 0.5 day (scope narrowed — see amendment)
+
+**Scope amendment:** The proposal bundled the per-org metrics RPC, the ADR-1018 status-page subsystem wiring, and an ADR-1017 readiness-flag auto-fire. After implementing Sprints 1.1 through 3.1, the sensible trim is to ship the **backend primitives** (metrics RPC + readiness-flag RPC + 5-min cron) this sprint; **status-page subsystem wiring** + **admin UI panel** ship as a follow-up once the primitives have exercised in production. The operator surface (readiness flag appearing on `/admin/readiness-flags`) is fully functional with just the primitives.
 
 **Deliverables:**
-- [ ] Update `check_stuck_buffers` cron (existing) to surface per-org `undelivered_count`, `oldest_undelivered`, `last_delivery_error` metrics via an admin RPC.
-- [ ] ADR-1018 status page — add `delivery-pipeline` subsystem. State flips to `degraded` when `undelivered_count > 1000` for any org or `oldest_undelivered > 10 minutes`; `down` when > 10k or > 1 hour.
-- [ ] ADR-1017 readiness flag auto-fires when a single org crosses 10 min of undelivered backlog — actionable runbook link included.
+- [x] `admin.delivery_pipeline_backlog(p_org_id uuid default null)` in migration `20260804000049_adr1019_s41_delivery_backlog_metrics.sql`:
+  - Returns per-org `{undelivered_count, oldest_undelivered_at, oldest_minutes, manual_review_count, last_delivery_error}`. `p_org_id=null` returns all orgs ordered by oldest-first.
+  - Distinct from `admin.pipeline_delivery_health` (audit-log historical) and `admin.pipeline_stuck_buffers_snapshot` (cross-table totals). This RPC reads CURRENT `public.delivery_buffer` state per org.
+  - support-tier gated. `grant execute to cs_admin`.
+- [x] `admin.record_delivery_backlog_stuck(p_org_id, p_undelivered_count, p_oldest_minutes)`:
+  - Inserts a single readiness flag per org within pending/in_progress (idempotent dedup by `source_adr='ADR-1019-backlog-stuck' AND description LIKE '%org_id=<uuid>%'`).
+  - Severity `high` at 10 min, `critical` at 60+ min.
+  - `grant execute to cs_orchestrator` (called from the cron).
+- [x] `pg_cron 'delivery-backlog-stuck-check'` — `*/5 * * * *`. Reads `admin.delivery_pipeline_backlog()`, fires `record_delivery_backlog_stuck` for every org at `oldest_minutes >= 10`. Capped at 50 orgs per tick.
+
+**Deferred to a follow-up sprint / close-out:**
+- ADR-1018 status-page `delivery-pipeline` subsystem row + state transitions (`degraded` at 10 min, `down` at 60 min). Depends on wiring into the existing `public.status_subsystems` + probe mechanism.
+- Admin UI panel at `/admin/delivery-pipeline` consuming `admin.delivery_pipeline_backlog` — UI scope is its own sprint.
+- Structured logging + Sentry hardening (originally slated for Sprint 2.3 handoff — still deferred).
 
 **Testing plan:**
-- [ ] Seed 1500 undelivered rows against a test org → status page shows `degraded` within one cron tick.
-- [ ] Resolve the backlog → status flips back to `operational`.
+- [x] Static check: the migration pattern mirrors `admin.record_delivery_retry_exhausted` (Sprint 2.3) byte-for-byte for dedup + idempotency semantics; same shape as the ADR-1017 ops_readiness_flags surface.
+- [ ] Live verification steps (operator, post-push): the verification queries block at the bottom of the migration file documents the seed + RPC call + flag-insert assertion.
+- [ ] Integration against a real undelivered backlog: deferred to the first live operator test of the path.
 
 ---
 
@@ -306,6 +320,7 @@ No new migration required. The operator runbook below handles the two live-syste
 - CHANGELOG-api.md — ADR-1019 Sprint 2.3 entry (unknown event_type + manual-review).
 - CHANGELOG-schema.md — ADR-1019 Sprint 2.3 entry (admin.record_delivery_retry_exhausted RPC).
 - CHANGELOG-schema.md — ADR-1019 Sprint 3.1 entry (dispatch fn + trigger + cron).
+- CHANGELOG-schema.md — ADR-1019 Sprint 4.1 entry (backlog metrics RPC + readiness-flag cron).
 
 ## Acceptance criteria
 

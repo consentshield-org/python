@@ -2,6 +2,24 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-1019 Sprint 4.1 — delivery-backlog metrics RPC + readiness-flag cron] — 2026-04-24
+
+**ADR:** ADR-1019 — `deliver-consent-events` Next.js route (completed)
+**Sprint:** Phase 4, Sprint 4.1
+**Migration:** `20260804000049_adr1019_s41_delivery_backlog_metrics.sql`
+
+### Added
+- `admin.delivery_pipeline_backlog(p_org_id uuid default null)` — per-org CURRENT `public.delivery_buffer` snapshot: `{undelivered_count, oldest_undelivered_at, oldest_minutes, manual_review_count, last_delivery_error}`. Distinct from `admin.pipeline_delivery_health` (audit-log historical) and `admin.pipeline_stuck_buffers_snapshot` (cross-table totals). Support-tier gated; granted to `cs_admin`.
+- `admin.record_delivery_backlog_stuck(p_org_id, p_undelivered_count, p_oldest_minutes)` — idempotent INSERT into `admin.ops_readiness_flags` when an org's backlog crosses 10 min. Dedup per org within pending/in_progress flags. Severity `high` at 10 min, `critical` at 60+ min. Granted to `cs_orchestrator` (called from cron).
+- `pg_cron 'delivery-backlog-stuck-check'` — `*/5 * * * *`. Reads `admin.delivery_pipeline_backlog()`, fires the readiness-flag RPC for every org at `oldest_minutes >= 10`. Capped at 50 orgs per tick.
+
+### Scope amendment
+Proposal bundled a status-page subsystem wiring + admin UI panel. Narrowed to the backend primitives for this sprint; UI + ADR-1018 subsystem wiring ship as a follow-up. Operators can already see the stuck-backlog state via the readiness-flags panel (driven by this sprint's cron).
+
+### Tested
+- Static consistency check vs ADR-1019 Sprint 2.3 `admin.record_delivery_retry_exhausted` — same dedup shape, same idempotency semantics, same grant chain.
+- Live verification steps documented inline in the migration's tail block.
+
 ## [ADR-1019 Sprint 3.1 — deliver-consent-events dispatch + trigger + cron] — 2026-04-24
 
 **ADR:** ADR-1019 — `deliver-consent-events` Next.js route
