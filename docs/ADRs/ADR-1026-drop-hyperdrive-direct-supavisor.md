@@ -1,6 +1,6 @@
 # ADR-1026: Rewind ADR-1010 Phase 3 — Worker connects directly to Supavisor; drop Hyperdrive binding
 
-**Status:** In Progress
+**Status:** Blocked (Sprint 1.2 discovery — see "Blockers discovered")
 **Date proposed:** 2026-04-24
 **Date completed:** —
 **Supersedes (partial):** ADR-1010 Phase 3 Sprint 3.1's *mechanism* choice (Hyperdrive binding). All other Phase 3/4 work — `cs_worker` scoped role, direct-Postgres via `postgres.js`, Supavisor transaction pooler as the origin, Rule 16 carve-out, `SUPABASE_WORKER_KEY` retirement, role-guard removal, 20/20 Miniflare harness — stays intact.
@@ -144,19 +144,42 @@ Single phase, five sprints. No multi-phase scope inflation.
 - `wrangler secret list` — single entry, `CS_WORKER_DSN` / `secret_text`. PASS.
 - Miniflare suite — 20/20 PASS (3 test files, 2.71s). No regression.
 
-### Sprint 1.2 — Update `worker/src/db.ts` to read `CS_WORKER_DSN` — [ ] planned
+### Sprint 1.2 — Update `worker/src/db.ts` to read `CS_WORKER_DSN` — [!] blocked (2026-04-24)
 
-**Deliverables:**
-- [ ] `openRequestSql(env): Sql | null` reads `env.CS_WORKER_DSN` (now `string | undefined`), returns `null` when absent (Miniflare REST-fallback branch unchanged).
-- [ ] Postgres options (`max: 5, prepare: false, fetch_types: false, connect_timeout: 30`) unchanged.
-- [ ] Comment block in `db.ts` revised to reference Supavisor directly; Hyperdrive references removed.
-- [ ] `worker/src/index.ts` — `Env.HYPERDRIVE?` removed, `HyperdriveBinding` interface removed. `Env.CS_WORKER_DSN?: string` added. Fetch-handler body unchanged (still schedules `ctx.waitUntil(sql.end({timeout: 5}))` after the response).
+**Attempted and reverted.** Worker version `df107c66-1f4f-4feb-bd0d-8fdfe68ddeae` (Sprint 1.2 build with diag) returned every probe as a 19-second 404. Tail log surfaced:
 
-**Test:**
-- `bunx tsc --noEmit` clean.
-- Miniflare suite 20/20 PASS.
-- `wrangler deploy` succeeds (the Hyperdrive binding is still in `wrangler.toml` at this point, but not read by code — harmless).
-- Live smoke: 10 probes. Success + latency target: cold < 1.5 s, warm < 200 ms (matches Sprint 4.2 or better). Confirms direct-Supavisor is viable before removing Hyperdrive.
+```
+[DIAG1026 bnr err] msg= Too many subrequests by single Worker invocation.
+   To configure this limit, refer to
+   https://developers.cloudflare.com/workers/wrangler/configuration/#limits
+```
+
+`worker/src/{db,index,banner}.ts` reverted via `git checkout` (Sprint 1.2 was never committed, only deployed as diag). Worker rolled back to Sprint 4.2 build (`9b5b3024-6e86-481e-962c-0c9267a25d28`). `CS_WORKER_DSN` secret from Sprint 1.1 remains uploaded — harmless since no code reads it.
+
+### Blockers discovered
+
+**Cloudflare Workers free-tier subrequest limit (50/invocation).** Workers Paid tier raises this to 10 000. Each postgres.js wire-protocol round trip (DNS lookup, TCP connect, TLS handshake stages, SCRAM auth exchanges, query packets) against a remote origin counts as a subrequest on the Workers network. On a cold request to `aws-1-ap-northeast-1.pooler.supabase.com:6543`, the handshake alone exceeds 50 subrequests before the first SELECT packet.
+
+**Why Hyperdrive avoids this.** Hyperdrive's `connectionString` resolves to a `*.hyperdrive.local` hostname inside Cloudflare's edge network. Connections to that hostname are not counted as subrequests under the 50/invocation budget (they're internal bindings, not external fetches). Hyperdrive was in fact earning its keep for our workload — just not by the mechanisms named in the original ADR-1026 Context (which mis-identified the value as "edge pool latency" and "query caching"). The actual value is **subrequest-budget containment**.
+
+**Ruling out `max: 1` as a workaround.** Tested: reducing postgres.js `max` from 5 to 1 did not reduce the cold-path subrequest count below 50. The bulk of subrequests is in the TLS + SCRAM handshake, not in the pool size.
+
+### Revised decision tree
+
+One of these three paths forward; the current ADR-1026 `Decision` block no longer stands as-written.
+
+1. **Withdraw ADR-1026; keep Hyperdrive.** Invest in making Hyperdrive's intermittent `CONNECTION_CLOSED` to Supavisor a monitored-and-tolerated failure mode. The flakiness is ~10 % of cold starts; warm requests (the vast majority) are fine. KV cache hides most of it from customers.
+2. **Upgrade to Workers Paid plan ($5/month), keep ADR-1026 scope.** 10 000 subrequests is comfortably above what postgres.js needs on cold. Direct-Supavisor becomes viable. Trade-off: first recurring infra cost, and CLAUDE.md's "dev only, no prod" posture needs to be reconsidered (this would be a dev cost, paid to get a dev feature — not a prod customer charge).
+3. **Replace postgres.js with a hand-rolled wire-protocol client that stays under 50 subrequests.** High effort, adds a bespoke binary to the Worker. Rejected on ambition grounds; it would reopen CLAUDE.md Rule 16's carve-out in the wrong direction.
+
+Recommendation pending: the call rests with the product owner. Path 1 is the cheapest; Path 2 is the cleanest. Path 3 is off the table unless we later discover a fatal flaw in both.
+
+### Sprint plan impact
+
+- Sprint 1.1 (provision `CS_WORKER_DSN`) stays complete. The secret sits dormant until a path decision; it is not load-bearing.
+- Sprints 1.2 → 1.5 are frozen behind the decision.
+- If Path 1 is chosen: the remaining sprints are rewritten as "withdraw ADR-1026, delete `CS_WORKER_DSN` secret, restore wrangler.toml comment, write a postmortem note into ADR-1010 about the Hyperdrive upstream flakiness as an accepted failure mode."
+- If Path 2 is chosen: Sprint 1.2 restarts against the paid tier; the subrequest-budget concern is no longer a blocker; the rest of the plan runs as-written.
 
 ### Sprint 1.3 — Remove `[[hyperdrive]]` from `worker/wrangler.toml` — [ ] planned
 

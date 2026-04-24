@@ -11643,7 +11643,9 @@
         "ctx-waituntil",
         "adr-1010"
       ],
-      "related_bugs": ["bug-726"],
+      "related_bugs": [
+        "bug-726"
+      ],
       "occurrences": 1,
       "last_seen": "2026-04-24T02:45:00Z"
     },
@@ -11664,9 +11666,226 @@
         "adr-1010",
         "incident-recovery"
       ],
-      "related_bugs": ["bug-725"],
+      "related_bugs": [
+        "bug-725"
+      ],
       "occurrences": 1,
       "last_seen": "2026-04-24T02:50:00Z"
+    },
+    {
+      "id": "bug-727",
+      "timestamp": "2026-04-24T02:36:28.272Z",
+      "error_message": "Type error",
+      "file": "worker/src/banner.ts",
+      "root_cause": "Missing or incorrect type annotation",
+      "fix": "Added type assertion/annotation",
+      "tags": [
+        "auto-detected",
+        "type-fix",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T02:36:28.272Z"
+    },
+    {
+      "id": "bug-728",
+      "timestamp": "2026-04-24T02:37:11.024Z",
+      "error_message": "Missing error handling in unknown",
+      "file": "docs/changelogs/CHANGELOG-infra.md",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T02:37:11.024Z"
+    },
+    {
+      "id": "bug-729",
+      "timestamp": "2026-04-24T03:21:40.803Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/ADRs/ADR-1025-customer-storage-auto-provisioning.md",
+      "root_cause": "5 lines replaced/restructured",
+      "fix": "Rewrote 11→16 lines (5 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T03:21:40.803Z"
+    },
+    {
+      "id": "bug-730",
+      "timestamp": "2026-04-24T03:28:53.787Z",
+      "error_message": "CSS fix: el, reset",
+      "file": "app/src/app/(dashboard)/dashboard/settings/storage/_components/byok-form.tsx",
+      "root_cause": "el: HTMLElement, → string | HTMLElement,; reset: (widgetId: string) => void → (widgetId?: string) => void",
+      "fix": "Changed el: HTMLElement, → string | HTMLElement,; reset: (widgetId: string) => void → (widgetId?: string) => void",
+      "tags": [
+        "auto-detected",
+        "style-fix",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T03:28:53.787Z"
+    },
+    {
+      "id": "bug-731",
+      "timestamp": "2026-04-24T03:30:03.075Z",
+      "error_message": "Incorrect value in code",
+      "file": "docs/ADRs/ADR-index.md",
+      "root_cause": "Had 's reserved 1022/1023/1024 slots for multilingual ",
+      "fix": "Changed to 's reserved 1022/1023/1024 slots for multilingual ",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T03:30:03.075Z"
+    },
+    {
+      "id": "bug-732",
+      "timestamp": "2026-04-24T03:35:43.793Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/ADRs/ADR-1025-customer-storage-auto-provisioning.md",
+      "root_cause": "7 lines replaced/restructured",
+      "fix": "Rewrote 10→13 lines (7 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T03:35:43.793Z"
+    },
+    {
+      "id": "bug-733",
+      "timestamp": "2026-04-24T03:44:50.246Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/ADRs/ADR-1026-drop-hyperdrive-direct-supavisor.md",
+      "root_cause": "8 lines replaced/restructured",
+      "fix": "Rewrote 11→11 lines (8 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T03:44:50.246Z"
+    },
+    {
+      "id": "bug-734",
+      "timestamp": "2026-04-24T03:49:55.249Z",
+      "error_message": "Significant refactor of ",
+      "file": "app/src/app/api/orgs/[orgId]/storage/byok-migrate/route.ts",
+      "root_cause": "6 lines replaced/restructured",
+      "fix": "Rewrote 17→11 lines (6 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T03:49:55.249Z"
+    },
+    {
+      "id": "bug-735",
+      "timestamp": "2026-04-24T05:03:42.977Z",
+      "error_message": "Type error",
+      "file": "worker/src/banner.ts",
+      "root_cause": "Missing or incorrect type annotation",
+      "fix": "Added type assertion/annotation",
+      "tags": [
+        "auto-detected",
+        "type-fix",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T05:03:42.977Z"
+    },
+    {
+      "id": "bug-736",
+      "timestamp": "2026-04-24T05:07:45.716Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/ADRs/ADR-1025-customer-storage-auto-provisioning.md",
+      "root_cause": "7 lines replaced/restructured",
+      "fix": "Rewrote 13→34 lines (7 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T05:07:45.716Z"
+    },
+    {
+      "id": "bug-737",
+      "timestamp": "2026-04-24T05:19:34.792Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/ADRs/ADR-1026-drop-hyperdrive-direct-supavisor.md",
+      "root_cause": "11 lines replaced/restructured",
+      "fix": "Rewrote 13→36 lines (11 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T05:19:34.792Z"
+    },
+    {
+      "id": "bug-738",
+      "timestamp": "2026-04-24T05:19:55.856Z",
+      "error_message": "Incorrect value in code",
+      "file": "docs/ADRs/ADR-index.md",
+      "root_cause": "Had `prepare: true`",
+      "fix": "Changed to 's internal `",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T05:19:55.856Z"
+    },
+    {
+      "id": "bug-739",
+      "timestamp": "2026-04-24T09:45:00Z",
+      "error_message": "Too many subrequests by single Worker invocation. (Silent 404 after ~19 s; surfaced only when the catch block logged the exception.)",
+      "file": "worker/src/db.ts",
+      "root_cause": "CF Workers free-tier enforces 50 subrequests per invocation. A cold postgres.js connection to an external Postgres endpoint (Supavisor at aws-1-ap-northeast-1.pooler.supabase.com:6543) exceeds 50 subrequests during TLS + SCRAM handshake alone, before the first SELECT packet. Paid tier is 10 000. Hyperdrive's `*.hyperdrive.local` hostname is internal to CF's edge network and its connections do not count toward this budget — that is the actual load-bearing value of Hyperdrive for this Worker's workload (not edge-pool latency or query caching, as ADR-1026's original Context had claimed).",
+      "fix": "Revert the Worker to the env.HYPERDRIVE path (Sprint 4.2 build). Flip ADR-1026 to Blocked status with a three-path decision tree (withdraw; upgrade CF Workers plan; hand-roll wire-client). max:1 vs max:5 makes no difference — the subrequests are in the handshake, not the pool size.",
+      "tags": [
+        "worker",
+        "cloudflare-workers",
+        "subrequest-limit",
+        "hyperdrive",
+        "supavisor",
+        "adr-1026",
+        "plan-tier"
+      ],
+      "related_bugs": [
+        "bug-725",
+        "bug-726"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T09:45:00Z"
     }
   ]
 }

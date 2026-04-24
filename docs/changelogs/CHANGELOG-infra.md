@@ -2,6 +2,35 @@
 
 Vercel, Cloudflare, Supabase config changes.
 
+## [ADR-1026 Sprint 1.2 — attempted, rolled back; ADR blocked] — 2026-04-24
+
+**ADR:** ADR-1026 — Rewind ADR-1010 Phase 3 mechanism, drop Hyperdrive
+**Sprint:** Phase 1, Sprint 1.2 — blocked (see ADR for decision tree)
+
+### Attempted
+- `worker/src/db.ts` swapped from `env.HYPERDRIVE.connectionString` to `env.CS_WORKER_DSN`.
+- `worker/src/index.ts` — removed `HyperdriveBinding` + `env.HYPERDRIVE`, added `env.CS_WORKER_DSN?: string`.
+- Deployed as Worker version `df107c66-1f4f-4feb-bd0d-8fdfe68ddeae`.
+
+### Blocker surfaced
+- Every probe returned a 19-second 404. Diag log showed the underlying exception: `Too many subrequests by single Worker invocation`.
+- Cloudflare Workers free-tier limit is **50 subrequests per invocation**. postgres.js cold handshake (TLS + SCRAM + query round-trips) to the remote Supavisor origin exceeds that on first request.
+- Confirmed not a postgres.js pool-size issue — `max: 1` also hits the limit. The bulk is in the TLS + SCRAM handshake.
+- Hyperdrive's `*.hyperdrive.local` hostname is internal to CF's edge network and does not count toward the 50 — which is the actual value Hyperdrive earns for our workload (ADR-1026 Context had named a different benefit).
+
+### Rollback
+- `git checkout worker/src/{db,index,banner}.ts` — Sprint 1.2 code never committed; revert was clean.
+- Redeployed the Sprint 4.2 build as version `9b5b3024-6e86-481e-962c-0c9267a25d28`. Worker back on the Hyperdrive path.
+- `CS_WORKER_DSN` wrangler secret (from Sprint 1.1) stays uploaded — harmless; no code reads it until a decision is made.
+
+### Operator action
+- None required. State is identical to pre-Sprint-1.2 except for the dormant `CS_WORKER_DSN` secret.
+
+### Decision pending
+- See ADR-1026 "Revised decision tree": withdraw, upgrade to Workers Paid ($5/mo), or hand-roll a wire client (rejected on ambition). Sprints 1.3–1.5 frozen.
+
+---
+
 ## [ADR-1026 Sprint 1.1 — CS_WORKER_DSN wrangler secret provisioned] — 2026-04-24
 
 **ADR:** ADR-1026 — Rewind ADR-1010 Phase 3 mechanism, drop Hyperdrive
