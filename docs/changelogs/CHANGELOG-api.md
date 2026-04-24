@@ -2,6 +2,33 @@
 
 API route changes.
 
+## [ADR-1025 Sprint 3.1 — BYOK credential validation route + settings UI] — 2026-04-24
+
+**ADR:** ADR-1025 — Customer storage auto-provisioning
+**Sprint:** Phase 3, Sprint 3.1
+
+### Design amendment
+Original ADR called for a Postgres RPC `admin.byok_validate_credentials`. Revised to a Next.js-only route — the verification probe (PUT/GET/sha256/DELETE via sigv4) is Node-native and can't run inside Postgres. Same rationale as the Sprint 2.1 amendment. The route owns auth, Turnstile, rate-limit, and the probe call; no DB writes happen in Sprint 3.1 (persistence lands in Sprint 3.2's migration Edge Function).
+
+### Added — route
+- `app/src/app/api/orgs/[orgId]/storage/byok-validate/route.ts` — POST, Node runtime. Auth chain: `requireOrgAccess(['org_admin'])` (account_owner folds to org_admin via `effective_org_role`, ADR-0044) → body parse → `verifyTurnstileToken` → `checkRateLimit('byok-validate:<user_id>', 5, 60)` → `runVerificationProbe` in-process against the supplied credentials. Returns `{ok: true, probe_id, duration_ms}` (HTTP 200) on success or `{ok: false, failed_step, error}` (HTTP 200 — structured failure) on probe rejection. Transport errors (401/403/429/400) have plain JSON envelopes. Credentials stay in request memory only; never logged, never persisted by this route.
+- `app/src/app/(dashboard)/dashboard/settings/storage/page.tsx` — server component. Shows current `export_configurations` row (provider label + bucket + region + status badge). Gates the BYOK form on `effective_org_role === 'org_admin'`; non-owners see a notice directing them to the account owner. Orgs already on BYOK see a "contact support for rotation" notice (rotation is a migration concern handled in Sprint 3.2 + Sprint 4.1).
+- `app/src/app/(dashboard)/dashboard/settings/storage/_components/byok-form.tsx` — client component. Provider selector (R2 / S3) with sensible per-provider defaults, bucket, region, endpoint, access_key_id, secret_access_key fields. Turnstile rendered via the shared `window.turnstile` API (same `Window` interface augmentation the rights-request form uses). On `ok=true`: green "Credentials validated" panel with probe id + round-trip ms, form locks, secret wiped from state, Turnstile reset. On `ok=false`: red panel naming the failed step + error + plain-English "common fixes" copy. Transport failures render amber panels.
+
+### Reused (no new shared helpers)
+- `@/lib/auth/require-org-role` — role gate with account_owner → org_admin folding (ADR-0044).
+- `@/lib/rights/turnstile` — server-side Turnstile verification.
+- `@/lib/rights/rate-limit` — Upstash-Redis-backed rate limiter, 5/hour per user. Dev fallback: in-memory counter with a one-time warning.
+- `@/lib/storage/verify.runVerificationProbe` — the 4-step PUT/GET/sha256/DELETE probe from Sprint 1.3, re-used verbatim.
+
+### Tested
+- `app/tests/storage/byok-validate-route.test.ts` — Vitest, 18 tests, 214 ms. Module-mocks the four collaborators + drives `POST()` directly with hand-built Request objects. Coverage: happy path + credential-absence-from-response assertion; three auth rejection branches; Turnstile failure; rate-limit 429 with `Retry-After`; rate-limit key is scoped per-user (asserted); invalid JSON; 7 × missing-required-field; invalid-provider; probe-failure passthrough with credential-absence assertion.
+- `bunx vitest run tests/storage/` — 63/63 PASS (45 pre-existing + 18 new).
+- Lint + build clean: 235 files scanned, 0 violations; Next.js 16 build 0 errors / 0 warnings.
+
+### Scope boundary
+Sprint 3.1 is the **validation** step. It never writes to `export_configurations` — Sprint 3.2 owns the migration Edge Function that copies objects + swaps the pointer. The "Ready to migrate" success panel is a stub that sets up the next-sprint handoff. Manual smoke against real third-party credentials is deferred to Sprint 3.2 close-out (first-customer BYOK flow) because the route can't be meaningfully exercised without real creds.
+
 ## [ADR-1025 Sprint 2.1 — customer-storage auto-provisioning orchestrator + /api/internal/provision-storage] — 2026-04-24
 
 **ADR:** ADR-1025 — Customer storage auto-provisioning

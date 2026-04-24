@@ -224,17 +224,25 @@ Run on every provisioning, every credential rotation, and nightly-verify cron (r
 
 ### Phase 3 — BYOK escape hatch (Settings → Storage)
 
-#### Sprint 3.1 — BYOK validation RPC + settings UI
+#### Sprint 3.1 — BYOK validation + settings UI
 
 **Estimated effort:** 1 day
 
+**Design amendment (2026-04-24):** the original ADR called for a Postgres RPC `admin.byok_validate_credentials`. Revised to a Next.js-only design — the verification probe is Node code (`runVerificationProbe` in `app/src/lib/storage/verify.ts` — sigv4 signing + fetch); Postgres can't run it. Same rationale as the Sprint 2.1 amendment. The Next.js route owns auth, Turnstile, rate-limit, and the probe call; no DB row is written by this sprint. Sprint 3.2 adds the persistence step (migration Edge Function + cutover).
+
 **Deliverables:**
-- [ ] `admin.byok_validate_credentials(p_provider, p_bucket, p_region, p_access_key_id, p_secret_access_key)` — runs the verification probe against the supplied credentials; returns `{ok, failure_reason?}`. Credentials NOT persisted on this call.
-- [ ] `/dashboard/settings/storage` page (account_owner role-gated): current provider display + BYOK form + Turnstile + per-account 5/hour rate limit.
-- [ ] Customer-app route handler: validates the form, calls the RPC, on success returns the migration-mode prompt.
+- [x] `app/src/app/api/orgs/[orgId]/storage/byok-validate/route.ts` — POST, Node runtime, `force-dynamic`. Auth chain: `requireOrgAccess(['org_admin'])` (account_owner folds to org_admin via `effective_org_role`) → body parse → `verifyTurnstileToken` → per-user `checkRateLimit('byok-validate:<user_id>', 5, 60)` → `runVerificationProbe` in-process. Returns `{ok: true, probe_id, duration_ms}` (HTTP 200) on success or `{ok: false, failed_step, error}` (HTTP 200 — structured failure, not transport error). Credentials stay in request memory only; never logged, never persisted. The auth chain orders Turnstile BEFORE rate-limit so a successful Turnstile token doesn't count as a rate-limit attempt — the attempt only registers once the probe is actually dispatched.
+- [x] **No new rate-limit helper needed.** Reused the existing `app/src/lib/rights/rate-limit.ts` (Upstash Redis via `@upstash/redis`), which already has the exact API shape we need. Key prefix `byok-validate:<user_id>` scopes per-user so a compromised account can't DoS CF by switching orgs.
+- [x] `app/src/app/(dashboard)/dashboard/settings/storage/page.tsx` — server component. Shows current `export_configurations` row (provider label + bucket + region + status) and gates the BYOK form on `effective_org_role === 'org_admin'`. Non-owners see a notice; already-BYOK orgs see a "contact support for rotation" notice (rotation is a migration-level concern handled in Sprint 3.2 + Sprint 4.1).
+- [x] `app/src/app/(dashboard)/dashboard/settings/storage/_components/byok-form.tsx` — client component. Provider selector (Cloudflare R2 / AWS S3) with sensible region+endpoint defaults per provider, bucket, region, endpoint, access_key_id, secret_access_key fields. Turnstile widget rendered via `window.turnstile.render` (same `Window` interface augmentation the rights-request form uses). On submit: POSTs to the validate route; on `ok=true` renders a "Credentials validated" green panel with probe id + round-trip ms; on `ok=false` renders a red panel naming the failed step + error; transport failures (401/403/429/400) render amber panels with plain-English copy. Secret is wiped from form state on a successful validation; Turnstile resets on every terminal state so the user has to re-solve for another attempt.
 
 **Testing plan:**
-- [ ] Paste valid R2 credentials → 200 `{ok:true}`. Paste invalid → 400 with a readable message ("bucket not found" / "permission denied on PUT" / etc.). Credentials never hit logs.
+- [x] `app/tests/storage/byok-validate-route.test.ts` — Vitest, 18 tests, 214 ms. Happy path + credentials-never-in-response assertion; 3 auth branches (unauthenticated 401, not-a-member 403, insufficient_role 403); Turnstile failure 400; rate-limit 429 with `Retry-After` header; rate-limit key scoping asserted as per-user (not per-org); invalid-JSON 400; 7 × missing-required-field 400 (one per field); invalid-provider 400; probe-failure 200 passthrough; credentials-not-in-failure-response assertion.
+- [x] Full test sweep: `cd app && bunx vitest run tests/storage/` — 63/63 PASS (45 pre-existing + 18 new).
+- [x] Lint + build: `bun run lint` + `bun run build` both clean; 235 files scanned, 0 service-role violations, 0 ESLint violations, 0 TS errors, 0 build warnings.
+- [ ] **Manual smoke** (blocked until a customer has BYOK creds to test with — this is a gated surface; cannot smoke-test without real third-party creds). Deferred to Sprint 3.2 close-out or first-customer onboarding, whichever lands first.
+
+**Status:** `[x] complete 2026-04-24 — route + page + form + 18 new unit tests shipped. ADR originally called for a Postgres RPC; revised to a Next.js-only design because the probe is Node-native (same pattern as Sprint 2.1). Existing rate-limit + Turnstile + org-role primitives reused — zero new shared helpers, which matches the "share narrowly" memory.`
 
 #### Sprint 3.2 — Storage migration Edge Function (copy + cutover)
 
