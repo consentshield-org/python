@@ -1,8 +1,8 @@
 # ADR-1027: Admin Account-Awareness Pass
 
-**Status:** Proposed
+**Status:** Completed
 **Date proposed:** 2026-04-24
-**Date completed:** —
+**Date completed:** 2026-04-24
 **Superseded by:** —
 **Upstream dependency:** ADR-0044 (customer RBAC — 4-level hierarchy), ADR-0048 (Admin Accounts panel + `admin.account_detail` envelope), ADR-0050 (account-aware billing), ADR-0055 (account-scoped impersonation), ADR-0056 (per-account feature flags).
 
