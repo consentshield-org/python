@@ -43,6 +43,11 @@
 
 ## Decision Log
 
+[2026-04-24] **v2 Whitepaper track split between Terminal A and Terminal B.** User greenlit the following ownership. Do not cross-assign — reassignment requires explicit greenlight.
+- **Terminal A** owns: ADR-1003 (processor posture — storage_mode / BYOS / Zero-Storage / Healthcare / sandbox — 5 phases / 8 sprints), ADR-1007 (connector ecosystem expansion — 3 phases / 9 sprints), ADR-1008 (scale + audit polish + SOC 2 + React Native — 3 phases / 10 sprints). Total 27 sprints.
+- **Terminal B** owns: ADR-1006 (client libraries Node/Python/Java/Go + OpenAPI + CI drift — 4 phases / 7 sprints), ADR-1015 (v1 API integration tests + `/docs/*` developer docs on marketing — 4 phases / 13 sprints). Total 20 sprints.
+- Rationale in memory `project_v2_whitepaper_split.md`. Coordination tripwires: migration-number collisions renumber your own file; shared changelogs prepend at top; edit only your own ADR-index rows.
+
 [2026-04-13] **Next.js 16 over 14.** CLAUDE.md originally specified Next.js 14 but the current major version is 16. Updated to 16.2.3 (latest stable). React 19.2.5. All packages pinned to latest with security patches as of 2026-04-13.
 
 [2026-04-21] **ADR-1009 Phase 2 scope amendment: direct Postgres via postgres.js, not HS256 JWT signing.** Original plan was to mint a `cs_api` HS256 JWT identical to SUPABASE_WORKER_KEY. Discovered mid-sprint that Supabase is rotating HS256 → ECC P-256 signing keys (legacy key flagged "Previously used" in dashboard). HS256-signed scoped-role JWTs would break when the legacy key is revoked. Switched to direct Postgres connections as LOGIN roles (same pattern cs_delivery / cs_orchestrator already use from Edge Functions). Future-proof against the rotation; also the Worker's eventual migration path.
