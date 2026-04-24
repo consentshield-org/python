@@ -2,6 +2,33 @@
 
 Public marketing site (`marketing/` workspace → `consentshield.in`). New in 2026-04-21.
 
+## [ADR-1015 Sprint 2.3 — Error catalog + API changelog + webhook signatures + status] — 2026-04-24
+
+**ADR:** ADR-1015 — v1 API integration tests + customer developer documentation
+**Sprint:** Phase 2, Sprint 2.3 — Reference-tier docs
+
+### Added
+- `marketing/src/app/docs/errors/page.mdx` — complete RFC 7807 error reference for the `/v1/*` surface. Authored from every `problemJson(...)` call site in `app/src/app/api/v1/*` + `app/src/lib/api/*` (54 variants enumerated). Sections: response shape + request headers, full status-code overview StatusGrid (400/401/403/404/409/410/413/422/429/500/501), per-class breakdowns (authentication 401/410, scope 403, scoping 400, resource 404, field validation 422, conflict 409, rate-limit 429, server 500, not-implemented 501), retry-policy table, support-ticket guidance.
+- `marketing/src/app/docs/changelog/page.mdx` — public API changelog. Seeded with four entries: ADR-1001 (`v1.0.0` API foundation — Bearer, scopes, rate-limits, RFC 7807, `/_ping`), ADR-1002 (`v1.0.0` DPDP §6 runtime — 15 endpoints across consent / deletion / rights / security / audit), ADR-1011 (`v1.1.0` 410 Gone tombstone on rotated keys with `X-Consentshield-Key-Rotated-At` / `X-Consentshield-Key-Prefix`), ADR-1012 (`v1.2.0` day-1 DX — `/keys/self`, `/usage`, `/purposes`, `/properties`, `/plans` + OpenAPI examples). Includes 90-day deprecation policy with `Sunset` / `Deprecation` headers and a 180-day parallel-run commitment for any future `/v2/*` bump.
+- `marketing/src/app/docs/webhook-signatures/page.mdx` — three HMAC-SHA256 signing schemes documented end-to-end: (1) deletion-connector dispatch — `HMAC-SHA256(secret, raw_body)` → `X-ConsentShield-Signature`; (2) notification webhooks — `HMAC-SHA256(secret, timestamp + "." + body)` → `X-ConsentShield-Signature` + `X-ConsentShield-Timestamp` with ±5 min replay window; (3) deletion-callback return URL — `?sig=HMAC-SHA256(receipt_id, DELETION_CALLBACK_SECRET)` pre-computed by us. Verification samples in Node.js, Python, and Go; raw-body gotcha per framework (Express / FastAPI / Next.js App Router / Fastify); constant-time-compare requirements; 24-hour dual-secret rotation window; common-failure StatusGrid.
+- `marketing/src/app/docs/status/page.mdx` — pointer landing page for `status.consentshield.in`. Documents monitored surfaces (REST API, Worker ingestion, rights portal, dashboard, admin console, deletion dispatch, notification dispatch), uptime targets per surface, incident-severity pipeline (`investigating → identified → monitoring → resolved`), and reporting steps. Does not embed a live dashboard — ADR explicitly rules that out.
+
+### Changed
+- `marketing/src/app/docs/_data/search-index.ts` — expanded descriptions + keywords for the three sidebar-listed reference pages. Introduced `STANDALONE_ENTRIES` so `/docs/status` is Cmd-K searchable even though the sidebar's "Status & uptime" remains an external-link direct-shortcut per the existing Reference-group convention.
+
+### Tested
+- [x] `cd marketing && bunx tsc --noEmit` — PASS.
+- [x] `cd marketing && bun run lint` — PASS (zero warnings).
+- [x] `cd marketing && bun run build` — PASS. All 4 new routes (`/docs/errors`, `/docs/changelog`, `/docs/webhook-signatures`, `/docs/status`) prerender static. Total `/docs/*` now 15 static routes + 1 dynamic catchall.
+
+### Why
+Sprint 2.3 closes Phase 2's reference tier — the docs that a partner engineer consults once during integration and again when something fails in production. The errors page is grounded in the 54 actual `problemJson(...)` variants the v1 surface emits today, not an aspirational enum. The architecture-deviation note (captured in the ADR sprint body) records the doc-vs-wireframe drift on error codes: we shipped RFC 7807 as the canonical shape, so the page documents that rather than force a refactor across 21 route handlers. Sprint 2.2 (7 cookbook recipes × 3 languages each) is the remaining heavy authoring pass — recommended for its own session per the ADR's 5-day estimate.
+
+### Architecture Changes
+None. All additions are documentation files under `marketing/src/app/docs/`.
+
+---
+
 ## [ADR-1015 Sprint 2.1 — Developer Hub + Quickstart + 6 concepts + Authentication + Rate-limits] — 2026-04-24
 
 **ADR:** ADR-1015 — v1 API integration tests + customer developer documentation

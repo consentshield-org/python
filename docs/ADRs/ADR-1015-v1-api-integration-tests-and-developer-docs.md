@@ -124,7 +124,7 @@ Ship a four-phase deliverable: the `/docs/*` surface on the marketing site (Next
 
 Each page is authored in MDX and cross-links to the Scalar playground for interactive examples.
 
-#### Sprint 2.1: Developer Hub + Quickstart + Concepts · **[x] complete 2026-04-24**
+#### Sprint 2.1: Developer Hub + Quickstart + Concepts · `[x] complete 2026-04-24`
 
 **Estimated effort:** 3 days
 
@@ -148,7 +148,7 @@ Each page is authored in MDX and cross-links to the Scalar playground for intera
 - [ ] Every internal link resolves — visual pass recommended; many cross-references point at cookbook recipes landing in Sprint 2.2, so some 404s are expected until then.
 - [ ] Lighthouse ≥ 95 — deferred to Sprint 4.2 (wireframe reconciliation) alongside the final CSS polish pass.
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete 2026-04-24`
 
 #### Sprint 2.2: Cookbook — 7 recipes
 
@@ -169,21 +169,27 @@ Each page is authored in MDX and cross-links to the Scalar playground for intera
 
 **Status:** `[ ] planned`
 
-#### Sprint 2.3: Error catalog + API changelog
+#### Sprint 2.3: Error catalog + API changelog + webhook signatures + status · `[x] complete 2026-04-24`
 
 **Estimated effort:** 2 days
 
 **Deliverables:**
-- [ ] `/docs/errors` — every error code surfaced by any `/v1/*` endpoint, with meaning, cause, and recommended remediation. Generated from a canonical enum in `app/src/lib/api/errors.ts` at build time.
-- [ ] `/docs/changelog` — API-specific changelog (distinct from product changelog). Entries generated from ADR close-outs that touched `/v1/*`.
-- [ ] `/docs/webhook-signatures` — HMAC-SHA256 signing used on deletion callbacks, timestamp window, replay defence.
-- [ ] `/docs/status` — embed of status page (external link; do not build a dashboard in-app).
+- [x] `/docs/errors` — every problem type the `/v1/*` surface can return, grouped by HTTP status class. Authored directly from the 54 `problemJson(...)` call sites enumerated in `app/src/app/api/v1/*` and `app/src/lib/api/*`. Covers RFC 7807 shape, response headers, status-code overview, per-class breakdowns (auth 401/410, scope 403, scoping 400, resource 404, validation 422, conflict 409, rate-limit 429, server 500, not-implemented 501), retry policy table, and support-ticket guidance.
+- [x] `/docs/changelog` — API-specific changelog; entries for ADR-1001 (API foundation), ADR-1002 (DPDP §6 runtime — 15 endpoints), ADR-1011 (410 Gone tombstone), ADR-1012 (day-1 DX additions). Includes 90-day deprecation policy + `Sunset` / `Deprecation` header semantics + parallel-run commitment for any future `/v2/*` bump.
+- [x] `/docs/webhook-signatures` — three signing schemes documented end-to-end: (1) deletion-connector webhooks (`HMAC-SHA256(secret, raw_body)` → `X-ConsentShield-Signature`); (2) notification webhooks (`HMAC-SHA256(secret, timestamp + "." + body)` → `X-ConsentShield-Signature` + `X-ConsentShield-Timestamp`, ±5 min replay window); (3) deletion-callback return URL (`?sig=HMAC-SHA256(receipt_id, callback_secret)`). Node.js + Python + Go verification samples, constant-time-compare requirements, raw-body gotcha per framework, 24-hour dual-secret rotation window, common-failure StatusGrid.
+- [x] `/docs/status` — pointer page to `status.consentshield.in` (externally hosted on purpose). Documents what's monitored (REST API, Worker ingestion, rights portal, dashboard, admin console, deletion-connector dispatch, notification dispatch), uptime targets per surface, incident-severity pipeline, and reporting steps. Does not embed a live dashboard — ADR explicitly rules that out.
+- [x] Search index: `_data/search-index.ts` descriptions + keywords for all four pages. `/docs/status` added via `STANDALONE_ENTRIES` because the sidebar's "Status & uptime" entry remains an external-link direct-shortcut per the existing Reference-group convention.
+
+**Architecture deviation — no canonical `app/src/lib/api/errors.ts` enum.**
+The v1 surface uses RFC 7807 `problemJson()` with `{ status, title, detail }` where `title` is the HTTP reason phrase. There is no per-endpoint `error.code` enum file; the wireframe's `invalid_request` / `origin_not_registered` / `purpose_not_found` codes are aspirational and pre-dated the actual ADR-1001 / ADR-1002 implementation. Per `feedback_docs_vs_code_drift.md` — *"when an ADR uncovers a spec/reality drift, prefer docs amendment over code restructure unless the missing abstraction is load-bearing"* — the errors page documents what actually ships (RFC 7807) rather than triggering a refactor across 21 route handlers. A future ADR may introduce a codified enum if client-library (ADR-1006) codegen makes it load-bearing; today it isn't.
 
 **Testing plan:**
-- [ ] Every error code in the enum appears on the page.
-- [ ] The corresponding test (Phase 3) exists for every listed error code.
+- [x] `cd marketing && bunx tsc --noEmit` — PASS.
+- [x] `cd marketing && bun run lint` — PASS.
+- [x] `cd marketing && bun run build` — PASS. All 4 new routes (`/docs/errors`, `/docs/changelog`, `/docs/webhook-signatures`, `/docs/status`) prerender static. Total `/docs/*` routes now 15 static + 1 dynamic catchall.
+- [ ] Integration-test coverage of every listed error — deferred to Phase 3 Sprint 3.3 (the ADR's own acceptance criterion binds /docs/errors rows to happy-path-negative specs that land in 3.3, not 2.3).
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete 2026-04-24`
 
 ---
 

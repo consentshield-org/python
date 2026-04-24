@@ -5149,3 +5149,12 @@
 | 18:14 | Edited docs/ADRs/ADR-1003-processor-posture-and-healthcare-unlock.md | 16→19 lines | ~779 |
 | 18:15 | Created marketing/src/app/docs/changelog/page.mdx | — | ~2254 |
 | 18:17 | Created marketing/src/app/docs/webhook-signatures/page.mdx | — | ~3363 |
+| 18:18 | Created marketing/src/app/docs/status/page.mdx | — | ~1185 |
+| 18:18 | Session end: 19 writes across 11 files (20260804000052_adr1003_s13_zero_storage_artefact_index.sql, zero-storage-bridge.ts, zero-storage-bridge.test.ts, cs-vault-setup.sql, zero-storage-invariant.test.ts) | 33 reads | ~188214 tok |
+| 18:18 | Edited marketing/src/app/docs/_data/search-index.ts | 6→7 lines | ~271 |
+| 18:19 | Edited marketing/src/app/docs/_data/search-index.ts | added optional chaining | ~300 |
+| 18:20 | Edited docs/ADRs/ADR-1015-v1-api-integration-tests-and-developer-docs.md | inline fix | ~22 |
+| 18:20 | Edited docs/ADRs/ADR-1015-v1-api-integration-tests-and-developer-docs.md | 6→6 lines | ~96 |
+| 18:21 | Edited docs/ADRs/ADR-1015-v1-api-integration-tests-and-developer-docs.md | added error handling | ~967 |
+| 18:21 | Edited docs/changelogs/CHANGELOG-marketing.md | added error handling | ~1158 |
+| 18:22 | Edited docs/ADRs/ADR-index.md | inline fix | ~275 |

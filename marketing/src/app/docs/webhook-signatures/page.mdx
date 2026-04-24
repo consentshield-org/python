@@ -1,0 +1,386 @@
+export const metadata = {
+  title: 'Webhook signatures',
+  description:
+    'HMAC-SHA256 signing schemes used by ConsentShield deletion-connector webhooks and custom notification webhooks — headers, canonical payload, replay defence, and verification samples.',
+}
+
+<Breadcrumb trail={[
+  { label: 'Docs', href: '/docs' },
+  { label: 'Reference', href: '/docs' },
+  { label: 'Webhook signatures' },
+]} />
+
+# Webhook signatures
+
+ConsentShield posts webhooks in two directions. Both use **HMAC-SHA256**
+with a per-channel shared secret, but the signing envelope differs by
+purpose:
+
+<ParamTable params={[
+  {
+    name: 'Deletion-connector webhooks',
+    type: 'ConsentShield → your endpoint',
+    description: 'Fan-out of DPDP §6(5) / §12 deletion requests. Signature covers the request body. Receiver confirms completion by POSTing back to a signed callback_url.',
+  },
+  {
+    name: 'Notification webhooks',
+    type: 'ConsentShield → your endpoint',
+    description: 'Operational notifications (rights-request SLA reminders, deletion failures, security-scan alerts). Signature covers timestamp + body to harden against replay.',
+  },
+  {
+    name: 'Deletion callback URL',
+    type: 'your system → ConsentShield',
+    description: 'Return receipt on POST /v1/deletion-receipts/{id}?sig=…. The sig query parameter is computed by us; you pass it back verbatim.',
+  },
+]} />
+
+<Callout tone="security" title="All three schemes use HMAC-SHA256 with a per-channel secret">
+The secret never appears in a webhook body, query parameter, or log
+line. It's shared exactly once, when the channel is provisioned. Rotate
+via **Settings → Notifications → Channel → Rotate signing secret** —
+the old secret stays valid for a 24-hour overlap window.
+</Callout>
+
+## Scheme 1 — Deletion-connector webhooks
+
+Fired when an artefact is revoked (`POST /v1/consent/artefacts/{id}/revoke`)
+or an erasure right is granted (`POST /v1/rights/requests` → approval).
+The configured custom-webhook endpoint receives:
+
+### Headers
+
+<ParamTable params={[
+  {
+    name: 'Content-Type',
+    type: 'application/json',
+    required: true,
+    description: 'Always application/json. Your server must read the body as raw bytes if it plans to verify the signature — see gotcha below.',
+  },
+  {
+    name: 'X-ConsentShield-Signature',
+    type: 'hex-string',
+    required: true,
+    description: 'Lowercase hex of HMAC-SHA256(signing_secret, raw_body_bytes). 64 characters.',
+  },
+]} />
+
+### Canonical payload
+
+```json
+{
+  "event":          "deletion_request",
+  "request_id":     "01HRG6Z…",
+  "receipt_id":     "01HRG7B…",
+  "data_principal": {
+    "identifier":      "a@example.in",
+    "identifier_type": "email"
+  },
+  "reason":       "consent_revoked",
+  "callback_url": "https://app.consentshield.in/api/v1/deletion-receipts/01HRG7B…?sig=<HMAC>",
+  "deadline":     "2026-05-24T14:30:22Z"
+}
+```
+
+- `callback_url` — signed URL you POST back to once the deletion is complete. `sig` query parameter is pre-computed by us.
+- `deadline` — 30 days from dispatch per DPDP §12 default.
+- `reason` — one of `consent_revoked`, `rights_request`, `retention_expired`.
+
+### Verify in Node.js
+
+```ts
+import { createHmac, timingSafeEqual } from 'node:crypto'
+import express from 'express'
+
+const app = express()
+
+// IMPORTANT: raw body — not express.json()
+app.post('/hooks/consentshield',
+  express.raw({ type: 'application/json' }),
+  (req, res) => {
+    const signature = req.header('X-ConsentShield-Signature') ?? ''
+    const expected = createHmac('sha256', process.env.CS_WEBHOOK_SECRET!)
+      .update(req.body)
+      .digest('hex')
+
+    const a = Buffer.from(expected, 'hex')
+    const b = Buffer.from(signature, 'hex')
+    if (a.length !== b.length || !timingSafeEqual(a, b)) {
+      return res.status(403).send('invalid signature')
+    }
+
+    const payload = JSON.parse(req.body.toString('utf8'))
+    // ... process payload.data_principal ...
+    res.sendStatus(202) // queue async; ACK fast.
+  },
+)
+```
+
+### Verify in Python
+
+```python
+import hmac
+import hashlib
+import os
+from fastapi import FastAPI, Request, HTTPException
+
+app = FastAPI()
+SECRET = os.environ["CS_WEBHOOK_SECRET"].encode()
+
+@app.post("/hooks/consentshield")
+async def consentshield_webhook(request: Request):
+    raw = await request.body()
+    sig = request.headers.get("X-ConsentShield-Signature", "")
+
+    expected = hmac.new(SECRET, raw, hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(expected, sig):
+        raise HTTPException(403, "invalid signature")
+
+    payload = await request.json()
+    # queue async; respond within 5s
+    return {"ok": True}
+```
+
+### Verify in Go
+
+```go
+import (
+    "crypto/hmac"
+    "crypto/sha256"
+    "encoding/hex"
+    "io"
+    "net/http"
+    "os"
+)
+
+func webhookHandler(w http.ResponseWriter, r *http.Request) {
+    raw, _ := io.ReadAll(r.Body)
+    defer r.Body.Close()
+
+    mac := hmac.New(sha256.New, []byte(os.Getenv("CS_WEBHOOK_SECRET")))
+    mac.Write(raw)
+    expected := hex.EncodeToString(mac.Sum(nil))
+
+    if !hmac.Equal([]byte(expected), []byte(r.Header.Get("X-ConsentShield-Signature"))) {
+        http.Error(w, "invalid signature", http.StatusForbidden)
+        return
+    }
+
+    // queue async; ACK fast.
+    w.WriteHeader(http.StatusAccepted)
+}
+```
+
+## Scheme 2 — Notification webhooks
+
+Used by custom channels configured at **Settings → Notifications →
+Channels → Custom webhook**. Ships operational events (SLA reminders,
+security-scan alerts, deletion-connector failures, etc.).
+
+Signs **timestamp + body** rather than body alone, which hardens against
+replay — an attacker replaying a captured payload must also replay the
+timestamp, which your verifier rejects after the 5-minute window.
+
+### Headers
+
+<ParamTable params={[
+  {
+    name: 'X-ConsentShield-Timestamp',
+    type: 'ISO 8601',
+    required: true,
+    description: 'The notification\'s occurred_at. Your verifier must reject values more than 5 minutes from server time.',
+  },
+  {
+    name: 'X-ConsentShield-Signature',
+    type: 'hex-string',
+    required: true,
+    description: 'Lowercase hex of HMAC-SHA256(signing_secret, timestamp + "." + raw_body_bytes). Note the literal dot separator.',
+  },
+]} />
+
+### Canonical payload
+
+```json
+{
+  "version":         1,
+  "kind":            "rights_request.sla_amber",
+  "severity":        "warning",
+  "subject":         "Rights request SR-2026-0142 approaching SLA",
+  "body":            "Rights request from a@example.in is 66% through its DPDP §13 window…",
+  "occurred_at":     "2026-04-24T14:30:22Z",
+  "org_id":          "01HRG5K9X7N5B2VA8P3M9Q4W1T",
+  "idempotency_key": "sla:SR-2026-0142:amber",
+  "context":         { /* kind-specific */ }
+}
+```
+
+### Verify in Node.js (with replay defence)
+
+```ts
+import { createHmac, timingSafeEqual } from 'node:crypto'
+
+const FIVE_MIN_MS = 5 * 60 * 1000
+
+function verifyNotification(
+  rawBody: Buffer,
+  headers: Record<string, string>,
+  secret: string,
+): boolean {
+  const timestamp = headers['x-consentshield-timestamp'] ?? ''
+  const signature = headers['x-consentshield-signature'] ?? ''
+
+  // 1. Replay defence — reject timestamps outside the ±5-min window.
+  const t = new Date(timestamp).getTime()
+  if (!t || Math.abs(Date.now() - t) > FIVE_MIN_MS) return false
+
+  // 2. Recompute HMAC over `timestamp + "." + body`.
+  const msg = Buffer.concat([
+    Buffer.from(timestamp, 'utf8'),
+    Buffer.from('.', 'utf8'),
+    rawBody,
+  ])
+  const expected = createHmac('sha256', secret).update(msg).digest('hex')
+
+  // 3. Constant-time compare.
+  const a = Buffer.from(expected, 'hex')
+  const b = Buffer.from(signature, 'hex')
+  return a.length === b.length && timingSafeEqual(a, b)
+}
+```
+
+### Verify in Python
+
+```python
+import hmac
+import hashlib
+from datetime import datetime, timezone, timedelta
+
+FIVE_MIN = timedelta(minutes=5)
+
+def verify_notification(raw: bytes, headers: dict, secret: bytes) -> bool:
+    ts_hdr = headers.get("x-consentshield-timestamp", "")
+    sig    = headers.get("x-consentshield-signature", "")
+    try:
+        ts = datetime.fromisoformat(ts_hdr.replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    if abs(datetime.now(timezone.utc) - ts) > FIVE_MIN:
+        return False
+
+    msg = ts_hdr.encode() + b"." + raw
+    expected = hmac.new(secret, msg, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, sig)
+```
+
+## Scheme 3 — Deletion-callback return URL
+
+When your connector finishes deleting data, it POSTs the result back to
+the `callback_url` ConsentShield gave it at dispatch. The URL carries a
+`sig` query parameter **we** computed — you don't compute anything on
+your end, just pass the URL back verbatim.
+
+```http
+POST /api/v1/deletion-receipts/01HRG7B…?sig=<64-char-hex> HTTP/1.1
+Host: app.consentshield.in
+Content-Type: application/json
+
+{
+  "request_id":      "01HRG6Z…",
+  "status":          "completed",
+  "records_deleted": 17,
+  "systems_affected": ["crm.prod", "email.mkt"],
+  "completed_at":    "2026-04-24T15:02:11Z"
+}
+```
+
+`sig = HMAC-SHA256(DELETION_CALLBACK_SECRET, receipt_id)` — we verify
+before accepting the receipt. Missing or mismatched `sig` returns
+**403 Forbidden**.
+
+<Callout tone="warn" title="Do not reconstruct the callback URL">
+Always use the exact `callback_url` string we sent you. If you
+URL-decode, canonicalise, or otherwise rewrite it, the `sig` parameter
+will fail to verify. The URL is intentionally opaque.
+</Callout>
+
+## Gotchas and security notes
+
+### Use raw bytes for HMAC input
+
+Most frameworks parse JSON before your handler runs, which invalidates
+the signature — `JSON.stringify(JSON.parse(body))` does not produce
+byte-identical output (key order, whitespace, Unicode escapes). Always
+compute HMAC over the **raw request body** as received on the wire.
+
+- **Express:** `express.raw({ type: 'application/json' })` (not `express.json()`).
+- **FastAPI:** `await request.body()` before any `await request.json()`.
+- **Next.js App Router:** `await req.text()` in a Route Handler; parse JSON yourself afterwards.
+- **Fastify:** register with `{ parseAs: 'buffer' }` or use the `rawBody` plugin.
+
+### Constant-time comparison is mandatory
+
+Plain `a === b` string comparison leaks the prefix of the expected
+signature via timing side-channel. All samples above use:
+
+- Node.js — `crypto.timingSafeEqual` on equal-length Buffers.
+- Python — `hmac.compare_digest`.
+- Go — `hmac.Equal`.
+- Ruby — `OpenSSL::HMAC.compare`.
+
+### Rotating a signing secret
+
+1. **Settings → Notifications → Channel → Rotate signing secret** issues a new secret.
+2. For the next **24 hours**, both the old and the new secret are accepted on outgoing signatures — your verifier should tolerate either.
+3. Update your verifier to recognise the new secret.
+4. Old secret is revoked after 24 hours.
+
+Sample dual-verification helper (Node.js):
+
+```ts
+function verifyEither(raw: Buffer, sig: string, secretNew: string, secretOld?: string) {
+  return (
+    verifyWith(raw, sig, secretNew) ||
+    (secretOld ? verifyWith(raw, sig, secretOld) : false)
+  )
+}
+```
+
+### Retries + idempotency
+
+- ConsentShield retries deliveries on `408`, `429`, or `5xx`. Non-2xx / non-retryable `4xx` stops retries (signature-mismatch, body-too-large).
+- **Every payload carries `idempotency_key`.** Use it to deduplicate —
+  we may deliver the same event more than once in failure modes.
+- Respond `2xx` within **5 seconds**. Queue the actual work
+  asynchronously; ACK first, process second.
+
+### Common failures
+
+<StatusGrid statuses={[
+  {
+    code: '403',
+    label: 'invalid signature',
+    description: <>Either the raw body was parsed before HMAC, the wrong secret was used (check rotation window), or the attacker forged a request.</>,
+  },
+  {
+    code: '403',
+    label: 'expired timestamp',
+    description: <>Notification scheme only. Your server clock drifted more than ±5 min from UTC. Run NTP.</>,
+  },
+  {
+    code: '408',
+    label: 'handler timeout',
+    description: <>Your handler took &gt; 5 s to ACK. ConsentShield will retry up to 5 times with exponential backoff.</>,
+  },
+  {
+    code: '5xx',
+    label: 'delivery retried',
+    description: <>We&apos;ll retry with exponential backoff (1s, 2s, 4s, 8s, 16s). If we still fail, the channel is marked degraded in your dashboard.</>,
+  },
+]} />
+
+## Next steps
+
+- [Deletion connectors](/docs/concepts/deletion-connectors) — the conceptual model.
+- [Wire a deletion-connector webhook](/docs/cookbook/wire-deletion-connector-webhook) — full recipe (lands in Sprint 2.2).
+- [Error codes](/docs/errors) — how REST errors relate to webhook failures.
+
+<FeedbackStrip pagePath="marketing/src/app/docs/webhook-signatures/page.mdx" />

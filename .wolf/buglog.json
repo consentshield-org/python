@@ -13326,6 +13326,86 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-04-24T12:44:59.770Z"
+    },
+    {
+      "id": "bug-830",
+      "timestamp": "2026-04-24T12:48:43.514Z",
+      "error_message": "Significant refactor of ",
+      "file": "marketing/src/app/docs/_data/search-index.ts",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 6→7 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T12:48:43.514Z"
+    },
+    {
+      "id": "bug-831",
+      "timestamp": "2026-04-24T12:49:09.834Z",
+      "error_message": "Null/undefined access in ",
+      "file": "marketing/src/app/docs/_data/search-index.ts",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check)",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T12:49:09.834Z"
+    },
+    {
+      "id": "bug-832",
+      "timestamp": "2026-04-24T12:51:10.500Z",
+      "error_message": "Missing error handling in unknown",
+      "file": "docs/ADRs/ADR-1015-v1-api-integration-tests-and-developer-docs.md",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T12:51:10.500Z"
+    },
+    {
+      "id": "bug-833",
+      "timestamp": "2026-04-24T12:51:39.680Z",
+      "error_message": "Missing error handling in unknown",
+      "file": "docs/changelogs/CHANGELOG-marketing.md",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T12:51:39.680Z"
+    },
+    {
+      "id": "bug-834",
+      "timestamp": "2026-04-24T12:52:08.171Z",
+      "error_message": "Missing error handling in unknown",
+      "file": "docs/ADRs/ADR-index.md",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T12:52:08.171Z"
     }
   ]
 }

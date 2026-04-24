@@ -1,0 +1,361 @@
+export const metadata = {
+  title: 'Error codes',
+  description:
+    'Every error the ConsentShield v1 API can return — HTTP status, RFC 7807 problem+json shape, cause, and recommended remediation.',
+}
+
+<Breadcrumb trail={[
+  { label: 'Docs', href: '/docs' },
+  { label: 'Reference', href: '/docs' },
+  { label: 'Error codes' },
+]} />
+
+# Error codes
+
+The ConsentShield v1 API returns **RFC 7807 `application/problem+json`**
+for every non-2xx response. The body carries a stable `type` URI,
+human-readable `title`, HTTP `status`, and specific `detail`, plus
+optional extensions. Your integration can branch on `status` for the
+class of failure and surface `detail` for user-visible hints without
+pattern-matching free text.
+
+## Response shape
+
+```json
+{
+  "type":    "https://consentshield.in/errors/unprocessable-entity",
+  "title":   "Unprocessable Entity",
+  "status":  422,
+  "detail":  "purpose_codes must be an array of strings"
+}
+```
+
+- `type` — stable URI. Slug form of `title`. Safe to switch on.
+- `title` — HTTP reason phrase. Never changes for a given `status`.
+- `status` — HTTP status code (echoes the response line).
+- `detail` — specific, localised-to-code reason. Safe to render to end users but **may change wording** across releases.
+- `instance` *(optional)* — request-scoped URI when the error is tied to a specific record.
+
+Every response also carries these headers:
+
+<ParamTable params={[
+  {
+    name: 'X-Request-Id',
+    type: 'uuid',
+    required: true,
+    description: 'Echoes the client-supplied value or a server-generated one. Include this when opening a support ticket — our logs index by it.',
+  },
+  {
+    name: 'Content-Type',
+    type: 'string',
+    required: true,
+    description: 'application/problem+json on errors; application/json on 2xx responses.',
+  },
+  {
+    name: 'Retry-After',
+    type: 'seconds',
+    description: 'Set on 429 and 503 responses. Integer seconds; wait at least this long before retrying.',
+  },
+  {
+    name: 'X-RateLimit-Remaining',
+    type: 'integer',
+    description: 'Set on every /v1/* response. See /docs/rate-limits for the full header set.',
+  },
+]} />
+
+## Status-code overview
+
+<StatusGrid statuses={[
+  {
+    code: '400',
+    label: 'Bad Request',
+    description: <>The request is malformed in a way that&apos;s not a field-level validation failure — usually key/context mismatch, such as an account-scoped key calling an org-scoped endpoint.</>,
+  },
+  {
+    code: '401',
+    label: 'Unauthorized',
+    description: <>The <code>Authorization</code> header is missing, malformed, or the key doesn&apos;t exist. Emitted by the auth middleware before the handler runs.</>,
+  },
+  {
+    code: '403',
+    label: 'Forbidden',
+    description: <>The key is valid but lacks the required scope, or is bound to a different org than the URL targets. Not retriable with the same key.</>,
+  },
+  {
+    code: '404',
+    label: 'Not Found',
+    description: <>The referenced resource exists nowhere or does not belong to your org. We never distinguish &quot;does not exist&quot; from &quot;not yours&quot; — both yield 404.</>,
+  },
+  {
+    code: '409',
+    label: 'Conflict',
+    description: <>Concurrent update detected. Retry with fresh state.</>,
+  },
+  {
+    code: '410',
+    label: 'Gone',
+    description: <>The API key was rotated and the old plaintext is in the 2-year tombstone window. Update your deployment to the new plaintext. Distinct from 401 on purpose — see <a href="/docs/concepts/key-rotation-and-tombstones">key rotation & tombstones</a>.</>,
+  },
+  {
+    code: '413',
+    label: 'Payload Too Large',
+    description: <>Request body exceeds the per-endpoint ceiling. Batch endpoints have their own limits; see the endpoint&apos;s reference page.</>,
+  },
+  {
+    code: '422',
+    label: 'Unprocessable Entity',
+    description: <>Field-level validation failure. The <code>detail</code> names the offending field and the expected shape.</>,
+  },
+  {
+    code: '429',
+    label: 'Too Many Requests',
+    description: <>Rate-limit exceeded. Honour <code>Retry-After</code> or the <code>X-RateLimit-Reset</code> header.</>,
+  },
+  {
+    code: '500',
+    label: 'Internal Server Error',
+    description: <>Unexpected server-side failure. Safe to retry with exponential backoff; also report via support with the <code>X-Request-Id</code>.</>,
+  },
+  {
+    code: '501',
+    label: 'Not Implemented',
+    description: <>A documented mode of an endpoint is not yet live (e.g. <code>reason=retention_expired</code> on <code>/v1/deletion/trigger</code>). Don&apos;t retry until the feature ships.</>,
+  },
+]} />
+
+## Authentication errors (401 / 410)
+
+Emitted by the auth middleware before your handler runs. Do not rely on
+the `detail` wording to distinguish cases; branch on `status`.
+
+<ParamTable params={[
+  {
+    name: '401 · missing',
+    type: 'Unauthorized',
+    description: 'No Authorization header. Ensure the header is forwarded by every proxy in your request path (some frameworks strip Authorization unless explicitly allowed).',
+  },
+  {
+    name: '401 · malformed',
+    type: 'Unauthorized',
+    description: 'Header present but not "Bearer cs_live_…" (or cs_test_…). Check for stray whitespace, quotes, or the wrong scheme (Token, Basic).',
+  },
+  {
+    name: '401 · invalid',
+    type: 'Unauthorized',
+    description: 'Key doesn\'t exist. Typo, typosquat, or a key that was deleted outside the tombstone window. Re-issue via Settings → API keys.',
+  },
+  {
+    name: '410 · revoked',
+    type: 'Gone',
+    description: 'Key was rotated and the old plaintext is still in the tombstone window. Body includes rotated_at + key_id_prefix. Update your deployment; do not page security on 410s.',
+  },
+]} />
+
+<Callout tone="tip" title="Treat 410 as a routine deploy signal">
+After rotation, the old key returns **410 Gone** for two years. This is a
+deliberate design choice so client libraries can emit a clear rotation
+alert instead of a generic 401. Your monitoring should log 410s at
+*info* level, not *error*.
+</Callout>
+
+## Scope errors (403)
+
+The key authenticated but doesn't carry the scope the endpoint demands.
+
+<ParamTable params={[
+  {
+    name: 'Missing read:consent',
+    type: '403 Forbidden',
+    description: 'The key has no read scopes, or only write scopes. Calls to GET /v1/consent/* fail. Issue a new key with read:consent (or read:all) and retry.',
+  },
+  {
+    name: 'Missing write:consent',
+    type: '403 Forbidden',
+    description: 'The key cannot POST /v1/consent/record or /v1/consent/artefacts/{id}/revoke. Read-only keys are common in integrations that only need verification.',
+  },
+  {
+    name: 'Wrong org',
+    type: '403 Forbidden',
+    description: 'The key is bound to org A but the request URL targets org B. The v1 endpoints don\'t carry org_id in the path — the binding is on the key itself. Use the right key for the right org.',
+  },
+]} />
+
+See [authentication](/docs/authentication) for the full scope list and
+how keys get issued per org.
+
+## Scoping errors (400)
+
+<ParamTable params={[
+  {
+    name: 'Account-scoped key',
+    type: '400 Bad Request',
+    description: 'Example detail: "API key is account-scoped — /v1/consent/record requires an org-scoped key". A few org-aware endpoints (consent/*, purposes, properties, audit) refuse account-only keys. Issue an org-scoped key from within the target organisation.',
+  },
+]} />
+
+## Resource-not-found errors (404)
+
+`404` means the resource doesn't belong to your org — which includes the
+case where it doesn't exist at all. This is intentional: leaking
+existence would reveal whether a given ID is used somewhere on the
+platform.
+
+<ParamTable params={[
+  {
+    name: 'No artefact with that id belongs to your org',
+    type: '404 Not Found',
+    description: 'Path: /v1/consent/artefacts/{id} (GET or revoke). Either the artefact never existed or belongs to a different org.',
+  },
+  {
+    name: 'connector_id does not belong to your org',
+    type: '404 Not Found',
+    description: 'Path: /v1/integrations/{connector_id}/test_delete. Either the connector was never provisioned for this org, or is provisioned under a different one.',
+  },
+  {
+    name: 'property_id does not belong to your org',
+    type: '404 Not Found',
+    description: 'Path: /v1/consent/events (filter), /v1/score. Web property referenced in a query parameter doesn\'t exist or isn\'t yours.',
+  },
+  {
+    name: 'Receipt not found',
+    type: '404 Not Found',
+    description: 'Path: /v1/deletion-receipts/{id}. Receipt unknown or not yours. Also returned if the receipt was deleted after the 90-day retention window.',
+  },
+]} />
+
+## Validation errors (422)
+
+`422` always carries a `detail` that names the field and the expected
+shape. **Field-level validation lives client-side in the OpenAPI schema**
+(see `/openapi.yaml`) — fixing these at the source saves a round trip.
+
+<StatusGrid statuses={[
+  {
+    code: '422',
+    label: 'Body shape',
+    description: <><code>Request body must be valid JSON</code> · <code>Request body must be a JSON object</code>. Ensure <code>Content-Type: application/json</code> and a JSON object (not array, not string) as the root.</>,
+  },
+  {
+    code: '422',
+    label: 'Timestamps',
+    description: <><code>captured_at</code>, <code>created_after</code>, <code>created_before</code>, <code>scanned_after</code>, <code>scanned_before</code> must be ISO 8601. Example: <code>2026-04-24T14:30:22Z</code>.</>,
+  },
+  {
+    code: '422',
+    label: 'Identifiers',
+    description: <><code>connector_id must be a UUID</code> · <code>identifiers array must not be empty</code> · <code>purpose_definition_ids must contain at least one id</code>. Validate against the OpenAPI schema before sending.</>,
+  },
+  {
+    code: '422',
+    label: 'Enums',
+    description: <><code>actor_type must be one of: user, operator, system</code> · <code>source must be one of: web, api, sdk</code>. Case-sensitive; lowercase.</>,
+  },
+  {
+    code: '422',
+    label: 'Pagination',
+    description: <><code>limit must be an integer between 1 and 200</code> · <code>cursor is malformed</code> · <code>days must be an integer between 1 and 30</code>. Cursors are opaque; pass them back verbatim from a previous response.</>,
+  },
+  {
+    code: '422',
+    label: 'Rights requests',
+    description: <><code>requestor_name is required</code> · <code>requestor_email must be a valid email address</code> · <code>identity_verified_by is required</code>. OTP-verified email is mandatory before <code>/v1/rights/requests</code> accepts a submission.</>,
+  },
+  {
+    code: '422',
+    label: 'Conditional fields',
+    description: <><code>purpose_codes is required when reason=consent_revoked</code>. Several endpoints have reason-code-dependent required fields; the <code>detail</code> names the exact missing field.</>,
+  },
+]} />
+
+## Conflict errors (409)
+
+<ParamTable params={[
+  {
+    name: 'Concurrent update; retry',
+    type: '409 Conflict',
+    description: 'Two updates raced on the same artefact. Re-fetch the current state (GET /v1/consent/artefacts/{id}) and retry with the fresh version. No data was persisted on the losing write.',
+  },
+]} />
+
+## Rate-limit errors (429)
+
+`429` always ships with a `Retry-After` header. For per-endpoint
+sub-limits the `detail` tells you which quota you hit.
+
+<ParamTable params={[
+  {
+    name: 'Plan rate-limit',
+    type: '429',
+    description: 'Request exceeded your plan\'s per-second / per-minute / per-day budget. Back off per Retry-After and see /docs/rate-limits for the per-tier matrix.',
+  },
+  {
+    name: 'test_delete sub-limit',
+    type: '429',
+    description: 'Detail: "10 test_delete calls per connector per hour". Sandboxing deletion-connector tests is bounded to prevent accidental fan-out storms.',
+  },
+]} />
+
+## Server errors (500)
+
+`500` means something on our side failed unexpectedly. Safe to retry
+with exponential backoff. Please open a support ticket with the
+`X-Request-Id` value if it persists — we log every 500 with that ID.
+
+Common `detail` values (each corresponds to the endpoint that failed):
+
+- `Audit listing failed`
+- `Consent record failed`
+- `Deletion trigger failed`
+- `Key introspection failed`
+- `Plan listing failed`
+- `Property listing failed`
+- `Purpose listing failed`
+- `Revocation failed`
+- `Rights-request creation failed`
+- `Rights-request listing failed`
+- `Score read failed`
+- `Security-scans listing failed`
+- `Usage lookup failed`
+- `Verification failed`
+- `test_delete failed`
+- `List failed`, `Lookup failed`, `Update failed`
+
+## Not-yet-implemented (501)
+
+<ParamTable params={[
+  {
+    name: 'retention_expired deletion mode',
+    type: '501 Not Implemented',
+    description: 'POST /v1/deletion/trigger with reason=retention_expired is recognised but not yet wired end-to-end. Tracked for Phase 3 of ADR-1003. Use reason=consent_revoked or reason=rights_request today.',
+  },
+]} />
+
+## Retry policy
+
+| Status | Retriable? | Strategy |
+|--------|-----------|----------|
+| 400, 401, 403, 404, 409 (except concurrent-update), 410, 413, 422, 501 | No | Fix the request; do not retry. |
+| 409 (concurrent update) | Yes | Re-fetch current state; retry once. |
+| 429 | Yes | Honour `Retry-After`. Add ±10% jitter. |
+| 500, 502, 503, 504 | Yes | Exponential backoff: 1s, 2s, 4s, 8s, capped at 60s. Max 5 attempts. Include `X-Request-Id` on each attempt. |
+
+Client libraries (ADR-1006) ship this policy by default; the cURL and
+raw-`fetch` snippets in [rate limits](/docs/rate-limits) show how to
+reproduce it in-house.
+
+## Opening a support ticket
+
+When you contact support:
+
+1. Include the full `X-Request-Id` header value from the failing response.
+2. Include the raw response body (status + headers + body) — the `type` + `detail` tell us the code path without exposing any tenant data.
+3. Do **not** include the `Authorization` header or the plaintext API key — our support channel is not rated for secret material.
+
+## Next steps
+
+- [Authentication](/docs/authentication) — how the 401 / 410 auth errors get raised.
+- [Rate limits](/docs/rate-limits) — how to stay under the 429 ceiling.
+- [Webhook signatures](/docs/webhook-signatures) — error handling on the deletion-callback side (different scheme).
+- [API changelog](/docs/changelog) — when a new error code is added, it lands here first.
+
+<FeedbackStrip pagePath="marketing/src/app/docs/errors/page.mdx" />

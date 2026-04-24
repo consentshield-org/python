@@ -1,0 +1,166 @@
+export const metadata = {
+  title: 'API changelog',
+  description:
+    'Public release log for the ConsentShield v1 REST API — additions, shape changes, and deprecations, reverse-chronological.',
+}
+
+<Breadcrumb trail={[
+  { label: 'Docs', href: '/docs' },
+  { label: 'Reference', href: '/docs' },
+  { label: 'API changelog' },
+]} />
+
+# API changelog
+
+Release log for the public **v1 REST API** at `api.consentshield.in/v1/*`.
+Entries are reverse-chronological. **Backwards-compatible additions land
+without version bump**; breaking changes will ship at `/v2/*` with a
+parallel-run window announced here at least 90 days in advance.
+
+<Callout tone="info" title="Scope of this changelog">
+This page tracks the **HTTP surface** — new endpoints, new fields, new
+error codes, new headers. It does **not** track marketing-site changes,
+dashboard features, internal refactors, or schema migrations that don't
+affect the public contract. Those live in per-area changelogs in the
+repo (`docs/changelogs/CHANGELOG-*.md`).
+</Callout>
+
+## How to subscribe
+
+- **RSS** — coming with ADR-1015 Sprint 4.3.
+- **GitHub release notes** — every tagged release on the public repo.
+- **Email** — opt-in from your dashboard (**Settings → Notifications → API updates**).
+
+---
+
+## 2026-04-21 · `v1.2.0` — Day-1 DX additions
+
+*Source: [ADR-1012](https://github.com/sudhindranegondhi/consent-shield/blob/main/docs/ADRs/ADR-1012-v1-dx-gap-fixes.md) · v1 API — day-1 DX gap fixes*
+
+### Added
+
+- `GET /v1/keys/self` — introspect the calling API key's metadata (prefix, label, scopes, rate tier, created_at, last_used_at, org binding). No additional scope required.
+- `GET /v1/usage` — current-hour + last-7d counters against the plan's rate limit. Previously dashboard-only. No additional scope required.
+- `GET /v1/purposes` — list all purpose definitions for the calling org, with framework + sectoral template metadata. Requires `read:consent`.
+- `GET /v1/properties` — list all web properties (domains) registered for the calling org. Requires `read:consent`.
+- `GET /v1/plans` — tier matrix (trial / starter / growth / pro / enterprise) with limits + prices. No additional scope required.
+- OpenAPI `examples:` blocks on **every** path — request body + success-response pairs on all 15 endpoints. Scalar playground and `curl`-copy buttons benefit immediately.
+
+### Why
+
+A partner wiring an SDK on day 1 needs to know *what their key can do*,
+*what purposes exist*, and *how close they are to their rate limit*
+without any out-of-band dashboard copy-paste. These five endpoints make
+the v1 surface genuinely self-describing.
+
+---
+
+## 2026-04-21 · `v1.1.0` — Rotated-key tombstone (410 Gone)
+
+*Source: [ADR-1011](https://github.com/sudhindranegondhi/consent-shield/blob/main/docs/ADRs/ADR-1011-revoked-key-tombstone.md) · Revoked-key tombstone — rotate+revoke plaintexts return 410*
+
+### Added
+
+- `410 Gone` is now returned (not `401 Unauthorized`) when a previously valid key was rotated and the old plaintext is inside the **2-year tombstone window**. Body shape:
+  ```json
+  {
+    "type":   "https://consentshield.in/errors/gone",
+    "title":  "Gone",
+    "status": 410,
+    "detail": "API key was rotated on 2026-04-19T10:30:22Z",
+    "rotated_at":     "2026-04-19T10:30:22Z",
+    "key_id_prefix":  "cs_live_01HRG"
+  }
+  ```
+- Response headers on 410: `X-Consentshield-Key-Rotated-At`, `X-Consentshield-Key-Prefix`.
+
+### Why
+
+A plain `401` on a rotated key masquerades as a never-issued-or-typo
+key, which pages security teams. `410 Gone` is a clear, specific signal:
+*"you were using a valid key; somebody rotated it"*. Your integration
+can now log rotations at info level, not error. See
+[key rotation & tombstones](/docs/concepts/key-rotation-and-tombstones).
+
+### Migration
+
+- No action required. Existing integrations that caught `401` will now
+  see a subset of those cases flip to `410`. Continue to fail the request
+  and surface the new plaintext.
+- Client libraries from ADR-1006 distinguish the two automatically.
+
+---
+
+## 2026-04-20 · `v1.0.0` — DPDP §6 runtime enforcement
+
+*Source: [ADR-1002](https://github.com/sudhindranegondhi/consent-shield/blob/main/docs/ADRs/ADR-1002-dpdp-section6-runtime-enforcement.md) · DPDP §6 Runtime Enforcement — Verify, Record, Artefact Ops, Deletion API*
+
+### Added — consent surface
+
+- `GET  /v1/consent/verify` — single-artefact live status check (is this consent `active`, `withdrawn`, `expired`?).
+- `POST /v1/consent/verify/batch` — up to 500 artefacts per call; identifier-based verification for event pipelines.
+- `POST /v1/consent/record` — DPDP §6(4) — persist a consent decision with a purpose, origin, and data-principal identifier; returns a durable artefact.
+- `GET  /v1/consent/artefacts` — paginated list (per-org) with filters.
+- `GET  /v1/consent/artefacts/{id}` — full artefact detail including all events (record, revoke, version-bump).
+- `POST /v1/consent/artefacts/{id}/revoke` — DPDP §6(5) — mark an artefact as `withdrawn`; triggers downstream deletion fan-out via ADR-1003.
+- `GET  /v1/consent/events` — per-property event stream.
+
+### Added — deletion surface
+
+- `POST /v1/deletion/trigger` — DPDP §12 — initiate deletion for one or more data principals. Modes: `consent_revoked`, `rights_request`, `retention_expired` (not yet implemented — returns 501).
+- `GET  /v1/deletion/receipts` — paginated receipts (90-day retention).
+- `GET  /v1/deletion-receipts/{id}` — full receipt detail for audit export.
+
+### Added — supporting surfaces
+
+- `GET  /v1/audit` — append-only audit trail.
+- `GET  /v1/security/scans` — tracker + endpoint-discovery scan results.
+- `GET  /v1/score` — per-property consent-compliance score (0–100).
+- `POST /v1/rights/requests` — DPDP §11-14 data-principal requests (access / correction / erasure / grievance / nomination). Requires Turnstile + OTP-verified email.
+- `POST /v1/integrations/{connector_id}/test_delete` — sandbox-test a deletion connector (max 10 calls / connector / hour).
+
+### Idempotency
+
+- `Idempotency-Key` header supported on `POST /v1/consent/record` and `POST /v1/rights/requests`. 24-hour key-TTL; duplicate key with identical body returns the original artefact unchanged.
+
+---
+
+## 2026-04-20 · `v1.0.0` — Truth-in-Marketing + API Foundation
+
+*Source: [ADR-1001](https://github.com/sudhindranegondhi/consent-shield/blob/main/docs/ADRs/ADR-1001-truth-in-marketing-and-public-api-foundation.md) · Truth-in-Marketing + Public API Foundation*
+
+### Added
+
+- Bearer-token authentication scheme. Header: `Authorization: Bearer cs_live_…` (production) or `cs_test_…` (sandbox).
+- Scoped API keys: `read:consent`, `write:consent`, `read:all`, `write:all`, `admin:keys`. Most integrations use `read:consent` + `write:consent`.
+- Per-plan rate limits with `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset` on every response. 429 on exhaustion with `Retry-After`.
+- RFC 7807 `application/problem+json` error shape across every non-2xx response (`type`, `title`, `status`, `detail`).
+- `GET /v1/_ping` — unauthenticated health check.
+- OpenAPI 3.1 spec published at [`/openapi.yaml`](/openapi.yaml); interactive Scalar playground at [`/docs/api`](/docs/api).
+- DPDP-compliant field names — `data_principal`, `purpose_code`, `legitimate_use`, `artefact_id` etc. mirror the Act's vocabulary exactly.
+
+### Why
+
+This release established the public v1 contract: a stable, versioned,
+self-describing API that a prospective partner can evaluate without a
+sales call. All subsequent additions are backwards-compatible extensions
+of this baseline.
+
+---
+
+## Deprecation policy
+
+- **90-day notice** for any breaking change, announced here and via email.
+- **Sunset header** — `Sunset: Wed, 24 Jul 2026 00:00:00 GMT` on responses from endpoints scheduled for removal.
+- **Parallel run** — deprecated endpoints remain callable for the notice window with a `Deprecation: true` header.
+- **Version bumps** — any breaking change ships at `/v2/*` in parallel; `/v1/*` stays live for at least 180 days after `/v2/*` GA.
+
+No v1 endpoints are currently deprecated.
+
+## Next steps
+
+- [Error codes](/docs/errors) — full catalogue of v1 error responses.
+- [Webhook signatures](/docs/webhook-signatures) — HMAC-SHA256 scheme for deletion callbacks (versioned separately from the REST surface).
+- [OpenAPI spec](/openapi.yaml) — the single source of truth; this changelog describes deltas against it.
+
+<FeedbackStrip pagePath="marketing/src/app/docs/changelog/page.mdx" />

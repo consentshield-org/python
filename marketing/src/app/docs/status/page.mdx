@@ -1,0 +1,113 @@
+export const metadata = {
+  title: 'Status & uptime',
+  description:
+    'Real-time platform health, uptime metrics, and incident history for the ConsentShield API.',
+}
+
+<Breadcrumb trail={[
+  { label: 'Docs', href: '/docs' },
+  { label: 'Reference', href: '/docs' },
+  { label: 'Status' },
+]} />
+
+# Status & uptime
+
+Live platform health lives at **[status.consentshield.in](https://status.consentshield.in)**.
+It's hosted outside our primary infrastructure so the page stays
+reachable when the API itself is degraded.
+
+<Callout tone="info" title="Why the status page is external">
+Embedding live status inside the docs site would couple uptime of the
+status surface to uptime of the marketing / docs infrastructure. A
+dedicated, independently-hosted status page is how every other API
+platform worth trusting operates — and we follow the same rule.
+</Callout>
+
+## What's monitored
+
+<ParamTable params={[
+  {
+    name: 'REST API — v1',
+    type: 'api.consentshield.in/v1/*',
+    description: 'All 15 /v1/* endpoints probed every 30 seconds from three geographic regions. Latency p50 / p95 / p99 tracked per endpoint.',
+  },
+  {
+    name: 'Worker — event ingestion',
+    type: 'Cloudflare Workers',
+    description: 'Banner-script serve + consent event POST + tracker observation POST. Probed from the Cloudflare edge; latency measured to Supabase write.',
+  },
+  {
+    name: 'Rights-request portal',
+    type: 'Public submission',
+    description: 'The public /rights page + Turnstile + OTP flow. Synthetic probe submits a test request and verifies delivery every 5 minutes.',
+  },
+  {
+    name: 'Dashboard',
+    type: 'app.consentshield.in',
+    description: 'Authenticated customer app. Login flow + DEPA panels + billing probed every minute.',
+  },
+  {
+    name: 'Admin console',
+    type: 'admin.consentshield.in',
+    description: 'Operator console. Probed internally; status surfaces a binary up/down indicator only.',
+  },
+  {
+    name: 'Deletion-connector dispatch',
+    type: 'Fan-out queue',
+    description: 'Queue depth + dispatch latency for outbound webhook calls to customer deletion connectors.',
+  },
+  {
+    name: 'Notification dispatch',
+    type: 'Email + webhooks',
+    description: 'Resend (email) + custom-webhook adapter. Tracks delivery-success rate per org.',
+  },
+]} />
+
+## Uptime targets
+
+<ParamTable params={[
+  {
+    name: 'REST API',
+    type: '99.9% / month',
+    description: 'Enterprise plans carry a contractual SLA with service credits for breach. Starter / Growth / Pro are best-effort against the same target.',
+  },
+  {
+    name: 'Worker ingestion',
+    type: '99.99% / month',
+    description: 'Cloudflare-hosted; zero-storage bypass (ADR-1003) means this surface stays up even if the primary database is down — events buffer locally.',
+  },
+  {
+    name: 'Dashboard',
+    type: '99.5% / month',
+    description: 'Best-effort. Dashboard downtime does not block customer API integrations.',
+  },
+]} />
+
+## Incident notifications
+
+- **Subscribe** — email / SMS / Slack / webhook on [status.consentshield.in](https://status.consentshield.in).
+- **Incident severities** — `investigating` → `identified` → `monitoring` → `resolved`. Post-mortems for SEV-1 incidents land in [Resolved](https://status.consentshield.in/history) within 5 business days.
+- **Enterprise plans** — dedicated Slack channel with direct oncall escalation.
+
+## Historical uptime
+
+The status page's [History](https://status.consentshield.in/history)
+tab holds rolling 90-day incident logs with per-component availability
+numbers. Older data is archived quarterly and available on request.
+
+## Reporting an incident
+
+If you're seeing symptoms the status page hasn't flagged yet:
+
+1. **Check your own side first** — timeouts, DNS, firewall changes, clock drift.
+2. **Retry with a new `X-Request-Id`** and capture the full response (status + headers + body).
+3. **Email support@consentshield.in** with the `X-Request-Id`, the endpoint, and the time window. We log every 5xx with that ID.
+4. **For confirmed platform incidents**, we update the status page within 15 minutes of detection.
+
+## Next steps
+
+- [Live status page](https://status.consentshield.in) — bookmark this.
+- [Rate limits](/docs/rate-limits) — distinguish 429 from downtime; they look alike to integration code.
+- [Error codes](/docs/errors) — how transient-failure codes (500 / 503) should be retried.
+
+<FeedbackStrip pagePath="marketing/src/app/docs/status/page.mdx" />

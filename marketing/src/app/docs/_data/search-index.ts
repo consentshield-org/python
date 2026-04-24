@@ -44,12 +44,28 @@ const DESCRIPTIONS: Record<string, { description?: string; keywords?: string[] }
   '/docs/cookbook/rotate-api-key-safely': { description: 'Zero-downtime rotation', keywords: ['rotation', 'keys', '410'] },
   '/docs/cookbook/build-dpb-audit-export': { description: 'Data Protection Board export package', keywords: ['audit', 'export', 'dpb', 'compliance'] },
   '/docs/api': { description: 'Interactive Scalar playground for every endpoint', keywords: ['playground', 'try', 'scalar'] },
-  '/docs/errors': { description: 'Every error.code the /v1/* surface can return', keywords: ['error', 'code', '4xx', '5xx'] },
-  '/docs/webhook-signatures': { description: 'HMAC-SHA256 scheme + replay defence', keywords: ['hmac', 'signature', 'webhook'] },
-  '/docs/changelog': { description: 'API-specific changelog (distinct from product changelog)', keywords: ['changelog', 'versions', 'releases'] },
+  '/docs/errors': { description: 'Every /v1/* error — RFC 7807 problem+json, retry guidance, remediation', keywords: ['error', 'code', '4xx', '5xx', 'problem', 'rfc7807', '401', '403', '410', '422', '429'] },
+  '/docs/webhook-signatures': { description: 'HMAC-SHA256 scheme + replay defence + raw-body gotcha', keywords: ['hmac', 'signature', 'webhook', 'verify', 'sha256', 'signing secret'] },
+  '/docs/changelog': { description: 'API-specific changelog (distinct from product changelog)', keywords: ['changelog', 'versions', 'releases', 'deprecation', 'sunset'] },
+  '/docs/status': { description: 'Platform health + uptime targets + incident notifications', keywords: ['status', 'uptime', 'incident', 'sla', 'downtime'] },
   '/openapi.yaml': { description: 'Full OpenAPI 3.1 spec', keywords: ['openapi', 'yaml', 'spec'] },
   'https://status.consentshield.in': { description: 'Status page + uptime', keywords: ['status', 'uptime', 'outage'] },
 }
+
+// Pages that don't have a matching DOCS_NAV entry but should still be
+// findable via Cmd-K. The sidebar's "Status & uptime" goes direct to
+// the external status page; /docs/status is a pointer landing surface
+// for bookmarks + cross-page references.
+const STANDALONE_ENTRIES: SearchEntry[] = [
+  {
+    id: 'Reference::/docs/status',
+    label: 'Status & uptime (page)',
+    group: 'Reference',
+    href: '/docs/status',
+    description: DESCRIPTIONS['/docs/status']?.description,
+    keywords: DESCRIPTIONS['/docs/status']?.keywords,
+  },
+]
 
 export function buildSearchIndex(): SearchEntry[] {
   const entries: SearchEntry[] = []
@@ -66,6 +82,7 @@ export function buildSearchIndex(): SearchEntry[] {
       })
     }
   }
+  entries.push(...STANDALONE_ENTRIES)
   return entries
 }
 
