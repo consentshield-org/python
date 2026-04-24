@@ -1,8 +1,10 @@
 'use client'
 
+import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
 // ADR-1015 Phase 1 Sprint 1.1 — Right-rail "On this page" ToC.
+// ADR-1015 Phase 1 Sprint 1.3 — auto-compute Edit-on-GitHub from pathname.
 //
 // Client component. Walks the <main class="docs-content"> DOM on mount,
 // collects every h2 / h3 with an id, and renders them as anchor links.
@@ -16,7 +18,37 @@ interface Heading {
   level: 2 | 3
 }
 
-export function DocsTocRail({ editOnGitHubPath }: { editOnGitHubPath?: string }) {
+/**
+ * Map a pathname to the repo-relative file path Next would have used
+ * to render it. /docs → marketing/src/app/docs/page.tsx,
+ * /docs/quickstart → marketing/src/app/docs/quickstart/page.mdx (or
+ * page.tsx — GitHub's editor accepts both; the URL is fuzzy enough).
+ * Returns null for dynamic routes (catch-alls, playground) where the
+ * file path isn't one-to-one.
+ */
+function repoPathForPathname(pathname: string): string | null {
+  if (!pathname.startsWith('/docs')) return null
+  // /docs/api/[...path] — catchall; skip.
+  if (pathname.startsWith('/docs/api/') && pathname.split('/').length > 3) {
+    return null
+  }
+  const rest = pathname === '/docs' ? '' : pathname.slice('/docs/'.length)
+  // Default to .mdx for content pages; Sprint 2.x content all MDX.
+  // /docs and /docs/api are .tsx. All other pages under /docs/* are
+  // authored as MDX; when a future .tsx page is added, update here.
+  const ext =
+    pathname === '/docs' || pathname === '/docs/api' ? 'page.tsx' : 'page.mdx'
+  const inner = rest ? `/${rest}` : ''
+  return `marketing/src/app/docs${inner}/${ext}`
+}
+
+export function DocsTocRail({
+  editOnGitHubPath: override,
+}: {
+  /** Override for pages that can't be auto-derived (catchalls, etc.). */
+  editOnGitHubPath?: string
+}) {
+  const pathname = usePathname()
   const [headings, setHeadings] = useState<Heading[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
 
@@ -49,8 +81,9 @@ export function DocsTocRail({ editOnGitHubPath }: { editOnGitHubPath?: string })
     return () => observer.disconnect()
   }, [])
 
-  const editHref = editOnGitHubPath
-    ? `https://github.com/SAnegondhi/consentshield/edit/main/${editOnGitHubPath}`
+  const repoPath = override ?? repoPathForPathname(pathname)
+  const editHref = repoPath
+    ? `https://github.com/SAnegondhi/consentshield/edit/main/${repoPath}`
     : null
 
   return (

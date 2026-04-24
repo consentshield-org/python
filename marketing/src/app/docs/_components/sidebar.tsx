@@ -3,17 +3,23 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { DOCS_NAV, type NavGroup, type NavLink } from '../_data/nav'
+import { SearchPalette } from './search-palette'
 
 // ADR-1015 Phase 1 Sprint 1.1 — Docs sidebar. Matches the taxonomy in
 // the consentshield-developer-docs.html wireframe. Active-link detection
 // flips on exact-prefix match against the current pathname so a nested
 // API-reference page highlights the parent group too.
+//
+// Sprint 1.3 adds the Cmd-K search launcher at the top; the palette
+// modal is rendered from the same component so keyboard shortcuts
+// bubble up through its global listener once mounted.
 
 export function DocsSidebar() {
   const pathname = usePathname()
 
   return (
     <aside className="docs-sidebar" aria-label="Docs navigation">
+      <SearchPalette />
       {DOCS_NAV.map((group) => (
         <SidebarGroup key={group.title} group={group} pathname={pathname} />
       ))}

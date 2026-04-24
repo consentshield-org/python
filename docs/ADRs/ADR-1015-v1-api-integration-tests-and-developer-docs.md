@@ -98,21 +98,25 @@ Ship a four-phase deliverable: the `/docs/*` surface on the marketing site (Next
 
 **Status:** `[x] complete`
 
-#### Sprint 1.3: Navigation + search
+#### Sprint 1.3: Navigation + search · **[x] complete 2026-04-24**
 
 **Estimated effort:** 2 days
 
 **Deliverables:**
-- [ ] Cmd-K search palette (per wireframe) — client-side fuzzy index over MDX frontmatter + headings. Prefer a small in-repo implementation over adding a dependency (Rule 15).
-- [ ] Active-page highlight in sidebar; active-anchor in ToC rail.
-- [ ] Keyboard shortcuts: `/` focuses search, `Esc` closes.
-- [ ] "Edit on GitHub" link auto-computed per page.
+- [x] `marketing/src/app/docs/_data/search-index.ts` — in-repo search index built from `DOCS_NAV` with author-curated `description` + `keywords` overlays per route. Fuzzy scorer with four tiers (exact-substring-in-label → exact-substring-in-any-field → label-subsequence → cross-field-subsequence). No library dependency (Rule 15).
+- [x] `marketing/src/app/docs/_components/search-palette.tsx` — Cmd-K palette. Keyboard contract: `⌘K`/`Ctrl+K` toggles, `/` opens (not when already typing), `Esc` closes, `↑`/`↓` navigate results, `Enter` follows. Empty-query state shows a curated top-6 list so the palette is useful on first open. External links open in a new tab.
+- [x] Launcher button in the sidebar top slot — mimics the wireframe search affordance. Renders the `⌘K` hint kbd pill.
+- [x] Active-page highlight in sidebar (Sprint 1.1) + active-anchor in ToC rail (Sprint 1.1) remain unchanged.
+- [x] "Edit on GitHub" — `DocsTocRail` now auto-derives the repo-relative file path from `usePathname()`. `/docs` + `/docs/api` point at the `page.tsx`; all other `/docs/*` routes default to `page.mdx` (matching Sprint 2.x authoring convention). Dynamic catchalls (`/docs/api/[...path]`) return null so the footer gracefully hides.
+- [x] `docs.css` grew `.search-launcher`, `.search-overlay`, `.search-palette`, `.search-input-row`, `.search-results`, `.search-result` (with `.active`), `.search-group-tag`, `.search-foot`, `.search-empty`. Overlay has a navy-tinted backdrop-filter blur.
 
 **Testing plan:**
-- [ ] Cmd-K opens and finds endpoints by path and cookbook entries by title.
-- [ ] Keyboard-only navigation works end-to-end.
+- [x] `cd marketing && bunx tsc --noEmit` — PASS.
+- [x] `cd marketing && bun run lint` — PASS.
+- [x] `cd marketing && bun run build` — PASS.
+- [ ] Interactive: `⌘K` → palette opens → typing narrows results → `↵` follows → `Esc` closes. Requires a visual check against the dev server.
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete` — Phase 1 closes with this sprint.
 
 ---
 

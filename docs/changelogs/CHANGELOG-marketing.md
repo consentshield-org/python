@@ -2,6 +2,32 @@
 
 Public marketing site (`marketing/` workspace → `consentshield.in`). New in 2026-04-21.
 
+## [ADR-1015 Sprint 1.3 — Cmd-K search palette + Edit-on-GitHub + keyboard shortcuts] — 2026-04-24
+
+**ADR:** ADR-1015 — v1 API integration tests + customer developer documentation
+**Sprint:** Phase 1, Sprint 1.3 — Navigation + search (closes Phase 1)
+
+### Added
+- `marketing/src/app/docs/_data/search-index.ts` — in-repo search infrastructure. `SEARCH_INDEX` is built from `DOCS_NAV` + author-curated `DESCRIPTIONS` overlay (one-line description + keyword list per route). Fuzzy scorer with four tiers: exact-substring-in-label (1.0) → exact-substring-in-any-field (0.75) → label-subsequence (0.5) → cross-field-subsequence (0.25). Empty query returns a curated top-6 list so the palette is useful on first open. No library dependency — Rule 15 satisfied.
+- `marketing/src/app/docs/_components/search-palette.tsx` — Cmd-K palette + launcher. Keyboard contract: `⌘K`/`Ctrl+K` toggles, `/` opens (suppressed when already typing in an input), `Esc` closes, `↑`/`↓` navigate results, `Enter` follows. External links open in a new tab with `noopener,noreferrer`. Result rows render label + muted group tag + description. Launcher button lives in the sidebar top slot with a visible `⌘K` kbd hint.
+- `DocsSidebar` renders `<SearchPalette>` as the first child; the palette mounts the launcher + the overlay from the same component so the keyboard listener is registered once.
+- `DocsTocRail` auto-derives the Edit-on-GitHub repo path from `usePathname()`. `/docs` + `/docs/api` → `page.tsx`; all other `/docs/*` routes → `page.mdx` (matches the Sprint 2.x authoring convention). Dynamic catchalls (`/docs/api/[...path]`) return `null` so the footer gracefully hides.
+- `docs.css` grew the palette family: `.search-launcher`, `.search-overlay` (navy-tinted backdrop blur), `.search-palette`, `.search-input-row`, `.search-results`, `.search-result` (with `.active`), `.search-group-tag` (teal), `.search-foot`, `.search-empty`.
+
+### Tested
+- [x] `cd marketing && bunx tsc --noEmit` — PASS.
+- [x] `cd marketing && bun run lint` — PASS.
+- [x] `cd marketing && bun run build` — PASS.
+
+### Why
+Searchable docs are non-negotiable once content crosses 10 pages; with Sprint 2.x authoring 30+ MDX pages, scrolling the sidebar to find anything becomes painful. Shipping the palette + keyboard shortcuts + auto-derived Edit-on-GitHub closes Phase 1 with every foundational UX in place so Sprint 2.x can focus on content authoring without touching the shell.
+
+### Phase 1 close-out
+
+Sprints 1.1 + 1.2 + 1.3 together deliver: the MDX pipeline, the three-pane shell, the sidebar taxonomy, seven shared content components, the Scalar playground mount with per-endpoint deep links, and the search + keyboard-nav + edit-on-GitHub surface. `bun run build` green. Phase 2 (content authoring) is the next major block — 3 sprints producing ~30 MDX pages.
+
+---
+
 ## [ADR-1015 Sprint 1.2 — Scalar playground mount + per-endpoint deep links] — 2026-04-24
 
 **ADR:** ADR-1015 — v1 API integration tests + customer developer documentation

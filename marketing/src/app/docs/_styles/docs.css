@@ -448,6 +448,143 @@
 }
 .feedback-btn:hover { border-color: var(--teal); color: var(--teal); }
 
+/* ─── Search launcher (in sidebar) + palette overlay ─── */
+.search-launcher {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: calc(100% - 8px);
+  margin: 0 4px 18px;
+  padding: 8px 12px;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink-3);
+  font-size: 13px;
+  font-family: var(--sans);
+  cursor: pointer;
+}
+.search-launcher:hover { border-color: var(--teal); color: var(--navy); }
+.search-launcher-label { flex: 1; text-align: left; }
+.search-launcher kbd {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-4);
+  background: var(--paper-deep);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+}
+
+.search-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(9, 30, 62, .32);
+  backdrop-filter: blur(2px);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 14vh;
+  z-index: 100;
+}
+.search-palette {
+  width: min(640px, calc(100% - 32px));
+  max-height: 60vh;
+  background: white;
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-hover);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+}
+.search-input-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.search-input-row input {
+  flex: 1;
+  font-family: var(--sans);
+  font-size: 15px;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--ink);
+}
+.search-input-row input::placeholder { color: var(--ink-3); }
+.search-input-row kbd {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink-4);
+  background: var(--paper-deep);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+}
+.search-results {
+  list-style: none;
+  margin: 0;
+  padding: 6px 6px;
+  overflow-y: auto;
+  flex: 1;
+}
+.search-result { padding: 0; }
+.search-result a {
+  display: block;
+  padding: 10px 14px;
+  border-radius: 6px;
+  color: inherit;
+  text-decoration: none;
+}
+.search-result.active a { background: var(--teal-light); }
+.search-result-label { font-size: 14px; font-weight: 500; color: var(--navy); }
+.search-result-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--ink-3);
+  margin-top: 2px;
+}
+.search-group-tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--teal);
+  background: var(--teal-light);
+  padding: 1px 6px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.search-empty {
+  padding: 28px 20px;
+  text-align: center;
+  color: var(--ink-3);
+  font-size: 14px;
+}
+.search-foot {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  padding: 10px 18px;
+  border-top: 1px solid var(--line-soft);
+  font-size: 11px;
+  color: var(--ink-4);
+  background: var(--paper);
+}
+.search-foot kbd {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-3);
+  background: white;
+  padding: 1px 5px;
+  border-radius: 3px;
+  border: 1px solid var(--line);
+}
+
 /* ─── Card grid (Hub landing) ─── */
 .card-grid {
   display: grid;
