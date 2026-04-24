@@ -46,25 +46,27 @@ Without a deliberate pass across the remaining surfaces, operators handling a mu
 
 ## Decision
 
-Land a single cross-cutting ADR that closes the five highest-impact drifts, keeping two for a follow-up. Scope:
+Close every admin-account-awareness drift in one ADR. No deferrals to later ADRs — this product competes against OneTrust / Ketch / Securiti and cannot ship with a subset operator console. Seven admin surfaces, seven sprints.
 
 | Sprint | Surface | Deliverable |
 |---|---|---|
-| 1.1 | Admin audit log | Add `account_id` column to `admin.admin_audit_log` (nullable + backfilled); `/audit-log` panel filter bar gains an "Account" dropdown; list rows surface parent-account name next to org. |
+| 1.1 | Admin audit log | Add `account_id` column to `admin.admin_audit_log` (nullable + backfilled + BEFORE INSERT trigger); `/audit-log` panel filter bar gains an "Account" dropdown; list rows surface parent-account name next to org. |
 | 1.2 | Admin dashboard tiles (`/`) | Rework tile row: account count, orgs per account distribution (histogram), accounts-by-plan breakdown, trial-to-paid conversion rate (last 30d). Org-level tiles (total events, stuck buffers) stay. |
-| 2.1 | Pipeline panel sidebar | Every org-filtered Pipeline view (Sentry, worker_errors, rate-limit) gains a "Parent account" sidebar card driven by `admin.account_detail`. Adds "group by account" toggle that aggregates per-org metrics into an account-level roll-up. |
-| 2.2 | Support ticket account context | Ticket detail adds a parent-account header strip (account name, plan, current adjustment if any). Filter bar adds "Account" — selecting it lists every ticket for every org in that account. |
+| 2.1 | Pipeline / Security / Billing sidebar | Every org-filtered operator view (Sentry, worker_errors, rate-limit; billing payment failures, refunds, adjustments) gains a "Parent account" sidebar card driven by `admin.account_detail`. Adds "group by account" toggle that aggregates per-org metrics into an account-level roll-up. |
+| 2.2 | Support ticket account context | Ticket detail adds a parent-account header strip (account name, plan, current adjustment if any). Filter bar adds "Account" — selecting it lists every ticket for every org in that account. Ticket list RPC gains `p_account_id`. |
 | 3.1 | Impersonation session audit | `/admin/operator/audit-log` impersonation view gains per-account rollups. Cross-org impersonation within one account reads as a single "account session" with org breadcrumbs, not N unrelated org sessions. |
-
-**Deferred to a follow-up (ADR-1028 when warranted):** org_notes account-tier, sectoral-templates account-default. Neither is load-bearing for operator ergonomics today; both are nice-to-haves for the enterprise roadmap and can bundle into a later pass.
+| 3.2 | Org notes → account notes | New `admin.account_notes` table (account-scoped, mirrors `admin.org_notes` semantics + audit-log integration). `/accounts/[accountId]` detail page gains a Notes card. Org detail panel shows both org-level + account-level notes, with clear labelling of which tier each note belongs to. |
+| 3.3 | Sectoral template account-default | `public.accounts.default_sectoral_template_id` column (nullable FK to `admin.sectoral_templates`). Admin `/accounts/[accountId]` detail adds a "Default template for new orgs" picker. Customer wizard Step 4 (first-org creation) pre-selects the account's default template when present, falling back to the sector-based default. |
 
 ### Shape of the work
 
-- **Sprint 1.1** — schema migration adds `admin_audit_log.account_id uuid` (nullable; FK to `public.accounts`); backfill via `update … set account_id = o.account_id from public.organisations o where admin_audit_log.org_id = o.id`; partial index on `account_id where account_id is not null`. `admin.admin_audit_log_query` RPC extended with `p_account_id uuid default null` parameter. Panel adds a typeahead account-picker next to the org filter.
-- **Sprint 1.2** — wireframe updates in `docs/admin/design/consentshield-admin-screens.html` (Dashboard panel). New admin RPC `admin.admin_dashboard_tiles()` returns `{accounts_total, accounts_by_plan: [{plan_code, count}], orgs_per_account_p50/p90, trial_to_paid_rate_30d, ...}`. Existing `/` page swaps the tile renderer.
-- **Sprint 2.1** — `<AccountContextCard accountId={…} />` React component that calls `admin.account_detail` via the admin RPC proxy + renders plan, status, child-org count, active adjustments. Drop into `/pipeline`, `/security`, `/billing` org-scoped views. "Group by account" toggle is a client-side aggregation over the org-level rows (same query, different render).
-- **Sprint 2.2** — ticket-row query already carries `org_id`; the detail page gains a `admin.account_detail`-backed header strip + a new `p_account_id` parameter on the list RPC. Wireframe updates in `docs/admin/design/consentshield-admin-screens.html` (Support panel).
-- **Sprint 3.1** — impersonation log query gains a per-account aggregation view. RPC surfaces `{account_id, orgs_touched, total_duration, started_at}` rows. UI adds a "Group by account" button toggle that swaps the row shape.
+- **Sprint 1.1** — schema migration adds `admin_audit_log.account_id uuid` (nullable; FK to `public.accounts`); backfill via `update … set account_id = o.account_id from public.organisations o where admin_audit_log.org_id = o.id` plus a second pass for `target_table = 'public.accounts'` rows; partial index on `account_id where account_id is not null`; BEFORE INSERT trigger auto-populates from `org_id` or `target_id` so no write path can forget. The `admin/src/app/(operator)/audit-log/page.tsx` direct-query path (not an RPC) gains `p_account_id`; filter bar takes an account select from `admin.accounts_list`.
+- **Sprint 1.2** — wireframe updates in `docs/admin/design/consentshield-admin-screens.html` (Dashboard panel). New admin RPC `admin.admin_dashboard_tiles()` returns `{accounts_total, accounts_by_plan: [{plan_code, count}], orgs_per_account_p50/p90, trial_to_paid_rate_30d, ...}` in a single round-trip. Existing `/` page swaps the tile renderer. CSS-grid histogram inline (no new chart dep — reuse the ADR-1018 status-page sparkline pattern).
+- **Sprint 2.1** — `<AccountContextCard accountId={…} />` React component that calls `admin.account_detail` via the admin RPC proxy + renders plan, status, child-org count, active adjustments, last 3 audit rows. Swappable "full" / "compact" modes. Drops into `/pipeline`, `/security`, `/billing` org-scoped views (right sidebar, sticky under the filter bar). "Group by account" toggle is a client-side aggregation over org-level rows — same query, different render.
+- **Sprint 2.2** — ticket list RPC (`admin.support_tickets_list`) gains `p_account_id uuid default null`; existing `p_org_id` semantics unchanged. Ticket detail page adds a parent-account header strip (account name + plan + current adjustment if any). Filter bar gains an Account select mirroring Sprint 1.1.
+- **Sprint 3.1** — new RPC `admin.impersonation_sessions_by_account()` aggregates `(account_id, orgs_touched, total_duration, started_at, admin_user)`. Toggle in `/audit-log` impersonation view swaps between per-session and per-account row shape.
+- **Sprint 3.2** — new table `admin.account_notes (id, account_id, body, created_by, created_at, updated_at, pinned)` + RLS + four RPCs (`account_note_list`, `account_note_add`, `account_note_update`, `account_note_delete` — all SECURITY DEFINER, all fenced by `require_admin('support')`, all insert a row into `admin_audit_log` with `target_table='admin.account_notes'` and the new `account_id` column (Sprint 1.1)). `/accounts/[accountId]/page.tsx` gains a Notes card. Org detail also surfaces the parent account's notes under a "Account-level notes" subheading with a "View at the account level →" link.
+- **Sprint 3.3** — migration adds `public.accounts.default_sectoral_template_id uuid` (nullable; FK to `admin.sectoral_templates(id)` with `on delete set null`). `admin.account_detail` envelope extends to include the resolved template summary. `/accounts/[accountId]` detail page adds a picker (platform_operator only; updates via new RPC `admin.set_account_default_template`). Customer wizard first-org path (`app/src/app/(dashboard)/onboarding/step-4/*`) pre-selects `accounts.default_sectoral_template_id` when set; falls back to the sector-detected default. Customer user can override.
 
 ## Consequences
 
@@ -155,7 +157,7 @@ Land a single cross-cutting ADR that closes the five highest-impact drifts, keep
 - [ ] Integration: filter by account → every ticket for every org in that account.
 - [ ] Detail snapshot: header strip renders correct account metadata.
 
-### Phase 3 — Impersonation log account rollup
+### Phase 3 — Impersonation rollup + account notes + account-default template
 
 #### Sprint 3.1 — Impersonation-log account view
 
@@ -169,6 +171,41 @@ Land a single cross-cutting ADR that closes the five highest-impact drifts, keep
 
 **Testing plan:**
 - [ ] Integration: one operator impersonates three orgs in the same account → per-account view returns one row with `orgs_touched = 3`.
+
+#### Sprint 3.2 — Account-level notes
+
+**Estimated effort:** 0.75 day
+
+**Prerequisite wireframe:** Update `docs/admin/design/consentshield-admin-screens.html` — Accounts panel gets a Notes card (mirrors the org-detail Notes card). Org detail panel gains an "Account-level notes" subheading above the org-level notes block with a "View at the account level →" link.
+
+**Deliverables:**
+- [ ] Migration: `admin.account_notes (id, account_id, body, created_by, created_at, updated_at, pinned)` + RLS (`admin` schema; read gated by `require_admin('support')`, write by `require_admin('support')` with platform_operator carve-out for pinned notes). Partial index on `(account_id, created_at desc)`. Every write emits an `admin_audit_log` row with `target_table='admin.account_notes'` and the Sprint 1.1 `account_id` column populated.
+- [ ] Four RPCs: `admin.account_note_list(p_account_id)`, `admin.account_note_add(p_account_id, p_body, p_pinned default false)`, `admin.account_note_update(p_id, p_body, p_pinned)`, `admin.account_note_delete(p_id)`. All SECURITY DEFINER; reason captured on writes; audit rows written in-transaction.
+- [ ] `/accounts/[accountId]/page.tsx` — Notes card (list + add-note form). Pinned notes sort first.
+- [ ] `/orgs/[orgId]/page.tsx` — existing org-notes section gets a sibling "Account-level notes" section above it, calling `admin.account_note_list(org.account_id)`. Link to `/accounts/[accountId]` for full management.
+
+**Testing plan:**
+- [ ] Unit: `account_note_add` inserts a note + a matching audit row; reading via `account_note_list` returns the note.
+- [ ] Integration: pinned note appears first regardless of timestamp order.
+- [ ] Authorization: support-role can read + add; platform_operator can pin + delete; support cannot pin.
+
+#### Sprint 3.3 — Account-default sectoral template
+
+**Estimated effort:** 0.75 day
+
+**Prerequisite wireframe:** Update the admin Accounts panel wireframe with a "Default template for new orgs" picker. Update the customer wizard Step 4 wireframe (`docs/design/screen designs and ux/consentshield-screens.html`) to show the account-default badge when it's applied.
+
+**Deliverables:**
+- [ ] Migration: `alter table public.accounts add column default_sectoral_template_id uuid references admin.sectoral_templates(id) on delete set null`. Nullable. Backfill is a no-op (every account starts with none).
+- [ ] `admin.set_account_default_template(p_account_id, p_template_id)` RPC — platform_operator only; writes audit row; validates that the template is `status='published'` and `is_active=true`.
+- [ ] `admin.account_detail` envelope extends to include the resolved template summary (`default_template: {id, code, display_name, version} | null`).
+- [ ] `/accounts/[accountId]/page.tsx` — template picker in the detail page; shows current default, with a disabled state + reason if no published templates match the account's sector yet.
+- [ ] Customer wizard Step 4 (`app/src/app/(dashboard)/onboarding/step-4/*`) — if `accounts.default_sectoral_template_id` is set and the template is still published, pre-select it in the org-creation form and show a small "Pre-selected by account default" badge. Customer can still override via the picker. Falls back to sector-detection default when account-default is null.
+
+**Testing plan:**
+- [ ] Migration: column adds without data loss; FK constraint catches bad template ids.
+- [ ] `set_account_default_template` happy path; rejects unpublished template; rejects non-platform_operator caller.
+- [ ] Wizard: org created with account-default applied carries the correct `sectoral_template_id`; wizard with no default falls back to sector detection.
 
 ---
 
@@ -187,11 +224,11 @@ _To be filled as sprints complete._
 - Every org-scoped Pipeline / Security / Billing view carries a parent-account sidebar card. "Group by account" aggregation works without a network round-trip.
 - Support ticket detail surfaces parent-account context; ticket list filters by account.
 - Impersonation log has a "per-account" view that collapses cross-org sessions inside one account into a single row.
+- Account detail page `/accounts/[accountId]` has a Notes card; org detail page surfaces account-level notes alongside org-level notes with clear tier labelling.
+- Accounts can carry a `default_sectoral_template_id`; customer first-org wizard pre-selects it when set.
 - No pre-existing URL, RPC contract, or filter option removed. All drift is additive.
-- Wireframe + alignment-doc update lands with the code for every UI sprint (1.1, 1.2, 2.1, 2.2, 3.1).
+- Wireframe + alignment-doc update lands with the code for every UI sprint (1.1, 1.2, 2.1, 2.2, 3.1, 3.2, 3.3).
 
-## Open deferrals
+## Out of scope
 
-- **Account-tier `org_notes`** — deferred to a follow-up ADR (candidate ADR-1028). Not load-bearing for today's operator scenarios.
-- **Account-default sectoral template** — deferred. Same follow-up.
-- **Flat-org surfaces with no account dimension** — `/flags`, `/templates` (catalogue side), `/signatures`, `/connectors` — these are global catalogues, not per-tenant. Out of scope for this ADR.
+- **Flat-org surfaces with no account dimension** — `/flags`, `/templates` (catalogue side), `/signatures`, `/connectors` — these are global catalogues, not per-tenant. Not a drift; no change needed.

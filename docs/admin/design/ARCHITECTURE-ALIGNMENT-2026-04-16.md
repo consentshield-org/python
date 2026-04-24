@@ -126,6 +126,13 @@ A live checklist of each panel against the ADR that ports it into code. Tick whe
 | Abuse & Security | ADR-0033 (folded from ADR-0035 on 2026-04-17 — Security half of the Ops+Security ADR) | ✅ 2026-04-16 | ☐ |
 | Feature Flags & Kill Switches | ADR-0036 (admin feature flags + kill switches) | ✅ 2026-04-16 | ☐ |
 | Audit Log | ADR-0028 (folded into admin app skeleton ADR) | ✅ 2026-04-16 | ✅ 2026-04-17 |
+| Audit Log · account filter + Account column (post-ADR-0044 drift close) | ADR-1027 Sprint 1.1 | ✅ 2026-04-24 (wireframe: account picker in filter bar; Account · Org combined column with visual grouping for cross-org actions within one account) | ☐ |
+| Dashboard · account-tier tiles (account count, accounts-by-plan, trial→paid gauge) | ADR-1027 Sprint 1.2 | ☐ | ☐ |
+| Pipeline / Security / Billing · `<AccountContextCard>` sidebar + group-by-account toggle | ADR-1027 Sprint 2.1 | ☐ | ☐ |
+| Support Tickets · parent-account header strip + account filter | ADR-1027 Sprint 2.2 | ☐ | ☐ |
+| Impersonation log · per-account rollup view | ADR-1027 Sprint 3.1 | ☐ | ☐ |
+| Accounts · account-level Notes card + org-detail surfacing of account notes | ADR-1027 Sprint 3.2 | ☐ | ☐ |
+| Accounts · default sectoral template picker + wizard pre-selection | ADR-1027 Sprint 3.3 | ☐ | ☐ |
 | Customer-side "Support sessions" tab (W-Admin-CustomerVisibility) | ADR-0029 Sprint 4.1 | ⚠️ HTML wireframe update deferred; implementation preceded formal wireframe | ✅ 2026-04-17 |
 | Customer-side org suspension banner state (W-Admin-OrgSuspension) | ADR-0029 Sprint 4.1 | ⚠️ HTML wireframe update deferred; implementation preceded formal wireframe | ✅ 2026-04-17 |
 
