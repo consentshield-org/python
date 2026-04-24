@@ -1053,6 +1053,15 @@ grant select on data_inventory to cs_orchestrator;
 -- Sprint 3.4 via migration 20260804000030 — missing from initial migration 010.
 grant select on deletion_receipts to cs_orchestrator;
 
+-- export_configurations: ADR-1025 Phase 2 Sprint 2.1 — the Next.js
+-- /api/internal/provision-storage route runs as cs_orchestrator and reads +
+-- upserts export_configurations after a successful verification probe.
+-- bypassrls covers RLS but NOT SQL-level privilege checks, so the grants
+-- are explicit. No DELETE — ADR-1025's lifecycle model never deletes rows
+-- from app-code. Added via migration 20260804000037.
+grant select, insert, update on export_configurations to cs_orchestrator;
+grant insert on export_verification_failures to cs_orchestrator;  -- migration 35 (Sprint 1.3)
+
 -- Can update specific fields for automated workflows
 grant update (status) on rights_requests to cs_orchestrator;
 grant update (assignee_id) on rights_requests to cs_orchestrator;

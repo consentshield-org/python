@@ -213,7 +213,7 @@ If the delivery credential leaks, the attacker can read in-flight buffer rows (m
 Connection patterns differ by runtime:
 
 - **Edge Functions (Deno):** direct Postgres via the Supabase-hosted pool using `CS_ORCHESTRATOR_ROLE_KEY` (HS256 JWT, while the legacy signing secret is still alive; migration to direct-LOGIN tracked alongside ADR-1010 for the Worker).
-- **Next.js runtime (customer app):** direct Postgres via the Supavisor pooler as the LOGIN role `cs_orchestrator.<project-ref>`, using `postgres.js` with `prepare: false`. See `app/src/lib/api/cs-orchestrator-client.ts` (ADR-1013). All six Next.js-runtime callers use this path: signup-intake, invitation-dispatch, dispatch helper, lookup-invitation, internal/invites, run-probes. The HS256 JWT path is fully retired from the Next.js runtime.
+- **Next.js runtime (customer app):** direct Postgres via the Supavisor pooler as the LOGIN role `cs_orchestrator.<project-ref>`, using `postgres.js` with `prepare: false`. See `app/src/lib/api/cs-orchestrator-client.ts` (ADR-1013). Seven Next.js-runtime callers use this path: signup-intake, invitation-dispatch, dispatch helper, lookup-invitation, internal/invites, run-probes, and **provision-storage** (ADR-1025 Sprint 2.1). The HS256 JWT path is fully retired from the Next.js runtime.
 
 Env: `SUPABASE_CS_ORCHESTRATOR_DATABASE_URL` on the customer-app project (parity with `SUPABASE_CS_API_DATABASE_URL`).
 
@@ -223,7 +223,11 @@ The following is a summary of security-relevant permissions. See consentshield-c
 CAN INSERT: audit_log, processing_log, rights_request_events, deletion_receipts,
             withdrawal_verifications, security_scans, consent_probe_runs, delivery_buffer,
             consent_artefacts (DEPA — process-consent-event Edge Function fan-out),
-            artefact_revocations (DEPA — system-originated revocations: expiry, regulatory)
+            artefact_revocations (DEPA — system-originated revocations: expiry, regulatory),
+            export_configurations (ADR-1025 Sprint 2.1 — provisioning route UPSERTs here after
+                                   a successful verification probe; migration 20260804000037),
+            export_verification_failures (ADR-1025 Sprint 1.3 — probe failures;
+                                          migration 20260804000035)
 CAN SELECT: accounts, account_memberships, organisations, org_memberships, web_properties,
             plans, tracker_signatures, integration_connectors, retention_rules,
             notification_channels, rights_requests, consent_artefact_index,
@@ -231,6 +235,8 @@ CAN SELECT: accounts, account_memberships, organisations, org_memberships, web_p
             deletion_receipts (ADR-1014 Sprint 3.4 — rpc_deletion_receipt_confirm reads the
                                 row before updating; migration 20260804000030 added the grant
                                 that was missing from the initial scoped-roles migration 010),
+            export_configurations (ADR-1025 Sprint 2.1 — provisioning idempotency check;
+                                   migration 20260804000037),
             consent_events (DEPA — process-consent-event needs the originating event row),
             purpose_definitions (DEPA), purpose_connector_mappings (DEPA),
             consent_artefacts (DEPA), consent_expiry_queue (DEPA),
@@ -240,6 +246,9 @@ CAN UPDATE: rights_requests.status/assignee_id, consent_artefact_index.validity_
             consent_probes scheduling fields, integration_connectors health fields,
             retention_rules check fields, deletion_receipts status fields,
             withdrawal_verifications scan fields,
+            export_configurations (ADR-1025 — full-row update via UPSERT; no column-level
+                                   restriction because the orchestrator writes bucket_name +
+                                   write_credential_enc + is_verified atomically),
             consent_events.artefact_ids (DEPA — reconcile back-reference after artefact creation),
             consent_artefacts.status (DEPA — expiry enforcement and replacement only),
             consent_expiry_queue.notified_at/processed_at/superseded (DEPA — expiry pipeline),

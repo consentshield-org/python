@@ -2,6 +2,34 @@
 
 Vercel, Cloudflare, Supabase config changes.
 
+## [ADR-1025 Phase 2 — operator actions for storage auto-provisioning] — 2026-04-24
+
+**ADR:** ADR-1025 — Customer storage auto-provisioning
+**Sprint:** Phase 2, Sprints 2.1 + 2.2
+
+### Cloudflare
+- **New account-level R2 token** (`CLOUDFLARE_ACCOUNT_API_TOKEN`, `cfat_` prefix) with `Account → R2 Storage → Edit` scope — bucket CRUD. Stored in `.secrets` + Vercel project env (customer-app).
+- **User-level token scope expanded** on the existing `CLOUDFLARE_API_TOKEN` (`cfut_` prefix): added `User → API Tokens → Edit` so the Next.js route can mint bucket-scoped R2 tokens via `POST /user/tokens`. Platform-forced split — CF rejects account tokens on `/user/tokens` with `9109 Valid user-level authentication not found`. Documented in ADR-1025 Sprint 1.2 amendment.
+- **Custom domain `app.consentshield.in`** pointed at the customer-app Vercel project (`consentshield`, `prj_XJKuuTJPRyPaikEEui1gSNgsUyQq`). DNS + Vercel alias both live.
+
+### Vercel (customer app)
+Environment variables added under project `consentshield` → Production (all via `vercel env add`):
+- `STORAGE_PROVISION_SECRET` — 44-char base64, matches the Vault-seeded bearer. Used by `/api/internal/provision-storage` to authenticate trigger-driven + admin-triggered dispatches.
+- `CLOUDFLARE_ACCOUNT_API_TOKEN` — new cfat_ token value.
+- `STORAGE_NAME_SALT` — 32-byte base64 random, per-org bucket-name derivation salt. Must remain stable (changing it breaks lookups of existing buckets).
+- `SUPABASE_CS_ORCHESTRATOR_DATABASE_URL` — direct-Postgres pooler URL for the cs_orchestrator LOGIN role (pattern from ADR-1013).
+
+### Supabase
+- **Vault secrets seeded** via the Supabase postgres user + Supavisor pooler (transaction mode):
+  - `cs_provision_storage_url` → `https://app.consentshield.in/api/internal/provision-storage`
+  - `cs_provision_storage_secret` → matches Vercel `STORAGE_PROVISION_SECRET`
+  - Both read by `public.dispatch_provision_storage(org_id)` on every trigger + cron invocation. Missing-vault is treated as a soft failure — the trigger no-ops silently so the migration can land before the operator has a chance to seed.
+- **Rotation procedure**: update both the Vercel env and the Vault secret in the same window. Trigger dispatches during the gap will soft-fail; the 5-minute `provision-storage-retry` cron catches them once both sides are consistent.
+
+### Verified end-to-end
+- `bunx tsx scripts/verify-adr-1025-sprint-21.ts` — orchestrator runs against real CF + real Supabase. 4 steps green in 13.38 s.
+- Trigger flow via live `data_inventory` INSERT → net.http_post → /api/internal/provision-storage → `export_configurations` row with `is_verified=true` materialised in ~30 s. Verified 2026-04-24.
+
 ## [ADR-1014 Sprint 1.5 — wizard-entry-gate pair (Phase 1 close-out)] — 2026-04-23
 
 **ADR:** ADR-1014 — E2E test harness + vertical demo sites
