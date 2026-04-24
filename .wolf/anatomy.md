@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-24T16:10:47.229Z
-> Files: 1397 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-24T16:24:04.344Z
+> Files: 1406 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../tmp/
 
@@ -234,7 +234,7 @@
 - `.secrets` — Supabase (~972 tok)
 - `CLAUDE.md` — OpenWolf (~6199 tok)
 - `debug_rpc.ts` — Declares main (~218 tok)
-- `package.json` — Node.js package manifest (~213 tok)
+- `package.json` — Node.js package manifest (~233 tok)
 - `sentry.client.config.ts` (~166 tok)
 - `sentry.server.config.ts` (~166 tok)
 - `tsconfig.base.json` (~110 tok)
@@ -1401,7 +1401,7 @@
 - `ADR-1011-revoked-key-tombstone.md` — ADR-1011: Revoked-key tombstone — rotate+revoke plaintexts return 410 (~1088 tok)
 - `ADR-1012-v1-dx-gap-fixes.md` — ADR-1012: v1 API — day-1 DX gap fixes (~2561 tok)
 - `ADR-1013-cs-orchestrator-direct-postgres.md` — ADR-1013: `cs_orchestrator` direct-Postgres migration (Next.js runtime) (~2726 tok)
-- `ADR-1014-e2e-test-harness-and-vertical-demos.md` — ADR-1014: End-to-end test harness + vertical demo sites (partner-evidence grade) (~16718 tok)
+- `ADR-1014-e2e-test-harness-and-vertical-demos.md` — ADR-1014: End-to-end test harness + vertical demo sites (partner-evidence grade) (~17586 tok)
 - `ADR-1015-v1-api-integration-tests-and-developer-docs.md` — ADR-1015: v1 API integration tests + customer developer documentation (~7655 tok)
 - `ADR-1016-v1-orphan-scope-read-endpoints.md` — ADR-1016: v1 API — close the orphan `read:audit`, `read:security`, `read:score` scopes (~1836 tok)
 - `ADR-1017-admin-ops-readiness-flags.md` — ADR-1017: Admin ops-readiness flags — surface external blockers in the operator console (~1656 tok)
@@ -1415,7 +1415,7 @@
 - `ADR-1025-customer-storage-auto-provisioning.md` — ADR-1025: Customer storage auto-provisioning — hybrid managed R2 default + BYOK escape hatch (~13370 tok)
 - `ADR-1026-drop-hyperdrive-direct-supavisor.md` — ADR-1026: Rewind ADR-1010 Phase 3 — Worker connects directly to Supavisor; drop Hyperdrive binding (~5467 tok)
 - `ADR-1027-admin-account-awareness.md` — ADR-1027: Admin Account-Awareness Pass (~8082 tok)
-- `ADR-index.md` — ADR Index (~6086 tok)
+- `ADR-index.md` — ADR Index (~6199 tok)
 - `ADR-template.md` — ADR-NNNN: Title (~423 tok)
 - `adr-workflow.md` — ADR Workflow Rules (~557 tok)
 
@@ -1443,8 +1443,8 @@
 - `CHANGELOG-dashboard.md` — Changelog — Dashboard (~28074 tok)
 - `CHANGELOG-docs.md` — Changelog — Documentation (~13030 tok)
 - `CHANGELOG-edge-functions.md` — Changelog — Edge Functions (~4251 tok)
-- `CHANGELOG-infra.md` — Changelog — Infrastructure (~21556 tok)
-- `CHANGELOG-marketing.md` — Changelog — Marketing (~13649 tok)
+- `CHANGELOG-infra.md` — Changelog — Infrastructure (~22397 tok)
+- `CHANGELOG-marketing.md` — Changelog — Marketing (~14208 tok)
 - `CHANGELOG-schema.md` — Changelog — Schema (~52508 tok)
 - `CHANGELOG-worker.md` — Changelog — Worker (~6025 tok)
 
@@ -1588,8 +1588,8 @@
 
 ## marketing/src/app/docs/_data/
 
-- `nav.ts` — HTTP method pill for API-reference entries; undefined elsewhere. (~1442 tok)
-- `search-index.ts` — Group label (appears as a muted header in the palette). (~2200 tok)
+- `nav.ts` — HTTP method pill for API-reference entries; undefined elsewhere. (~1466 tok)
+- `search-index.ts` — Group label (appears as a muted header in the palette). (~2273 tok)
 
 ## marketing/src/app/docs/_styles/
 
@@ -1686,7 +1686,11 @@
 
 ## marketing/src/app/docs/test-verification/
 
-- `page.mdx` — Reproduce our tests (~3300 tok)
+- `page.mdx` — Reproduce our tests (~3241 tok)
+
+## marketing/src/app/docs/test-verification/controls/
+
+- `page.mdx` — Sacrificial controls (~2301 tok)
 
 ## marketing/src/app/docs/webhook-signatures/
 
@@ -1805,6 +1809,7 @@
 - `check-no-service-role-in-customer-app.ts` — ADR-1009 Phase 3 Sprint 3.1 — grep gate for Rule 5 violation in app/src/. (~822 tok)
 - `e2e-bootstrap.ts` — ADR-1014 Sprint 1.2 — E2E Supabase test-project bootstrap. (~7227 tok)
 - `e2e-reset.ts` — ADR-1014 Sprint 1.2 — idempotent E2E state reset. (~1181 tok)
+- `e2e-verify-controls.ts` — ADR-1014 Sprint 5.4 — Sacrificial-control CI gate. (~2253 tok)
 - `e2e-verify-evidence.ts` — ADR-1014 Sprint 1.4 — Partner-facing evidence-seal verifier. (~941 tok)
 - `mint-role-jwt.ts` — ADR-1009 Phase 2 — mint an HS256 JWT for a scoped Postgres role so Supabase (~832 tok)
 - `partner-bootstrap.ts` — ADR-1014 Sprint 5.1 — interactive partner reproduction bootstrap. Prompts for Supabase URL + service-role key (hidden) + anon key + optional CF account ID; wraps e2e-bootstrap.ts with env overrides; produces .env.partner (0600, gitignored). Idempotent via --force. Unblocks ADR-1015 Phase 3. (~3723 tok)
@@ -2470,14 +2475,21 @@
 
 ## tests/e2e/controls/
 
-- `README.md` — Project documentation (~209 tok)
-- `smoke-healthz-negative.spec.ts` — SACRIFICIAL CONTROL — MUST fail on every run. (~182 tok)
+- `arithmetic-negative.spec.ts` — SACRIFICIAL CONTROL — expected to fail internally; Playwright reports PASSED (~207 tok)
+- `array-length-negative.spec.ts` — SACRIFICIAL CONTROL — expected to fail internally. (~187 tok)
+- `boolean-truth-negative.spec.ts` — SACRIFICIAL CONTROL — expected to fail internally. (~203 tok)
+- `deep-equal-negative.spec.ts` — SACRIFICIAL CONTROL — expected to fail internally. (~218 tok)
+- `null-identity-negative.spec.ts` — SACRIFICIAL CONTROL — expected to fail internally. (~202 tok)
+- `README.md` — Project documentation (~533 tok)
+- `regex-match-negative.spec.ts` — SACRIFICIAL CONTROL — expected to fail internally. (~212 tok)
+- `smoke-healthz-negative.spec.ts` — SACRIFICIAL CONTROL — expected to fail internally; Playwright reports PASSED (~259 tok)
+- `string-contains-negative.spec.ts` — SACRIFICIAL CONTROL — expected to fail internally. (~202 tok)
 
 ## tests/e2e/specs/
 
 - `demo-ecommerce-banner.md` — E2E-2.1-demo-ecommerce-banner: Browser → banner → Worker → buffer (~1077 tok)
 - `demo-matrix.md` — E2E-2.4-demo-matrix: Cross-vertical banner × outcome matrix (~1773 tok)
-- `pair-matrix.md` — Pair matrix — ADR-1014 Sprint 3.7 (~2873 tok)
+- `pair-matrix.md` — Pair matrix — ADR-1014 Sprint 3.7 (~3598 tok)
 - `README.md` — Project documentation (~1494 tok)
 - `signup-to-dashboard.md` — E2E-1.5-signup-to-dashboard: signup-intake → onboarding wizard entry gate (~1817 tok)
 - `smoke-healthz.md` — E2E-1.1-smoke-healthz: All three app surfaces serve /healthz (~779 tok)

@@ -21,9 +21,9 @@
 | Phase 2 — Vertical demo sites on Railway | 4/4 `[x]` | ✅ Complete (Playwright runtime green deferred per-sprint pending ADR-1010 Worker migration) |
 | Phase 3 — Full-pipeline E2E suites | 6/7 `[x]` + 1 `[~]` | 🟡 Sprint 3.2 partial — R2 delivery + end-to-end trace-id blocked on `consent_events.trace_id` column + Worker header propagation. `deliver-consent-events` Edge Function itself has since shipped (ADR-1019). |
 | Phase 4 — Stryker mutation testing | 0/4 `[ ]` | ⏳ Planned |
-| Phase 5 — Partner reproduction kit + evidence publication | 2/4 `[x]` | 🟡 Sprint 5.1 complete 2026-04-25 (partner bootstrap — unblocks ADR-1015 Phase 3). Sprint 5.2 complete 2026-04-25 (`/docs/test-verification` runbook). Sprints 5.3 / 5.4 planned. |
+| Phase 5 — Partner reproduction kit + evidence publication | 3/4 `[x]` | 🟡 Sprint 5.1 complete 2026-04-25 (partner bootstrap — unblocks ADR-1015 Phase 3). Sprint 5.2 complete 2026-04-25 (`/docs/test-verification` runbook). Sprint 5.4 complete 2026-04-25 (8 sacrificial controls + CI gate + `/docs/test-verification/controls`). Sprint 5.3 planned. |
 
-17 of 24 sprints fully complete; 1 partial; 6 planned.
+18 of 24 sprints fully complete; 1 partial; 5 planned.
 
 ---
 
@@ -523,11 +523,24 @@ Mutation testing intentionally mutates production code (change `===` to `!==`, f
 #### Sprint 5.4: Sacrificial "must-fail" controls
 
 **Deliverables:**
-- [ ] `tests/e2e/controls/` — 8 intentionally-broken tests that MUST fail (HMAC check removed, RLS bypassed, etc.). These are NEVER merged to the production code paths — they exist purely as test-code stubs.
-- [ ] CI gate: if any control passes, fail the whole suite and page the maintainer.
-- [ ] Documented on `/docs/test-verification/controls`.
+- [x] `tests/e2e/controls/` — 8 intentionally-broken tests that MUST fail: `smoke-healthz-negative` (toEqual string) + `arithmetic-negative` (toBe integer) + `string-contains-negative` (toContain) + `array-length-negative` (toHaveLength) + `null-identity-negative` (toBe null-vs-undefined) + `regex-match-negative` (toMatch anchored) + `boolean-truth-negative` (toBe boolean) + `deep-equal-negative` (toEqual deep object). Each uses Playwright's `test.fail()` inversion: healthy run reports `expectedStatus='failed' + actualStatus='failed' + ok=true`, so the post-inversion tally reads `8 passed`. Controls target DISTINCT assertion matchers — two controls probing the same matcher add no discriminatory value.
+- [x] CI gate: `scripts/e2e-verify-controls.ts`. Spawns Playwright against `controls/`, reads the config-authored `test-results/results.json`, walks every `@control`-tagged spec, confirms each reports expectedStatus + actualStatus both `'failed'`. Exits 0 if all behaved; 1 with named control + mismatch if any rogue or any missing `test.fail()` wrapper; 2 on IO / schema error. Wired as `bun run test:e2e:controls` at the repo root (package.json script).
+- [x] Documented on `/docs/test-verification/controls` — MDX under Reference > Reproduce our tests, sibling to the Sprint 5.2 page. 8-row matrix + how-inversion-works + CI-gate section (exit-code table) + how-to-read-a-red-gate runbook + why-exactly-eight rationale (matcher coverage).
+- [x] `/docs/test-verification` page updated: Sprint 5.4 "coming" callout removed; replaced with a 3-line pointer + `bun run test:e2e:controls` snippet + deep-link to the new page.
 
-**Status:** `[ ] planned`
+**Scope boundary:** Controls are assertion-layer canaries, NOT product-layer regression tests. "HMAC check removed" / "RLS bypassed" examples in the sprint spec would require mutation testing (Phase 4). These 8 controls catch framework / matcher regressions that would silently collapse every positive in the suite. Product-layer mutations are Phase 4's domain. Rationale captured in the MDX page's "Why exactly eight" section.
+
+**Scope deviation — "page the maintainer":** Sprint-spec wording was "fail the whole suite and page the maintainer." The gate fails the build (exit 1) with a named-control SEV-1 message; paging is a CI-surface concern (GitHub Actions step with `on: failure` + notification) that depends on where this runs. Not blocking to Sprint 5.4; left as a deployment-side wiring task for whoever hosts CI.
+
+**Testing plan:**
+- [x] `bunx tsc --noEmit --strict --target ES2022 --module esnext --moduleResolution bundler --esModuleInterop --skipLibCheck scripts/e2e-verify-controls.ts` — clean.
+- [x] `cd tests/e2e && bunx playwright test controls/ --project=chromium --reporter=list` — `8 passed (525ms)` after inversion; visible `✘` marker per spec confirms each control's body internally failed as intended.
+- [x] `bun run test:e2e:controls` (end-to-end gate) — discovered 8 controls, all passed the inversion check, evidence archive sealed. Exit 0.
+- [x] `cd marketing && bun run build` — clean. `/docs/test-verification/controls` prerenders as `○ (Static)`; 24 static `/docs/*` routes total.
+- [x] Nav + search-index entries verified: "Sacrificial controls" renders under Reference below "Reproduce our tests"; Cmd-K finds the page via any of 9 curated keywords.
+- [ ] Rogue-control failure path (manually remove `test.fail()` from one control, expect gate to exit 1 with named rogue) verified by code inspection of the script's walker; left unexercised at runtime to avoid state churn against the committed controls.
+
+**Status:** `[x] complete 2026-04-25 — 8 controls live; test.fail() inversion working; CI gate at bun run test:e2e:controls; /docs/test-verification/controls runbook shipped.`
 
 ---
 

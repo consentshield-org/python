@@ -2,6 +2,32 @@
 
 Vercel, Cloudflare, Supabase config changes.
 
+## [ADR-1014 Sprint 5.4 — sacrificial controls + CI gate] — 2026-04-25
+
+**ADR:** ADR-1014 — E2E test harness + vertical demo sites
+**Sprint:** Phase 5, Sprint 5.4
+
+### Added
+- `tests/e2e/controls/smoke-healthz-negative.spec.ts` (converted — was Phase-1 preview), plus 7 new control spec files: `arithmetic-negative`, `string-contains-negative`, `array-length-negative`, `null-identity-negative`, `regex-match-negative`, `boolean-truth-negative`, `deep-equal-negative`. Each wraps a false assertion with `test.fail()` so Playwright reports the run as `passed` when the assertion correctly fails internally. Each control targets a DISTINCT matcher (toEqual string, toBe integer, toContain, toHaveLength, toBe null-vs-undefined, toMatch anchored, toBe boolean, toEqual deep object) — no matcher-coverage overlap.
+- `scripts/e2e-verify-controls.ts` — CI gate. Spawns Playwright against `tests/e2e/controls/`, parses the config-authored `test-results/results.json`, walks every `@control`-tagged spec, asserts `expectedStatus === 'failed'` AND `results[0].status === 'failed'` on each. Exit 0 = discipline intact; exit 1 = SEV-1 (rogue control OR control missing `test.fail()` wrapper), with the offending control's file + mismatch printed; exit 2 = IO / schema error. `--min-controls=N` flag parameterises the expected count (default 8).
+- `package.json` — new `test:e2e:controls` root script mapping to `bunx tsx scripts/e2e-verify-controls.ts`.
+- `tests/e2e/specs/pair-matrix.md` — new §8 "Sacrificial controls" section. 8-row matcher matrix + the rules that govern future additions ("each control MUST target a distinct matcher" + "if Phase 4+ introduces a new matcher that becomes load-bearing, add a control in the same sprint").
+
+### Why
+- ADR-1014's evidence-grade contract promises that every positive test's discrimination is auditable. Sacrificial controls are the canary on the assertion layer itself: if Playwright's `toBe` / `toEqual` / `toContain` matchers regress (framework upgrade, runtime swap, TS-build change), the controls catch it before any positive starts silently passing. The eight shipped today cover every matcher class currently load-bearing in the suite.
+- `test.fail()` inversion — chosen over a custom reporter or a soft-expectation wrapper — because it's first-class Playwright semantics that integrates with `expectedStatus` in the JSON reporter, the evidence archive, and the HTML report. One less moving part.
+
+### Architecture changes
+- None. Controls live alongside positives in the existing Playwright test surface. No product-code changes, no DB changes, no worker changes.
+
+### Tested
+- [x] `bunx tsc --noEmit --strict --target ES2022 --module esnext --moduleResolution bundler --esModuleInterop --skipLibCheck scripts/e2e-verify-controls.ts` — clean.
+- [x] `cd tests/e2e && bunx playwright test controls/ --project=chromium --reporter=list` — `8 passed (525ms)`. Each control visibly `✘` per-test (internal body failure) but tally is green post-inversion.
+- [x] `bun run test:e2e:controls` — end-to-end gate run. 8 controls discovered; all passed inversion; evidence archive sealed at a named run-ID path; exit 0.
+- [ ] Rogue-control failure path verified by code inspection of the walker (`missingExpectation[]` + `rogue[]` collections). Not exercised at runtime to avoid state churn against the committed controls.
+
+---
+
 ## [ADR-1014 Sprint 5.1 — partner bootstrap script (Phase 5 opens)] — 2026-04-25
 
 **ADR:** ADR-1014 — E2E test harness + vertical demo sites

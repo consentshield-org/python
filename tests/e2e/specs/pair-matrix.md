@@ -80,3 +80,30 @@ Sprint 3.7's three ADR-1014 deliverables:
 - [x] **Document the pairing map.** This file.
 
 Sprint 3.7 ships as documentation-only: no new tests, no migrations, no route handlers. The audit confirmed the evidence-graded discipline held across ten sprints; the matrix is the artefact that makes it inspectable at a glance.
+
+## 8. Sacrificial controls — Sprint 5.4 (2026-04-25)
+
+The pos/neg discipline in §3 assumes the assertion layer itself is still discriminating. Sacrificial controls are the canary on that assumption: eight intentionally-broken tests that MUST fail internally (wrapped with Playwright `test.fail()` inversion) and therefore report as `passed` overall. If any control's false assertion ever holds true, the harness itself has regressed — every other positive in the suite becomes suspect until the rogue control is investigated.
+
+Each control targets a DISTINCT assertion matcher so a regression in any one matcher is caught by exactly one rogue:
+
+| # | Control file | Matcher probed | Why load-bearing for positives |
+|---|---|---|---|
+| 1 | `controls/smoke-healthz-negative.spec.ts` | `toEqual` (string) | Most common equality matcher. Used across DB-row field assertions, HTTP-status-line assertions, and rendered-text assertions. |
+| 2 | `controls/arithmetic-negative.spec.ts` | `toBe` (integer) | Every timing + row-count + duration assertion. |
+| 3 | `controls/string-contains-negative.spec.ts` | `toContain` (substring) | Response-body substrings, audit-log `event_type` presence, rendered-HTML text assertions. |
+| 4 | `controls/array-length-negative.spec.ts` | `toHaveLength` (array cardinality) | Buffer-row counts, audit-event counts, rights-request-event counts. |
+| 5 | `controls/null-identity-negative.spec.ts` | `toBe` (null vs undefined) | Negative-row assertions that rely on nullable columns (`revoked_at`, `delivered_at`, `confirmed_at`) remaining null. |
+| 6 | `controls/regex-match-negative.spec.ts` | `toMatch` (anchored regex) | Trace-ID (ULID shape) and API-key-prefix (`cs_live_` / `cs_test_`) discrimination. |
+| 7 | `controls/boolean-truth-negative.spec.ts` | `toBe` (boolean) | `email_verified`, `is_active`, `revoked_at IS NULL` on consent_events / rights_requests / api_keys / deletion_receipts. |
+| 8 | `controls/deep-equal-negative.spec.ts` | `toEqual` (deep object) | RFC 7807 problem+json shape, webhook-callback response_payload, fixture-banner purposes array, audit_log JSONB metadata. |
+
+**CI gate:** `bun run test:e2e:controls` (= `bunx tsx scripts/e2e-verify-controls.ts`). Fails with a SEV-1 message on any rogue control or any control missing its `test.fail()` wrapper. Evidence archive records the raw view (`0 passed, 8 failed`); the gate's post-inversion message reads over the top.
+
+**Rules:**
+
+- Every control is a plain `*.spec.ts` file tagged `@control @smoke`.
+- Every control asserts a patently-false proposition wrapped with `test.fail()`.
+- Do NOT "fix" a control by softening its assertion. The false assertion IS the control.
+- Do NOT add two controls for the same matcher — adds run-time without adding discriminatory value.
+- If Phase 4+ introduces a new matcher class that becomes load-bearing for positives, add a control in the same sprint.

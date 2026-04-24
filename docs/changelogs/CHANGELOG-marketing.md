@@ -2,6 +2,31 @@
 
 Public marketing site (`marketing/` workspace → `consentshield.in`). New in 2026-04-21.
 
+## [ADR-1014 Sprint 5.4 — sacrificial-controls runbook at /docs/test-verification/controls] — 2026-04-25
+
+**ADR:** ADR-1014 — E2E test harness + vertical demo sites
+**Sprint:** Phase 5, Sprint 5.4
+
+### Added
+- `marketing/src/app/docs/test-verification/controls/page.mdx` — sibling page under Reference > Reproduce our tests. Sections: intro / why-sacrificial-controls-exist callout / 8-row matrix (per-control file + matcher + rationale) / how-the-inversion-works (test.fail semantics explained) / dual-layer evidence archive callout / CI gate section (exit-code table) / how-to-read-a-red-gate (4-step runbook) / why-exactly-eight (matcher-coverage rationale) / related links. Breadcrumb chains back to /docs/test-verification.
+
+### Changed
+- `marketing/src/app/docs/_data/nav.ts` — new "Sacrificial controls" link added to Reference group directly below "Reproduce our tests". Reference group is now seven entries.
+- `marketing/src/app/docs/_data/search-index.ts` — DESCRIPTIONS map gains `/docs/test-verification/controls` with nine Cmd-K keywords: sacrificial, controls, test.fail, inversion, harness, discipline, gate, ci, canary.
+- `marketing/src/app/docs/test-verification/page.mdx` — Sprint 5.4 "coming" callout replaced with a live pointer + `bun run test:e2e:controls` snippet + deep-link to the new controls page.
+
+### Why
+- ADR-1014 Sprint 5.4 delivers the "fake-positive defence" layer promised by the decision record and forward-referenced from Sprint 5.2. The matrix exists in code (`tests/e2e/controls/*.spec.ts`) + in the living pair-matrix (`specs/pair-matrix.md §8`) but the auditor-legible surface is this MDX page — where a reviewer can read what the canary proves, why exactly eight, and how to interpret a red gate without opening a spec file.
+
+### Architecture changes
+- None. Pure content authoring + sidebar wiring on top of the existing `Breadcrumb + Callout + ParamTable + FeedbackStrip` component pattern.
+
+### Tested
+- [x] `cd marketing && bun run build` — clean. 24 static `/docs/*` routes (up from 23) + 1 dynamic catchall. `/docs/test-verification/controls` prerenders as `○ (Static)`.
+- [x] Sidebar rendering verified via the build route list; Cmd-K palette auto-indexed via DOCS_NAV membership.
+
+---
+
 ## [ADR-1014 Sprint 5.2 — `/docs/test-verification` reproduction runbook] — 2026-04-25
 
 **ADR:** ADR-1014 — E2E test harness + vertical demo sites

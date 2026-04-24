@@ -5274,3 +5274,28 @@
 | 21:39 | Edited docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md | 3→3 lines | ~83 |
 | 21:39 | Edited docs/ADRs/ADR-index.md | inline fix | ~123 |
 | 21:40 | Edited docs/changelogs/CHANGELOG-marketing.md | added error handling | ~872 |
+| 21:41 | Session end: 40 writes across 18 files (ADR-1014-e2e-test-harness-and-vertical-demos.md, ADR-index.md, ADR-1003-processor-posture-and-healthcare-unlock.md, 20260804000054_adr1003_s14_rpc_consent_record_mode_fence.sql, zero-storage-bridge.ts) | 34 reads | ~246284 tok |
+| 21:44 | Created tests/e2e/controls/smoke-healthz-negative.spec.ts | — | ~259 |
+| 21:45 | Created tests/e2e/controls/arithmetic-negative.spec.ts | — | ~207 |
+| 21:45 | Created tests/e2e/controls/string-contains-negative.spec.ts | — | ~202 |
+| 21:45 | Created tests/e2e/controls/array-length-negative.spec.ts | — | ~187 |
+| 21:45 | Created tests/e2e/controls/null-identity-negative.spec.ts | — | ~202 |
+| 21:45 | Created tests/e2e/controls/regex-match-negative.spec.ts | — | ~212 |
+| 21:45 | Created tests/e2e/controls/boolean-truth-negative.spec.ts | — | ~203 |
+| 21:45 | Created tests/e2e/controls/deep-equal-negative.spec.ts | — | ~218 |
+| 21:47 | Created scripts/e2e-verify-controls.ts | — | ~2214 |
+| 21:47 | Edited scripts/e2e-verify-controls.ts | modified runControls() | ~145 |
+| 21:48 | Edited scripts/e2e-verify-controls.ts | modified main() | ~32 |
+| 21:48 | Edited package.json | 2→3 lines | ~54 |
+| 21:49 | Created marketing/src/app/docs/test-verification/controls/page.mdx | — | ~2301 |
+| 21:49 | Edited marketing/src/app/docs/_data/nav.ts | 1→2 lines | ~45 |
+| 21:49 | Edited marketing/src/app/docs/_data/search-index.ts | 1→2 lines | ~150 |
+| 21:50 | Edited marketing/src/app/docs/test-verification/page.mdx | 16→14 lines | ~147 |
+| 21:50 | Edited docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md | expanded (+13 lines) | ~1019 |
+| 21:50 | Edited docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md | 3→3 lines | ~109 |
+| 21:51 | Edited docs/ADRs/ADR-index.md | inline fix | ~186 |
+| 21:52 | Edited tests/e2e/specs/pair-matrix.md | expanded (+27 lines) | ~834 |
+| 21:52 | Edited docs/changelogs/CHANGELOG-marketing.md | expanded (+25 lines) | ~643 |
+| 21:53 | Edited docs/changelogs/CHANGELOG-infra.md | expanded (+26 lines) | ~930 |
+| 21:54 | Created tests/e2e/controls/README.md | — | ~569 |
+| 21:54 | ADR-1014 Sprint 5.4 | tests/e2e/controls/*.spec.ts, scripts/e2e-verify-controls.ts, marketing/.../test-verification/controls/page.mdx, pair-matrix.md §8, package.json | 8 sacrificial controls inverted via test.fail(); CI gate at bun run test:e2e:controls; MDX runbook; 24 static docs routes | ~10k |

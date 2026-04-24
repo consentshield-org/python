@@ -13886,6 +13886,118 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-04-24T16:10:47.239Z"
+    },
+    {
+      "id": "bug-865",
+      "timestamp": "2026-04-24T16:18:04.564Z",
+      "error_message": "Wrong reference: runControls should be playwrightExit",
+      "file": "scripts/e2e-verify-controls.ts",
+      "root_cause": "Used \"runControls\" instead of \"playwrightExit\"",
+      "fix": "Changed runControls → playwrightExit",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T16:18:04.564Z"
+    },
+    {
+      "id": "bug-866",
+      "timestamp": "2026-04-24T16:18:36.988Z",
+      "error_message": "Incorrect value in code",
+      "file": "package.json",
+      "root_cause": "Had \"test:e2e:report\"",
+      "fix": "Changed to \"test:e2e:controls\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "json"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T16:18:36.988Z"
+    },
+    {
+      "id": "bug-867",
+      "timestamp": "2026-04-24T16:20:44.356Z",
+      "error_message": "Missing error handling in unknown",
+      "file": "docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T16:20:44.356Z"
+    },
+    {
+      "id": "bug-868",
+      "timestamp": "2026-04-24T16:20:52.468Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 3→3 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T16:20:52.468Z"
+    },
+    {
+      "id": "bug-869",
+      "timestamp": "2026-04-24T16:21:06.808Z",
+      "error_message": "Incorrect value in code",
+      "file": "docs/ADRs/ADR-index.md",
+      "root_cause": "Had `/docs/*`",
+      "fix": "Changed to `tests/e2e/controls/`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T16:21:06.808Z"
+    },
+    {
+      "id": "bug-870",
+      "timestamp": "2026-04-24T16:22:47.177Z",
+      "error_message": "Missing error handling in unknown",
+      "file": "docs/changelogs/CHANGELOG-marketing.md",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T16:22:47.177Z"
+    },
+    {
+      "id": "bug-871",
+      "timestamp": "2026-04-24T16:23:22.112Z",
+      "error_message": "Missing error handling in unknown",
+      "file": "docs/changelogs/CHANGELOG-infra.md",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T16:23:22.112Z"
     }
   ]
 }

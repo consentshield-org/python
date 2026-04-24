@@ -1,0 +1,194 @@
+export const metadata = {
+  title: 'Sacrificial controls',
+  description:
+    'Eight intentionally-broken tests that MUST fail. If any control ever passes its internal assertion, the whole E2E suite is flagged — the assertion layer has lost its discipline.',
+}
+
+<Breadcrumb trail={[
+  { label: 'Docs', href: '/docs' },
+  { label: 'Reference', href: '/docs' },
+  { label: 'Reproduce our tests', href: '/docs/test-verification' },
+  { label: 'Sacrificial controls' },
+]} />
+
+# Sacrificial controls
+
+This page documents ConsentShield's **sacrificial-control matrix** —
+eight intentionally-broken tests whose job is to fail. They prove the
+harness's assertion layer is still doing the work it claims to.
+
+If any control ever reports its internal assertion as **held**, the
+suite's pos/neg discipline is broken. Every other positive assertion
+in the run becomes suspect until the rogue control is investigated.
+
+<Callout tone="warn" title="Why sacrificial controls exist">
+A positive test that silently starts always-passing — because an
+assertion matcher regressed, a test-framework upgrade changed
+semantics, a mock stopped discriminating — is the worst kind of
+regression. It erodes evidence value without any red flag.
+
+Sacrificial controls are the canary. Each one asserts a patently-false
+proposition (1 + 1 === 3; false === true; an empty array has length
+five). They are wrapped in Playwright's `test.fail()` inversion, so
+when the control correctly fails its assertion, Playwright reports
+**passed overall**. When the control's assertion somehow holds
+— because the assertion layer or matcher has regressed — Playwright
+reports **failed overall** and the CI gate triggers SEV-1.
+</Callout>
+
+## The matrix
+
+<ParamTable params={[
+  {
+    name: 'smoke-healthz-negative.spec.ts',
+    type: 'string-equality inversion',
+    description: '`expect("ok").toEqual("not-ok")`. Probes the most common equality matcher. Paired-with: `smoke-healthz.spec.ts`.',
+  },
+  {
+    name: 'arithmetic-negative.spec.ts',
+    type: 'integer-equality inversion',
+    description: '`expect(1 + 1).toBe(3)`. Probes numeric `toBe`. Every timing + row-count assertion in the suite relies on this matcher to discriminate.',
+  },
+  {
+    name: 'string-contains-negative.spec.ts',
+    type: 'substring-containment inversion',
+    description: '`expect("hello").toContain("xyz")`. Probes `toContain`. Response-body substrings, audit-log event_type checks, and rendered-HTML assertions all ride on this.',
+  },
+  {
+    name: 'array-length-negative.spec.ts',
+    type: 'cardinality inversion',
+    description: '`expect([]).toHaveLength(5)`. Probes `toHaveLength`. Every buffer-row / audit-event / rights-request-event count assertion depends on this matcher discriminating array size.',
+  },
+  {
+    name: 'null-identity-negative.spec.ts',
+    type: 'null-vs-undefined inversion',
+    description: '`expect(null).toBe(undefined)`. Probes strict identity. ConsentShield uses nullable columns (`revoked_at`, `delivered_at`, `confirmed_at`) to signal un-mutated state; every negative-row assertion relies on this distinction.',
+  },
+  {
+    name: 'regex-match-negative.spec.ts',
+    type: 'regex-anchor inversion',
+    description: '`expect("abc").toMatch(/^xyz$/)`. Probes `toMatch` with anchors. Trace-ID (ULID-shape) and API-key-prefix (`cs_live_` / `cs_test_`) assertions rely on anchored regex semantics.',
+  },
+  {
+    name: 'boolean-truth-negative.spec.ts',
+    type: 'boolean-identity inversion',
+    description: '`expect(false).toBe(true)`. Probes boolean discrimination. Load-bearing for every `email_verified=true` / `is_active=false` / `revoked_at IS NULL` assertion across consent_events, rights_request rows, api_keys, and deletion_receipts.',
+  },
+  {
+    name: 'deep-equal-negative.spec.ts',
+    type: 'deep-equal inversion',
+    description: '`expect({ a: 1 }).toEqual({ a: 2 })`. Probes structural equality. Deep-equal is how the suite asserts RFC 7807 problem+json shape, webhook-callback response_payload, fixture-banner purpose arrays, and audit_log JSONB metadata.',
+  },
+]} />
+
+## How the inversion works
+
+Every control wraps its assertion with Playwright's
+[`test.fail()`](https://playwright.dev/docs/api/class-test#test-fail-1)
+annotation. `test.fail()` flips the expected outcome:
+
+- If the test body **fails** its internal assertion (the control's
+  intended behaviour), Playwright reports the test as **passed**
+  overall — `expectedStatus: 'failed'`, `actualStatus: 'failed'`,
+  `ok: true`. This is the healthy state.
+- If the test body somehow **passes** its internal assertion (the
+  assertion layer has regressed), Playwright reports the test as
+  **failed** overall. This is the SEV-1 state.
+
+The net effect: controls *look* failed per-test in Playwright's CLI
+output (the familiar red `✘` marker) but the final tally reads
+`8 passed`. That's what we want.
+
+<Callout tone="info" title="Two honest layers in the evidence archive">
+Your sealed evidence archive records the raw view — `0 passed, 8
+failed` for a healthy run — because the evidence reporter captures
+what Playwright actually saw. The CI gate's message ("all 8 controls
+behaved as expected") reads over the top of that raw view. Both
+layers are in the archive; either is auditable.
+</Callout>
+
+## The CI gate
+
+```bash
+bun run test:e2e:controls
+```
+
+This runs `scripts/e2e-verify-controls.ts` which:
+
+1. Invokes `playwright test controls/` against Chromium.
+2. Reads `tests/e2e/test-results/results.json`.
+3. Walks every test tagged `@control`, confirms each has
+   `expectedStatus === 'failed'` AND the recorded run reports
+   `status === 'failed'` (i.e., the control's body correctly failed
+   its internal assertion).
+4. Fails with an SEV-1 message if any control was rogue (assertion
+   somehow held) or if any control is missing its `test.fail()`
+   wrapper (inversion not applied).
+
+<ParamTable params={[
+  {
+    name: 'Exit 0',
+    type: 'Healthy',
+    description: 'Every discovered control behaved as a sacrificial control must. Discipline intact.',
+  },
+  {
+    name: 'Exit 1',
+    type: 'SEV-1',
+    description: 'At least one control reported unexpected status (its internal assertion held) OR at least one control lacks the test.fail() wrapper. Do NOT trust other positive assertions in this run.',
+  },
+  {
+    name: 'Exit 2',
+    type: 'IO / schema error',
+    description: 'Playwright config missing, results.json malformed, or `--min-controls=N` mismatch. The gate has not run; fix the environment.',
+  },
+]} />
+
+## How to read a red gate
+
+If `bun run test:e2e:controls` exits non-zero:
+
+1. **Do not ignore it.** A rogue control is louder than any
+   false-negative in a positive test — the assertion discipline is
+   what makes every other assertion credible.
+2. **Read the script's output verbatim.** It names the specific
+   control file and the mismatch (e.g., `expected=failed actual=passed`).
+3. **Open the named control spec.** Every control file has the exact
+   assertion on a single line. If an assertion like `expect(1 + 1).toBe(3)`
+   now evaluates as true, the problem is not in ConsentShield — it is
+   in the test-framework version, the assertion matcher, or the
+   runtime. Bisect Playwright / TypeScript / Node versions before
+   anything else.
+4. **Do NOT "fix" the control by softening its assertion.** The
+   control's purpose IS the false assertion. If the false assertion is
+   no longer false, the framework has regressed.
+
+## Why exactly eight
+
+Each control targets a **distinct assertion matcher**. Two controls
+that both test `toBe` with integer values would not add discriminatory
+value — a `toBe` regression would fail both, catching no new failure
+mode. The eight selected cover:
+
+1. `toEqual` (string-level)
+2. `toBe` (integer)
+3. `toContain` (substring)
+4. `toHaveLength` (array cardinality)
+5. `toBe` (null-vs-undefined identity)
+6. `toMatch` (anchored regex)
+7. `toBe` (boolean)
+8. `toEqual` (deep object)
+
+Further controls would cost run-time without catching additional
+regression modes. If a future sprint introduces a new matcher class
+that becomes load-bearing for positives (e.g., floating-point
+tolerance via `toBeCloseTo`), add a control at the same time.
+
+## Related
+
+- [Reproduce our tests](/docs/test-verification) — the parent runbook.
+- `tests/e2e/specs/pair-matrix.md` §8 — the canonical spec index for
+  sacrificial controls (living document).
+- [ADR-1014 Sprint 5.4](https://github.com/aiSpirit-systems/consentshield/blob/main/docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md) —
+  the decision record.
+
+<FeedbackStrip pagePath="marketing/src/app/docs/test-verification/controls/page.mdx" />

@@ -95,6 +95,7 @@ export const DOCS_NAV: NavGroup[] = [
       { label: 'OpenAPI spec (YAML)', href: '/openapi.yaml', external: true },
       { label: 'API changelog', href: '/docs/changelog' },
       { label: 'Reproduce our tests', href: '/docs/test-verification' },
+      { label: 'Sacrificial controls', href: '/docs/test-verification/controls' },
       { label: 'Status & uptime', href: 'https://status.consentshield.in', external: true },
     ],
   },

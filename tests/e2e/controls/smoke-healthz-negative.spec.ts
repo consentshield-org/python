@@ -1,17 +1,19 @@
 import { test, expect } from '../utils/fixtures'
 
-// SACRIFICIAL CONTROL — MUST fail on every run.
+// SACRIFICIAL CONTROL — expected to fail internally; Playwright reports PASSED
+// via `test.fail()` inversion. If this ever reports FAILED, the harness's
+// assertion-equality semantics have regressed and the CI gate
+// (scripts/e2e-verify-controls.ts) MUST page the maintainer.
 //
-// Paired with: ../smoke-healthz.spec.ts
-// Purpose: assert a patently-false condition so that the Sprint-5.4 inversion
-// gate can prove the runner is honest. See controls/README.md.
-//
-// Expected outcome on every run: this test is reported FAILED.
-// If this test ever passes, the suite's pos/neg discipline is broken and
-// the CI gate must red-flag the run.
+// Paired with: ../smoke-healthz.spec.ts (positive — live /healthz probe)
+// Assertion: two distinct string literals are reported equal.
+// Invariant probed: Playwright's `expect().toEqual()` discriminates string
+// values. If the assertion layer starts collapsing distinct strings, every
+// evidence-graded positive in the suite becomes suspect.
 
-test.describe('@control @smoke Sacrificial control — MUST FAIL', () => {
-  test('asserts "ok" equals "not-ok"', async () => {
+test.describe('@control @smoke Sacrificial — toEqual string-equality inversion', () => {
+  test('asserts "ok" equals "not-ok" — MUST FAIL INTERNALLY', async () => {
+    test.fail()
     expect('ok').toEqual('not-ok')
   })
 })

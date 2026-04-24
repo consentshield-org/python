@@ -133,8 +133,8 @@
       "first_read": "2026-04-24T15:53:27.784Z"
     },
     "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/changelogs/CHANGELOG-infra.md": {
-      "count": 1,
-      "tokens": 20809,
+      "count": 2,
+      "tokens": 21556,
       "first_read": "2026-04-24T15:55:50.030Z"
     },
     "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/changelogs/CHANGELOG-schema.md": {
@@ -168,9 +168,29 @@
       "first_read": "2026-04-24T16:06:47.488Z"
     },
     "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/changelogs/CHANGELOG-marketing.md": {
-      "count": 1,
-      "tokens": 12875,
+      "count": 2,
+      "tokens": 13649,
       "first_read": "2026-04-24T16:10:31.476Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/tests/e2e/controls/smoke-healthz-negative.spec.ts": {
+      "count": 1,
+      "tokens": 182,
+      "first_read": "2026-04-24T16:12:43.009Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/tests/e2e/specs/pair-matrix.md": {
+      "count": 1,
+      "tokens": 2873,
+      "first_read": "2026-04-24T16:14:29.407Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/package.json": {
+      "count": 1,
+      "tokens": 213,
+      "first_read": "2026-04-24T16:18:30.877Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/tests/e2e/controls/README.md": {
+      "count": 1,
+      "tokens": 209,
+      "first_read": "2026-04-24T16:23:55.900Z"
     }
   },
   "files_written": [
@@ -413,11 +433,149 @@
       "action": "edit",
       "tokens": 934,
       "at": "2026-04-24T16:10:47.236Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/tests/e2e/controls/smoke-healthz-negative.spec.ts",
+      "action": "create",
+      "tokens": 259,
+      "at": "2026-04-24T16:14:57.230Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/tests/e2e/controls/arithmetic-negative.spec.ts",
+      "action": "create",
+      "tokens": 207,
+      "at": "2026-04-24T16:15:00.530Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/tests/e2e/controls/string-contains-negative.spec.ts",
+      "action": "create",
+      "tokens": 202,
+      "at": "2026-04-24T16:15:04.595Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/tests/e2e/controls/array-length-negative.spec.ts",
+      "action": "create",
+      "tokens": 187,
+      "at": "2026-04-24T16:15:07.275Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/tests/e2e/controls/null-identity-negative.spec.ts",
+      "action": "create",
+      "tokens": 202,
+      "at": "2026-04-24T16:15:11.248Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/tests/e2e/controls/regex-match-negative.spec.ts",
+      "action": "create",
+      "tokens": 212,
+      "at": "2026-04-24T16:15:15.000Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/tests/e2e/controls/boolean-truth-negative.spec.ts",
+      "action": "create",
+      "tokens": 203,
+      "at": "2026-04-24T16:15:18.793Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/tests/e2e/controls/deep-equal-negative.spec.ts",
+      "action": "create",
+      "tokens": 218,
+      "at": "2026-04-24T16:15:22.770Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/scripts/e2e-verify-controls.ts",
+      "action": "create",
+      "tokens": 2214,
+      "at": "2026-04-24T16:17:18.547Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/scripts/e2e-verify-controls.ts",
+      "action": "edit",
+      "tokens": 145,
+      "at": "2026-04-24T16:17:59.752Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/scripts/e2e-verify-controls.ts",
+      "action": "edit",
+      "tokens": 32,
+      "at": "2026-04-24T16:18:04.561Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/package.json",
+      "action": "edit",
+      "tokens": 54,
+      "at": "2026-04-24T16:18:36.985Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/src/app/docs/test-verification/controls/page.mdx",
+      "action": "create",
+      "tokens": 2465,
+      "at": "2026-04-24T16:19:37.286Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/src/app/docs/_data/nav.ts",
+      "action": "edit",
+      "tokens": 45,
+      "at": "2026-04-24T16:19:46.819Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/src/app/docs/_data/search-index.ts",
+      "action": "edit",
+      "tokens": 150,
+      "at": "2026-04-24T16:19:54.142Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/src/app/docs/test-verification/page.mdx",
+      "action": "edit",
+      "tokens": 157,
+      "at": "2026-04-24T16:20:08.662Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md",
+      "action": "edit",
+      "tokens": 1091,
+      "at": "2026-04-24T16:20:44.354Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md",
+      "action": "edit",
+      "tokens": 116,
+      "at": "2026-04-24T16:20:52.466Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-index.md",
+      "action": "edit",
+      "tokens": 199,
+      "at": "2026-04-24T16:21:06.805Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/tests/e2e/specs/pair-matrix.md",
+      "action": "edit",
+      "tokens": 894,
+      "at": "2026-04-24T16:22:20.370Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/changelogs/CHANGELOG-marketing.md",
+      "action": "edit",
+      "tokens": 689,
+      "at": "2026-04-24T16:22:47.174Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/changelogs/CHANGELOG-infra.md",
+      "action": "edit",
+      "tokens": 997,
+      "at": "2026-04-24T16:23:22.110Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/tests/e2e/controls/README.md",
+      "action": "create",
+      "tokens": 609,
+      "at": "2026-04-24T16:24:04.351Z"
     }
   ],
   "edit_counts": {
-    "docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md": 7,
-    "docs/ADRs/ADR-index.md": 4,
+    "docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md": 9,
+    "docs/ADRs/ADR-index.md": 5,
     "docs/ADRs/ADR-1003-processor-posture-and-healthcare-unlock.md": 2,
     "supabase/migrations/20260804000054_adr1003_s14_rpc_consent_record_mode_fence.sql": 1,
     "app/src/lib/delivery/zero-storage-bridge.ts": 2,
@@ -427,17 +585,30 @@
     "app/tests/delivery/zero-storage-bridge.test.ts": 1,
     "app/tests/consent/record.test.ts": 1,
     "tests/integration/zero-storage-invariant.test.ts": 10,
-    "docs/changelogs/CHANGELOG-infra.md": 1,
+    "docs/changelogs/CHANGELOG-infra.md": 2,
     "docs/changelogs/CHANGELOG-schema.md": 1,
     "docs/changelogs/CHANGELOG-api.md": 1,
-    "marketing/src/app/docs/test-verification/page.mdx": 1,
-    "marketing/src/app/docs/_data/nav.ts": 1,
-    "marketing/src/app/docs/_data/search-index.ts": 1,
-    "docs/changelogs/CHANGELOG-marketing.md": 1
+    "marketing/src/app/docs/test-verification/page.mdx": 2,
+    "marketing/src/app/docs/_data/nav.ts": 2,
+    "marketing/src/app/docs/_data/search-index.ts": 2,
+    "docs/changelogs/CHANGELOG-marketing.md": 2,
+    "tests/e2e/controls/smoke-healthz-negative.spec.ts": 1,
+    "tests/e2e/controls/arithmetic-negative.spec.ts": 1,
+    "tests/e2e/controls/string-contains-negative.spec.ts": 1,
+    "tests/e2e/controls/array-length-negative.spec.ts": 1,
+    "tests/e2e/controls/null-identity-negative.spec.ts": 1,
+    "tests/e2e/controls/regex-match-negative.spec.ts": 1,
+    "tests/e2e/controls/boolean-truth-negative.spec.ts": 1,
+    "tests/e2e/controls/deep-equal-negative.spec.ts": 1,
+    "scripts/e2e-verify-controls.ts": 3,
+    "package.json": 1,
+    "marketing/src/app/docs/test-verification/controls/page.mdx": 1,
+    "tests/e2e/specs/pair-matrix.md": 1,
+    "tests/e2e/controls/README.md": 1
   },
-  "anatomy_hits": 33,
+  "anatomy_hits": 37,
   "anatomy_misses": 1,
-  "repeated_reads_warned": 13,
+  "repeated_reads_warned": 15,
   "cerebrum_warnings": 0,
-  "stop_count": 5
+  "stop_count": 6
 }

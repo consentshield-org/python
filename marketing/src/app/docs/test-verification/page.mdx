@@ -250,20 +250,18 @@ emailing us about.
 
 ## Sacrificial "must-fail" controls
 
-<Callout tone="warn" title="Sprint 5.4 — coming">
-Alongside positives, the suite carries intentionally-broken controls
-(HMAC check removed, RLS bypassed, etc.) that MUST fail red. If any
-control is recorded `'passed'` in `manifest.json`, **the whole run is
-invalid** — assertions are not discriminating what we claim they do.
-The formal control matrix ships with ADR-1014 Sprint 5.4.
-</Callout>
+Eight intentionally-broken tests run alongside the positives to prove
+the harness's assertion layer is still discriminating what it claims
+to. Every control asserts a patently-false proposition wrapped with
+Playwright's `test.fail()` inversion — a healthy run reports all
+eight as **passed** overall; a rogue run fails CI.
 
-Until the formal matrix lands, one sacrificial control already ships
-as a pattern — `tests/e2e/controls/smoke-healthz-negative.spec.ts`.
-Inspect it to understand the shape: the control asserts an
-impossible condition (HTTP 200 from a URL that returns 404) so any
-green result means the harness stopped honouring expected-failure
-semantics.
+```bash
+bun run test:e2e:controls
+```
+
+Full detail — the matrix, the CI gate, how to read a red result —
+lives at **[/docs/test-verification/controls](/docs/test-verification/controls)**.
 
 ## FAQ
 
