@@ -78,8 +78,56 @@ If the bridge / Vercel customer-app project was down for hours and the Worker wa
 3. Confirm fresh events are landing: `select * from public.worker_errors where org_id = '<id>' and created_at > now() - interval '5 minutes' and upstream_error like 'zero_storage_bridge_%'` should return zero rows.
 4. Spot-check the customer's R2 bucket has objects with timestamps after the outage end — `aws s3 ls s3://<bucket>/<prefix>zero_storage/consent_event/$(date -u +%Y/%m/%d)/ | head -5`.
 
+## Verify cache refresh (Sprint 3.1)
+
+Zero-storage rows in `consent_artefact_index` land with a 24h TTL (`expires_at = bridge_put_time + 24h`). Without intervention they expire silently after a day, and `/v1/consent/verify` returns `never_consented` for any identifier tied to an expired row.
+
+The Sprint 3.1 hot-row refresh keeps actively-queried rows alive. The mechanism:
+
+1. `rpc_consent_verify` / `rpc_consent_verify_batch` stamps `consent_artefact_index.last_verified_at = now()` on every `granted` hit.
+2. `refresh-zero-storage-index` pg_cron runs hourly (at `:15`) and extends `expires_at = now() + 24h` on rows where `last_verified_at > now() - 1h` AND `expires_at < now() + 1h`.
+
+Consequence: a row that gets verified at least once an hour effectively stays in cache forever. A row that stops being queried expires 24h after the last verify hit.
+
+### What we deliberately do NOT do
+
+The original ADR-1003 Sprint 3.1 proposal called for "refresh path: on read, if entry stale, fetch from customer storage and repopulate". That was amended at implementation time because it is incompatible with Sprint 2.1's scope-down invariant: ConsentShield's BYOK credential has `PutObject` only, not `GetObject` / `ListBucket` / `DeleteObject`. We deliberately cannot read from the customer's bucket — that is the structural audit-immutability guarantee. Any auto-refresh would require either relaxing the invariant (unacceptable) or adding a customer-side Worker that re-signs GETs on our behalf (deferred design decision).
+
+### Operator response when a zero_storage verify returns unexpected `never_consented`
+
+This is NOT necessarily a data-loss signal. Three possible causes:
+
+1. **The identifier was never consented.** Verify returning `never_consented` is the correct answer. Check the customer's R2 bucket for any object mentioning that identifier; if none, the consent event genuinely never happened.
+2. **The row expired 24h after the last verify hit and the customer hasn't replayed.** Check `last_verified_at` vs `expires_at` trajectory via the customer's R2 audit objects. If the event exists in R2 but the row is gone from the index, this is expected Sprint 3.1 behaviour.
+3. **The event is in flight — the bridge hasn't finished uploading yet.** Check `worker_errors` for `zero_storage_bridge_*` prefixes in the last few minutes.
+
+For cause (2), the customer rehydrates by replaying the canonical consent record through `/v1/consent/record` (Mode B). The replay inserts a fresh row into `consent_artefact_index` via the regular Mode B path and resumes normal verify semantics.
+
+### Metrics to watch
+
+```sql
+-- How many zero-storage rows did the last cron run refresh?
+select public.refresh_zero_storage_index_hot_rows();
+-- → { ok: true, refreshed_count: N, ran_at: ... }
+
+-- Cron health (active rows + last run).
+select jobname, schedule, active from cron.job where jobname = 'refresh-zero-storage-index';
+
+-- Hot row count per zero-storage org (useful for dashboard).
+select o.id, o.name, count(*) as hot_rows
+  from public.organisations o
+  join public.consent_artefact_index cai on cai.org_id = o.id
+ where coalesce(o.storage_mode, 'standard') = 'zero_storage'
+   and cai.validity_state = 'active'
+   and cai.last_verified_at > now() - interval '1 hour'
+ group by o.id, o.name
+ order by hot_rows desc;
+```
+
+A zero-storage org with zero hot rows after several days of operation either (a) is not receiving verify traffic (legitimate, e.g., write-only onboarding), or (b) has a misconfigured API client. No alerting threshold is enforced — the signal is too noisy to automate on.
+
 ## What this runbook does NOT cover
 
-- Initial `zero_storage` provisioning. See ADR-1003 Sprint 2.1 (planned).
-- `consent_artefact_index` refresh-from-R2. See ADR-1003 Sprint 3.1 (planned).
+- Initial `zero_storage` provisioning. See ADR-1003 Sprint 2.1 (shipped) for the scope-down probe; Sprint 2.2 (shipped) for the customer-facing BYOS docs.
+- Automatic refresh-from-R2 of expired rows. Deliberately not shipped — see "Verify cache refresh" above.
 - Cross-region failover. See ADR-1003 Sprint 3.2 (planned).

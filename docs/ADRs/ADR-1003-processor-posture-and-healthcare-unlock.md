@@ -180,17 +180,24 @@ Deliver processor-posture enforcement and the healthcare category unlock:
 
 **Estimated effort:** 3 days
 
+**Amendment vs proposal.** The proposal called for "on read, if entry stale, fetch from customer storage and repopulate". That is incompatible with Sprint 2.1's scope-down invariant (ConsentShield's BYOK credential has `PutObject` only — NOT `GetObject` / `ListBucket` / `DeleteObject`). Sprint 3.1 therefore amends the refresh mechanism: instead of auto-pulling from the customer's bucket, we extend TTL for rows that are proven hot by recent verify traffic. Cold rows expire; customer-driven replay via `/v1/consent/record` is the re-hydration path. An automated fetch-from-R2 would require either relaxing scope-down (unacceptable — breaks audit-record immutability) or a customer-side re-signing Worker (deferred architecture decision; not in this phase).
+
 **Deliverables:**
-- [ ] `consent_artefact_index` for zero-storage orgs gets a TTL (default 24h) via an index column or a dedicated shadow table
-- [ ] Refresh path: on read, if entry stale, fetch from customer storage (the canonical artefact record) and repopulate
-- [ ] Background `refresh-zero-storage-index` pg_cron job (hourly): walks recent activity and pre-warms the index
-- [ ] Incident runbook `docs/runbooks/zero-storage-restart.md`: what happens when ConsentShield restarts during delivery
+- [x] `consent_artefact_index` for zero-storage orgs gets a TTL (default 24h) — **shipped in Sprint 1.3** via `expires_at = now() + 24h` at bridge-write time.
+- [x] Hot-row refresh: `consent_artefact_index.last_verified_at timestamptz` column (migration `20260804000053`) + partial index `idx_consent_artefact_index_hot_rows` for the hot-row query. `rpc_consent_verify` and `rpc_consent_verify_batch` stamp `last_verified_at = now()` on `granted` hits (single UPDATE in the single case; one batched UPDATE keyed by artefact-id array in the batch case).
+- [x] Background `refresh-zero-storage-index` pg_cron (hourly at `:15`) — calls `public.refresh_zero_storage_index_hot_rows()`. Extends `expires_at` by 24h on rows where `last_verified_at > now() - 1h` AND `expires_at < now() + 1h`. Cold rows expire naturally. Idempotent within an hour; non-throwing (transient errors leave work for the next run).
+- [x] Incident runbook `docs/runbooks/zero-storage-restart.md` — **shipped in Sprint 1.3**; amended in Sprint 3.1 with a "Verify cache refresh" section + operator-facing metrics queries + the explicit statement that auto-refresh-from-R2 is not shipped.
+
+**Deferred to Sprint 3.2 / follow-up ADR:**
+- Customer-driven replay infrastructure. For now, a customer whose cold row has expired re-hydrates via `POST /v1/consent/record` (Mode B) with the original event body. Dashboards + CLI tooling to help the customer find what to replay is a separate feature.
+- The architectural question of whether `rpc_consent_record` should honour `storage_mode` and route zero_storage inserts to the bridge (today it writes to `consent_events`, which violates the zero-storage invariant for Mode B inserts). Flagged here; not in scope for Sprint 3.1. Shippable as a focused follow-up.
 
 **Testing plan:**
-- [ ] Expire an index entry manually; next verify call repopulates it from customer storage
-- [ ] Zero-storage org sustains 100K events without any persistent-table writes
+- [x] Integration — hot row + cold row seeded; run `refresh_zero_storage_index_hot_rows()` directly; assert the hot row's `expires_at` extends by 24h while the cold row's is untouched. Second case: non-zero_storage org with a hot row → no extension (refresh is zero_storage-only). See `tests/integration/zero-storage-hot-row-refresh.test.ts`.
+- [ ] 100K-event invariant load test — Sprint 3.2.
+- [ ] Live: flip a test org, run a verify batch of 1000, wait for the next cron tick, confirm `last_verified_at` is populated and `expires_at` extends. Pending operator `bunx supabase db push` (migration 53 queued with the earlier 50 / 51 / 52).
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete (code + integration test; live verification pending operator migration push).`
 
 #### Sprint 3.2: Load test + gap inventory
 

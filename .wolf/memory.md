@@ -5207,3 +5207,10 @@
 | 18:53 | Edited docs/ADRs/ADR-index.md | "/docs/*" → "#slug" | ~159 |
 | 18:54 | Edited docs/changelogs/CHANGELOG-marketing.md | expanded (+32 lines) | ~967 |
 | 18:54 | Session end: 71 writes across 29 files (20260804000052_adr1003_s13_zero_storage_artefact_index.sql, zero-storage-bridge.ts, zero-storage-bridge.test.ts, cs-vault-setup.sql, zero-storage-invariant.test.ts) | 45 reads | ~328517 tok |
+| 18:55 | Session end: 71 writes across 29 files (20260804000052_adr1003_s13_zero_storage_artefact_index.sql, zero-storage-bridge.ts, zero-storage-bridge.test.ts, cs-vault-setup.sql, zero-storage-invariant.test.ts) | 45 reads | ~328517 tok |
+| 18:59 | Created supabase/migrations/20260804000053_adr1003_s31_hot_row_refresh.sql | — | ~4012 |
+| 19:00 | Edited docs/runbooks/zero-storage-restart.md | expanded (+48 lines) | ~1054 |
+| 19:00 | Edited docs/ADRs/ADR-1003-processor-posture-and-healthcare-unlock.md | expanded (+7 lines) | ~904 |
+| 19:01 | Edited docs/changelogs/CHANGELOG-schema.md | expanded (+24 lines) | ~791 |
+| 19:01 | Edited docs/changelogs/CHANGELOG-api.md | expanded (+17 lines) | ~415 |
+| 19:02 | Created tests/integration/zero-storage-hot-row-refresh.test.ts | — | ~2294 |

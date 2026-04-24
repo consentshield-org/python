@@ -2,6 +2,30 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-1003 Sprint 3.1 — zero-storage hot-row TTL refresh] — 2026-04-24
+
+**ADR:** ADR-1003 — Processor Posture + Healthcare Category Unlock
+**Sprint:** Phase 3, Sprint 3.1
+**Migration:** `20260804000053_adr1003_s31_hot_row_refresh.sql`
+
+### Added
+- `public.consent_artefact_index.last_verified_at timestamptz` (nullable) — timestamp of the most recent `/v1/consent/verify` hit that returned `granted`. Backfill is NULL; rows become non-null only via the first verify hit after this migration lands.
+- Partial index `idx_consent_artefact_index_hot_rows` on `(org_id, last_verified_at desc)` where `validity_state = 'active'` and `last_verified_at is not null`. Supports the refresh cron's hot-row scan cheaply.
+- `public.refresh_zero_storage_index_hot_rows()` — SECURITY DEFINER. Extends `expires_at = now() + 24h` on rows where (a) the org is zero_storage, (b) `validity_state = 'active'`, (c) `last_verified_at > now() - 1h`, (d) `expires_at < now() + 1h` (only rows about to expire). Returns `{ok, refreshed_count, ran_at}`. Non-throwing. Granted to `cs_orchestrator`.
+- pg_cron `refresh-zero-storage-index` — schedule `15 * * * *` (hourly at :15, offset from :00 backlog-metrics + every-minute storage-mode-kv-sync).
+
+### Changed
+- `public.rpc_consent_verify(uuid, uuid, uuid, text, text, text)` — on a `granted` resolution, performs a single-row `UPDATE consent_artefact_index SET last_verified_at = now()` before returning. Stamps apply to all storage modes (not filtered), but only zero_storage rows are consumed by the refresh cron. CREATE OR REPLACE preserves existing `cs_api` EXECUTE grant (ADR-1009 Phase 2).
+- `public.rpc_consent_verify_batch(uuid, uuid, uuid, text, text, text[])` — single end-of-batch `UPDATE` keyed by the array of matched `index_id` values for granted hits. One UPDATE per batch regardless of identifier count.
+
+### Amendment vs ADR-1003 Sprint 3.1 proposal
+The original proposal included "on read, if entry stale, fetch from customer storage and repopulate". That path is incompatible with ADR-1003 Sprint 2.1's scope-down invariant (BYOK credentials have `PutObject` only, not `GetObject` / `ListBucket`). Sprint 3.1 therefore amends the mechanism to hot-row TTL extension only: cold rows expire naturally; customer re-hydrates via `/v1/consent/record` replay. Full rationale in the migration header, runbook `docs/runbooks/zero-storage-restart.md`, and ADR-1003 Sprint 3.1 Amendment block.
+
+### Tested
+- Static: `verify(...)` returns jsonb of the same shape; only difference is the side-effect UPDATE on granted hits.
+- Integration: `tests/integration/zero-storage-hot-row-refresh.test.ts` — hot row extended, cold row untouched, non-zero_storage org untouched.
+- Live: pending operator `bunx supabase db push` (migration 53 queued with 45 / 48 / 49 / 50 / 51 / 52).
+
 ## [ADR-1003 Sprint 1.3 — consent_artefact_index INSERT grant for cs_orchestrator] — 2026-04-24
 
 **ADR:** ADR-1003 — Processor Posture + Healthcare Category Unlock

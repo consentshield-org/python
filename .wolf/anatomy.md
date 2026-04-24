@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-24T13:24:08.881Z
-> Files: 1391 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-24T13:32:21.063Z
+> Files: 1393 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../tmp/
 
@@ -1386,7 +1386,7 @@
 - `ADR-0501-marketing-site-scaffold.md` — ADR-0501 — ConsentShield marketing site (`marketing/`) (~6079 tok)
 - `ADR-1001-truth-in-marketing-and-public-api-foundation.md` — ADR-1001: Truth-in-Marketing + Public API Foundation (~5650 tok)
 - `ADR-1002-dpdp-section6-runtime-enforcement.md` — ADR-1002: DPDP §6 Runtime Enforcement — Verify, Record, Artefact Ops, Deletion API (~7030 tok)
-- `ADR-1003-processor-posture-and-healthcare-unlock.md` — ADR-1003: Processor Posture + Healthcare Category Unlock (~6351 tok)
+- `ADR-1003-processor-posture-and-healthcare-unlock.md` — ADR-1003: Processor Posture + Healthcare Category Unlock (~7001 tok)
 - `ADR-1004-statutory-retention-material-change-silent-failure.md` — ADR-1004: Statutory Retention + Material-Change Re-consent + Silent-Failure Detection (~7531 tok)
 - `ADR-1005-operations-maturity.md` — ADR-1005: Operations Maturity — Webhook Reference, Support Model, Status Page, Multi-channel Alerts, (~7076 tok)
 - `ADR-1006-developer-experience-and-openapi.md` — ADR-1006: Developer Experience — Client Libraries + OpenAPI Spec + CI Drift Check (~2658 tok)
@@ -1435,13 +1435,13 @@
 
 ## docs/changelogs/
 
-- `CHANGELOG-api.md` — Changelog — API (~35172 tok)
+- `CHANGELOG-api.md` — Changelog — API (~35527 tok)
 - `CHANGELOG-dashboard.md` — Changelog — Dashboard (~28074 tok)
 - `CHANGELOG-docs.md` — Changelog — Documentation (~13030 tok)
 - `CHANGELOG-edge-functions.md` — Changelog — Edge Functions (~4251 tok)
 - `CHANGELOG-infra.md` — Changelog — Infrastructure (~20809 tok)
 - `CHANGELOG-marketing.md` — Changelog — Marketing (~12875 tok)
-- `CHANGELOG-schema.md` — Changelog — Schema (~50818 tok)
+- `CHANGELOG-schema.md` — Changelog — Schema (~51519 tok)
 - `CHANGELOG-worker.md` — Changelog — Worker (~6025 tok)
 
 ## docs/customer-docs/
@@ -1517,7 +1517,7 @@
 - `ops-readiness-flags.md` — Ops Readiness Flags — operator runbook (~1594 tok)
 - `standard-to-insulated-migration.md` — Runbook — Standard → Insulated migration (~2307 tok)
 - `status-page-setup.md` — Status page — setup + operations runbook (~1662 tok)
-- `zero-storage-restart.md` — Runbook — zero_storage durability + restart posture (~1992 tok)
+- `zero-storage-restart.md` — Runbook — zero_storage durability + restart posture (~2917 tok)
 
 ## marketing/
 
@@ -2318,6 +2318,7 @@
 - `20260804000050_adr1003_s11_storage_mode_resolver.sql` — ADR-1003 Sprint 1.1 — storage_mode resolver + KV cache plumbing. (~3613 tok)
 - `20260804000051_adr1003_s12_zero_storage_gate.sql` — ADR-1003 Sprint 1.2 — zero-storage preconditions + mode-flip gate. (~1431 tok)
 - `20260804000052_adr1003_s13_zero_storage_artefact_index.sql` — ADR-1003 Sprint 1.3 — zero-storage consent_artefact_index TTL writes. (~603 tok)
+- `20260804000053_adr1003_s31_hot_row_refresh.sql` — ADR-1003 Sprint 3.1 — zero-storage hot-row TTL refresh. (~4012 tok)
 
 ## supabase/seed/
 
@@ -2522,6 +2523,7 @@
 - `test-delete-api.test.ts` — TestOrg: seedConnector (~1716 tok)
 - `worker-hyperdrive-reads.test.ts` — ADR-1010 Phase 3 Sprint 3.1 — integration test for the Hyperdrive (~1731 tok)
 - `worker-hyperdrive-writes.test.ts` — ADR-1010 Phase 3 Sprint 3.2 — integration test for the Hyperdrive (~2157 tok)
+- `zero-storage-hot-row-refresh.test.ts` — ADR-1003 Sprint 3.1 — hot-row TTL refresh integration test. (~2294 tok)
 - `zero-storage-invariant.test.ts` — ADR-1003 Sprint 1.3 — zero-storage end-to-end invariant. (~3541 tok)
 
 ## tests/rbac/

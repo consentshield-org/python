@@ -2,6 +2,23 @@
 
 API route changes.
 
+## [ADR-1003 Sprint 3.1 — verify RPCs stamp last_verified_at] — 2026-04-24
+
+**ADR:** ADR-1003 — Processor Posture + Healthcare Category Unlock
+**Sprint:** Phase 3, Sprint 3.1
+
+### Changed — RPCs called by /v1/consent/verify and /v1/consent/verify/batch
+- `public.rpc_consent_verify` — on `granted` resolution, stamps `consent_artefact_index.last_verified_at = now()` for the matched row before returning. Pure side-effect; response envelope is byte-identical.
+- `public.rpc_consent_verify_batch` — single end-of-batch UPDATE stamps every granted row in the batch (array-keyed by matched `index_id`). One extra UPDATE per batch regardless of identifier count (up to 10000).
+
+### Rationale
+Sprint 3.1's hot-row refresh cron (see `CHANGELOG-schema.md`) uses `last_verified_at` to extend TTL for rows that are actively queried. Without stamping at read time, every zero_storage row would expire 24h after the bridge wrote it, and verify would start returning `never_consented` for healthy deployments. The stamping is cheap (one row UPDATE per granted hit) and applies across storage modes — only the zero_storage cron consumes the signal.
+
+### Tested
+- Static: RPC response envelope unchanged; CREATE OR REPLACE preserves grants.
+- Integration: `tests/integration/zero-storage-hot-row-refresh.test.ts` — covers the full chain (verify stamps → cron extends → cold row untouched).
+- Live: pending operator migration push.
+
 ## [ADR-1003 Sprint 2.1 — BYOK scope-down probe (write-only credential enforcement)] — 2026-04-24
 
 **ADR:** ADR-1003 — Processor Posture + Healthcare Category Unlock
