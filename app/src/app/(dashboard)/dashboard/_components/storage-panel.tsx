@@ -94,7 +94,7 @@ export async function StoragePanel({ orgId }: { orgId: string }) {
           View exports →
         </Link>
         <Link
-          href="/dashboard/exports/settings"
+          href="/dashboard/settings/storage"
           className="text-xs text-gray-500 hover:text-gray-800"
         >
           Manage storage
