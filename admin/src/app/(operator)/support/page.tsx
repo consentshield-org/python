@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { createServerClient } from '@/lib/supabase/server'
 
 // ADR-0032 Sprint 1.1 — Support tickets list + metric tiles.
+// ADR-1027 Sprint 2.2 — Account column + account filter.
 //
 // All admin roles can read. Writes (reply / status / priority / assign)
 // require support or platform_operator — enforced at the RPC layer.
@@ -13,6 +14,7 @@ const OPEN_STATUSES = ['open', 'awaiting_customer', 'awaiting_operator']
 interface Ticket {
   id: string
   org_id: string | null
+  account_id: string | null
   subject: string
   status: string
   priority: string
@@ -20,13 +22,19 @@ interface Ticket {
   created_at: string
   assigned_admin_user_id: string | null
   org_name: string | null
+  account_name: string | null
   assignee_name: string | null
 }
 
-export default async function SupportPage() {
+interface PageProps {
+  searchParams: Promise<{ account_id?: string }>
+}
+
+export default async function SupportPage({ searchParams }: PageProps) {
+  const params = await searchParams
   const supabase = await createServerClient()
 
-  const [ticketsRes, adminsRes, orgsRes] = await Promise.all([
+  const [ticketsRes, adminsRes, orgsRes, accountsRes] = await Promise.all([
     supabase
       .schema('admin')
       .from('support_tickets')
@@ -36,29 +44,65 @@ export default async function SupportPage() {
       .order('created_at', { ascending: false })
       .limit(200),
     supabase.schema('admin').from('admin_users').select('id, display_name'),
-    supabase.from('organisations').select('id, name'),
+    supabase
+      .from('organisations')
+      .select('id, name, account_id, accounts(name, plan_code)'),
+    supabase.schema('admin').rpc('accounts_list', {
+      p_status: null,
+      p_plan_code: null,
+      p_q: null,
+    }),
   ])
 
   const adminById = new Map<string, string>()
   for (const a of adminsRes.data ?? []) adminById.set(a.id, a.display_name)
 
-  const orgById = new Map<string, string>()
-  for (const o of orgsRes.data ?? []) orgById.set(o.id, o.name)
+  type OrgRow = {
+    id: string
+    name: string
+    account_id: string | null
+    accounts: Array<{ name: string; plan_code: string }> | { name: string; plan_code: string } | null
+  }
+  const orgById = new Map<string, { name: string; account_id: string | null; account_name: string | null }>()
+  for (const o of (orgsRes.data ?? []) as OrgRow[]) {
+    const acct = Array.isArray(o.accounts) ? o.accounts[0] : o.accounts
+    orgById.set(o.id, {
+      name: o.name,
+      account_id: o.account_id ?? null,
+      account_name: acct?.name ?? null,
+    })
+  }
 
-  const tickets: Ticket[] = (ticketsRes.data ?? []).map((t) => ({
-    id: t.id,
-    org_id: t.org_id,
-    subject: t.subject,
-    status: t.status,
-    priority: t.priority,
-    reporter_email: t.reporter_email,
-    created_at: t.created_at,
-    assigned_admin_user_id: t.assigned_admin_user_id,
-    org_name: t.org_id ? orgById.get(t.org_id) ?? null : null,
-    assignee_name: t.assigned_admin_user_id
-      ? adminById.get(t.assigned_admin_user_id) ?? null
-      : null,
-  }))
+  const allAccounts = (accountsRes.data ?? []) as Array<{
+    id: string
+    name: string
+    plan_code: string
+    org_count: number
+  }>
+
+  const allTickets: Ticket[] = (ticketsRes.data ?? []).map((t) => {
+    const orgInfo = t.org_id ? orgById.get(t.org_id) ?? null : null
+    return {
+      id: t.id,
+      org_id: t.org_id,
+      account_id: orgInfo?.account_id ?? null,
+      subject: t.subject,
+      status: t.status,
+      priority: t.priority,
+      reporter_email: t.reporter_email,
+      created_at: t.created_at,
+      assigned_admin_user_id: t.assigned_admin_user_id,
+      org_name: orgInfo?.name ?? null,
+      account_name: orgInfo?.account_name ?? null,
+      assignee_name: t.assigned_admin_user_id
+        ? adminById.get(t.assigned_admin_user_id) ?? null
+        : null,
+    }
+  })
+
+  const tickets: Ticket[] = params.account_id
+    ? allTickets.filter((t) => t.account_id === params.account_id)
+    : allTickets
 
   // Sort: priority desc (urgent → low), then status (open/awaiting first),
   // then most-recent first.
@@ -108,13 +152,46 @@ export default async function SupportPage() {
       </section>
 
       <div className="rounded-md border border-[color:var(--border)] bg-white shadow-sm">
-        <header className="flex items-center justify-between border-b border-[color:var(--border)] p-4">
+        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-[color:var(--border)] p-4">
           <h2 className="text-sm font-semibold">
             Tickets
             <span className="ml-2 text-xs font-normal text-text-3">
-              {tickets.length} total · showing latest 200
+              {tickets.length} total
+              {params.account_id
+                ? ` · filtered to ${allAccounts.find((a) => a.id === params.account_id)?.name ?? 'account'}`
+                : ' · showing latest 200'}
             </span>
           </h2>
+          {/* ADR-1027 Sprint 2.2 — Account filter. Selecting an account
+              narrows the list to every ticket whose org is in that account. */}
+          <form method="GET" className="flex items-center gap-2 text-xs">
+            <label htmlFor="ticket-account-filter" className="text-text-3">
+              Account:
+            </label>
+            <select
+              id="ticket-account-filter"
+              name="account_id"
+              defaultValue={params.account_id ?? ''}
+              onChange={(e) => e.currentTarget.form?.submit()}
+              className="rounded border border-[color:var(--border-mid)] bg-white px-2 py-1 text-xs"
+            >
+              <option value="">All accounts</option>
+              {allAccounts.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name} · {a.plan_code} · {Number(a.org_count)}{' '}
+                  {Number(a.org_count) === 1 ? 'org' : 'orgs'}
+                </option>
+              ))}
+            </select>
+            {params.account_id ? (
+              <Link
+                href="/support"
+                className="rounded border border-[color:var(--border-mid)] bg-white px-2 py-1 text-xs text-text-2 hover:bg-bg"
+              >
+                Reset
+              </Link>
+            ) : null}
+          </form>
         </header>
 
         {tickets.length === 0 ? (
@@ -129,7 +206,7 @@ export default async function SupportPage() {
                 <tr>
                   <th className="px-4 py-2">ID</th>
                   <th className="px-4 py-2">Subject</th>
-                  <th className="px-4 py-2">Org</th>
+                  <th className="px-4 py-2">Account · Org</th>
                   <th className="px-4 py-2">Priority</th>
                   <th className="px-4 py-2">Status</th>
                   <th className="px-4 py-2">Assigned</th>
@@ -152,7 +229,10 @@ export default async function SupportPage() {
                     </td>
                     <td className="px-4 py-2">{t.subject}</td>
                     <td className="px-4 py-2 text-xs text-text-2">
-                      {t.org_name ?? (t.org_id ? t.org_id.slice(0, 8) : '—')}
+                      <div>{t.account_name ?? '—'}</div>
+                      <div className="text-[11px] text-text-3">
+                        {t.org_name ?? (t.org_id ? t.org_id.slice(0, 8) : '—')}
+                      </div>
                     </td>
                     <td className="px-4 py-2">
                       <PriorityPill priority={t.priority} />

@@ -1009,17 +1009,29 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 
       <div class="split">
         <div class="card">
-          <div class="card-header"><div class="card-title">Tickets</div><span class="pill pill-navy">Awaiting operator (3)</span></div>
+          <div class="card-header">
+            <div class="card-title">Tickets</div>
+            <div style="display:flex;gap:6px;align-items:center">
+              <!-- ADR-1027 Sprint 2.2 — Account filter. Narrows the list to every ticket whose org is in this account. -->
+              <select class="input" style="width:200px;font-size:11px" title="ADR-1027 Sprint 2.2 — filter by parent account">
+                <option>All accounts</option>
+                <option>Acme Technologies · growth · 3 orgs</option>
+                <option>Tata Digital · enterprise · 14 orgs</option>
+                <option>NeoFin Credit · pro · 4 orgs</option>
+              </select>
+              <span class="pill pill-navy">Awaiting operator (3)</span>
+            </div>
+          </div>
           <table class="t">
             <thead>
-              <tr><th>ID</th><th>Subject</th><th>Org</th><th>Priority</th><th>Status</th><th>Updated</th></tr>
+              <tr><th>ID</th><th>Subject</th><th>Account · Org</th><th>Priority</th><th>Status</th><th>Updated</th></tr>
             </thead>
             <tbody>
-              <tr class="selected"><td><code>tk_3e9a</code></td><td>Razorpay payment keeps failing on renewal</td><td>org_4af2</td><td><span class="pill pill-red">Urgent</span></td><td><span class="pill pill-amber">Awaiting operator</span></td><td style="font-size:11px">14m</td></tr>
-              <tr><td><code>tk_8a31</code></td><td>Banner not showing on subdomain</td><td>org_22aa</td><td><span class="pill pill-amber">High</span></td><td><span class="pill pill-amber">Awaiting operator</span></td><td style="font-size:11px">2h</td></tr>
-              <tr><td><code>tk_1f44</code></td><td>How to set up purpose for SMS marketing?</td><td>org_8c1d</td><td><span class="pill pill-gray">Normal</span></td><td><span class="pill pill-amber">Awaiting operator</span></td><td style="font-size:11px">5h</td></tr>
-              <tr><td><code>tk_9b22</code></td><td>Audit export missing one connector</td><td>org_f7e3</td><td><span class="pill pill-gray">Normal</span></td><td><span class="pill pill-navy">Awaiting customer</span></td><td style="font-size:11px">yesterday</td></tr>
-              <tr><td><code>tk_7e10</code></td><td>Wrong sector template applied at signup</td><td>org_91b4</td><td><span class="pill pill-amber">High</span></td><td><span class="pill pill-navy">Awaiting customer</span></td><td style="font-size:11px">2d</td></tr>
+              <tr class="selected"><td><code>tk_3e9a</code></td><td>Razorpay payment keeps failing on renewal</td><td>Acme Technologies<br><span style="color:var(--text-3);font-size:11px;font-family:var(--mono)">org_4af2</span></td><td><span class="pill pill-red">Urgent</span></td><td><span class="pill pill-amber">Awaiting operator</span></td><td style="font-size:11px">14m</td></tr>
+              <tr><td><code>tk_8a31</code></td><td>Banner not showing on subdomain</td><td>NeoFin Credit<br><span style="color:var(--text-3);font-size:11px;font-family:var(--mono)">org_22aa</span></td><td><span class="pill pill-amber">High</span></td><td><span class="pill pill-amber">Awaiting operator</span></td><td style="font-size:11px">2h</td></tr>
+              <tr><td><code>tk_1f44</code></td><td>How to set up purpose for SMS marketing?</td><td>Tata Digital<br><span style="color:var(--text-3);font-size:11px;font-family:var(--mono)">org_8c1d</span></td><td><span class="pill pill-gray">Normal</span></td><td><span class="pill pill-amber">Awaiting operator</span></td><td style="font-size:11px">5h</td></tr>
+              <tr><td><code>tk_9b22</code></td><td>Audit export missing one connector</td><td>—<br><span style="color:var(--text-3);font-size:11px;font-family:var(--mono)">org_f7e3</span></td><td><span class="pill pill-gray">Normal</span></td><td><span class="pill pill-navy">Awaiting customer</span></td><td style="font-size:11px">yesterday</td></tr>
+              <tr><td><code>tk_7e10</code></td><td>Wrong sector template applied at signup</td><td>EvoTax CA Firm<br><span style="color:var(--text-3);font-size:11px;font-family:var(--mono)">org_91b4</span></td><td><span class="pill pill-amber">High</span></td><td><span class="pill pill-navy">Awaiting customer</span></td><td style="font-size:11px">2d</td></tr>
             </tbody>
           </table>
         </div>
@@ -1030,6 +1042,12 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
             <select class="input" style="width:140px;font-size:11px"><option>Awaiting operator</option><option>Awaiting customer</option><option>Resolved</option><option>Closed</option></select>
           </div>
           <div class="card-body">
+            <!-- ADR-1027 Sprint 2.2 — parent-account context strip above the thread. -->
+            <div style="display:flex;align-items:center;gap:10px;padding:6px 10px;margin-bottom:10px;background:white;border:1px solid var(--border);border-radius:var(--r);font-size:11px">
+              <div style="flex:1"><strong>Acme Technologies</strong> <span style="color:var(--text-3)">growth · 3 orgs · since Mar 8</span></div>
+              <span class="pill pill-green" style="font-size:10px">active</span>
+              <a href="#" onclick="showPanel('accounts')" style="color:var(--red);font-weight:500;text-decoration:none">Open account →</a>
+            </div>
             <div style="font-size:11px;color:var(--text-3);margin-bottom:8px">Org: <code>org_4af2</code> · Reporter: sudhindra@acme.in · Created 47m ago</div>
             <div style="display:flex;flex-direction:column;gap:10px;max-height:300px;overflow-y:auto">
               <div style="padding:10px 12px;border-radius:var(--r);background:var(--bg)">

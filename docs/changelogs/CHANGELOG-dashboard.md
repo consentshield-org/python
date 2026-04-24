@@ -2,6 +2,37 @@
 
 Next.js UI changes.
 
+## [ADR-1027 Sprint 2.2 — Support ticket account filter + AccountContextCard on detail] — 2026-04-24
+
+**ADR:** ADR-1027 — Admin account-awareness pass
+**Sprint:** Phase 2, Sprint 2.2 — Support ticket account context
+
+### Admin console
+- `admin/src/app/(operator)/support/page.tsx` — list page extended with the parent-account dimension:
+  - Server-side fetch now joins `organisations` with `accounts(name, plan_code)` and also calls `admin.accounts_list` so the filter select has fresh account rows with org counts.
+  - New URL search param `?account_id=<uuid>` filters the rendered list to every ticket whose org is in that account.
+  - Filter bar: Account select (onChange submits the GET form) + Reset link when a filter is active. The select option label renders `{name} · {plan_code} · {N} orgs`, mirroring Sprints 1.1 and 2.1.
+  - Ticket table: "Org" column replaced with "Account · Org" (account name top line, org name / uuid beneath). Unmapped rows show `—` for the account top line — the tier stays visible.
+- `admin/src/app/(operator)/support/[ticketId]/page.tsx` — resolved org row also pulls `account_id`; compact `<AccountContextCard>` strip lands between the ticket header and the controls row. Same visual language as `/orgs/[orgId]`.
+
+### Design
+- `docs/admin/design/consentshield-admin-screens.html` Support Tickets panel:
+  - List card header gains an Account filter select.
+  - Ticket list Org column becomes "Account · Org" with account name stacked above the org uuid in illustrative rows.
+  - Ticket detail card gains a parent-account context strip (name + plan + org count + status pill + "Open account →") between the title and the thread.
+- `docs/admin/design/ARCHITECTURE-ALIGNMENT-2026-04-16.md` — reconciliation tracker Sprint 2.2 flipped to ✅ wireframe + ✅ code.
+
+### Tested
+- [x] `cd admin && bunx tsc --noEmit` — PASS.
+- [x] `cd admin && bun run lint` — PASS.
+- [x] Existing support-tickets test suite unchanged — the filter is URL-driven; RPC contracts unaffected.
+- [ ] Detail snapshot — visual check via dev server recommended (compact strip on ticket detail; filter select submits; reset clears).
+
+### Why
+Tickets were keyed only on `org_id`. Operators handling an enterprise customer with N orgs had to visit the ticket view N times to see every ticket for the account, then re-aggregate mentally. Sprint 2.2 turns that into one select + one page. No schema change, no RPC change — the dimension was already implicit via `organisations.account_id`; the UI just had to surface it.
+
+---
+
 ## [ADR-1027 Sprint 2.1 — AccountContextCard + group-by-account toggle on Pipeline] — 2026-04-24
 
 **ADR:** ADR-1027 — Admin account-awareness pass

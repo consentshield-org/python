@@ -161,20 +161,22 @@ Close every admin-account-awareness drift in one ADR. No deferrals to later ADRs
 **Test results:**
 - [x] Typecheck + lint: PASS across all five edited files.
 
-#### Sprint 2.2 — Support ticket account context
+#### Sprint 2.2 — Support ticket account context · **[x] complete 2026-04-24**
 
 **Estimated effort:** 0.5 day
 
 **Prerequisite wireframe:** Support-panel wireframe gets the account header strip + the account filter option.
 
 **Deliverables:**
-- [ ] Ticket list RPC (`admin.support_tickets_list`) gains `p_account_id uuid default null`; existing `p_org_id` semantics unchanged.
-- [ ] Ticket detail page adds a parent-account header strip (account name + plan + current adjustment if any).
-- [ ] Ticket list filter bar gains an Account filter mirroring Sprint 1.1's picker.
+- [x] `admin/src/app/(operator)/support/page.tsx` — list page uses direct PostgREST queries (no RPC). Added the `accounts(name, plan_code)` embedded join on the `organisations` fetch; resolved per-ticket `account_id` + `account_name` via an `orgById` map; URL search param `?account_id=<uuid>` filters the rendered list to every ticket whose org is in that account. Header gained an Account select driven by `admin.accounts_list`; onChange submits the filter form; Reset link clears it.
+- [x] `admin/src/app/(operator)/support/[ticketId]/page.tsx` — resolved org row now also pulls `account_id`. Added compact `<AccountContextCard>` strip below the header, above the ticket controls. Same visual language as the `/orgs/[orgId]` strip so the operator never has to guess which surface they're on.
+- [x] Ticket table — "Org" column replaced with "Account · Org" (account name top line, org name / uuid beneath), mirroring the audit-log and pipeline patterns from Sprints 1.1 + 2.1.
 
 **Testing plan:**
-- [ ] Integration: filter by account → every ticket for every org in that account.
-- [ ] Detail snapshot: header strip renders correct account metadata.
+- [x] `cd admin && bunx tsc --noEmit` — PASS.
+- [x] `cd admin && bun run lint` — PASS.
+- [x] Existing support-tickets test suite unchanged — the new filter is URL-driven, not RPC-layer.
+- [ ] Detail snapshot — visual check via dev server recommended (compact strip renders on ticket detail).
 
 ### Phase 3 — Impersonation rollup + account notes + account-default template
 

@@ -4,6 +4,7 @@ import { createServerClient } from '@/lib/supabase/server'
 import { canSupport, type AdminRole } from '@/lib/admin/role-tiers'
 import { TicketControls } from '@/components/support/ticket-controls'
 import { ReplyForm } from '@/components/support/reply-form'
+import { AccountContextCard } from '@/components/account-context/account-context-card'
 
 // ADR-0032 Sprint 1.1 — Support ticket detail + thread + reply.
 
@@ -68,15 +69,19 @@ export default async function TicketDetailPage({ params }: PageProps) {
   const adminById = new Map<string, string>()
   for (const a of adminsRes.data ?? []) adminById.set(a.id, a.display_name)
 
-  const orgName = ticket.org_id
+  // ADR-1027 Sprint 2.2 — resolve org name + parent account id so the
+  // ticket header can surface both and link to the account page.
+  const orgMeta = ticket.org_id
     ? (
         await supabase
           .from('organisations')
-          .select('name')
+          .select('name, account_id')
           .eq('id', ticket.org_id)
           .maybeSingle()
-      ).data?.name ?? null
+      ).data
     : null
+  const orgName = orgMeta?.name ?? null
+  const accountId = orgMeta?.account_id ?? null
 
   const admins = adminsRes.data ?? []
 
@@ -105,6 +110,11 @@ export default async function TicketDetailPage({ params }: PageProps) {
           Opened {new Date(ticket.created_at).toLocaleString()}
         </p>
       </header>
+
+      {/* ADR-1027 Sprint 2.2 — parent-account context strip. */}
+      {accountId ? (
+        <AccountContextCard accountId={accountId} mode="compact" />
+      ) : null}
 
       <TicketControls
         ticketId={ticket.id}
