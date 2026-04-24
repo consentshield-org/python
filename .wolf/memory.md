@@ -5188,3 +5188,7 @@
 | 18:40 | Edited docs/ADRs/ADR-index.md | inline fix | ~184 |
 | 18:41 | Edited docs/changelogs/CHANGELOG-marketing.md | added error handling | ~1221 |
 | 18:41 | Edited app/tests/storage/byok-validate-route.test.ts | modified constructor() | ~482 |
+| 18:41 | Edited app/tests/storage/byok-validate-route.test.ts | modified defaultAuthCtx() | ~356 |
+| 18:41 | Edited app/tests/storage/byok-validate-route.test.ts | 23→24 lines | ~296 |
+| 18:41 | Edited app/tests/storage/byok-validate-route.test.ts | toEqual() → happyChecks() | ~471 |
+| 18:42 | Session end: 58 writes across 23 files (20260804000052_adr1003_s13_zero_storage_artefact_index.sql, zero-storage-bridge.ts, zero-storage-bridge.test.ts, cs-vault-setup.sql, zero-storage-invariant.test.ts) | 42 reads | ~302754 tok |

@@ -2,6 +2,28 @@
 
 API route changes.
 
+## [ADR-1003 Sprint 2.1 — BYOK scope-down probe (write-only credential enforcement)] — 2026-04-24
+
+**ADR:** ADR-1003 — Processor Posture + Healthcare Category Unlock
+**Sprint:** Phase 2, Sprint 2.1
+
+### Changed — route
+- `app/src/app/api/orgs/[orgId]/storage/byok-validate/route.ts` — swapped the ADR-1025 PUT/GET/sha256/DELETE verification probe for the new 5-check scope-down probe. Every BYOK provider (`customer_r2`, `customer_s3`) now runs: PutObject (must 2xx) + HeadObject + GetObject + ListObjectsV2 + DeleteObject (each must 4xx). Response envelope: `{ok, probe_id, duration_ms, checks, remediation?, orphan_object_key?}` where `checks` carries `{put, head, get, list, delete}` with `{expected, status, outcome, error?}`. Rate-limit / Turnstile / role-gate / body-schema guards are unchanged.
+- The ADR-1025 full-trip `runVerificationProbe` helper stays in the codebase — it remains the correct probe for CS-managed R2 provisioning (where CS owns the bucket + the full-scope token). Only the BYOK route switched.
+
+### Added — orchestrator + primitives
+- `app/src/lib/storage/validate.ts` — new module. `runScopeDownProbe(config, deps?)` returns `ScopeDownProbeResult`. Early-out on PUT failure (other probes not invoked). Deny-expected probes run in parallel via `Promise.all` — wall-clock is dominated by one network round-trip rather than four. Remediation copy names the specific over-scoped IAM actions (`s3:GetObject` / `s3:ListBucket` / `s3:DeleteObject`) or, on PUT failure, the missing write permission. Orphan `cs-probe-<nanoid>.txt` object is surfaced in the result — a correctly-scoped credential cannot delete it; UI hints at a 1-day lifecycle rule expiring `cs-probe-*`.
+- `app/src/lib/storage/sigv4.ts` — new probe-friendly helpers: `probeHeadObject`, `probeGetObject`, `probeListObjectsV2`, `probeDeleteObject`. Each signs sigv4 (same empty-payload-hash chain as `deleteObject`) and returns `{status}` for ANY HTTP response, including 4xx — the scope-down probe needs to see 403 codes, not exceptions. `probeListObjectsV2` targets `/bucket/?list-type=2` (bucket root; no object key).
+
+### Design rationale
+A write-only credential is the structural guarantee that a compromised ConsentShield environment cannot exfiltrate or rewrite customer audit records. Validation-time enforcement of that scope is worth more than documentation because the probe surfaces the exact remediation the user needs (named IAM action) rather than requiring them to know the invariant.
+
+### Tested
+- `app/tests/storage/validate.test.ts` (new) — 10 orchestration tests: happy path, early-out on PUT failure, over-scoped GET / HEAD / LIST / DELETE (each with targeted remediation), admin-grade all-over-scoped case (all three actions named), network error, 5xx on deny-expected probe, deterministic probeId when `randomBytesFn` is injected.
+- `app/tests/storage/sigv4.test.ts` — extended with 5 probe-helper tests: HEAD / GET / LIST / DELETE resolve (not throw) on 403; LIST hits `/compliance/?list-type=2`; each signed with `AWS4-HMAC-SHA256`; 5xx surfaces as the returned status rather than an exception.
+- `bun run lint` + `bun run build` — clean.
+- Manual validation on AWS S3 / Cloudflare R2 / DigitalOcean Spaces deferred to operator.
+
 ## [ADR-1003 Sprint 1.3 — zero-storage consent_artefact_index seeding + invariant test] — 2026-04-24
 
 **ADR:** ADR-1003 — Processor Posture + Healthcare Category Unlock

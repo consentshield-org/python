@@ -1,6 +1,6 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-24T13:11:19.637Z
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-24T13:11:58.079Z
 > Files: 1387 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../tmp/
@@ -1284,7 +1284,7 @@
 ## app/tests/storage/
 
 - `byok-migrate-route.test.ts` — ADR-1025 Phase 3 Sprint 3.2 — customer-facing byok-migrate route tests. (~2333 tok)
-- `byok-validate-route.test.ts` — ADR-1025 Phase 3 Sprint 3.1 + ADR-1003 Sprint 2.1 — byok-validate route (~2639 tok)
+- `byok-validate-route.test.ts` — ADR-1025 Phase 3 Sprint 3.1 + ADR-1003 Sprint 2.1 — byok-validate route (~3002 tok)
 - `cf-provision.test.ts` — ADR-1025 Phase 1 Sprint 1.2 — unit tests for cf-provision.ts. (~4671 tok)
 - `endpoint.test.ts` — ADR-1019 Sprint 1.2 — endpoint derivation tests. (~700 tok)
 - `fetch-usage.test.ts` — ADR-1025 Phase 4 Sprint 4.2 — fetch-usage tests. (~1655 tok)

@@ -1,13 +1,22 @@
 'use client'
 
-// ADR-1025 Phase 3 Sprints 3.1 + 3.2 — BYOK form.
+// ADR-1025 Phase 3 Sprints 3.1 + 3.2 — BYOK form. Amended by
+// ADR-1003 Sprint 2.1: validation now enforces a WRITE-ONLY
+// credential scope. The probe panel renders a 5-row breakdown
+// (PUT must pass; HEAD / GET / LIST / DELETE must each 403). Any
+// over-scoped permission fails validation with a remediation copy
+// that names the specific IAM actions to remove.
 //
 // Stages:
 //   entering    → collect credentials + Turnstile; click "Validate"
 //   validating  → POST /byok-validate; spinner
-//   validated   → validation succeeded; choose mode + click "Start migration"
+//   validated   → write-only scope confirmed; choose mode + click
+//                 "Start migration"
 //   migrating   → POST /byok-migrate; live-poll the migration status
 //   done        → migration terminal (completed / failed)
+//   probe_failed → scope-down probe returned ok=false; render the
+//                 per-check breakdown + remediation and keep the
+//                 form editable so the user can rotate + retry.
 //
 // On successful migration, Secret stays in memory through the
 // validate → migrate hop (we don't force re-entry) but is wiped from
@@ -54,10 +63,28 @@ const INITIAL: FormState = {
   secretAccessKey: '',
 }
 
+type CheckKey = 'put' | 'head' | 'get' | 'list' | 'delete'
+type CheckOutcome = 'expected' | 'over_scoped' | 'under_scoped' | 'error'
+
+interface ProbeCheck {
+  expected: 'allow' | 'deny'
+  status: number | null
+  outcome: CheckOutcome
+  error?: string
+}
+
+type ProbeChecks = Record<CheckKey, ProbeCheck>
+
 type Stage =
   | { name: 'entering' }
   | { name: 'validating' }
-  | { name: 'validated'; probeId: string; durationMs: number }
+  | {
+      name: 'validated'
+      probeId: string
+      durationMs: number
+      checks: ProbeChecks
+      orphanObjectKey: string | null
+    }
   | {
       name: 'migrating'
       migrationId: string
@@ -73,7 +100,12 @@ type Stage =
       errorText: string | null
       objectsCopied: number
     }
-  | { name: 'probe_failed'; failedStep: string; error: string }
+  | {
+      name: 'probe_failed'
+      checks: ProbeChecks
+      remediation: string
+      orphanObjectKey: string | null
+    }
   | { name: 'transport_failed'; message: string }
 
 export function ByokForm({ orgId }: { orgId: string }) {
@@ -194,7 +226,9 @@ export function ByokForm({ orgId }: { orgId: string }) {
         ok?: boolean
         probe_id?: string
         duration_ms?: number
-        failed_step?: string
+        checks?: ProbeChecks
+        remediation?: string
+        orphan_object_key?: string
         error?: string
         retry_in_seconds?: number
         message?: string
@@ -230,19 +264,24 @@ export function ByokForm({ orgId }: { orgId: string }) {
         resetTurnstile()
         return
       }
-      if (res.ok && json.ok) {
+      if (res.ok && json.ok && json.checks) {
         setStage({
           name: 'validated',
           probeId: json.probe_id!,
           durationMs: json.duration_ms!,
+          checks: json.checks,
+          orphanObjectKey: json.orphan_object_key ?? null,
         })
         return
       }
-      if (res.ok && json.ok === false) {
+      if (res.ok && json.ok === false && json.checks) {
         setStage({
           name: 'probe_failed',
-          failedStep: json.failed_step ?? 'put',
-          error: json.error ?? 'unknown',
+          checks: json.checks,
+          remediation:
+            json.remediation ??
+            'Scope-down probe failed. Review the per-check results below.',
+          orphanObjectKey: json.orphan_object_key ?? null,
         })
         resetTurnstile()
         return
@@ -429,11 +468,25 @@ export function ByokForm({ orgId }: { orgId: string }) {
       {stage.name === 'validated' ? (
         <div className="mt-6 rounded-md border border-green-200 bg-green-50 p-4">
           <h3 className="text-sm font-semibold text-green-900">
-            Credentials validated
+            Write-only scope confirmed
           </h3>
           <p className="mt-1 text-xs text-green-800">
-            Round-trip probe <code>{stage.probeId}</code> completed in{' '}
-            {stage.durationMs} ms. Choose how to migrate existing records:
+            Scope-down probe <code>{stage.probeId}</code> completed in{' '}
+            {stage.durationMs} ms. Your credential can PUT objects but
+            cannot HEAD, GET, LIST, or DELETE them — exactly what
+            ConsentShield needs.
+          </p>
+          <ProbeChecksTable checks={stage.checks} />
+          {stage.orphanObjectKey ? (
+            <p className="mt-2 text-xs text-green-800">
+              The probe&apos;s test object <code>{stage.orphanObjectKey}</code>{' '}
+              remains in your bucket — the scope-down guarantee means
+              ConsentShield cannot delete it. Add a lifecycle rule
+              expiring <code>cs-probe-*</code> objects after 1 day.
+            </p>
+          ) : null}
+          <p className="mt-3 text-xs text-green-800">
+            Choose how to migrate existing records:
           </p>
           <fieldset className="mt-4 space-y-2">
             <label className="flex items-start gap-2 text-xs text-gray-800">
@@ -556,9 +609,23 @@ export function ByokForm({ orgId }: { orgId: string }) {
       {stage.name === 'probe_failed' ? (
         <div className="mt-6 rounded-md border border-red-200 bg-red-50 p-4">
           <h3 className="text-sm font-semibold text-red-900">
-            Validation failed at step: {stage.failedStep}
+            Credential rejected — not write-only
           </h3>
-          <p className="mt-1 text-xs text-red-800">{stage.error}</p>
+          <p className="mt-1 text-xs text-red-800">{stage.remediation}</p>
+          <ProbeChecksTable checks={stage.checks} />
+          {stage.orphanObjectKey ? (
+            <p className="mt-2 text-xs text-red-800">
+              The probe&apos;s test object{' '}
+              <code>{stage.orphanObjectKey}</code> may have landed in
+              your bucket (if the PUT succeeded) — clean it up, or
+              add a lifecycle rule expiring <code>cs-probe-*</code>
+              objects after 1 day.
+            </p>
+          ) : null}
+          <p className="mt-2 text-xs text-red-800">
+            Rotate the credential in your provider console, paste the
+            new values above, and click <em>Validate credentials</em>.
+          </p>
         </div>
       ) : null}
 
@@ -569,6 +636,71 @@ export function ByokForm({ orgId }: { orgId: string }) {
       ) : null}
     </>
   )
+}
+
+const CHECK_LABELS: Record<CheckKey, { label: string; expectation: string }> = {
+  put: { label: 'PutObject', expectation: 'must succeed' },
+  head: { label: 'HeadObject', expectation: 'must fail (403)' },
+  get: { label: 'GetObject', expectation: 'must fail (403)' },
+  list: { label: 'ListObjectsV2', expectation: 'must fail (403)' },
+  delete: { label: 'DeleteObject', expectation: 'must fail (403)' },
+}
+
+const CHECK_ORDER: CheckKey[] = ['put', 'head', 'get', 'list', 'delete']
+
+function ProbeChecksTable({ checks }: { checks: ProbeChecks }) {
+  return (
+    <ul className="mt-3 divide-y divide-gray-200 rounded border border-gray-200 bg-white text-xs">
+      {CHECK_ORDER.map((key) => {
+        const c = checks[key]
+        const pass = c.outcome === 'expected'
+        const { label, expectation } = CHECK_LABELS[key]
+        return (
+          <li key={key} className="flex items-center justify-between px-3 py-2">
+            <div className="flex items-center gap-2">
+              <span
+                aria-hidden
+                className={
+                  pass
+                    ? 'inline-block h-4 w-4 rounded-full bg-green-500 text-white text-center font-semibold leading-4'
+                    : 'inline-block h-4 w-4 rounded-full bg-red-500 text-white text-center font-semibold leading-4'
+                }
+              >
+                {pass ? '✓' : '✕'}
+              </span>
+              <code className="font-medium text-gray-900">{label}</code>
+              <span className="text-gray-500">— {expectation}</span>
+            </div>
+            <div className="text-right text-gray-600">
+              {c.status != null ? (
+                <span>HTTP {c.status}</span>
+              ) : c.error ? (
+                <span title={c.error}>error</span>
+              ) : (
+                <span>—</span>
+              )}
+              <span className={pass ? 'ml-2 text-green-700' : 'ml-2 text-red-700'}>
+                {outcomeLabel(c.outcome)}
+              </span>
+            </div>
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
+function outcomeLabel(outcome: CheckOutcome): string {
+  switch (outcome) {
+    case 'expected':
+      return 'ok'
+    case 'over_scoped':
+      return 'over-scoped'
+    case 'under_scoped':
+      return 'under-scoped'
+    case 'error':
+      return 'error'
+  }
 }
 
 function Input({

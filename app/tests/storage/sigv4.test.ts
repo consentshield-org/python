@@ -1,15 +1,23 @@
-// ADR-0040 Sprint 1.1 — sigv4 primitive tests.
+// ADR-0040 Sprint 1.1 + ADR-1003 Sprint 2.1 — sigv4 primitive tests.
 //
 // The PUT path hits a remote service and isn't unit-testable offline, so
 // we pin the deterministic pieces: signing-key chain, canonical-URI
 // encoding, and presigned-GET URL construction against known inputs.
+// Sprint 2.1 probe helpers are tested with a fetch stub that returns
+// controlled status codes — the contract we care about is that 4xx
+// responses resolve (not throw) so the scope-down probe can reason
+// about them.
 
-import { describe, it, expect } from 'vitest'
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest'
 import {
   canonicalUriFor,
   deriveSigningKey,
   formatAmzDate,
   presignGet,
+  probeDeleteObject,
+  probeGetObject,
+  probeHeadObject,
+  probeListObjectsV2,
   sha256Hex,
 } from '@/lib/storage/sigv4'
 
@@ -95,6 +103,92 @@ describe('ADR-0040 sigv4', () => {
       })
       const parsed = new URL(url)
       expect(parsed.searchParams.get('X-Amz-Expires')).toBe('604800')
+    })
+  })
+
+  // ─────────────────────────────────────────────────────────────
+  // ADR-1003 Sprint 2.1 — probe-friendly helpers.
+  // Must not throw on 4xx. Must sign with sigv4 (we spot-check the
+  // Authorization header shape). Must drain the response body.
+  // ─────────────────────────────────────────────────────────────
+  describe('probe* helpers (Sprint 2.1)', () => {
+    const fetchMock = vi.fn<typeof fetch>()
+    beforeEach(() => {
+      fetchMock.mockReset()
+      vi.stubGlobal('fetch', fetchMock)
+    })
+    afterEach(() => {
+      vi.unstubAllGlobals()
+    })
+
+    function stubResponse(status: number) {
+      fetchMock.mockResolvedValue(
+        new Response('<Error>AccessDenied</Error>', {
+          status,
+          headers: { 'content-type': 'application/xml' },
+        }),
+      )
+    }
+
+    const baseOpts = {
+      endpoint: 'https://accountid.r2.cloudflarestorage.com',
+      region: 'auto',
+      bucket: 'compliance',
+      key: 'cs-probe-abcdef.txt',
+      accessKeyId: 'AKIA',
+      secretAccessKey: 'secret',
+    }
+
+    it('probeHeadObject returns status 403 without throwing', async () => {
+      stubResponse(403)
+      const res = await probeHeadObject(baseOpts)
+      expect(res.status).toBe(403)
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+      const [, init] = fetchMock.mock.calls[0]!
+      expect(init?.method).toBe('HEAD')
+      expect(
+        (init?.headers as Record<string, string>).Authorization,
+      ).toMatch(/^AWS4-HMAC-SHA256 Credential=AKIA\/\d{8}\/auto\/s3\/aws4_request/)
+    })
+
+    it('probeGetObject returns status 200 (over-scoped case)', async () => {
+      stubResponse(200)
+      const res = await probeGetObject(baseOpts)
+      expect(res.status).toBe(200)
+      const [url, init] = fetchMock.mock.calls[0]!
+      expect(init?.method).toBe('GET')
+      expect(String(url)).toContain('/compliance/cs-probe-abcdef.txt')
+    })
+
+    it('probeListObjectsV2 targets the bucket root with list-type=2', async () => {
+      stubResponse(403)
+      const res = await probeListObjectsV2({
+        endpoint: baseOpts.endpoint,
+        region: baseOpts.region,
+        bucket: baseOpts.bucket,
+        accessKeyId: baseOpts.accessKeyId,
+        secretAccessKey: baseOpts.secretAccessKey,
+      })
+      expect(res.status).toBe(403)
+      const [url, init] = fetchMock.mock.calls[0]!
+      expect(init?.method).toBe('GET')
+      const parsed = new URL(String(url))
+      expect(parsed.pathname).toBe('/compliance/')
+      expect(parsed.search).toBe('?list-type=2')
+    })
+
+    it('probeDeleteObject returns status 403 without throwing', async () => {
+      stubResponse(403)
+      const res = await probeDeleteObject(baseOpts)
+      expect(res.status).toBe(403)
+      const [, init] = fetchMock.mock.calls[0]!
+      expect(init?.method).toBe('DELETE')
+    })
+
+    it('resolves on 500 rather than throwing (probe treats 5xx as error; does not swallow)', async () => {
+      stubResponse(500)
+      const res = await probeGetObject(baseOpts)
+      expect(res.status).toBe(500)
     })
   })
 })

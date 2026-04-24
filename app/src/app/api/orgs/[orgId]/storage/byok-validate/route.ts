@@ -1,9 +1,16 @@
 // ADR-1025 Phase 3 Sprint 3.1 — BYOK credential validation.
+// Amended 2026-04-24 by ADR-1003 Sprint 2.1: replaced the
+// PUT/GET/sha256/DELETE verification probe with a 5-check scope-down
+// probe that REQUIRES the credential to be write-only. Over-scoped
+// credentials (read / list / delete enabled) are now rejected with
+// per-check remediation copy, because a write-only credential is
+// the structural guarantee that a compromised CS environment cannot
+// exfiltrate or rewrite customer audit records.
 //
-// Stateless endpoint: runs the verification probe against a set of
-// customer-supplied S3/R2 credentials and returns {ok, failed_step?, error?}.
-// Credentials stay in request memory only — this route NEVER writes to
-// export_configurations (that's Sprint 3.2's migration step).
+// Stateless endpoint: runs the probe and returns per-check outcome +
+// remediation. Credentials stay in request memory only — this route
+// NEVER writes to export_configurations (the migration step lives in
+// byok-migrate).
 //
 // Auth chain:
 //   1. Authenticated user via Supabase server client.
@@ -11,7 +18,7 @@
 //   3. Turnstile challenge verified.
 //   4. Per-account rate limit — 5 attempts / hour (Upstash Redis).
 //   5. Body schema validation.
-//   6. runVerificationProbe → 4-step PUT/GET/sha256/DELETE against CF.
+//   6. runScopeDownProbe → PUT + HEAD/GET/LIST/DELETE scope-down.
 //
 // Rule 11: nothing in this file ever calls console.log on the body. Sentry
 // capture is also suppressed for this route (handled by the Sentry beforeSend
@@ -24,7 +31,11 @@ import {
 } from '@/lib/auth/require-org-role'
 import { checkRateLimit } from '@/lib/rights/rate-limit'
 import { verifyTurnstileToken } from '@/lib/rights/turnstile'
-import { runVerificationProbe, type StorageConfig } from '@/lib/storage/verify'
+import {
+  runScopeDownProbe,
+  type ScopeDownConfig,
+  type ScopeDownProbeResult,
+} from '@/lib/storage/validate'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -41,16 +52,16 @@ interface ValidateBody {
   turnstile_token?: string
 }
 
-interface ValidateOk {
-  ok: true
+// Wire format used by the byok-form UI. Field names are snake_case
+// to match the rest of the /api/orgs/* surface; the library type
+// (ScopeDownProbeResult) uses camelCase.
+interface ValidateResponse {
+  ok: boolean
   probe_id: string
   duration_ms: number
-}
-
-interface ValidateFail {
-  ok: false
-  failed_step: 'put' | 'get' | 'content_hash' | 'delete'
-  error: string
+  checks: ScopeDownProbeResult['checks']
+  remediation?: string
+  orphan_object_key?: string
 }
 
 export async function POST(
@@ -153,10 +164,9 @@ export async function POST(
     )
   }
 
-  // 6. Run the probe. The StorageConfig's `provider` discriminator is
-  // retained in the sentinel body — if the customer's bucket policy
-  // inspects requests, they'll see `cs_verify_probe` markers.
-  const config: StorageConfig = {
+  // 6. Run the scope-down probe. The credentials live in the narrow
+  // scope of the probe call; the returned payload never echoes them.
+  const config: ScopeDownConfig = {
     provider: provider as 'customer_r2' | 'customer_s3',
     endpoint: endpoint!,
     region: region!,
@@ -164,24 +174,20 @@ export async function POST(
     accessKeyId: accessKeyId!,
     secretAccessKey: secretAccessKey!,
   }
-  const probe = await runVerificationProbe(config)
+  const probe = await runScopeDownProbe(config)
 
-  if (probe.ok) {
-    const payload: ValidateOk = {
-      ok: true,
-      probe_id: probe.probeId,
-      duration_ms: probe.durationMs,
-    }
-    return NextResponse.json(payload)
+  const payload: ValidateResponse = {
+    ok: probe.ok,
+    probe_id: probe.probeId,
+    duration_ms: probe.durationMs,
+    checks: probe.checks,
+    ...(probe.remediation ? { remediation: probe.remediation } : {}),
+    ...(probe.orphanObjectKey
+      ? { orphan_object_key: probe.orphanObjectKey }
+      : {}),
   }
-
-  const payload: ValidateFail = {
-    ok: false,
-    failed_step: probe.failedStep ?? 'put',
-    error: probe.error ?? 'unknown',
-  }
-  // 200 — the probe ran and produced a structured failure; callers render
-  // it as a form-level error, not a transport error.
+  // Always HTTP 200 — the probe ran and produced a structured result.
+  // The UI renders `ok=false` inline rather than as a transport error.
   return NextResponse.json(payload)
 }
 

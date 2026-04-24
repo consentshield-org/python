@@ -134,22 +134,30 @@ Deliver processor-posture enforcement and the healthcare category unlock:
 **Estimated effort:** 3 days
 
 **Deliverables:**
-- [ ] `/dashboard/settings/storage` page: paste creds (access key id, secret, region, bucket, endpoint URL for S3-compatible)
-- [ ] `app/src/lib/storage/validate.ts`:
-  - PutObject a `cs-probe-<nanoid>.txt` test object
-  - HeadObject the same object
-  - Attempt `GetObject` on the test object → must fail with 403 (proves scope-down)
-  - Attempt `ListObjectsV2` → must fail with 403
-  - Attempt `DeleteObject` on the test object → must fail (PutObject was enough to prove write; we explicitly do NOT want delete permission)
-- [ ] Surface each probe result in the UI with remediation copy ("your credential has DeleteObject permission; please scope it down")
-- [ ] Encrypted storage with per-org key derivation (existing pattern)
+- [x] `/dashboard/settings/storage` page already exists from ADR-1025 Sprint 3.1; Sprint 2.1 amended the BYOK form (`byok-form.tsx`) to render a 5-row probe-check breakdown (PutObject must pass; HeadObject / GetObject / ListObjectsV2 / DeleteObject must each 403) with per-check status and an aggregated remediation copy.
+- [x] `app/src/lib/storage/validate.ts` — `runScopeDownProbe` orchestrator:
+  - PutObject the `cs-probe-<nanoid>.txt` sentinel; must return 2xx.
+  - HeadObject + GetObject on the same key; each must return 4xx (R2 + S3 collapse HeadObject into the s3:GetObject permission).
+  - ListObjectsV2 on the bucket root; must return 4xx.
+  - DeleteObject on the sentinel key; must return 4xx. **The sentinel object stays in the customer's bucket by design** — a correctly-scoped credential cannot delete it. UI surfaces this with a hint to add a lifecycle rule expiring `cs-probe-*` after 1 day.
+  - 5xx or transport errors map to `outcome='error'`; 2xx where we expected deny maps to `over_scoped`; non-2xx where we expected allow maps to `under_scoped`. Any non-`expected` outcome fails the probe.
+  - Remediation copy names the specific over-scoped IAM action(s) (s3:GetObject / s3:ListBucket / s3:DeleteObject). Fallback copy for PUT-side failures asks for `s3:PutObject` / "Object Write".
+- [x] `app/src/lib/storage/sigv4.ts` — added probe-friendly `probeHeadObject`, `probeGetObject`, `probeListObjectsV2`, `probeDeleteObject` that return `{status}` for any HTTP response (including 4xx) rather than throwing. Sigv4-signed. Share the empty-payload hash and signing chain with the existing `deleteObject` helper.
+- [x] `app/src/app/api/orgs/[orgId]/storage/byok-validate/route.ts` — swapped the 4-step PUT/GET/sha256/DELETE verification probe (ADR-1025 semantics) for the 5-check scope-down probe for every BYOK provider. Response envelope now carries `{ok, probe_id, duration_ms, checks, remediation?, orphan_object_key?}`. The ADR-1025 round-trip verify stays where it belongs — provisioning CS-managed buckets (which own full creds).
+- [x] Encrypted storage with per-org key derivation is unchanged — the Sprint 2.1 validate route stays stateless and never persists credentials; the byok-migrate route owns the encryption step.
 
 **Testing plan:**
-- [ ] Over-scoped credential (AdministratorAccess) → rejected with clear UI
-- [ ] Correctly-scoped PutObject-only credential → accepted
-- [ ] Manual test on AWS S3, Cloudflare R2, DigitalOcean Spaces
+- [x] Unit — over-scoped credential (admin-grade, all probes return 2xx) → `ok=false`, remediation names all three over-scoped actions.
+- [x] Unit — correctly-scoped PutObject-only credential → `ok=true`, remediation unset.
+- [x] Unit — under-scoped PUT (403) → `ok=false`, early-out; remaining probes not invoked; remediation names `s3:PutObject`.
+- [x] Unit — partial over-scoping (e.g., DELETE only) → remediation names exactly the over-scoped action.
+- [x] Unit — network error on a deny-expected probe → `outcome='error'` (inconclusive; fails the overall probe) with remediation mentioning transport errors.
+- [x] Unit — 5xx on a deny-expected probe → `outcome='error'` (not `expected`).
+- [x] Unit — deterministic probeId when `randomBytesFn` is injected.
+- [x] Sigv4 — probe helpers resolve (not throw) on 403; HEAD sets method=HEAD; LIST hits bucket root with `?list-type=2`.
+- [ ] Manual test on AWS S3, Cloudflare R2, DigitalOcean Spaces — deferred to operator validation against real buckets.
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete (code + unit tests; live manual tests across AWS / R2 / Spaces pending operator).`
 
 #### Sprint 2.2: Documentation + migration procedure
 

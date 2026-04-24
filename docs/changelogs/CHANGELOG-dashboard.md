@@ -2,6 +2,22 @@
 
 Next.js UI changes.
 
+## [ADR-1003 Sprint 2.1 — BYOK scope-down probe UX] — 2026-04-24
+
+**ADR:** ADR-1003 — Processor Posture + Healthcare Category Unlock
+**Sprint:** Phase 2, Sprint 2.1
+
+### Changed
+- `app/src/app/(dashboard)/dashboard/settings/storage/_components/byok-form.tsx` — validation now renders a 5-row probe-check table (PutObject / HeadObject / GetObject / ListObjectsV2 / DeleteObject) with per-check HTTP status + outcome label (`ok` / `over-scoped` / `under-scoped` / `error`). Success panel ("Write-only scope confirmed") and failure panel ("Credential rejected — not write-only") both surface the same table plus an orphan-object hint pointing at `cs-probe-*.txt`. Failure panel also renders the remediation copy and tells the user to rotate + retry.
+- `Stage` type extended: `validated` now carries `checks` + `orphanObjectKey`; `probe_failed` now carries `checks` + `remediation` + `orphanObjectKey`. The old `{failedStep, error}` shape is gone — the per-check table replaces it.
+
+### Rationale
+A correctly-scoped write-only credential protects the audit-record immutability guarantee: a compromised ConsentShield environment cannot read, list, or delete customer records through it. The UX change makes that invariant visible to the user at validation time — if they supply an admin-grade credential, the form rejects it with a named remediation (`remove s3:GetObject + s3:ListBucket + s3:DeleteObject`) rather than silently accepting over-scoped access.
+
+### Tested
+- Type-check (`bun run build`) + lint (`bun run lint`) — clean.
+- Manual click-through across AWS S3 / Cloudflare R2 / DigitalOcean Spaces deferred to operator validation.
+
 ## [ADR-1027 Sprint 3.3 — Default-template picker on account detail + wizard pre-selection] — 2026-04-24
 
 **ADR:** ADR-1027 — Admin account-awareness pass

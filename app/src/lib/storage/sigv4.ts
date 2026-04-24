@@ -197,6 +197,105 @@ export async function deleteObject(
 }
 
 // ═══════════════════════════════════════════════════════════
+// Probe-friendly signed requests (ADR-1003 Sprint 2.1 — scope-down
+// validation). Return { status } for ANY HTTP response — never
+// throw on 4xx. The scope-down probe wants to see 403 and needs to
+// tell it apart from transport errors.
+// ═══════════════════════════════════════════════════════════
+
+export async function probeHeadObject(opts: SigV4Options): Promise<{ status: number }> {
+  return signedProbeRequest('HEAD', opts, '', opts.key)
+}
+
+export async function probeGetObject(opts: SigV4Options): Promise<{ status: number }> {
+  return signedProbeRequest('GET', opts, '', opts.key)
+}
+
+/**
+ * List-objects-v2 on the bucket root. Does not require an object key —
+ * a write-only credential should 403 regardless of whether the bucket
+ * is empty.
+ */
+export async function probeListObjectsV2(
+  opts: Omit<SigV4Options, 'key'>,
+): Promise<{ status: number }> {
+  return signedProbeRequest('GET', { ...opts, key: '' }, 'list-type=2', '')
+}
+
+export async function probeDeleteObject(opts: SigV4Options): Promise<{ status: number }> {
+  return signedProbeRequest('DELETE', opts, '', opts.key)
+}
+
+async function signedProbeRequest(
+  method: 'GET' | 'HEAD' | 'DELETE',
+  opts: SigV4Options,
+  canonicalQuery: string,
+  keyForPath: string,
+): Promise<{ status: number }> {
+  const now = new Date()
+  const amzDate = formatAmzDate(now)
+  const dateStamp = amzDate.slice(0, 8)
+  const host = new URL(opts.endpoint).host
+
+  // List-objects-v2 hits the bucket root (/bucket/); object ops hit
+  // /bucket/<key>. keyForPath=='' produces the trailing-slash form.
+  const canonicalUri =
+    keyForPath === ''
+      ? '/' + encodeKey(opts.bucket) + '/'
+      : canonicalUriFor(opts.bucket, keyForPath)
+
+  const canonicalHeaders =
+    `host:${host}\n` +
+    `x-amz-content-sha256:${EMPTY_PAYLOAD_HASH}\n` +
+    `x-amz-date:${amzDate}\n`
+  const signedHeaders = 'host;x-amz-content-sha256;x-amz-date'
+
+  const canonicalRequest = [
+    method,
+    canonicalUri,
+    canonicalQuery,
+    canonicalHeaders,
+    signedHeaders,
+    EMPTY_PAYLOAD_HASH,
+  ].join('\n')
+
+  const credentialScope = `${dateStamp}/${opts.region}/${SERVICE}/aws4_request`
+  const stringToSign = [
+    'AWS4-HMAC-SHA256',
+    amzDate,
+    credentialScope,
+    sha256Hex(canonicalRequest),
+  ].join('\n')
+
+  const signingKey = deriveSigningKey(opts.secretAccessKey, dateStamp, opts.region)
+  const signature = createHmac('sha256', signingKey).update(stringToSign).digest('hex')
+
+  const authorization =
+    `AWS4-HMAC-SHA256 Credential=${opts.accessKeyId}/${credentialScope}, ` +
+    `SignedHeaders=${signedHeaders}, Signature=${signature}`
+
+  const queryString = canonicalQuery ? `?${canonicalQuery}` : ''
+  const url = `${opts.endpoint}${canonicalUri}${queryString}`
+  const resp = await fetch(url, {
+    method,
+    headers: {
+      Authorization: authorization,
+      'x-amz-content-sha256': EMPTY_PAYLOAD_HASH,
+      'x-amz-date': amzDate,
+    },
+  })
+  // Drain body so the connection can be released — but don't look at
+  // the content. 4xx bodies can contain the bucket name etc. which the
+  // probe doesn't need.
+  try {
+    await resp.arrayBuffer()
+  } catch {
+    /* noop */
+  }
+  return { status: resp.status }
+}
+
+// ═══════════════════════════════════════════════════════════
 // Presigned GET URL (query-string auth).
 // ═══════════════════════════════════════════════════════════
 export function presignGet(opts: PresignGetOptions): string {

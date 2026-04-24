@@ -1,7 +1,9 @@
-// ADR-1025 Phase 3 Sprint 3.1 — byok-validate route unit tests.
+// ADR-1025 Phase 3 Sprint 3.1 + ADR-1003 Sprint 2.1 — byok-validate route
+// unit tests.
 //
 // The route composes four collaborators: requireOrgAccess, verifyTurnstileToken,
-// checkRateLimit, and runVerificationProbe. This suite mocks all four and
+// checkRateLimit, and runScopeDownProbe. (Sprint 2.1 swapped the previous
+// runVerificationProbe for runScopeDownProbe.) This suite mocks all four and
 // drives the route handler directly with hand-built Request objects.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -22,18 +24,18 @@ vi.mock('@/lib/auth/require-org-role', async () => {
 })
 vi.mock('@/lib/rights/turnstile', () => ({ verifyTurnstileToken: vi.fn() }))
 vi.mock('@/lib/rights/rate-limit', () => ({ checkRateLimit: vi.fn() }))
-vi.mock('@/lib/storage/verify', () => ({ runVerificationProbe: vi.fn() }))
+vi.mock('@/lib/storage/validate', () => ({ runScopeDownProbe: vi.fn() }))
 
 // Typed access to the mocks
 import { OrgAccessDeniedError, requireOrgAccess } from '@/lib/auth/require-org-role'
 import { checkRateLimit } from '@/lib/rights/rate-limit'
 import { verifyTurnstileToken } from '@/lib/rights/turnstile'
-import { runVerificationProbe } from '@/lib/storage/verify'
+import { runScopeDownProbe } from '@/lib/storage/validate'
 
 const orgAccessMock = requireOrgAccess as unknown as ReturnType<typeof vi.fn>
 const turnstileMock = verifyTurnstileToken as unknown as ReturnType<typeof vi.fn>
 const rateLimitMock = checkRateLimit as unknown as ReturnType<typeof vi.fn>
-const probeMock = runVerificationProbe as unknown as ReturnType<typeof vi.fn>
+const probeMock = runScopeDownProbe as unknown as ReturnType<typeof vi.fn>
 
 // ── Fixtures ─────────────────────────────────────────────────────────────
 const ORG_ID = '11111111-1111-4111-8111-111111111111'
@@ -75,6 +77,20 @@ function defaultAuthCtx() {
   }
 }
 
+function happyChecks() {
+  return {
+    put: { expected: 'allow' as const, status: 200, outcome: 'expected' as const },
+    head: { expected: 'deny' as const, status: 403, outcome: 'expected' as const },
+    get: { expected: 'deny' as const, status: 403, outcome: 'expected' as const },
+    list: { expected: 'deny' as const, status: 403, outcome: 'expected' as const },
+    delete: {
+      expected: 'deny' as const,
+      status: 403,
+      outcome: 'expected' as const,
+    },
+  }
+}
+
 // ── Setup / teardown ─────────────────────────────────────────────────────
 beforeEach(() => {
   orgAccessMock.mockReset()
@@ -87,8 +103,10 @@ beforeEach(() => {
   rateLimitMock.mockResolvedValue({ allowed: true, retryInSeconds: 0 })
   probeMock.mockResolvedValue({
     ok: true,
-    probeId: 'cs-verify-abc',
+    probeId: 'cs-probe-abc',
     durationMs: 812,
+    checks: happyChecks(),
+    orphanObjectKey: 'cs-probe-abc.txt',
   })
 })
 
@@ -98,15 +116,16 @@ afterEach(() => vi.resetModules())
 // Happy path
 // ═══════════════════════════════════════════════════════════════════════
 describe('byok-validate — happy path', () => {
-  it('200 with probe envelope; credentials never appear in response', async () => {
+  it('200 with scope-down envelope; credentials never appear in response', async () => {
     const res = await callRoute()
     expect(res.status).toBe(200)
     const json = await res.json()
-    expect(json).toEqual({
-      ok: true,
-      probe_id: 'cs-verify-abc',
-      duration_ms: 812,
-    })
+    expect(json.ok).toBe(true)
+    expect(json.probe_id).toBe('cs-probe-abc')
+    expect(json.duration_ms).toBe(812)
+    expect(json.checks).toEqual(happyChecks())
+    expect(json.orphan_object_key).toBe('cs-probe-abc.txt')
+    expect(json.remediation).toBeUndefined()
     // Probe called with the supplied creds.
     expect(probeMock).toHaveBeenCalledOnce()
     const cfg = probeMock.mock.calls[0][0]
@@ -235,33 +254,46 @@ describe('byok-validate — body validation', () => {
 // Probe-failure passthrough
 // ═══════════════════════════════════════════════════════════════════════
 describe('byok-validate — probe failure', () => {
-  it('200 with ok=false + failed_step + error when probe rejects the creds', async () => {
+  it('200 with ok=false + per-check breakdown + remediation when creds are over-scoped', async () => {
+    const overScopedChecks = {
+      ...happyChecks(),
+      get: { expected: 'deny' as const, status: 200, outcome: 'over_scoped' as const },
+    }
     probeMock.mockResolvedValueOnce({
       ok: false,
-      probeId: 'cs-verify-xyz',
+      probeId: 'cs-probe-xyz',
       durationMs: 430,
-      failedStep: 'put',
-      error: 'HTTP 401',
+      checks: overScopedChecks,
+      remediation:
+        'Your credential is over-scoped. Remove s3:GetObject from the policy.',
+      orphanObjectKey: 'cs-probe-xyz.txt',
     })
     const res = await callRoute()
     expect(res.status).toBe(200)
     const json = await res.json()
-    expect(json).toEqual({
-      ok: false,
-      failed_step: 'put',
-      error: 'HTTP 401',
-    })
+    expect(json.ok).toBe(false)
+    expect(json.probe_id).toBe('cs-probe-xyz')
+    expect(json.checks.get.outcome).toBe('over_scoped')
+    expect(json.remediation).toContain('s3:GetObject')
+    expect(json.orphan_object_key).toBe('cs-probe-xyz.txt')
   })
 
   it('credentials never surface in the failure response', async () => {
     probeMock.mockResolvedValueOnce({
       ok: false,
-      probeId: 'cs-verify-xyz',
+      probeId: 'cs-probe-xyz',
       durationMs: 430,
-      failedStep: 'put',
-      // Even if the probe echoed the secret in its error, the route
-      // returns just the failed_step + the probe-emitted error string.
-      error: 'HTTP 401',
+      checks: {
+        ...happyChecks(),
+        put: {
+          expected: 'allow' as const,
+          status: null,
+          outcome: 'under_scoped' as const,
+          error: 'HTTP 401',
+        },
+      },
+      remediation:
+        'Your credential cannot write to this bucket. Grant "s3:PutObject".',
     })
     const res = await callRoute()
     const bodyStr = JSON.stringify(await res.json())
