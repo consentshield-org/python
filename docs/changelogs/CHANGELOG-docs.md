@@ -2,6 +2,23 @@
 
 Documentation changes.
 
+## [ADR-1026 — authored, attempted, abandoned same-day] — 2026-04-24
+
+**ADRs:** ADR-1026 (new; Abandoned), ADR-1010 (Sprint 4.2 section amended with live-smoke results + Hyperdrive incident block)
+
+### Added
+- `docs/ADRs/ADR-1026-drop-hyperdrive-direct-supavisor.md` — proposal to rewind ADR-1010 Phase 3's Hyperdrive binding and connect the Worker directly to Supavisor via `postgres.js`. Authored, Sprint 1.1 (`CS_WORKER_DSN` wrangler secret) executed, Sprint 1.2 (code swap) attempted and blocked on CF Workers free-tier 50-subrequest-per-invocation limit, then Abandoned with a reopen-trigger note. Kept on file as the factual record of the attempt, not the proposed change.
+- `docs/ADRs/ADR-1026-...md` — "Abandonment note" block at the top of the ADR. Leads every future reader before the (now-stale) Decision block.
+
+### Changed
+- `docs/ADRs/ADR-index.md` — added ADR-1026 entry, final status `Abandoned`, summary points at the subrequest blocker + the three reopen triggers.
+- `docs/ADRs/ADR-1010-...md` — Sprint 4.2 flipped `pending` → `complete`. Added live-smoke results table (cold 2.9 s → ~800 ms; warm 60–100 ms → 55–60 ms), a recovery narrative for the in-sprint Hyperdrive pool-saturation incident (bug-725/bug-726), and a top-of-ADR status line that captures the Sprint 4.2 close-out.
+
+### Tested
+- Documentation-only. No code paths exercised in this changelog entry beyond what the referenced ADR close-outs recorded.
+
+---
+
 ## [ADR-1014 Sprint 3.7 — pair matrix audit (Phase 3 close-out)] — 2026-04-23
 
 **ADR:** ADR-1014 — E2E test harness + vertical demo sites
