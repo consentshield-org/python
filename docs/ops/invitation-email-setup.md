@@ -45,7 +45,7 @@ CLI inside `app/`.
 | `RESEND_FROM` | Sender address | `noreply@consentshield.in` |
 | `INVITATION_DISPATCH_SECRET` | Bearer token the DB trigger sends to `/api/internal/invitation-dispatch` | Generate 32-byte random hex: `openssl rand -hex 32` |
 | `INVITES_MARKETING_SECRET` | HMAC shared secret for `/api/internal/invites` | Generate 32-byte random hex: `openssl rand -hex 32` |
-| `CS_ORCHESTRATOR_ROLE_KEY` | `sb_secret_*` key the dispatch + marketing routes use to authenticate as `cs_orchestrator` | Copy from `vault.decrypted_secrets WHERE name = 'cs_orchestrator_key'` (see §1.3) |
+| `SUPABASE_CS_ORCHESTRATOR_DATABASE_URL` | Direct-Postgres Supavisor URL for `cs_orchestrator` LOGIN role (ADR-1013) — replaces the pre-ADR-1013 `CS_ORCHESTRATOR_ROLE_KEY` JWT | Supabase Dashboard → Project Settings → Database → Connection pooling → Transaction mode, substituting `cs_orchestrator.<project-ref>` as the user |
 | `NEXT_PUBLIC_APP_URL` | Used by both routes to build the `/signup?invite=…` accept URL sent in email | Set to the Production app origin, e.g. `https://app.consentshield.in` |
 
 Verification — the two bearer-authed routes should 401 without a

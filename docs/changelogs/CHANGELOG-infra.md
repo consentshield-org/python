@@ -2,6 +2,36 @@
 
 Vercel, Cloudflare, Supabase config changes.
 
+## [ADR-0044 Phase 2.5/2.6 — invitation-email operator setup] — 2026-04-24
+
+**ADR:** ADR-0044 Phase 2.5 (invitation email dispatch) + Phase 2.6 (HMAC-gated marketing endpoint)
+**Runbook:** `docs/ops/invitation-email-setup.md`
+
+### Vercel (Production env — customer `app` project)
+- `INVITATION_DISPATCH_SECRET` added (32-byte hex). Bearer token the DB trigger sends to `/api/internal/invitation-dispatch`.
+- `INVITES_MARKETING_SECRET` added (32-byte hex). HMAC shared secret for `/api/internal/invites`.
+- Pre-existing: `RESEND_API_KEY`, `RESEND_FROM`, `NEXT_PUBLIC_APP_URL`, `SUPABASE_CS_ORCHESTRATOR_DATABASE_URL`. No change.
+
+### Documentation
+- `docs/ops/invitation-email-setup.md` — `CS_ORCHESTRATOR_ROLE_KEY` row replaced with `SUPABASE_CS_ORCHESTRATOR_DATABASE_URL` (the post-ADR-1013 direct-Postgres equivalent). The pre-ADR-1013 HS256 JWT key is no longer in use on the Next.js runtime for any scoped-role call.
+
+### Pending (left for operator)
+- **Supabase Vault** — `cs_invitation_dispatch_url` (value: `https://consentshield-one.vercel.app/api/internal/invitation-dispatch`) + `cs_invitation_dispatch_secret` (must match the Vercel env var above). Idempotent SQL prepared at `/tmp/cs-vault-setup.sql` (not committed — contains the plaintext secret). Paste into Supabase SQL editor or run via `psql` against the hosted DB.
+- **Production redeploy** — Vercel CLI `redeploy` + `deploy --prod` are hitting a team-scope / root-directory config drift from this terminal. Options: (a) trigger a redeploy via the Vercel dashboard (Deployments → ⋯ → Redeploy), (b) push any new commit and let the git integration fire, (c) fix the Root Directory config so `vercel deploy --prod` from `app/` works.
+- **Smoke test** — once the redeploy is live, the two routes should return 401 (not 500) without auth headers:
+  ```
+  curl -i https://consentshield-one.vercel.app/api/internal/invitation-dispatch -X POST -d '{}' -H 'Content-Type: application/json'  # → 401
+  curl -i https://consentshield-one.vercel.app/api/internal/invites           -X POST -d '{}' -H 'Content-Type: application/json'  # → 401
+  ```
+  500 means an env var is still unset on the deployed build. Smoke tests §2.1 / §2.2 / §2.3 in the runbook require a signed-in user + real inbox; operator action.
+
+### Tested
+- [x] `bunx vercel@latest env ls production` — all six invite-flow env vars listed.
+- [ ] 401 smoke — blocked on redeploy (see pending).
+- [ ] End-to-end invite → email — blocked on Vault + redeploy.
+
+---
+
 ## [ADR-1026 — Abandoned; CS_WORKER_DSN wrangler secret deleted] — 2026-04-24
 
 **ADR:** ADR-1026 — Rewind ADR-1010 Phase 3 mechanism, drop Hyperdrive
