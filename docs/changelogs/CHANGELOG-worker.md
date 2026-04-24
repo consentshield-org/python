@@ -2,6 +2,30 @@
 
 Cloudflare Worker changes.
 
+## [ADR-1003 Sprint 1.2 — zero-storage bypass + bridge client] — 2026-04-24
+
+**ADR:** ADR-1003 — Processor Posture + Healthcare Category Unlock
+**Sprint:** Phase 1, Sprint 1.2
+
+### Added
+- `worker/src/zero-storage-bridge.ts` — `postToBridge(env, params)` + `isBridgeConfigured(env)`. Fetch-based Bearer-authed client for POSTing event payloads to the Next.js bridge route. Returns a structured `{sent, reason, status?, detail?}` result so the caller can distinguish `not_configured` / `network_error` / `non_2xx`. Detail strings clipped to 400 chars. Rule 16 intact (zero npm deps).
+
+### Changed
+- `worker/src/index.ts` — `Env` gains `ZERO_STORAGE_BRIDGE_URL` + `WORKER_BRIDGE_SECRET` (both optional). Miniflare / dev environments without the bridge configured fall through to the standard INSERT path for every org.
+- `worker/src/events.ts` — before the INSERT branch: `isBridgeConfigured(env)` guard → `isZeroStorage(env, org_id)` check (KV lookup from Sprint 1.1 helper). Zero-storage orgs schedule `postToBridge` via `ctx.waitUntil` (fire-and-forget — customer banner gets 202 immediately) and return 202. Bridge failures are logged via `logWorkerError`. Standard / Insulated paths untouched.
+- `worker/src/observations.ts` — same dual-branch pattern.
+
+### Rationale
+Customer banner latency budget is ~100 ms ideal. Inline R2 upload would add 200-500 ms. `ctx.waitUntil` keeps the Worker's hot path single-digit ms while letting the bridge do the heavier work asynchronously. On bridge failure, the `worker_errors` table surfaces the incident to the admin Pipeline Ops panel — observable without customer-visible impact.
+
+### Safety
+The Worker falls through to the INSERT path when the bridge isn't configured — **bias is "still writing" over "silently dropping."** A misconfigured zero-storage org remains visible via `admin.pipeline_stuck_buffers_snapshot` rather than becoming a silent data-loss path.
+
+### Tested
+- `app/tests/worker/zero-storage-bridge.test.ts` — 7 tests. `isBridgeConfigured` branches + `postToBridge` happy/not_configured/non_2xx/network_error/Bearer-auth header shape.
+- Full worker suite 41/41 PASS (+7 Sprint 1.2 +13 Sprint 1.1 +21 pre-existing; no regression).
+- `cd worker && bunx tsc --noEmit` clean.
+
 ## [ADR-1010 Sprint 4.2 — request-scoped postgres.js client + deferred cleanup] — 2026-04-24
 
 **ADR:** ADR-1010 — Cloudflare Worker scoped-role migration

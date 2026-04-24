@@ -2,6 +2,33 @@
 
 API route changes.
 
+## [ADR-1003 Sprint 1.2 — zero-storage event bridge] — 2026-04-24
+
+**ADR:** ADR-1003 — Processor Posture + Healthcare Category Unlock
+**Sprint:** Phase 1, Sprint 1.2
+
+### Added — route
+- `app/src/app/api/internal/zero-storage-event/route.ts` — bearer-authed POST on a new shared secret `WORKER_BRIDGE_SECRET`. Body: `{kind, org_id, event_fingerprint, timestamp, payload}`. Status mapping: uploaded=202, mode_not_zero_storage/no_export_config/unverified_export_config=409, decrypt_failed/endpoint_failed/upload_failed=502, bad input=400, bad bearer=401. Runs under `csOrchestrator()`.
+
+### Added — orchestrator
+- `app/src/lib/delivery/zero-storage-bridge.ts` — `processZeroStorageEvent(pg, req, deps?)`. Defensive stale-KV guard (re-reads `storage_mode` from the DB; refuses if not zero_storage). Reads `export_configurations`, decrypts credentials via `org-crypto`, canonicalises the payload via `canonical-json` (reusing ADR-1019 primitives), uploads to R2 via `sigv4.putObject` with metadata headers `cs-org-id`, `cs-kind`, `cs-event-fingerprint`, `cs-timestamp`. Object layout: `<path_prefix>zero_storage/<kind>/<YYYY>/<MM>/<DD>/<fingerprint>.json` — fingerprint is caller-supplied so Worker retries produce idempotent PUTs.
+
+### Design amendment — bridge architecture
+The proposal called for the Worker to invoke `process-consent-event` Edge Function directly. Amended to a Next.js bridge because (a) the Deno Edge Function can't use Node-native `sigv4.ts` / `org-crypto.ts` without porting, (b) ADR-1025's bridge pattern is the established convention for scheduled storage work. The canonical payload lands in customer R2 without any Edge Function detour.
+
+### Trust boundary
+`WORKER_BRIDGE_SECRET` is a **new** shared secret (Worker wrangler + Vercel env), distinct from `STORAGE_PROVISION_SECRET`. The two trust domains rotate independently. Worker→Next.js and pg_cron→Next.js stay separated.
+
+### Tested
+- `app/tests/delivery/zero-storage-bridge.test.ts` — 8 tests. stale-KV guard / no_export_config / unverified / endpoint_failed (customer_r2) / decrypt_failed / upload_failed (putObject throws) / happy path asserting correct object key + metadata headers + NO INSERT/UPDATE/DELETE in pg query log / unparseable timestamp falls back to now().
+- `bun run lint` + `bun run build` + worker `bunx tsc --noEmit` — all clean.
+
+### Operator follow-up
+- Generate `WORKER_BRIDGE_SECRET` (32-byte hex). `wrangler secret put WORKER_BRIDGE_SECRET` (Worker) + `vercel env add WORKER_BRIDGE_SECRET` (Vercel customer-app project).
+- `wrangler secret put ZERO_STORAGE_BRIDGE_URL=https://app.consentshield.in/api/internal/zero-storage-event`.
+- `bunx supabase db push` for the Sprint 1.2 migration.
+- Smoke: flip a test org → POST event → R2 bucket shows an object.
+
 ## [ADR-1003 Sprint 1.1 — storage-mode sync route + helpers] — 2026-04-24
 
 **ADR:** ADR-1003 — Processor Posture + Healthcare Category Unlock

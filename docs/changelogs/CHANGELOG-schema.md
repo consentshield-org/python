@@ -2,6 +2,22 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-1003 Sprint 1.2 — zero_storage mode-flip precondition] — 2026-04-24
+
+**ADR:** ADR-1003 — Processor Posture + Healthcare Category Unlock
+**Sprint:** Phase 1, Sprint 1.2
+**Migration:** `20260804000051_adr1003_s12_zero_storage_gate.sql`
+
+### Changed
+- `admin.set_organisation_storage_mode(p_org_id uuid, p_new_mode text, p_reason text)` — amends the Sprint 1.1 version with one additional guard: flipping to `zero_storage` from any other mode now requires a `public.export_configurations` row with `is_verified=true` for the org. Otherwise the RPC raises with `errcode = '42501'` ("cannot flip to zero_storage: org <id> has no verified export_configurations row. Provision customer storage first."). Rationale: the Sprint 1.2 bridge route uploads event payloads to the customer's R2 bucket; without a verified target, events would be silently dropped. The precondition makes the invariant structural.
+
+### Unchanged
+- All Sprint 1.1 plumbing (resolver RPC, KV snapshot, dispatch fn, trigger, cron) is untouched.
+
+### Tested
+- Static: same shape as the ADR-1025 / ADR-1019 admin RPC conventions.
+- Live verification: deferred — first real zero_storage flip exercises the path.
+
 ## [ADR-1003 Sprint 1.1 — storage_mode resolver + KV sync plumbing] — 2026-04-24
 
 **ADR:** ADR-1003 — Processor Posture + Healthcare Category Unlock

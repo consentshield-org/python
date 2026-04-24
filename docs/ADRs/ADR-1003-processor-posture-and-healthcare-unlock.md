@@ -77,17 +77,35 @@ Deliver processor-posture enforcement and the healthcare category unlock:
 
 **Estimated effort:** 2 days
 
+**Amendments (2026-04-24):**
+
+1. **Bridge architecture instead of direct Edge-Function invocation.** Worker branches for zero_storage orgs and POSTs the full canonical payload (via `ctx.waitUntil` for fire-and-forget latency) to a new Next.js bridge route `/api/internal/zero-storage-event`. The bridge uploads the payload to the customer's R2 bucket via `sigv4.putObject` (reusing the ADR-1019 primitive). Reasons: (a) the Edge Function (Deno) can't use `app/src/lib/storage/sigv4.ts` and `org-crypto.ts` without porting; (b) ADR-1025's bridge-style pattern is the established convention for scheduled storage work; (c) the Worker-to-Next.js trust boundary uses a fresh shared secret `WORKER_BRIDGE_SECRET` (separate from `STORAGE_PROVISION_SECRET` so the two trust domains rotate independently).
+2. **Mode-flip precondition added in `admin.set_organisation_storage_mode`.** Flipping an org to `zero_storage` now requires a verified `export_configurations` row (`is_verified=true`). Without that precondition the bridge has nowhere to PUT and events would be silently dropped.
+3. **Graceful fallback when the bridge is unconfigured.** The Worker checks `isBridgeConfigured(env)` before taking the zero_storage branch. When URL or secret is absent (Miniflare harness, misconfigured prod), the Worker falls through to the standard INSERT path — bias is "still writing" over "silently dropping."
+4. **Sprint 1.3 scope narrowed to `consent_artefact_index` TTL + invariant test.** Sprint 1.2 lands the full bypass path (Worker → bridge → R2). Sprint 1.3 adds the index writes (so `/v1/consent/verify` can answer for zero_storage orgs) plus the integration-level invariant test. Until 1.3 lands, verify-reads for zero_storage events return "not found" — a feature gap, not data loss.
+
 **Deliverables:**
-- [ ] `worker/src/events.ts`: for zero-storage orgs, bypass `consent_events` INSERT; enqueue into in-memory queue → direct `net.http_post` to `process-consent-event` Edge Function with full payload
-- [ ] `worker/src/observations.ts`: same pattern for tracker observations (zero-storage → in-memory → immediate dispatch)
-- [ ] Standard + Insulated paths unchanged
+- [x] Migration `20260804000051_adr1003_s12_zero_storage_gate.sql` — amends `admin.set_organisation_storage_mode` with the zero_storage precondition check.
+- [x] `app/src/lib/delivery/zero-storage-bridge.ts` — `processZeroStorageEvent(pg, req, deps?)` orchestrator. Reads `export_configurations`, decrypts credentials via `org-crypto`, canonicalises the payload, uploads to R2 via `sigv4.putObject` with metadata headers (`cs-org-id`, `cs-kind`, `cs-event-fingerprint`, `cs-timestamp`). Object layout: `<prefix>zero_storage/<kind>/<YYYY>/<MM>/<DD>/<fingerprint>.json`. Defensive KV-stale guard: re-reads `storage_mode` from the DB and refuses if the org isn't actually zero_storage.
+- [x] `app/src/app/api/internal/zero-storage-event/route.ts` — bearer-authed POST on `WORKER_BRIDGE_SECRET`. Validates `{kind, org_id, event_fingerprint, timestamp, payload}` body. Runs under `csOrchestrator()`.
+- [x] `worker/src/zero-storage-bridge.ts` — `postToBridge(env, params)` + `isBridgeConfigured(env)`. Fetch-based client; returns structured `{sent, reason, status?, detail?}` result. Rule 16 intact (zero npm deps).
+- [x] `worker/src/index.ts` — `Env` extended with `ZERO_STORAGE_BRIDGE_URL` + `WORKER_BRIDGE_SECRET` (both optional — Miniflare / dev fall through).
+- [x] `worker/src/events.ts` + `worker/src/observations.ts` — branch on `isZeroStorage(env, org_id)` before the INSERT path. `ctx.waitUntil(postToBridge(...))` schedules the POST without blocking the response. Bridge-send failures are logged via `logWorkerError` (bubbles to `worker_errors` table → admin dashboard).
 
 **Testing plan:**
-- [ ] Zero-storage org: 100 consent events posted to Worker → `SELECT count(*) FROM consent_events WHERE org_id = $1 = 0`
-- [ ] Same events processed by Edge Function → `consent_artefact_index` populated
-- [ ] Standard org: unchanged behaviour (regression)
+- [x] `app/tests/worker/zero-storage-bridge.test.ts` — 7 tests. `isBridgeConfigured` branches; `postToBridge` happy-path + not_configured + non_2xx + network_error.
+- [x] `app/tests/delivery/zero-storage-bridge.test.ts` — 8 tests. Stale-KV guard / no_export_config / unverified / endpoint_failed / decrypt_failed / upload_failed / happy path (verifies object key + metadata headers + NO INSERT/UPDATE/DELETE in the query log) / unparseable timestamp uses `now()`.
+- [x] Full worker suite 41/41 PASS (existing banner / events / observations / blocked-ip / role-guard + storage-mode + zero-storage-bridge).
+- [x] `bun run lint` + `bun run build` + `cd worker && bunx tsc --noEmit` — all clean.
+- [ ] Live verification: flip a test org to zero_storage (after provisioning R2 per Sprint 1.1 precondition) + seed `ZERO_STORAGE_BRIDGE_URL` in wrangler + operator posts an event against the live Worker. Pending operator.
 
-**Status:** `[ ] planned`
+**Operator follow-up (pre-activation):**
+- Generate + set `WORKER_BRIDGE_SECRET` — `wrangler secret put WORKER_BRIDGE_SECRET` + `vercel env add WORKER_BRIDGE_SECRET`.
+- Set `ZERO_STORAGE_BRIDGE_URL=https://app.consentshield.in/api/internal/zero-storage-event` — `wrangler secret put`.
+- `bunx supabase db push` from repo root to apply the migration.
+- Smoke: flip a test org → POST an event → R2 bucket shows an object at `<prefix>zero_storage/consent_event/<date>/<fp>.json`.
+
+**Status:** `[x] complete (code + unit tests); live verification pending operator runbook step.`
 
 #### Sprint 1.3: Edge Function branch paths + invariant test
 

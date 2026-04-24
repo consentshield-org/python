@@ -3,6 +3,8 @@ import { sha256, verifyHMAC, isTimestampValid } from './hmac'
 import { getPropertyConfig, getPreviousSigningSecret, validateOrigin, rejectOrigin } from './origin'
 import { logWorkerError } from './worker-errors'
 import type { Sql } from './db'
+import { isZeroStorage } from './storage-mode'
+import { isBridgeConfigured, postToBridge } from './zero-storage-bridge'
 
 interface ConsentEventPayload {
   org_id: string
@@ -170,10 +172,56 @@ export async function handleConsentEvent(
     origin_verified: originVerified,
   }
 
-  // Step 4: Write to consent_events buffer via cs_worker role.
-  // ADR-1010 Phase 3 Sprint 3.2 — Hyperdrive SQL when bound; REST
-  // fallback otherwise (Miniflare harness). cs_worker has INSERT-only
-  // column grants — no RETURNING, no SELECT on this table.
+  // Step 4: Write path depends on the org's storage_mode.
+  // ADR-1003 Sprint 1.2 — zero_storage orgs bypass consent_events
+  // INSERT entirely. The full canonical payload is POSTed to the
+  // Next.js bridge (ctx.waitUntil so the customer's banner gets 202
+  // immediately), which uploads to the customer's R2 bucket. Nothing
+  // lands in consent_events / consent_artefacts / delivery_buffer
+  // on our side. If the bridge isn't configured (Miniflare harness,
+  // misconfigured prod), we fall through to the INSERT path — safer
+  // than silently dropping.
+  if (isBridgeConfigured(env)) {
+    const zero = await isZeroStorage(env, body.org_id).catch(() => false)
+    if (zero) {
+      ctx.waitUntil(
+        postToBridge(env, {
+          kind: 'consent_event',
+          org_id: body.org_id,
+          event_fingerprint: event.session_fingerprint,
+          timestamp: new Date().toISOString(),
+          payload: {
+            property_id: event.property_id,
+            banner_id: event.banner_id,
+            banner_version: event.banner_version,
+            session_fingerprint: event.session_fingerprint,
+            event_type: event.event_type,
+            purposes_accepted: event.purposes_accepted,
+            purposes_rejected: event.purposes_rejected,
+            ip_truncated: event.ip_truncated,
+            user_agent_hash: event.user_agent_hash,
+            origin_verified: event.origin_verified,
+          },
+        }).then(async (result) => {
+          if (!result.sent) {
+            await logWorkerError(env, sql, {
+              org_id: body.org_id,
+              property_id: body.property_id,
+              endpoint: '/v1/events',
+              status_code: result.status ?? 0,
+              upstream_error:
+                `zero_storage_bridge_${result.reason}: ` + (result.detail ?? ''),
+            })
+          }
+        }),
+      )
+      return new Response(null, { status: 202, headers: CORS_HEADERS })
+    }
+  }
+
+  // Standard / Insulated path: INSERT into consent_events via
+  // cs_worker role. Hyperdrive SQL when bound; REST fallback otherwise
+  // (Miniflare harness).
   const writeResult = sql
     ? await insertConsentEventSql(event, sql)
     : await insertConsentEventRest(event, env)

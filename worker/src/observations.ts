@@ -3,6 +3,8 @@ import { sha256, verifyHMAC, isTimestampValid } from './hmac'
 import { getPropertyConfig, getPreviousSigningSecret, validateOrigin, rejectOrigin } from './origin'
 import { logWorkerError } from './worker-errors'
 import type { Sql } from './db'
+import { isZeroStorage } from './storage-mode'
+import { isBridgeConfigured, postToBridge } from './zero-storage-bridge'
 
 interface ObservationPayload {
   org_id: string
@@ -140,6 +142,44 @@ export async function handleObservation(
     violations: body.violations ?? [],
     page_url_hash: pageUrlHash,
     origin_verified: originVerified,
+  }
+
+  // ADR-1003 Sprint 1.2 — zero_storage branch: bypass the INSERT and
+  // post to the Next.js bridge. Falls through to INSERT when the
+  // bridge isn't configured, to preserve correctness in dev.
+  if (isBridgeConfigured(env)) {
+    const zero = await isZeroStorage(env, body.org_id).catch(() => false)
+    if (zero) {
+      ctx.waitUntil(
+        postToBridge(env, {
+          kind: 'tracker_observation',
+          org_id: body.org_id,
+          event_fingerprint: observation.session_fingerprint,
+          timestamp: new Date().toISOString(),
+          payload: {
+            property_id: observation.property_id,
+            session_fingerprint: observation.session_fingerprint,
+            consent_state: observation.consent_state,
+            trackers_detected: observation.trackers_detected,
+            violations: observation.violations,
+            page_url_hash: observation.page_url_hash,
+            origin_verified: observation.origin_verified,
+          },
+        }).then(async (result) => {
+          if (!result.sent) {
+            await logWorkerError(env, sql, {
+              org_id: body.org_id,
+              property_id: body.property_id,
+              endpoint: '/v1/observations',
+              status_code: result.status ?? 0,
+              upstream_error:
+                `zero_storage_bridge_${result.reason}: ` + (result.detail ?? ''),
+            })
+          }
+        }),
+      )
+      return new Response(null, { status: 202, headers: CORS_HEADERS })
+    }
   }
 
   // ADR-1010 Phase 3 Sprint 3.2 — Hyperdrive-backed INSERT; REST

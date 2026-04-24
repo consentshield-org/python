@@ -34,6 +34,14 @@ export interface Env {
   // direct-Postgres reads + writes. Present in prod + future; absent in
   // the Miniflare harness where the legacy REST fallback runs.
   HYPERDRIVE?: HyperdriveBinding
+  // ADR-1003 Sprint 1.2 — zero-storage bridge. Worker POSTs events for
+  // zero_storage orgs to <ZERO_STORAGE_BRIDGE_URL> with WORKER_BRIDGE_SECRET
+  // as the bearer. Both are optional in the Env shape: the Miniflare
+  // harness and dev environments without the bridge configured fall
+  // through to the standard INSERT path for every org. Production
+  // sets both via wrangler secret put.
+  ZERO_STORAGE_BRIDGE_URL?: string
+  WORKER_BRIDGE_SECRET?: string
 }
 
 export default {
