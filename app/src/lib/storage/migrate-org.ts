@@ -29,9 +29,13 @@
 //
 // Rule 11: secrets are held in narrow local variables; never logged.
 
-import { createHmac } from 'node:crypto'
 import type postgres from 'postgres'
 import { r2Endpoint } from './cf-provision'
+import {
+  decryptCredentials,
+  deriveOrgKey,
+  type StorageCredentials,
+} from './org-crypto'
 import { presignGet, putObject, type SigV4Options } from './sigv4'
 import { runVerificationProbe } from './verify'
 
@@ -92,10 +96,9 @@ interface MigrationRow {
   last_activity_at: Date
 }
 
-interface Credentials {
-  access_key_id: string
-  secret_access_key: string
-}
+// Alias for clarity — migrate-org treats credentials as {access_key_id,
+// secret_access_key}; token_id is optional on the shared type.
+type Credentials = StorageCredentials
 
 export async function processMigrationChunk(
   pg: Pg,
@@ -396,41 +399,11 @@ async function markFailed(
 }
 
 // ═══════════════════════════════════════════════════════════
-// Credential derivation + decryption (shared with provision-org.ts)
+// Source-side credential loader (migrate-org specific; decrypts the
+// write_credential_enc of the source export_configurations row so the
+// orchestrator can GET from the old bucket during copy_existing).
+// deriveOrgKey + decryptCredentials come from ./org-crypto.
 // ═══════════════════════════════════════════════════════════
-
-async function deriveOrgKey(pg: Pg, orgId: string): Promise<string> {
-  const masterKey = process.env.MASTER_ENCRYPTION_KEY
-  if (!masterKey) throw new Error('MASTER_ENCRYPTION_KEY must be set')
-  const rows = await pg<{ encryption_salt: string }[]>`
-    select encryption_salt from public.organisations
-     where id = ${orgId} limit 1
-  `
-  if (!rows.length || !rows[0].encryption_salt) {
-    throw new Error(`Org ${orgId} missing encryption_salt`)
-  }
-  return createHmac('sha256', masterKey)
-    .update(`${orgId}${rows[0].encryption_salt}`)
-    .digest('hex')
-}
-
-async function decryptCredentials(
-  pg: Pg,
-  encrypted: Buffer,
-  derivedKey: string,
-): Promise<Credentials> {
-  const rows = await pg<{ decrypt_secret: string }[]>`
-    select public.decrypt_secret(${encrypted}, ${derivedKey})
-  `
-  if (!rows.length || !rows[0].decrypt_secret) {
-    throw new Error('decrypt_secret returned empty')
-  }
-  const parsed = JSON.parse(rows[0].decrypt_secret) as Credentials
-  if (!parsed.access_key_id || !parsed.secret_access_key) {
-    throw new Error('decrypted credentials malformed')
-  }
-  return parsed
-}
 
 async function loadSourceCreds(
   pg: Pg,
@@ -462,7 +435,7 @@ async function listObjectsV2(
   startAfter: string | null,
   fetchFn: typeof fetch,
 ): Promise<ListPage> {
-  const { createHash } = await import('node:crypto')
+  const { createHash, createHmac } = await import('node:crypto')
   const { deriveSigningKey, formatAmzDate, sha256Hex } = await import('./sigv4')
   const host = new URL(endpoint).host
   const amzDate = formatAmzDate(new Date())

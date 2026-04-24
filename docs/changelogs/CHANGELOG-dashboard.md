@@ -2,6 +2,31 @@
 
 Next.js UI changes.
 
+## [ADR-1025 close-out — usage display on storage panel + org-crypto consolidation] — 2026-04-24
+
+**ADR:** ADR-1025 — Customer storage auto-provisioning
+**Sprint:** Close-out pass (post-Sprint 4.2)
+
+### Changed
+- `app/src/app/(dashboard)/dashboard/_components/storage-panel.tsx` — added the customer-facing usage display flagged as a follow-up during Sprint 4.2. Panel now parallel-fetches `storage_usage_snapshots` alongside `export_configurations` and renders a usage bar with:
+  - Current bytes stored (payload + metadata) vs plan ceiling, formatted in B / KiB / MiB / GiB / TiB.
+  - Three-colour progress bar: green <80%, amber ≥80%, red if over ceiling.
+  - Object count + snapshot date in a secondary line.
+  - Over-ceiling explanatory copy ("Over plan ceiling — contact support...") for rows flagged by the generated `over_ceiling` column.
+  - When no snapshot exists yet (pre-first-monthly-cron), shows "First snapshot arrives on the 1st of each month" rather than leaving the field blank.
+  - Enterprise plan (null ceiling) shows "(no ceiling)" alongside raw bytes.
+- `app/src/lib/storage/provision-org.ts` + `app/src/lib/storage/migrate-org.ts` — consolidated `deriveOrgKey` / `decryptCredentials` / `normaliseBytea` into the shared `org-crypto.ts` helper. Both files now import from it instead of carrying inline copies. Migration orchestrator keeps its thin `loadSourceCreds` wrapper (migrate-specific — reads the source config row first, then decrypts). `createHmac` is no longer a top-level import anywhere that reuses org-crypto; the lingering use inside `migrate-org.ts`'s hand-rolled sigv4 ListObjectsV2 block is a dynamic import alongside the existing `createHash` pull.
+
+### Why
+Sprint 2.2's storage panel was a visibility surface before any usage data existed. Sprint 4.2 shipped the snapshot pipeline (table + monthly cron + admin chargeback panel) but stopped short of the customer-facing read path — the data was visible to operators only. This close-out finishes the loop: customers see their own storage usage on the dashboard, ceiling warnings fire without requiring an admin touchpoint, and the first snapshot (after the 1st of next month) will render automatically with zero additional UI work.
+
+The org-crypto consolidation is a hygiene win that was deliberately deferred out of Sprint 4.1 (zero-risk principle — don't touch passing code when the new modules can use the shared helper directly). Landing it now while the ADR-1025 workstream is hot and all 115 tests are green is the lowest-risk time to pay down the duplication.
+
+### Tested
+- `bunx vitest run tests/storage/` — 115/115 PASS (zero behaviour change from consolidation).
+- `bun run lint` — 248 files, 0 violations.
+- `bun run build` — Next.js 16 clean.
+
 ## [ADR-1025 Sprint 2.2 — wizard Step-7 storage banner + dashboard storage panel] — 2026-04-24
 
 **ADR:** ADR-1025 — Customer storage auto-provisioning

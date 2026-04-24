@@ -337,10 +337,13 @@ Run on every provisioning, every credential rotation, and nightly-verify cron (r
 
 **Status:** `[x] complete 2026-04-24 — migration + orchestrator + route + admin chargeback widget + monthly cron + admin RPC. 7 new unit tests. Vault seeded. Both apps build clean. Cost estimates in the widget use CF R2 standard pricing; Class A/B ops tracking deferred until the /analytics endpoint is wired (separate follow-up).`
 
-**Follow-ups captured but deferred:**
-- **Class A/B operations count + cost.** The `/usage` endpoint doesn't return operation counts; those come from CF's GraphQL analytics API. Add when there's a real customer whose write-heavy workload warrants distinct ops-cost tracking — for storage-dominated workloads (ConsentShield's usage pattern: compliance-record writes + occasional audit reads), storage dominates by ≥ 95% of the monthly bill.
-- **Razorpay line-item generation** for Pro/Enterprise overages. Manual chargeback for the first customers; automated invoice line items land when ADR-0050 (billing rewrite) is further along.
-- **Customer-facing usage display** on the dashboard storage panel. Requires a customer-facing read path on `storage_usage_snapshots` — the org_select RLS policy is already in place. Deferred to a small UI-only sprint after the first monthly snapshot exists.
+**Follow-ups — handled in the ADR-1025 close-out pass (2026-04-24):**
+- [x] **Customer-facing usage display** on the dashboard storage panel. Extended `storage-panel.tsx` to read the latest snapshot via the `org_select` RLS policy + render a usage bar with ceiling + over-ceiling warning. When no snapshot exists yet (pre-first-monthly-cron), the panel shows "First snapshot arrives on the 1st of each month" rather than leaving the field blank.
+- [x] **`deriveOrgKey` / `decryptCredentials` / `normaliseBytea` consolidation.** provision-org.ts + migrate-org.ts now import from the shared `org-crypto.ts` helper instead of carrying inline duplicates. All 115 storage tests still PASS with zero behaviour change — the helper and the inline code were byte-compatible by construction.
+
+**Follow-ups — out of scope for ADR-1025 (documented handoff to other ADRs):**
+- **Class A/B operations count + cost tracking.** The `/usage` endpoint returns storage metrics only; ops counts come from CF's GraphQL analytics API (different auth, different rate limits, different response shape). Handoff: new ADR-1027 "Platform cost observability" (tentative number) that tracks Workers + Functions + R2 ops together. For ConsentShield's workload — compliance-record writes + occasional audit reads — storage dominates ≥ 95% of the monthly bill, so the storage-only chargeback signal already captures the load-bearing portion.
+- **Razorpay line-item generation for Pro/Enterprise overages.** Requires invoice schema + line-item shape + tax handling from ADR-0050 (billing rewrite). Handoff: integrate in an ADR-0050 sprint once that ADR has shipped its additive line-items path. Until then, operators use the admin chargeback panel (`/admin/storage-usage`) to identify over-ceiling orgs and manually draft Razorpay invoices for overages. `storage_usage_snapshots.over_ceiling` is indexed so the query is cheap.
 
 ---
 

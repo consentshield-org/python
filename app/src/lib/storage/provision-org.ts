@@ -23,7 +23,6 @@
 // Never logged. The token_id is preserved in the encrypted JSON so a
 // future rotation / revocation path can find it.
 
-import { createHmac } from 'node:crypto'
 import type postgres from 'postgres'
 import {
   CfProvisionError,
@@ -33,6 +32,10 @@ import {
   r2Endpoint,
   revokeBucketToken,
 } from './cf-provision'
+import {
+  deriveOrgKey,
+  normaliseBytea,
+} from './org-crypto'
 import { runVerificationProbe, type ProbeResult } from './verify'
 
 const TOKEN_PROPAGATION_MS = 5000
@@ -168,7 +171,7 @@ export async function provisionStorageForOrg(
   if (!encryptedRows.length) {
     throw new Error('encrypt_secret returned no rows')
   }
-  const encrypted = normalizeBytea(encryptedRows[0].encrypt_secret)
+  const encrypted = normaliseBytea(encryptedRows[0].encrypt_secret)
 
   // Step 7 — UPSERT export_configurations.
   const upserted = await pg<{ id: string }[]>`
@@ -195,40 +198,6 @@ export async function provisionStorageForOrg(
     bucketName,
     probe,
   }
-}
-
-/**
- * Compute org_key = HMAC-SHA256(MASTER_ENCRYPTION_KEY, orgId || salt).
- * Matches @consentshield/encryption's deriveOrgKey — kept in sync so
- * ciphertext written here round-trips through decryptForOrg on the read
- * path.
- */
-async function deriveOrgKey(pg: Pg, orgId: string): Promise<string> {
-  const masterKey = process.env.MASTER_ENCRYPTION_KEY
-  if (!masterKey) {
-    throw new Error('MASTER_ENCRYPTION_KEY must be set')
-  }
-  const rows = await pg<{ encryption_salt: string }[]>`
-    select encryption_salt
-      from public.organisations
-     where id = ${orgId}
-     limit 1
-  `
-  if (!rows.length || !rows[0].encryption_salt) {
-    throw new Error(`Org ${orgId} not found or missing encryption_salt`)
-  }
-  return createHmac('sha256', masterKey)
-    .update(`${orgId}${rows[0].encryption_salt}`)
-    .digest('hex')
-}
-
-/** pg returns bytea as either a `\x...` hex string or a Buffer, depending
- *  on driver settings. Normalise to Buffer so the subsequent INSERT
- *  passes a bytea-compatible value. */
-function normalizeBytea(v: Buffer | string): Buffer {
-  if (Buffer.isBuffer(v)) return v
-  const hex = v.startsWith('\\x') ? v.slice(2) : v
-  return Buffer.from(hex, 'hex')
 }
 
 // Re-export for callers that want the error discriminator at a single
