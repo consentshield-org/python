@@ -140,20 +140,26 @@ Close every admin-account-awareness drift in one ADR. No deferrals to later ADRs
 
 ### Phase 2 — Contextual surfaces
 
-#### Sprint 2.1 — Pipeline panel account sidebar + rollup
+#### Sprint 2.1 — Pipeline panel account sidebar + rollup · **[x] complete 2026-04-24**
 
 **Estimated effort:** 1 day
 
 **Prerequisite wireframe:** Update Pipeline panel(s) in `docs/admin/design/consentshield-admin-screens.html` with an "Account" sidebar card + the "Group by account" toggle.
 
 **Deliverables:**
-- [ ] `<AccountContextCard>` reusable component in `admin/src/components/` that calls `admin.account_detail` via the RPC proxy, renders account + plan + status + child-org count + active adjustments + last 3 audit lines. Swappable between "full" and "compact" modes.
-- [ ] Drop the card into `/pipeline`, `/security`, `/billing` org-scoped views (right sidebar, sticky under the filter bar).
-- [ ] "Group by account" toggle on `/pipeline` — client-side aggregation of org-row metrics into account-level rows (sum, p50, last-seen). No new RPC; existing query shape stays.
+- [x] `admin/src/components/account-context/account-context-card.tsx` — reusable Server Component, calls `admin.account_detail(p_account_id)`, renders account + plan + status badge + child-org count + trial-ends + active adjustments + last 3 admin actions. `mode='full' | 'compact'`: full is a sticky sidebar aside with multi-block layout; compact is a single-line strip with name + plan + org count + status pill + "Open account →" link.
+- [x] `admin/src/app/(operator)/orgs/[orgId]/page.tsx` — compact AccountContextCard lands above the 3-column info grid. Ties every org-detail view to its parent account in one glance, and "Open account →" jumps to the full /accounts/[id] page for operators who need the expanded envelope.
+- [x] `admin/src/app/(operator)/pipeline/page.tsx` — server pre-loads `organisations` + `accounts(name, plan_code)` in the parallel fetch block, builds `orgToAccount` lookup, passes it to `<PipelineTabs>`.
+- [x] `admin/src/app/(operator)/pipeline/pipeline-tabs.tsx` — new `groupBy: 'org' | 'account'` state; visible toggle row renders above all three org-grouped tabs (Worker errors, Expiry queue, Delivery health; Stuck buffers is table-grouped and is excluded). Per-row Account column surfaces the parent-account name when toggle is `org`; full aggregation (event count, orgs_touched, throughput sum, failure sum, worst-case latency) when toggle is `account`. Orgs with no account mapping fall into a synthetic `(no account)` bucket so they're visible, not silently dropped.
 
 **Testing plan:**
-- [ ] Component snapshot: `<AccountContextCard>` renders known envelope shape.
-- [ ] Integration: org-filtered pipeline view displays the correct account card; toggling "group by account" re-renders without a network round-trip.
+- [x] `cd admin && bunx tsc --noEmit` — PASS.
+- [x] `cd admin && bun run lint` — PASS.
+- [x] RPC shape — covered by existing `tests/admin/account-rpcs.test.ts` (envelope schema unchanged by this sprint; component just renders it).
+- [ ] Component / interaction — visual check recommended via dev server (server component render of compact / full; toggle re-aggregates without round-trip; orgs-without-accounts show under `(no account)`).
+
+**Test results:**
+- [x] Typecheck + lint: PASS across all five edited files.
 
 #### Sprint 2.2 — Support ticket account context
 

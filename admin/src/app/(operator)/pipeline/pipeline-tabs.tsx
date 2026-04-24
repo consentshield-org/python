@@ -1,9 +1,18 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 // ADR-0033 Sprint 1.2 — Pipeline tabs (client).
+// ADR-1027 Sprint 2.1 — per-row account enrichment + group-by-account toggle.
+
+export interface OrgAccountRow {
+  account_id: string
+  account_name: string
+  plan_code: string
+}
+
+export type OrgAccountLookup = Record<string, OrgAccountRow>
 
 export interface PipelineData {
   workerErrors: Array<{
@@ -42,10 +51,18 @@ export interface PipelineData {
 }
 
 type TabKey = 'worker' | 'buffers' | 'expiry' | 'delivery'
+type GroupBy = 'org' | 'account'
 
-export function PipelineTabs({ data }: { data: PipelineData }) {
+export function PipelineTabs({
+  data,
+  orgToAccount,
+}: {
+  data: PipelineData
+  orgToAccount: OrgAccountLookup
+}) {
   const router = useRouter()
   const [tab, setTab] = useState<TabKey>('worker')
+  const [groupBy, setGroupBy] = useState<GroupBy>('org')
 
   useEffect(() => {
     const id = setInterval(() => router.refresh(), 30_000)
@@ -101,10 +118,49 @@ export function PipelineTabs({ data }: { data: PipelineData }) {
         ))}
       </div>
 
-      {tab === 'worker' ? <WorkerErrorsTab rows={data.workerErrors} /> : null}
+      {/* ADR-1027 Sprint 2.1 — group-by toggle. Affects tabs with org-grouped
+          rows (Worker errors, DEPA expiry queue, Delivery health). Stuck
+          buffers is table-grouped and is unaffected. */}
+      {tab !== 'buffers' ? (
+        <div className="flex items-center justify-end gap-2 text-xs text-text-3">
+          <span>Group by:</span>
+          <div className="flex rounded-md border border-[color:var(--border)] bg-white p-0.5 shadow-sm">
+            <button
+              type="button"
+              onClick={() => setGroupBy('org')}
+              className={
+                groupBy === 'org'
+                  ? 'rounded bg-teal px-2.5 py-1 text-[11px] font-medium text-white'
+                  : 'rounded px-2.5 py-1 text-[11px] text-text-2 hover:bg-bg'
+              }
+            >
+              Orgs
+            </button>
+            <button
+              type="button"
+              onClick={() => setGroupBy('account')}
+              className={
+                groupBy === 'account'
+                  ? 'rounded bg-teal px-2.5 py-1 text-[11px] font-medium text-white'
+                  : 'rounded px-2.5 py-1 text-[11px] text-text-2 hover:bg-bg'
+              }
+            >
+              Accounts
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {tab === 'worker' ? (
+        <WorkerErrorsTab rows={data.workerErrors} groupBy={groupBy} orgToAccount={orgToAccount} />
+      ) : null}
       {tab === 'buffers' ? <StuckBuffersTab rows={data.stuckBuffers} /> : null}
-      {tab === 'expiry' ? <ExpiryQueueTab rows={data.expiryQueue} /> : null}
-      {tab === 'delivery' ? <DeliveryHealthTab rows={data.deliveryHealth} /> : null}
+      {tab === 'expiry' ? (
+        <ExpiryQueueTab rows={data.expiryQueue} groupBy={groupBy} orgToAccount={orgToAccount} />
+      ) : null}
+      {tab === 'delivery' ? (
+        <DeliveryHealthTab rows={data.deliveryHealth} groupBy={groupBy} orgToAccount={orgToAccount} />
+      ) : null}
     </div>
   )
 }
@@ -129,7 +185,15 @@ function Card({
   )
 }
 
-function WorkerErrorsTab({ rows }: { rows: PipelineData['workerErrors'] }) {
+function WorkerErrorsTab({
+  rows,
+  groupBy,
+  orgToAccount,
+}: {
+  rows: PipelineData['workerErrors']
+  groupBy: GroupBy
+  orgToAccount: OrgAccountLookup
+}) {
   const pill =
     rows.length === 0 ? (
       <Pill tone="green">healthy</Pill>
@@ -138,6 +202,49 @@ function WorkerErrorsTab({ rows }: { rows: PipelineData['workerErrors'] }) {
     ) : (
       <Pill tone="red">{rows.length} events</Pill>
     )
+
+  // ADR-1027 Sprint 2.1 — when groupBy === 'account', aggregate events
+  // into per-account rows. Orgs with no account mapping fall into a
+  // synthetic '(no account)' bucket so they're visible, not dropped.
+  const accountRollup = useMemo(() => {
+    if (groupBy !== 'account') return null
+    const buckets = new Map<
+      string,
+      {
+        account_id: string
+        account_name: string
+        plan_code: string | null
+        event_count: number
+        endpoints: Set<string>
+        orgs_touched: Set<string>
+        most_recent: string
+      }
+    >()
+    for (const r of rows) {
+      const a = orgToAccount[r.org_id]
+      const key = a?.account_id ?? 'unmapped'
+      const b = buckets.get(key) ?? {
+        account_id: a?.account_id ?? '',
+        account_name: a?.account_name ?? '(no account)',
+        plan_code: a?.plan_code ?? null,
+        event_count: 0,
+        endpoints: new Set<string>(),
+        orgs_touched: new Set<string>(),
+        most_recent: r.occurred_at,
+      }
+      b.event_count += 1
+      b.endpoints.add(r.endpoint)
+      b.orgs_touched.add(r.org_id)
+      if (new Date(r.occurred_at) > new Date(b.most_recent)) {
+        b.most_recent = r.occurred_at
+      }
+      buckets.set(key, b)
+    }
+    return Array.from(buckets.values()).sort(
+      (x, y) => y.event_count - x.event_count,
+    )
+  }, [rows, groupBy, orgToAccount])
+
   return (
     <Card title="worker_errors — last 24h" pill={pill}>
       {rows.length === 0 ? (
@@ -147,6 +254,43 @@ function WorkerErrorsTab({ rows }: { rows: PipelineData['workerErrors'] }) {
           <span className="font-mono">/pipeline/delivery-health</span> for
           throughput.
         </p>
+      ) : groupBy === 'account' && accountRollup ? (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-bg text-left text-xs uppercase tracking-wider text-text-3">
+              <tr>
+                <th className="px-4 py-2">Account</th>
+                <th className="px-4 py-2">Plan</th>
+                <th className="px-4 py-2">Events</th>
+                <th className="px-4 py-2">Orgs touched</th>
+                <th className="px-4 py-2">Endpoints</th>
+                <th className="px-4 py-2">Most recent</th>
+              </tr>
+            </thead>
+            <tbody>
+              {accountRollup.map((b) => (
+                <tr
+                  key={b.account_id || 'unmapped'}
+                  className="border-t border-[color:var(--border)]"
+                >
+                  <td className="px-4 py-2 text-xs">
+                    <strong>{b.account_name}</strong>
+                  </td>
+                  <td className="px-4 py-2 text-xs">{b.plan_code ?? '—'}</td>
+                  <td className="px-4 py-2 text-xs">{b.event_count}</td>
+                  <td className="px-4 py-2 text-xs">{b.orgs_touched.size}</td>
+                  <td className="px-4 py-2 font-mono text-[11px] text-text-2">
+                    {Array.from(b.endpoints).slice(0, 2).join(', ')}
+                    {b.endpoints.size > 2 ? ` +${b.endpoints.size - 2}` : ''}
+                  </td>
+                  <td className="px-4 py-2 font-mono text-[11px] text-text-3">
+                    {relative(b.most_recent)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -154,7 +298,7 @@ function WorkerErrorsTab({ rows }: { rows: PipelineData['workerErrors'] }) {
               <tr>
                 <th className="px-4 py-2">When</th>
                 <th className="px-4 py-2">Endpoint</th>
-                <th className="px-4 py-2">Org</th>
+                <th className="px-4 py-2">Account · Org</th>
                 <th className="px-4 py-2">Status</th>
                 <th className="px-4 py-2">Upstream error</th>
               </tr>
@@ -166,7 +310,12 @@ function WorkerErrorsTab({ rows }: { rows: PipelineData['workerErrors'] }) {
                     {relative(r.occurred_at)}
                   </td>
                   <td className="px-4 py-2 font-mono text-[11px]">{r.endpoint}</td>
-                  <td className="px-4 py-2 text-xs">{r.org_name}</td>
+                  <td className="px-4 py-2 text-xs">
+                    <div>
+                      {orgToAccount[r.org_id]?.account_name ?? '—'}
+                    </div>
+                    <div className="text-[11px] text-text-3">{r.org_name}</div>
+                  </td>
                   <td className="px-4 py-2 text-xs">{r.status_code ?? '—'}</td>
                   <td className="px-4 py-2 text-[11px] text-text-2">
                     {r.upstream_error?.slice(0, 120) ?? '—'}
@@ -239,7 +388,15 @@ function StuckBuffersTab({ rows }: { rows: PipelineData['stuckBuffers'] }) {
   )
 }
 
-function ExpiryQueueTab({ rows }: { rows: PipelineData['expiryQueue'] }) {
+function ExpiryQueueTab({
+  rows,
+  groupBy,
+  orgToAccount,
+}: {
+  rows: PipelineData['expiryQueue']
+  groupBy: GroupBy
+  orgToAccount: OrgAccountLookup
+}) {
   const expiredTotal = rows.reduce(
     (a, r) => a + (r.expired_awaiting_enforce ?? 0),
     0,
@@ -250,18 +407,100 @@ function ExpiryQueueTab({ rows }: { rows: PipelineData['expiryQueue'] }) {
     ) : (
       <Pill tone="amber">{expiredTotal} expired rows</Pill>
     )
+
+  const accountRollup = useMemo(() => {
+    if (groupBy !== 'account') return null
+    const buckets = new Map<
+      string,
+      {
+        account_id: string
+        account_name: string
+        plan_code: string | null
+        orgs_touched: number
+        expiring_lt_7d: number
+        expiring_lt_30d: number
+        expired_awaiting_enforce: number
+        most_recent_alert: string | null
+      }
+    >()
+    for (const r of rows) {
+      const a = orgToAccount[r.org_id]
+      const key = a?.account_id ?? 'unmapped'
+      const b = buckets.get(key) ?? {
+        account_id: a?.account_id ?? '',
+        account_name: a?.account_name ?? '(no account)',
+        plan_code: a?.plan_code ?? null,
+        orgs_touched: 0,
+        expiring_lt_7d: 0,
+        expiring_lt_30d: 0,
+        expired_awaiting_enforce: 0,
+        most_recent_alert: null as string | null,
+      }
+      b.orgs_touched += 1
+      b.expiring_lt_7d += r.expiring_lt_7d ?? 0
+      b.expiring_lt_30d += r.expiring_lt_30d ?? 0
+      b.expired_awaiting_enforce += r.expired_awaiting_enforce ?? 0
+      if (r.last_expiry_alert_at) {
+        if (
+          !b.most_recent_alert ||
+          new Date(r.last_expiry_alert_at) > new Date(b.most_recent_alert)
+        ) {
+          b.most_recent_alert = r.last_expiry_alert_at
+        }
+      }
+      buckets.set(key, b)
+    }
+    return Array.from(buckets.values()).sort(
+      (x, y) => y.expired_awaiting_enforce - x.expired_awaiting_enforce,
+    )
+  }, [rows, groupBy, orgToAccount])
+
   return (
     <Card title="DEPA artefact expiry pipeline" pill={pill}>
       {rows.length === 0 ? (
         <p className="p-8 text-center text-sm text-text-3">
           No orgs with artefacts expiring in the next 30 days.
         </p>
+      ) : groupBy === 'account' && accountRollup ? (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-bg text-left text-xs uppercase tracking-wider text-text-3">
+              <tr>
+                <th className="px-4 py-2">Account</th>
+                <th className="px-4 py-2">Plan</th>
+                <th className="px-4 py-2">Orgs</th>
+                <th className="px-4 py-2">&lt; 7 days</th>
+                <th className="px-4 py-2">&lt; 30 days</th>
+                <th className="px-4 py-2">Expired awaiting</th>
+                <th className="px-4 py-2">Last alert</th>
+              </tr>
+            </thead>
+            <tbody>
+              {accountRollup.map((b) => (
+                <tr
+                  key={b.account_id || 'unmapped'}
+                  className="border-t border-[color:var(--border)]"
+                >
+                  <td className="px-4 py-2"><strong>{b.account_name}</strong></td>
+                  <td className="px-4 py-2 text-xs">{b.plan_code ?? '—'}</td>
+                  <td className="px-4 py-2 text-xs">{b.orgs_touched}</td>
+                  <td className="px-4 py-2 text-xs">{b.expiring_lt_7d}</td>
+                  <td className="px-4 py-2 text-xs">{b.expiring_lt_30d}</td>
+                  <td className="px-4 py-2 text-xs">{b.expired_awaiting_enforce}</td>
+                  <td className="px-4 py-2 text-[11px] text-text-3">
+                    {b.most_recent_alert ? relative(b.most_recent_alert) : '—'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-bg text-left text-xs uppercase tracking-wider text-text-3">
               <tr>
-                <th className="px-4 py-2">Org</th>
+                <th className="px-4 py-2">Account · Org</th>
                 <th className="px-4 py-2">&lt; 7 days</th>
                 <th className="px-4 py-2">&lt; 30 days</th>
                 <th className="px-4 py-2">Expired awaiting enforce</th>
@@ -274,11 +513,12 @@ function ExpiryQueueTab({ rows }: { rows: PipelineData['expiryQueue'] }) {
                   key={r.org_id}
                   className="border-t border-[color:var(--border)]"
                 >
-                  <td className="px-4 py-2">
-                    <strong>{r.org_name}</strong>
-                    <span className="ml-2 font-mono text-[11px] text-text-3">
-                      {r.org_id.slice(0, 8)}
-                    </span>
+                  <td className="px-4 py-2 text-xs">
+                    <div>{orgToAccount[r.org_id]?.account_name ?? '—'}</div>
+                    <div className="text-[11px] text-text-3">
+                      {r.org_name} ·{' '}
+                      <span className="font-mono">{r.org_id.slice(0, 8)}</span>
+                    </div>
                   </td>
                   <td className="px-4 py-2 text-xs">{r.expiring_lt_7d}</td>
                   <td className="px-4 py-2 text-xs">{r.expiring_lt_30d}</td>
@@ -302,11 +542,69 @@ function ExpiryQueueTab({ rows }: { rows: PipelineData['expiryQueue'] }) {
 
 function DeliveryHealthTab({
   rows,
+  groupBy,
+  orgToAccount,
 }: {
   rows: PipelineData['deliveryHealth']
+  groupBy: GroupBy
+  orgToAccount: OrgAccountLookup
 }) {
   const totalThroughput = rows.reduce((a, r) => a + (r.throughput ?? 0), 0)
   const totalFailures = rows.reduce((a, r) => a + (r.failure_count ?? 0), 0)
+
+  const accountRollup = useMemo(() => {
+    if (groupBy !== 'account') return null
+    const buckets = new Map<
+      string,
+      {
+        account_id: string
+        account_name: string
+        plan_code: string | null
+        orgs_touched: number
+        throughput: number
+        failure_count: number
+        // Latency is a median — summing across orgs is wrong. Use the
+        // worst-case per account for the visualisation (operator cares
+        // about the laggiest org in the account).
+        worst_median_latency_ms: number | null
+        worst_p95_latency_ms: number | null
+      }
+    >()
+    for (const r of rows) {
+      const a = orgToAccount[r.org_id]
+      const key = a?.account_id ?? 'unmapped'
+      const b = buckets.get(key) ?? {
+        account_id: a?.account_id ?? '',
+        account_name: a?.account_name ?? '(no account)',
+        plan_code: a?.plan_code ?? null,
+        orgs_touched: 0,
+        throughput: 0,
+        failure_count: 0,
+        worst_median_latency_ms: null as number | null,
+        worst_p95_latency_ms: null as number | null,
+      }
+      b.orgs_touched += 1
+      b.throughput += r.throughput ?? 0
+      b.failure_count += r.failure_count ?? 0
+      if (r.median_latency_ms != null) {
+        b.worst_median_latency_ms = Math.max(
+          b.worst_median_latency_ms ?? 0,
+          r.median_latency_ms,
+        )
+      }
+      if (r.p95_latency_ms != null) {
+        b.worst_p95_latency_ms = Math.max(
+          b.worst_p95_latency_ms ?? 0,
+          r.p95_latency_ms,
+        )
+      }
+      buckets.set(key, b)
+    }
+    return Array.from(buckets.values()).sort(
+      (x, y) => y.throughput - x.throughput,
+    )
+  }, [rows, groupBy, orgToAccount])
+
   return (
     <Card
       title="Delivery health (last 24h)"
@@ -328,18 +626,67 @@ function DeliveryHealthTab({
           label="Total failures"
           value={totalFailures.toLocaleString()}
         />
-        <MetricTile label="Orgs with activity" value={rows.length.toString()} />
+        <MetricTile
+          label={groupBy === 'account' ? 'Accounts with activity' : 'Orgs with activity'}
+          value={
+            groupBy === 'account' && accountRollup
+              ? accountRollup.length.toString()
+              : rows.length.toString()
+          }
+        />
       </div>
       {rows.length === 0 ? (
         <p className="p-8 text-center text-sm text-text-3">
           No delivery activity in the last 24 hours.
         </p>
+      ) : groupBy === 'account' && accountRollup ? (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-bg text-left text-xs uppercase tracking-wider text-text-3">
+              <tr>
+                <th className="px-4 py-2">Account</th>
+                <th className="px-4 py-2">Plan</th>
+                <th className="px-4 py-2">Orgs</th>
+                <th className="px-4 py-2">Worst median</th>
+                <th className="px-4 py-2">Worst p95</th>
+                <th className="px-4 py-2">Failures (24h)</th>
+                <th className="px-4 py-2">Throughput (24h)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {accountRollup.map((b) => (
+                <tr
+                  key={b.account_id || 'unmapped'}
+                  className="border-t border-[color:var(--border)]"
+                >
+                  <td className="px-4 py-2"><strong>{b.account_name}</strong></td>
+                  <td className="px-4 py-2 text-xs">{b.plan_code ?? '—'}</td>
+                  <td className="px-4 py-2 text-xs">{b.orgs_touched}</td>
+                  <td className="px-4 py-2 text-xs">
+                    {b.worst_median_latency_ms != null
+                      ? `${b.worst_median_latency_ms} ms`
+                      : '—'}
+                  </td>
+                  <td className="px-4 py-2 text-xs">
+                    {b.worst_p95_latency_ms != null
+                      ? `${b.worst_p95_latency_ms} ms`
+                      : '—'}
+                  </td>
+                  <td className="px-4 py-2 text-xs">{b.failure_count}</td>
+                  <td className="px-4 py-2 text-xs">
+                    {b.throughput.toLocaleString()}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-bg text-left text-xs uppercase tracking-wider text-text-3">
               <tr>
-                <th className="px-4 py-2">Org</th>
+                <th className="px-4 py-2">Account · Org</th>
                 <th className="px-4 py-2">Median latency</th>
                 <th className="px-4 py-2">P95 latency</th>
                 <th className="px-4 py-2">Failures (24h)</th>
@@ -353,8 +700,9 @@ function DeliveryHealthTab({
                   key={r.org_id}
                   className="border-t border-[color:var(--border)]"
                 >
-                  <td className="px-4 py-2">
-                    <strong>{r.org_name}</strong>
+                  <td className="px-4 py-2 text-xs">
+                    <div>{orgToAccount[r.org_id]?.account_name ?? '—'}</div>
+                    <div className="text-[11px] text-text-3">{r.org_name}</div>
                   </td>
                   <td className="px-4 py-2 text-xs">
                     {r.median_latency_ms != null

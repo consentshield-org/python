@@ -128,7 +128,7 @@ A live checklist of each panel against the ADR that ports it into code. Tick whe
 | Audit Log | ADR-0028 (folded into admin app skeleton ADR) | ✅ 2026-04-16 | ✅ 2026-04-17 |
 | Audit Log · account filter + Account column (post-ADR-0044 drift close) | ADR-1027 Sprint 1.1 | ✅ 2026-04-24 (wireframe: account picker in filter bar; Account · Org combined column with visual grouping for cross-org actions within one account) | ☐ |
 | Dashboard · account-tier tiles (account count, accounts-by-plan, trial→paid gauge) | ADR-1027 Sprint 1.2 | ✅ 2026-04-24 | ✅ 2026-04-24 |
-| Pipeline / Security / Billing · `<AccountContextCard>` sidebar + group-by-account toggle | ADR-1027 Sprint 2.1 | ☐ | ☐ |
+| Pipeline / Security / Billing · `<AccountContextCard>` sidebar + group-by-account toggle | ADR-1027 Sprint 2.1 | ✅ 2026-04-24 (orgs-detail compact strip + Pipeline group-by toggle; security + billing remain account-scoped today so the card is redundant there) | ✅ 2026-04-24 |
 | Support Tickets · parent-account header strip + account filter | ADR-1027 Sprint 2.2 | ☐ | ☐ |
 | Impersonation log · per-account rollup view | ADR-1027 Sprint 3.1 | ☐ | ☐ |
 | Accounts · account-level Notes card + org-detail surfacing of account notes | ADR-1027 Sprint 3.2 | ☐ | ☐ |

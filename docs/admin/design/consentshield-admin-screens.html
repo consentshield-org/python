@@ -687,6 +687,19 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
       </div>
 
       <!-- ORG DETAIL DRAWER (rendered inline below the table for the selected org) -->
+      <!-- ADR-1027 Sprint 2.1 — parent-account context strip above the detail drawer.
+           Gives operators the account name + plan + status at a glance without
+           clicking through to the account page. "Open account →" jumps to the
+           full /accounts/[id] view. -->
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;margin-bottom:10px;background:white;border:1px solid var(--border);border-radius:var(--r);font-size:12px">
+        <div style="flex:1">
+          <strong>Acme Technologies</strong>
+          <span style="color:var(--text-3);margin-left:6px">growth · 3 orgs · since Mar 8</span>
+        </div>
+        <span class="pill pill-green" style="font-size:10px">active</span>
+        <a href="#" onclick="showPanel('accounts')" style="color:var(--red);font-weight:500;text-decoration:none">Open account →</a>
+      </div>
+
       <div class="card">
         <div class="card-header">
           <div class="card-title">Org detail — Acme Technologies (<code>org_4af2…</code>)</div>
@@ -1285,15 +1298,26 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
         <div class="tab-item" onclick="switchTab(this,'pipe-delivery-tab')">Delivery health</div>
       </div>
 
+      <!-- ADR-1027 Sprint 2.1 — group-by toggle. Flips the visible rows
+           between per-org (default) and per-account rollup. Stuck buffers
+           is table-grouped and is unaffected by the toggle. -->
+      <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;margin:6px 0;font-size:11px;color:var(--text-3)">
+        <span>Group by:</span>
+        <div style="display:flex;background:white;border:1px solid var(--border);border-radius:6px;padding:2px">
+          <span class="pill" style="background:var(--teal);color:white;padding:3px 10px;cursor:pointer;font-size:11px">Orgs</span>
+          <span style="padding:3px 10px;cursor:pointer;font-size:11px;color:var(--text-2)">Accounts</span>
+        </div>
+      </div>
+
       <div id="pipe-worker-tab" class="tab-panel active">
         <div class="card">
           <div class="card-header"><div class="card-title">worker_errors — last 24h (3 events across 2 orgs)</div><span class="pill pill-green">healthy</span></div>
           <table class="t">
-            <thead><tr><th>When</th><th>Endpoint</th><th>Org</th><th>Status</th><th>Error</th><th></th></tr></thead>
+            <thead><tr><th>When</th><th>Endpoint</th><th>Account · Org</th><th>Status</th><th>Error</th><th></th></tr></thead>
             <tbody>
-              <tr><td style="font-family:var(--mono);font-size:11px">04:21:08</td><td><code>/v1/events</code></td><td><code>org_22aa</code></td><td>503</td><td>Supabase REST timeout</td><td><button class="btn btn-secondary btn-sm">View</button></td></tr>
-              <tr><td style="font-family:var(--mono);font-size:11px">02:18:44</td><td><code>/v1/observations</code></td><td><code>org_4af2</code></td><td>409</td><td>Duplicate trace_id (idempotency hit)</td><td><button class="btn btn-secondary btn-sm">View</button></td></tr>
-              <tr><td style="font-family:var(--mono);font-size:11px">yesterday 22:09</td><td><code>/v1/events</code></td><td><code>org_8c1d</code></td><td>500</td><td>HMAC verify failed (clock skew?)</td><td><button class="btn btn-secondary btn-sm">View</button></td></tr>
+              <tr><td style="font-family:var(--mono);font-size:11px">04:21:08</td><td><code>/v1/events</code></td><td>NeoFin Credit<br><span style="color:var(--text-3);font-size:11px;font-family:var(--mono)">org_22aa</span></td><td>503</td><td>Supabase REST timeout</td><td><button class="btn btn-secondary btn-sm">View</button></td></tr>
+              <tr><td style="font-family:var(--mono);font-size:11px">02:18:44</td><td><code>/v1/observations</code></td><td>Acme Technologies<br><span style="color:var(--text-3);font-size:11px;font-family:var(--mono)">org_4af2</span></td><td>409</td><td>Duplicate trace_id (idempotency hit)</td><td><button class="btn btn-secondary btn-sm">View</button></td></tr>
+              <tr><td style="font-family:var(--mono);font-size:11px">yesterday 22:09</td><td><code>/v1/events</code></td><td>Tata Digital<br><span style="color:var(--text-3);font-size:11px;font-family:var(--mono)">org_8c1d</span></td><td>500</td><td>HMAC verify failed (clock skew?)</td><td><button class="btn btn-secondary btn-sm">View</button></td></tr>
             </tbody>
           </table>
         </div>

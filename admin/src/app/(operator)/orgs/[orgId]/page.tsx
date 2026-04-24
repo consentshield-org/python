@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase/server'
 import { canOperate, type AdminRole } from '@/lib/admin/role-tiers'
 import { OrgActionBar } from '@/components/orgs/action-bar'
+import { AccountContextCard } from '@/components/account-context/account-context-card'
 import { AdminMembersSection, type MemberRow as AdminMemberRow } from './members-section'
 import { SdfCard } from './sdf-card'
 
@@ -136,6 +137,11 @@ export default async function OrganisationDetailPage({ params }: PageProps) {
           currentAdminRole={adminRole}
         />
       </header>
+
+      {/* ADR-1027 Sprint 2.1 — parent-account context strip. */}
+      {org.account_id ? (
+        <AccountContextCard accountId={org.account_id} mode="compact" />
+      ) : null}
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Card title="Billing (account)">

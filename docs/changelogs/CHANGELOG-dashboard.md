@@ -2,6 +2,40 @@
 
 Next.js UI changes.
 
+## [ADR-1027 Sprint 2.1 — AccountContextCard + group-by-account toggle on Pipeline] — 2026-04-24
+
+**ADR:** ADR-1027 — Admin account-awareness pass
+**Sprint:** Phase 2, Sprint 2.1 — Pipeline panel account sidebar + rollup
+
+### Added
+- `admin/src/components/account-context/account-context-card.tsx` — reusable Server Component. Calls `admin.account_detail(p_account_id)` and renders the canonical operator envelope (account name + plan + status badge + child-org count + trial-ends + active adjustments + last 3 admin actions). `mode` prop:
+  - `full` (default): sticky sidebar aside with multi-block layout, status tone background (green / navy / amber / red / grey by status).
+  - `compact`: single-line strip with name + plan + org count + status pill + "Open account →" link. Designed to drop above org-scoped pages as a context anchor.
+
+### Admin console
+- `admin/src/app/(operator)/orgs/[orgId]/page.tsx` — compact `<AccountContextCard>` strip now renders above the 3-column info grid. Gives operators the parent-account context at a glance and a direct jump to `/accounts/[id]`.
+- `admin/src/app/(operator)/pipeline/page.tsx` — server-side parallel fetch now also loads `public.organisations` with the embedded `accounts(name, plan_code)` relation; builds an `orgToAccount` lookup map and passes it to `<PipelineTabs>`. Admin already has SELECT on `public.organisations`; no new RPC required.
+- `admin/src/app/(operator)/pipeline/pipeline-tabs.tsx` — new `groupBy: 'org' | 'account'` state. A visible "Group by: Orgs · Accounts" toggle row sits above the three org-grouped tabs (Worker errors, DEPA expiry queue, Delivery health). Stuck buffers is table-grouped and stays untouched.
+  - **org mode**: per-row Account column renders the parent-account name on top and the org name beneath. Orgs without an account mapping show `—`.
+  - **account mode**: client-side rollup via `useMemo` — buckets by `account_id`; sums counts (events, throughput, failures, orgs_touched, expiring counts); tracks worst-case median + p95 latency per account; surfaces endpoints touched on worker_errors. Orgs without an account mapping fall into a synthetic `(no account)` bucket so they're visible, never silently dropped.
+
+### Design
+- `docs/admin/design/consentshield-admin-screens.html`:
+  - Organisations panel — parent-account context strip added above the inline org detail drawer. Shows `<strong>account name</strong> · <plan_code> · <N orgs> · since <date>` + status pill + "Open account →" link.
+  - Pipeline Operations panel — "Group by: Orgs · Accounts" toggle row added between the tab bar and the visible tab. Worker errors table's Org column becomes "Account · Org" with the account name on top line.
+- `docs/admin/design/ARCHITECTURE-ALIGNMENT-2026-04-16.md` — reconciliation tracker Sprint 2.1 flipped to ✅ wireframe + ✅ code. Note: Security and Billing operator panels are already account-scoped today (Security has no org grouping; Billing panel is account-keyed via `/billing/[accountId]`), so the card is redundant there — the only org-scoped surface that benefits is Pipeline, which is where the toggle landed.
+
+### Tested
+- [x] `cd admin && bunx tsc --noEmit` — PASS (one FK-typing fix: PostgREST returns the nested `accounts` relation as an array even for a 1:1 FK; code handles both array and object shapes defensively).
+- [x] `cd admin && bun run lint` — PASS.
+- [x] RPC shape — covered by existing `tests/admin/account-rpcs.test.ts`; component is a thin renderer over that envelope.
+- [ ] Component / interaction — recommend a dev-server visual check (compact strip on `/orgs/[orgId]`, pipeline toggle re-renders without round-trip, synthetic `(no account)` bucket shows for unmapped orgs).
+
+### Why
+Operators were forced to mentally re-aggregate org-tier metrics when a multi-org account (enterprise customers with per-division orgs) was the thing they actually cared about. The `<AccountContextCard>` + toggle turns that re-aggregation into a UI click. No RPC changes; single server round-trip; zero risk to the existing org-tier views since the toggle defaults to `org`.
+
+---
+
 ## [ADR-1025 close-out — usage display on storage panel + org-crypto consolidation] — 2026-04-24
 
 **ADR:** ADR-1025 — Customer storage auto-provisioning

@@ -1,7 +1,8 @@
 import { createServerClient } from '@/lib/supabase/server'
-import { PipelineTabs, type PipelineData } from './pipeline-tabs'
+import { PipelineTabs, type PipelineData, type OrgAccountLookup } from './pipeline-tabs'
 
 // ADR-0033 Sprint 1.2 — Pipeline Operations panel.
+// ADR-1027 Sprint 2.1 — org→account lookup + "group by account" toggle.
 //
 // Four tabs powered by the admin.pipeline_* RPCs shipped in Sprint 1.1:
 //   · Worker errors (admin.pipeline_worker_errors_list)
@@ -10,14 +11,16 @@ import { PipelineTabs, type PipelineData } from './pipeline-tabs'
 //   · Delivery health (admin.pipeline_delivery_health)
 //
 // Initial paint is server-rendered with all 4 RPCs in parallel; the
-// client component re-fetches via router.refresh() every 30s.
+// client component re-fetches via router.refresh() every 30s. Alongside
+// the RPCs, the page loads the org→account lookup so the client can
+// render account names per row and aggregate by account on toggle.
 
 export const dynamic = 'force-dynamic'
 
 export default async function PipelinePage() {
   const supabase = await createServerClient()
 
-  const [workerErrors, stuckBuffers, expiryQueue, deliveryHealth] =
+  const [workerErrors, stuckBuffers, expiryQueue, deliveryHealth, orgMap] =
     await Promise.all([
       supabase.schema('admin').rpc('pipeline_worker_errors_list', {
         p_limit: 100,
@@ -27,6 +30,9 @@ export default async function PipelinePage() {
       supabase.schema('admin').rpc('pipeline_delivery_health', {
         p_window_hours: 24,
       }),
+      supabase
+        .from('organisations')
+        .select('id, account_id, accounts(name, plan_code)'),
     ])
 
   const errors = [
@@ -34,7 +40,27 @@ export default async function PipelinePage() {
     stuckBuffers.error?.message,
     expiryQueue.error?.message,
     deliveryHealth.error?.message,
+    orgMap.error?.message,
   ].filter((e): e is string => !!e)
+
+  const orgToAccount: OrgAccountLookup = {}
+  // PostgREST returns the nested `accounts` relation as an array even for
+  // the 1:1 FK from `organisations.account_id`. Flatten via [0].
+  type OrgRow = {
+    id: string
+    account_id: string | null
+    accounts: Array<{ name: string; plan_code: string }> | { name: string; plan_code: string } | null
+  }
+  for (const row of (orgMap.data ?? []) as OrgRow[]) {
+    const acct = Array.isArray(row.accounts) ? row.accounts[0] : row.accounts
+    if (row.account_id && acct) {
+      orgToAccount[row.id] = {
+        account_id: row.account_id,
+        account_name: acct.name,
+        plan_code: acct.plan_code,
+      }
+    }
+  }
 
   const data: PipelineData = {
     workerErrors: (workerErrors.data ?? []) as PipelineData['workerErrors'],
@@ -66,7 +92,7 @@ export default async function PipelinePage() {
         </div>
       ) : null}
 
-      <PipelineTabs data={data} />
+      <PipelineTabs data={data} orgToAccount={orgToAccount} />
     </div>
   )
 }
