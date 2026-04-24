@@ -1,4 +1,4 @@
-// ADR-1003 Sprint 1.2 + 1.3 — zero-storage event bridge.
+// ADR-1003 Sprint 1.2 + 1.3 + 1.4 — zero-storage event bridge.
 //
 // The Worker POSTs every consent_event / tracker_observation for a
 // zero_storage org to /api/internal/zero-storage-event. This module
@@ -6,6 +6,13 @@
 // 1.3) seeding a TTL-bounded validity row in consent_artefact_index
 // so /v1/consent/verify can answer "did this org consent to purpose
 // X" without pulling from customer storage on every call.
+//
+// Sprint 1.4 addition — Mode B (POST /v1/consent/record) callers may
+// supply `identifier_hash` + `identifier_type` in the payload. The
+// bridge writes those into consent_artefact_index so /v1/consent/verify
+// can match by identifier on zero_storage Mode B events. Worker-path
+// (Mode A) continues to omit both (the browser event is anonymous) —
+// index rows land with NULL identifier_hash, same as before Sprint 1.4.
 //
 // Load-bearing guarantee:
 //   · The canonical-serialised event payload reaches the customer's
@@ -269,6 +276,19 @@ async function indexAcceptedPurposes(
       : null
   if (!propertyId) return 0
 
+  // Sprint 1.4 — Mode B payloads carry identifier_hash + identifier_type.
+  // Mode A (Worker) payloads don't; fall through to NULL.
+  const identifierHashRaw = req.payload['identifier_hash']
+  const identifierHash =
+    typeof identifierHashRaw === 'string' && identifierHashRaw.length > 0
+      ? identifierHashRaw
+      : null
+  const identifierTypeRaw = req.payload['identifier_type']
+  const identifierType =
+    typeof identifierTypeRaw === 'string' && identifierTypeRaw.length > 0
+      ? identifierTypeRaw
+      : null
+
   // Resolve framework per purpose_code from purpose_definitions.
   // Skip unknown codes — a banner referencing a deleted purpose
   // would otherwise produce orphan index rows. cs_orchestrator
@@ -295,8 +315,8 @@ async function indexAcceptedPurposes(
         ${propertyId}::uuid,
         ${artefactId},
         null,
-        null,
-        null,
+        ${identifierHash},
+        ${identifierType},
         'active',
         ${row.framework},
         ${row.purpose_code},

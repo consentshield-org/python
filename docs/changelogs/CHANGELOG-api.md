@@ -2,6 +2,37 @@
 
 API route changes.
 
+## [ADR-1003 Sprint 1.4 — Mode B zero-storage branch in /v1/consent/record] — 2026-04-25
+
+**ADR:** ADR-1003 — Processor Posture + Healthcare Category Unlock
+**Sprint:** Phase 1, Sprint 1.4
+
+### Changed — helper
+- `app/src/lib/consent/record.ts` (`recordConsent`) — branches on `get_storage_mode(p_org_id)` at the top:
+  - `standard` / `insulated` → unchanged `rpc_consent_record` via cs_api.
+  - `zero_storage` → new path: `rpc_consent_record_prepare_zero_storage` via cs_api (validation + deterministic fingerprint + canonical envelope) → `processZeroStorageEvent` via cs_orchestrator (R2 PUT + consent_artefact_index seed). Returns `event_id = "zs-<fingerprint>"`.
+  - Race (mode just flipped): catches `storage_mode_requires_bridge` (errcode P0003) from `rpc_consent_record` and retries via the zero-storage path.
+- New optional `RecordConsentDeps` argument (`csApi` / `csOrchestrator` / `processZeroStorageEvent`) used by the integration test to inject a stubbed R2 PUT without forking the helper. Production callers pass no deps.
+- New error kind `zero_storage_bridge_failed` with `detail` carrying the bridge outcome (upload_failed / decrypt_failed / endpoint_failed / etc.).
+
+### Changed — route
+- `app/src/app/api/v1/consent/record/route.ts` — `zero_storage_bridge_failed` maps to **502 Bad Gateway** with `problem+json` body `"Zero-storage bridge upload failed: <detail>"`. Honest upstream-failure signal so API callers retry rather than treating the failure as a permanent 422.
+
+### Changed — bridge payload shape
+- `app/src/lib/delivery/zero-storage-bridge.ts` — `BridgeRequest.payload` may now include `identifier_hash` + `identifier_type`. When present (Mode B), `indexAcceptedPurposes` writes them into the `consent_artefact_index` row. When absent (Mode A / Worker path), the row lands with NULL identifier_hash (unchanged behaviour). Fixes the secondary gap where zero-storage verify always returned `never_consented` because the Worker-path bridge seeded NULL identifier_hash on every row.
+
+### Consequences
+- Mode B POSTs against zero_storage orgs no longer leave rows in `consent_events` / `consent_artefacts` / `delivery_buffer` / `audit_log` / `artefact_revocations`. Closes the invariant that was previously only enforced on the Worker path.
+- `/v1/consent/verify` + `/v1/consent/verify/batch` now answer for zero_storage Mode B events — the index row carries the identifier_hash needed for the lookup.
+- Idempotent replay by `client_request_id` — deterministic fingerprint + ON CONFLICT DO NOTHING on the index → second call with the same `client_request_id` returns `idempotent_replay=true` with the same artefact_ids.
+
+### Tested
+- Unit (new) — `app/tests/consent/record.test.ts` — 7 tests.
+- Unit (extended) — `app/tests/delivery/zero-storage-bridge.test.ts` — identifier_hash propagates; Worker-path NULL compat.
+- Integration (extended) — `tests/integration/zero-storage-invariant.test.ts` Mode B suite — buffer-table 0-count invariant + identifier_hash populated in index + idempotent replay with same client_request_id. Skips when `SUPABASE_CS_API_DATABASE_URL` / `SUPABASE_CS_ORCHESTRATOR_DATABASE_URL` / `MASTER_ENCRYPTION_KEY` are not set.
+- Full local suite — `bun run lint` / `bun run build` / `cd worker && bunx tsc --noEmit` / full delivery/worker/storage/consent vitest (245/245 PASS).
+- Live: pending operator migration 54 push.
+
 ## [ADR-1003 Sprint 3.1 — verify RPCs stamp last_verified_at] — 2026-04-24
 
 **ADR:** ADR-1003 — Processor Posture + Healthcare Category Unlock

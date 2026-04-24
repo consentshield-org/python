@@ -191,6 +191,16 @@ export async function POST(request: NextRequest) {
           ),
           t0, true,
         )
+      case 'zero_storage_bridge_failed':
+        // ADR-1003 Sprint 1.4 — zero_storage upload to customer storage
+        // failed. Bad Gateway honest-signals an upstream failure (R2 PUT
+        // / credential decrypt / missing export_configurations); the
+        // caller should retry, not treat as a permanent validation error.
+        return respond(
+          context, 502,
+          problemJson(502, 'Bad Gateway', `Zero-storage bridge upload failed: ${result.error.detail}`),
+          t0, true,
+        )
       default:
         return respond(
           context, 500,

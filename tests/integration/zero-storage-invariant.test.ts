@@ -31,17 +31,22 @@ import {
   processZeroStorageEvent,
   type BridgeRequest,
 } from '../../app/src/lib/delivery/zero-storage-bridge'
+import { recordConsent } from '../../app/src/lib/consent/record'
 import {
   createTestOrg,
   cleanupTestOrg,
   getServiceClient,
+  seedApiKey,
   type TestOrg,
 } from '../rls/helpers'
 
 const CS_ORCH_DSN = process.env.SUPABASE_CS_ORCHESTRATOR_DATABASE_URL
+const CS_API_DSN = process.env.SUPABASE_CS_API_DATABASE_URL
 const MASTER_KEY = process.env.MASTER_ENCRYPTION_KEY
 const ipostgres = async () => (await import('postgres')).default
 const skipSuite = !CS_ORCH_DSN || !MASTER_KEY ? describe.skip : describe
+// Sprint 1.4 Mode B case additionally needs the cs_api pool.
+const skipModeB = !CS_ORCH_DSN || !MASTER_KEY || !CS_API_DSN ? describe.skip : describe
 
 const FAKE_CREDS: StorageCredentials = {
   access_key_id: 'AKIA-TEST',
@@ -56,29 +61,40 @@ let zeroPropertyId: string
 let standardPropertyId: string
 let zeroBannerId: string
 let standardBannerId: string
+let zeroKeyId: string
+let zeroPurposeIds: Record<string, string> = {}
 
 interface SeededOrg {
   org: TestOrg
   propertyId: string
   bannerId: string
+  purposeIds: Record<string, string>
 }
 
 async function seedOrg(suffix: string): Promise<SeededOrg> {
   const admin = getServiceClient()
   const org = await createTestOrg(suffix)
 
-  // Two purpose_definitions matching PURPOSE_CODES.
+  // Two purpose_definitions matching PURPOSE_CODES. Track the IDs so
+  // tests that need UUID-form arguments (e.g., rpc_consent_record via
+  // recordConsent) can reference them.
+  const purposeIds: Record<string, string> = {}
   for (const code of PURPOSE_CODES) {
-    const { error } = await admin.from('purpose_definitions').insert({
-      org_id: org.orgId,
-      purpose_code: code,
-      display_name: code,
-      description: `${code} purpose`,
-      data_scope: ['session_identifier'],
-      default_expiry_days: 180,
-      framework: 'dpdp',
-    })
+    const { data, error } = await admin
+      .from('purpose_definitions')
+      .insert({
+        org_id: org.orgId,
+        purpose_code: code,
+        display_name: code,
+        description: `${code} purpose`,
+        data_scope: ['session_identifier'],
+        default_expiry_days: 180,
+        framework: 'dpdp',
+      })
+      .select('id')
+      .single()
     if (error) throw new Error(`seed purpose ${code}: ${error.message}`)
+    purposeIds[code] = (data as { id: string }).id
   }
 
   const { data: prop, error: pErr } = await admin
@@ -113,6 +129,7 @@ async function seedOrg(suffix: string): Promise<SeededOrg> {
     org,
     propertyId: (prop as { id: string }).id,
     bannerId: (banner as { id: string }).id,
+    purposeIds,
   }
 }
 
@@ -123,6 +140,12 @@ beforeAll(async () => {
   zeroOrg = seededZero.org
   zeroPropertyId = seededZero.propertyId
   zeroBannerId = seededZero.bannerId
+  zeroPurposeIds = seededZero.purposeIds
+
+  // Sprint 1.4 — Mode B case exercises recordConsent through
+  // rpc_consent_record_prepare_zero_storage, which asserts
+  // api_key_binding. Seed an org-scoped key with write:consent scope.
+  zeroKeyId = (await seedApiKey(zeroOrg, { scopes: ['write:consent'] })).keyId
 
   const seededStandard = await seedOrg('zsi-std')
   standardOrg = seededStandard.org
@@ -360,4 +383,122 @@ skipSuite('ADR-1003 Sprint 1.3 — zero-storage invariant', () => {
       await sql.end()
     }
   }, 30_000)
+})
+
+// ═══════════════════════════════════════════════════════════
+// Sprint 1.4 — Mode B (POST /v1/consent/record) invariant.
+// ═══════════════════════════════════════════════════════════
+//
+// Exercises recordConsent() — which branches on storage_mode —
+// against a live zero_storage org seeded with the same export_
+// configurations row. R2 PUT is stubbed via the bridge deps; all
+// SQL round-trips (cs_api prepare RPC + cs_orchestrator bridge
+// DB reads + index INSERTs) are real.
+
+skipModeB('ADR-1003 Sprint 1.4 — Mode B zero-storage invariant', () => {
+  it('recordConsent on zero_storage org: 0 buffer rows; index rows carry identifier_hash', async () => {
+    const stubPut = vi.fn().mockResolvedValue({ status: 200, etag: '"x"' })
+    const wrappedBridge: typeof processZeroStorageEvent = (pg, req, deps) =>
+      processZeroStorageEvent(pg, req, { ...deps, putObject: stubPut })
+
+    const purposeIds = [
+      zeroPurposeIds[PURPOSE_CODES[0]!]!,
+      zeroPurposeIds[PURPOSE_CODES[1]!]!,
+    ]
+
+    const res = await recordConsent(
+      {
+        keyId: zeroKeyId,
+        orgId: zeroOrg!.orgId,
+        propertyId: zeroPropertyId,
+        identifier: 'mode-b-jane@example.test',
+        identifierType: 'email',
+        acceptedPurposeIds: purposeIds,
+        capturedAt: new Date().toISOString(),
+        clientRequestId: `zsi-mode-b-${Date.now()}`,
+      },
+      { processZeroStorageEvent: wrappedBridge },
+    )
+
+    expect(res.ok).toBe(true)
+    if (!res.ok) throw new Error(`recordConsent failed: ${JSON.stringify(res.error)}`)
+    expect(res.data.event_id.startsWith('zs-')).toBe(true)
+    expect(res.data.idempotent_replay).toBe(false)
+    expect(res.data.artefact_ids).toHaveLength(2)
+    expect(stubPut).toHaveBeenCalledTimes(1)
+
+    // Invariant: the five buffer tables hold 0 rows for this org.
+    const admin = getServiceClient()
+    for (const table of BUFFER_TABLES_FOR_INVARIANT) {
+      const { count, error } = await admin
+        .from(table)
+        .select('*', { count: 'exact', head: true })
+        .eq('org_id', zeroOrg!.orgId)
+      expect(error).toBeNull()
+      expect(count).toBe(0)
+    }
+
+    // consent_artefact_index holds two rows with identifier_hash set
+    // (distinguishing Mode B from the Mode A NULL case).
+    const { data: idxRows, error: idxErr } = await admin
+      .from('consent_artefact_index')
+      .select('artefact_id, identifier_hash, identifier_type, purpose_code')
+      .eq('org_id', zeroOrg!.orgId)
+      .in('purpose_code', PURPOSE_CODES as unknown as string[])
+    expect(idxErr).toBeNull()
+    expect(idxRows).toHaveLength(2)
+    for (const row of idxRows!) {
+      expect((row as { identifier_hash: string | null }).identifier_hash)
+        .toMatch(/^[0-9a-f]{64}$/) // salted sha256 hex
+      expect((row as { identifier_type: string | null }).identifier_type).toBe('email')
+      expect((row as { artefact_id: string }).artefact_id.startsWith('zs-')).toBe(true)
+    }
+  }, 60_000)
+
+  it('recordConsent on zero_storage org: second call with same client_request_id returns idempotent_replay=true', async () => {
+    const stubPut = vi.fn().mockResolvedValue({ status: 200, etag: '"x"' })
+    const wrappedBridge: typeof processZeroStorageEvent = (pg, req, deps) =>
+      processZeroStorageEvent(pg, req, { ...deps, putObject: stubPut })
+
+    const purposeIds = [zeroPurposeIds[PURPOSE_CODES[0]!]!]
+    const clientRequestId = `zsi-mode-b-replay-${Date.now()}`
+    const capturedAt = new Date().toISOString()
+
+    const shared = {
+      keyId: zeroKeyId,
+      orgId: zeroOrg!.orgId,
+      propertyId: zeroPropertyId,
+      identifier: 'replay-jane@example.test',
+      identifierType: 'email',
+      acceptedPurposeIds: purposeIds,
+      capturedAt,
+      clientRequestId,
+    }
+
+    const first = await recordConsent(shared, { processZeroStorageEvent: wrappedBridge })
+    expect(first.ok).toBe(true)
+    if (!first.ok) throw new Error('first call failed')
+    expect(first.data.idempotent_replay).toBe(false)
+
+    const second = await recordConsent(shared, { processZeroStorageEvent: wrappedBridge })
+    expect(second.ok).toBe(true)
+    if (!second.ok) throw new Error('second call failed')
+    expect(second.data.idempotent_replay).toBe(true)
+    // Same deterministic artefact_ids as the first response.
+    expect(second.data.artefact_ids.map((a) => a.artefact_id)).toEqual(
+      first.data.artefact_ids.map((a) => a.artefact_id),
+    )
+    expect(second.data.event_id).toBe(first.data.event_id)
+
+    // Still no rows in the five buffer tables (the replay must not
+    // have written consent_events on the second pass).
+    const admin = getServiceClient()
+    for (const table of BUFFER_TABLES_FOR_INVARIANT) {
+      const { count } = await admin
+        .from(table)
+        .select('*', { count: 'exact', head: true })
+        .eq('org_id', zeroOrg!.orgId)
+      expect(count).toBe(0)
+    }
+  }, 60_000)
 })

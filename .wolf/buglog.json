@@ -13822,6 +13822,38 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-04-24T15:57:00.056Z"
+    },
+    {
+      "id": "bug-861",
+      "timestamp": "2026-04-24T16:00:47.008Z",
+      "error_message": "Missing error handling in unknown",
+      "file": "docs/changelogs/CHANGELOG-schema.md",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T16:00:47.008Z"
+    },
+    {
+      "id": "bug-862",
+      "timestamp": "2026-04-24T16:01:15.402Z",
+      "error_message": "Missing error handling in unknown",
+      "file": "docs/changelogs/CHANGELOG-api.md",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T16:01:15.402Z"
     }
   ]
 }

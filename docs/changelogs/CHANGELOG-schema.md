@@ -2,6 +2,30 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-1003 Sprint 1.4 — rpc_consent_record storage_mode fence] — 2026-04-25
+
+**ADR:** ADR-1003 — Processor Posture + Healthcare Category Unlock
+**Sprint:** Phase 1, Sprint 1.4
+**Migration:** `20260804000054_adr1003_s14_rpc_consent_record_mode_fence.sql`
+
+### Changed
+- `public.rpc_consent_record(uuid, uuid, uuid, text, text, uuid[], uuid[], timestamptz, text)` — adds a storage_mode fence as the second check (after `assert_api_key_binding`). If `public.get_storage_mode(p_org_id) = 'zero_storage'`, raises `storage_mode_requires_bridge` with errcode `P0003` *before* any table access. Closes the Mode B gap flagged in Sprint 3.1 Amendment block: the RPC wrote to `consent_events` + `consent_artefacts` regardless of mode, violating the zero-storage invariant for server-to-server Mode B captures. CREATE OR REPLACE preserves existing `cs_api` + `service_role` EXECUTE grants.
+
+### Added
+- `public.rpc_consent_record_prepare_zero_storage(uuid, uuid, uuid, text, text, uuid[], uuid[], timestamptz, text) returns jsonb` — new SECURITY DEFINER RPC. Validation-only for the Mode B zero-storage path. Asserts api_key_binding, verifies mode is `zero_storage`, validates property / captured_at / purposes / identifier, normalises + hashes the identifier, and returns a canonical jsonb envelope `{event_fingerprint, captured_at, identifier_hash, identifier_type, property_id, purposes_accepted, purposes_rejected, artefact_ids}`. Writes nothing. Deterministic `event_fingerprint = substr(encode(digest(org_id || property_id || identifier_hash || coalesce(client_request_id, captured_at_iso), 'sha256'), 'hex'), 1, 32)` so same-request-id replays produce the same artefact_ids and ON CONFLICT DO NOTHING on the index covers idempotency. Artefact IDs follow the Worker-path scheme `zs-<fingerprint>-<purpose_code>`. Granted to `cs_api`.
+
+### Consequences
+- Mode B (`POST /v1/consent/record`) for zero_storage orgs now writes zero rows in `consent_events` / `consent_artefacts` — the Node helper (`app/src/lib/consent/record.ts`) calls the new prepare RPC, feeds the canonical payload to `processZeroStorageEvent` via cs_orchestrator, and the bridge uploads to customer R2 + seeds `consent_artefact_index` (with populated `identifier_hash`, so `/v1/consent/verify` can answer for Mode B zero-storage events).
+- Race protection: if the mode flips to `zero_storage` between the Node-side `get_storage_mode` lookup and the `rpc_consent_record` call, the RPC fence catches it and the helper retries through the zero-storage branch.
+- Mirror guard on the prepare RPC — refuses non-zero_storage callers with `storage_mode_not_zero_storage` (P0003). Defensive check: a standard-mode caller should never land here; if one does, it's a bug in the Node branch.
+
+### Tested
+- Unit — `app/tests/consent/record.test.ts` — 7 tests: standard path unchanged, api_key_binding classification, zero-storage happy path, idempotent_replay signalling (indexed=0 without indexError → replay), no-replay on indexError, bridge upload_failed → `zero_storage_bridge_failed`, race recovery on errcode P0003.
+- Unit — `app/tests/delivery/zero-storage-bridge.test.ts` extended: identifier_hash + identifier_type propagate from payload to INSERT; Worker-path payload (no identifier fields) writes NULL identifier_hash.
+- Integration — `tests/integration/zero-storage-invariant.test.ts` new `skipModeB` suite covers `recordConsent` against a live zero_storage org (stubbed R2 PUT; real DB round-trips): 0 rows in the 5 buffer tables; 2 rows in consent_artefact_index with salted-sha256 identifier_hash + identifier_type='email'; replay with same client_request_id returns `idempotent_replay=true` and the same deterministic artefact_ids.
+- Local `bun run lint` + `bun run build` + `cd worker && bunx tsc --noEmit` — all clean. Full delivery/worker/storage/consent vitest — 245/245 PASS.
+- Live: pending operator `bunx supabase db push` (migration 54 queued with 45 / 48 / 49 / 50 / 51 / 52 / 53).
+
 ## [ADR-1003 Sprint 3.1 — zero-storage hot-row TTL refresh] — 2026-04-24
 
 **ADR:** ADR-1003 — Processor Posture + Healthcare Category Unlock

@@ -337,6 +337,82 @@ describe('processZeroStorageEvent', () => {
     expect(result.indexed).toBe(0)
   })
 
+  // ────────────────────────────────────────────────────────────
+  // Sprint 1.4 — Mode B payloads carry identifier_hash +
+  // identifier_type; bridge writes them into consent_artefact_index
+  // so /v1/consent/verify can match by identifier.
+  // ────────────────────────────────────────────────────────────
+
+  it('Sprint 1.4 — propagates identifier_hash + identifier_type from payload into INSERT', async () => {
+    const pg = makePgStub([
+      ...uploadStubs(),
+      [{ purpose_code: 'analytics', framework: 'dpdp' }],
+      [{ artefact_id: 'zs-fp-abc-12345678-analytics' }],
+    ])
+    const put = vi.fn().mockResolvedValue({ status: 200, etag: '"e"' })
+    const identifierHash = 'deadbeef'.repeat(8)
+    const req = {
+      ...REQ,
+      payload: {
+        property_id: PROPERTY_ID,
+        event_type: 'accept',
+        identifier_hash: identifierHash,
+        identifier_type: 'email',
+        purposes_accepted: ['analytics'],
+      },
+    }
+    const result = await processZeroStorageEvent(pg as never, req, {
+      putObject: put,
+    })
+    expect(result.outcome).toBe('uploaded')
+    expect(result.indexed).toBe(1)
+
+    const insert = pg.calls.find((c) =>
+      c.query.toLowerCase().includes('insert into public.consent_artefact_index'),
+    )
+    expect(insert).toBeDefined()
+    expect(insert!.values).toContain(identifierHash)
+    expect(insert!.values).toContain('email')
+  })
+
+  it('Sprint 1.4 — Worker-path payload (no identifier fields) writes NULL identifier_hash', async () => {
+    const pg = makePgStub([
+      ...uploadStubs(),
+      [{ purpose_code: 'analytics', framework: 'dpdp' }],
+      [{ artefact_id: 'zs-fp-abc-12345678-analytics' }],
+    ])
+    const put = vi.fn().mockResolvedValue({ status: 200, etag: '"e"' })
+    const req = {
+      ...REQ,
+      payload: {
+        property_id: PROPERTY_ID,
+        event_type: 'consent_given',
+        purposes_accepted: ['analytics'],
+      },
+    }
+    const result = await processZeroStorageEvent(pg as never, req, {
+      putObject: put,
+    })
+    expect(result.outcome).toBe('uploaded')
+    expect(result.indexed).toBe(1)
+
+    const insert = pg.calls.find((c) =>
+      c.query.toLowerCase().includes('insert into public.consent_artefact_index'),
+    )
+    expect(insert).toBeDefined()
+    // First two parametrised positions after the explicit ${} inserts
+    // in the INSERT template: org_id, property_id, artefact_id,
+    // <null consent_event_id literal>, identifier_hash, identifier_type,
+    // <literal 'active'>, framework, purpose_code, ttl interval. The
+    // identifier_hash + identifier_type values (positions 4, 5 of the
+    // parameter array — after org_id, property_id, artefactId) are the
+    // Worker-path nulls.
+    expect(insert!.values).toContain(null)
+    // Sanity: no stray email/phone-shaped identifier_type string.
+    expect(insert!.values).not.toContain('email')
+    expect(insert!.values).not.toContain('phone')
+  })
+
   it('uses now() for the date partition when timestamp is unparseable', async () => {
     const pg = makePgStub([
       [{ mode: 'zero_storage' }],

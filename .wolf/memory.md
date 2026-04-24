@@ -5262,3 +5262,7 @@
 | 21:27 | Edited tests/integration/zero-storage-invariant.test.ts | 9→9 lines | ~134 |
 | 21:27 | Edited tests/integration/zero-storage-invariant.test.ts | removed 5 lines | ~4 |
 | 21:27 | Edited docs/ADRs/ADR-index.md | inline fix | ~98 |
+| 21:28 | Session end: 30 writes across 12 files (ADR-1014-e2e-test-harness-and-vertical-demos.md, ADR-index.md, ADR-1003-processor-posture-and-healthcare-unlock.md, 20260804000054_adr1003_s14_rpc_consent_record_mode_fence.sql, zero-storage-bridge.ts) | 27 reads | ~132132 tok |
+| 21:29 | Edited docs/ADRs/ADR-1003-processor-posture-and-healthcare-unlock.md | 19→16 lines | ~701 |
+| 21:30 | Edited docs/changelogs/CHANGELOG-schema.md | modified org() | ~1092 |
+| 21:31 | Edited docs/changelogs/CHANGELOG-api.md | added error handling | ~929 |

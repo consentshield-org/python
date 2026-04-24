@@ -127,6 +127,39 @@ Deliver processor-posture enforcement and the healthcare category unlock:
 
 **Status:** `[x] complete (code + unit tests; integration test pending the queued migration push by operator).`
 
+#### Sprint 1.4: `rpc_consent_record` storage_mode fence (Mode B closure)
+
+**Estimated effort:** 1 day
+
+Closes the follow-up flagged in Sprint 3.1's Deferred block: today `rpc_consent_record` writes to `consent_events` + `consent_artefacts` + `consent_artefact_index` regardless of the org's `storage_mode`. For zero_storage orgs this violates the Sprint 1.3 invariant on the Mode B write path (Worker path — Mode A — is already covered).
+
+Also closes the secondary gap flagged in Terminal A's handoff: the Sprint 1.3 bridge seeds `consent_artefact_index` rows with `identifier_hash = NULL` (Worker path is anonymous), so `/v1/consent/verify` on zero_storage orgs always returns `never_consented`. Mode B knows the identifier — the bridge must write `identifier_hash` when the caller supplies it.
+
+**Design choices:**
+
+1. **Fence at the RPC, not at the helper.** `rpc_consent_record` reads `get_storage_mode(p_org_id)` as its first check; if `zero_storage` it raises `storage_mode_requires_bridge` with errcode `P0003`. Even if a future Node caller forgets to branch, the SQL refuses. Defense-in-depth.
+2. **Separate `rpc_consent_record_prepare_zero_storage` RPC for the zero-storage path.** cs_api EXECUTE; SECURITY DEFINER; does the same validation surface as `rpc_consent_record` (assert_api_key_binding, property, captured_at, purposes, identifier normalisation + hash), but writes nothing — returns the canonical fingerprint + purpose metadata + deterministic artefact_ids so the Node side can feed the bridge. This keeps validation in one SQL place for both paths.
+3. **Deterministic fingerprint** = `substr(encode(sha256(org_id || property_id || identifier_hash || coalesce(client_request_id, captured_at::text)), 'hex'), 1, 32)`. Same `client_request_id` → same fingerprint → same artefact_ids → ON CONFLICT DO NOTHING on index → idempotent. Mirrors the Worker path's `zs-<fingerprint>-<purpose_code>` artefact scheme.
+4. **Bridge extends to carry `identifier_hash` + `identifier_type` through the payload.** `indexAcceptedPurposes` writes them into `consent_artefact_index` when present. Worker path (Mode A) continues to pass neither — falls through to NULL. Backward-compatible.
+5. **Envelope shape.** Mode B zero_storage returns `event_id = "zs-<fingerprint>"` (string, not UUID) + `created_at = captured_at` + `artefact_ids` with deterministic ids + `idempotent_replay`. The `event_id` contract widens from "UUID" to "opaque string" — only consumed by the `/v1/consent/record` HTTP response; no internal caller indexes on it.
+
+**Deliverables:**
+- [x] Migration `20260804000054_adr1003_s14_rpc_consent_record_mode_fence.sql`:
+  - Amend `rpc_consent_record`: top-of-function `if public.get_storage_mode(p_org_id) = 'zero_storage' then raise exception 'storage_mode_requires_bridge' using errcode = 'P0003'`.
+  - New `public.rpc_consent_record_prepare_zero_storage(...)` SECURITY DEFINER; cs_api EXECUTE. Validates, hashes identifier, computes fingerprint, returns canonical jsonb envelope.
+- [x] `app/src/lib/delivery/zero-storage-bridge.ts` — `BridgeRequest.payload` optionally carries `identifier_hash` + `identifier_type`; `indexAcceptedPurposes` writes them when present. No change to R2 layout (payload goes through `canonicalJson` unchanged).
+- [x] `app/src/lib/consent/record.ts` — upfront `get_storage_mode` check via cs_api. Zero-storage branch calls `rpc_consent_record_prepare_zero_storage` + `processZeroStorageEvent` (via cs_orchestrator) + returns `"zs-<fingerprint>"` envelope. Safety-net catch for `storage_mode_requires_bridge` errcode P0003 (handles race between mode check and RPC call). New error kind `zero_storage_bridge_failed` mapped to 502 Bad Gateway in the `/v1/consent/record` route (honest upstream-failure signal for retries).
+
+**Testing plan:**
+- [x] Unit — `app/tests/consent/record.test.ts` — 7 tests. Standard path unchanged, api_key_binding classification, zero-storage happy path (prepare RPC → bridge → envelope), idempotent_replay flag, replay-not-flagged-on-indexError, zero_storage_bridge_failed on upload_failed, race recovery on P0003.
+- [x] Unit — `app/tests/delivery/zero-storage-bridge.test.ts` extended with two Sprint 1.4 cases: identifier_hash propagates to INSERT when payload carries it; Worker-path payload writes NULL.
+- [x] Integration — `tests/integration/zero-storage-invariant.test.ts` Mode B suite: seed api_key for zero org, call `recordConsent` with identifier, assert 0 buffer rows + 2 index rows + rows carry salted-sha256 identifier_hash + identifier_type='email'. Idempotent-replay case: second call with same `client_request_id` returns `idempotent_replay=true` + same deterministic artefact_ids.
+- [x] `bun run lint` + `bun run build` + `cd worker && bunx tsc --noEmit` — all clean (app lint + check-no-service-role; next build 48/48 routes; worker tsc silent).
+- [x] Full local vitest sweep across `delivery` / `worker` / `storage` / `consent` — 245/245 PASS.
+- [ ] Live: operator pushes migration 54 + runs the extended invariant test against live DB. Pending operator.
+
+**Status:** `[x] complete (code + unit tests + integration test; live verification pending operator migration push).`
+
 ### Phase 2: BYOS credential validation (G-006)
 
 #### Sprint 2.1: Credential-validation UX
