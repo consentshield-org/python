@@ -244,19 +244,40 @@ Run on every provisioning, every credential rotation, and nightly-verify cron (r
 
 **Status:** `[x] complete 2026-04-24 — route + page + form + 18 new unit tests shipped. ADR originally called for a Postgres RPC; revised to a Next.js-only design because the probe is Node-native (same pattern as Sprint 2.1). Existing rate-limit + Turnstile + org-role primitives reused — zero new shared helpers, which matches the "share narrowly" memory.`
 
-#### Sprint 3.2 — Storage migration Edge Function (copy + cutover)
+#### Sprint 3.2 — Storage migration orchestrator (copy + cutover)
 
 **Estimated effort:** 1.5 days
 
+**Design amendment (2026-04-24):** same revision as Sprints 2.1 + 3.1. The original ADR specified a Supabase Edge Function (Deno); moved to a Next.js API route (Node) because the ListObjectsV2 / GET / PUT sigv4 signing + `runVerificationProbe` are all Node-native. Chunk chain drives via `public.dispatch_migrate_storage` + `net.http_post` — each route invocation processes one chunk, then self-fires the next chunk. Safety-net cron re-kicks stuck migrations every 1 minute. The `cutover_forward_only` mode name from the original spec is now `forward_only`.
+
 **Deliverables:**
-- [ ] `supabase/functions/migrate-customer-storage/index.ts` — Input: `{org_id, target_config, mode: 'copy_existing' | 'cutover_forward_only'}`. For `copy_existing`: streams every object from CS-managed bucket → target bucket via S3 CopyObject (cross-account via access-key chaining: download as source-bucket token, upload as target-bucket token). On completion: atomic UPDATE on `export_configurations` + REVOKE CS-managed token + SCHEDULE 30-day retention hold on CS-managed bucket.
-- [ ] `public.storage_migrations` (new tracking table) with per-migration progress: `{id, org_id, from_config_id, to_config_id, mode, state, objects_total, objects_copied, started_at, completed_at, error_text}`.
-- [ ] Resumable: if the job crashes mid-copy, the next invocation picks up from the last-completed object key (S3 ListObjectsV2 with StartAfter=last_copied_key).
+- [x] `supabase/migrations/20260804000038_storage_migrations_and_dispatch.sql`:
+  - `public.storage_migrations` table: `{id, org_id, from_config_id, from_config_snapshot, to_config, to_credential_enc, mode, state, objects_total, objects_copied, last_copied_key, retention_until, started_at, last_activity_at, completed_at, error_text, created_at}`. State enum: `queued | copying | completed | failed`. Exclusion constraint `storage_migrations_active_unique` guarantees at most one `queued|copying` row per org.
+  - RLS `org_select` policy so customers can read their own org's migrations for the progress panel.
+  - `cs_orchestrator` grants: SELECT + INSERT + UPDATE.
+  - `public.dispatch_migrate_storage(migration_id)` — net.http_post to the Next.js route, soft-fail on missing vault.
+  - AFTER INSERT trigger fires the first dispatch for any row inserted in `queued` state.
+  - `pg_cron` `storage-migration-retry` — `* * * * *`, re-kicks migrations with last_activity_at older than 2 min.
+  - `admin.storage_migrate(org_id, to_config, to_credential_enc, mode, reason)` RPC — audit-logged operator-triggered migration; raises on already-active.
+- [x] `app/src/lib/storage/migrate-org.ts` — `processMigrationChunk(pg, migrationId, deps?)` orchestrator. Two modes:
+  - `forward_only`: probe target → atomic transaction UPDATEs `export_configurations` (storage_provider, bucket_name, region, write_credential_enc, is_verified=true) + UPDATEs `storage_migrations` (state=completed, retention_until=now+30d, to_credential_enc=null). Completes in one chunk.
+  - `copy_existing`: target probe (first chunk only) → loop ListObjectsV2 from source → presignGet + fetch + putObject for each key up to CHUNK_OBJECT_LIMIT (200) or CHUNK_TIME_BUDGET_MS (240 s). Commits progress every 20 objects. When ListObjects returns an empty/untruncated page → atomic cutover.
+  - Crash-resume: every iteration writes `last_copied_key` so the next chunk invocation re-lists with `start-after=<last_copied_key>`.
+  - Credential decrypt: inline HMAC key derivation + `public.decrypt_secret` via direct SQL (same pattern as provision-org).
+- [x] `app/src/app/api/internal/migrate-storage/route.ts` — bearer-authed POST (reuses `STORAGE_PROVISION_SECRET`). Calls `processMigrationChunk`; on `in_flight` result, fires `public.dispatch_migrate_storage` to self-schedule the next chunk.
+- [x] `app/src/app/api/orgs/[orgId]/storage/byok-migrate/route.ts` — customer-facing initiator. Auth chain: `requireOrgAccess(['org_admin'])` → body + Turnstile → target probe (refuses bad creds before row creation) → encrypt target creds → INSERT `storage_migrations` row with `mode` and `to_credential_enc`. Trigger auto-dispatches the first chunk. Returns `{migration_id, mode}`.
+- [x] `app/src/app/api/orgs/[orgId]/storage/migrations/[migrationId]/route.ts` — customer-facing GET for status polling; reads via the authed Supabase client + `org_select` RLS policy.
+- [x] `app/src/app/(dashboard)/dashboard/settings/storage/_components/byok-form.tsx` — expanded from Sprint 3.1. Adds stage machine: `entering → validating → validated → migrating → done` (+ probe_failed / transport_failed branches). Validated stage shows a mode picker (forward_only / copy_existing) with explanatory copy. Migrating stage polls the status endpoint every 3 s, surfacing state + objects_copied live. Done stage renders a success or failure panel.
+- [x] **Operator step (completed):** seeded Vault secret `cs_migrate_storage_url` → `https://app.consentshield.in/api/internal/migrate-storage`. Bearer reuses `cs_provision_storage_secret`.
 
 **Testing plan:**
-- [ ] Happy: seed 100 objects in CS-managed → run copy → all 100 appear in target → `export_configurations` updated → CS-managed token revoked.
-- [ ] Crash-resume: kill the job mid-copy → re-invoke → completes without re-copying already-copied objects.
-- [ ] Forward-only: no copy, just pointer swap. Historical objects remain accessible via admin audit-export download path until the customer's retention window expires.
+- [x] `app/tests/storage/migrate-org.test.ts` — Vitest, 10 tests. Lifecycle guards (not_found, terminal-completed, terminal-failed short-circuits); forward_only happy path (probe → atomic cutover, state=completed); forward_only with probe rejection (state=failed + readable error); already-copying re-entry (skips the queued→copying transition); copy_existing happy path (zero objects → straight to cutover); copy_existing in_flight when ListObjects isTruncated+budget exhausted; resume from `last_copied_key` (no probe on re-entry); null-guard when `to_credential_enc` is already wiped.
+- [x] `app/tests/storage/byok-migrate-route.test.ts` — Vitest, 17 tests. Happy path with credential-absence-from-response assertion; 3 auth branches (401/403/403); 8 × missing-field 400; invalid provider 400; invalid mode 400; Turnstile failure 400 (probe never runs); probe failure 400 (no DB writes); exclusion-constraint 409 (migration_already_active).
+- [x] `bunx vitest run tests/storage/` — 90/90 PASS (63 pre-existing + 27 new across orchestrator + route).
+- [x] Lint + build clean: 239 files scanned, 0 ESLint / 0 TS / 0 build-warnings.
+- [ ] **Live E2E** (deferred until a customer has BYOK creds): seed a CS-managed bucket with 100 objects → customer-initiates copy_existing migration → all 100 objects land in target → export_configurations swapped → verifiable via dashboard storage panel. Same deferral as Sprint 3.1's manual smoke.
+
+**Status:** `[x] complete 2026-04-24 — migration table + dispatch pipeline + orchestrator (both modes) + internal route + customer initiation route + status polling endpoint + expanded BYOK form + admin RPC + safety-net cron. 27 new unit tests (17 route + 10 orchestrator). 2 migrations applied to dev Supabase. Vault seeded. Live E2E deferred until first-customer BYOK flow.`
 
 ### Phase 4 — Observability + rotation
 

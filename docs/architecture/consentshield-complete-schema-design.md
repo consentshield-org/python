@@ -1062,6 +1062,13 @@ grant select on deletion_receipts to cs_orchestrator;
 grant select, insert, update on export_configurations to cs_orchestrator;
 grant insert on export_verification_failures to cs_orchestrator;  -- migration 35 (Sprint 1.3)
 
+-- storage_migrations: ADR-1025 Phase 3 Sprint 3.2 — the BYOK migration
+-- orchestrator reads migration rows on every chunk and advances them
+-- through queued → copying → completed | failed. INSERT is used by the
+-- customer-facing /api/orgs/[orgId]/storage/byok-migrate route (which
+-- runs as cs_orchestrator) and by admin.storage_migrate(). Migration 38.
+grant select, insert, update on storage_migrations to cs_orchestrator;
+
 -- Can update specific fields for automated workflows
 grant update (status) on rights_requests to cs_orchestrator;
 grant update (assignee_id) on rights_requests to cs_orchestrator;

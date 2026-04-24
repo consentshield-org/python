@@ -42,8 +42,9 @@ Environment variables added under project `consentshield` → Production (all vi
 - **Vault secrets seeded** via the Supabase postgres user + Supavisor pooler (transaction mode):
   - `cs_provision_storage_url` → `https://app.consentshield.in/api/internal/provision-storage`
   - `cs_provision_storage_secret` → matches Vercel `STORAGE_PROVISION_SECRET`
-  - Both read by `public.dispatch_provision_storage(org_id)` on every trigger + cron invocation. Missing-vault is treated as a soft failure — the trigger no-ops silently so the migration can land before the operator has a chance to seed.
-- **Rotation procedure**: update both the Vercel env and the Vault secret in the same window. Trigger dispatches during the gap will soft-fail; the 5-minute `provision-storage-retry` cron catches them once both sides are consistent.
+  - `cs_migrate_storage_url` → `https://app.consentshield.in/api/internal/migrate-storage` (ADR-1025 Sprint 3.2; bearer shared with provision — same trust boundary)
+  - All three read by the matching dispatch functions on every trigger + cron invocation. Missing-vault is treated as a soft failure — the triggers no-op silently so migrations can land before the operator has a chance to seed.
+- **Rotation procedure**: update both the Vercel env and the Vault secret in the same window. Dispatches during the gap will soft-fail; the 5-min `provision-storage-retry` and 1-min `storage-migration-retry` crons catch them once both sides are consistent.
 
 ### Verified end-to-end
 - `bunx tsx scripts/verify-adr-1025-sprint-21.ts` — orchestrator runs against real CF + real Supabase. 4 steps green in 13.38 s.

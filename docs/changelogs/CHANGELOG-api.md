@@ -2,6 +2,41 @@
 
 API route changes.
 
+## [ADR-1025 Sprint 3.2 — storage migration orchestrator + customer migrate route + status polling] — 2026-04-24
+
+**ADR:** ADR-1025 — Customer storage auto-provisioning
+**Sprint:** Phase 3, Sprint 3.2
+
+### Design amendment
+Same revision as Sprint 2.1 + 3.1: Supabase Edge Function (Deno) → Next.js API route (Node). The chunk chain is driven by `public.dispatch_migrate_storage` + `net.http_post`; each route invocation processes one chunk then self-fires the next. `pg_cron` re-kicks stuck migrations every minute. Mode names aligned: `cutover_forward_only` → `forward_only`.
+
+### Added — routes
+- `app/src/app/api/internal/migrate-storage/route.ts` — POST bearer-authed (reuses `STORAGE_PROVISION_SECRET`). Calls `processMigrationChunk`; on `in_flight` self-schedules the next chunk via `pg``select public.dispatch_migrate_storage(...)```.
+- `app/src/app/api/orgs/[orgId]/storage/byok-migrate/route.ts` — customer-facing initiator. Auth chain: `requireOrgAccess(['org_admin'])` → body/Turnstile/schema validation → `runVerificationProbe` against the supplied target creds → encrypt via `public.encrypt_secret` + org-derived key → INSERT `storage_migrations` row with `to_credential_enc`. The AFTER INSERT trigger fires the first chunk dispatch automatically. Returns `{migration_id, mode}`.
+- `app/src/app/api/orgs/[orgId]/storage/migrations/[migrationId]/route.ts` — customer-facing GET for status polling. Reads via the authed Supabase client + `org_select` RLS policy. Returns `{id, state, mode, objects_total, objects_copied, started_at, completed_at, error_text}`.
+
+### Added — orchestrator library
+- `app/src/lib/storage/migrate-org.ts` — `processMigrationChunk(pg, migrationId, deps?)`. Two modes:
+  - **`forward_only`**: probe target → atomic transaction swaps `export_configurations` (storage_provider, bucket_name, region, write_credential_enc, is_verified=true) + marks `storage_migrations` completed with `retention_until = now + 30 days` (Phase 4 cron will delete the old CS-managed bucket at that point) + wipes `to_credential_enc`.
+  - **`copy_existing`**: first-chunk probe → loop `ListObjectsV2` from source → per-key `presignGet + fetch + putObject` up to CHUNK_OBJECT_LIMIT (200 objects) or CHUNK_TIME_BUDGET_MS (240 s) whichever hits first. Progress committed every 20 objects so a crash mid-chunk only loses up to 20 copies. When the list returns empty/untruncated → atomic cutover.
+  - **Resume**: every iteration writes `last_copied_key`; next chunk invocation re-lists with `start-after=<last_copied_key>` so already-copied objects aren't re-copied.
+  - **Credential decrypt**: inline HMAC-SHA256 key derivation (matches `@consentshield/encryption.deriveOrgKey`) + `public.decrypt_secret` via direct SQL. cs_orchestrator already has EXECUTE on the function from the initial pgcrypto migration.
+- Hand-rolled sigv4 for `ListObjectsV2` (not in `sigv4.ts` which only has per-object helpers). Same signing primitives as the existing `deriveSigningKey` / `formatAmzDate` / `sha256Hex`.
+
+### Updated
+- `app/src/app/(dashboard)/dashboard/settings/storage/_components/byok-form.tsx` — Sprint 3.1's form expanded with a stage machine: `entering → validating → validated → migrating → done` (+ `probe_failed` / `transport_failed` branches). Validated stage shows a mode picker (forward_only / copy_existing) with explanatory copy. Migrating stage polls the status endpoint every 3 s. Secret is wiped from form state immediately after the `byok-migrate` POST succeeds — the server already has the encrypted copy by then. Turnstile resets on every terminal state so the user has to re-solve for another attempt.
+
+### Tested
+- `app/tests/storage/migrate-org.test.ts` — 10 tests, 146 ms. Not-found + two terminal-short-circuit guards; forward_only happy + probe-rejection failure + already-copying skip-transition; copy_existing zero-objects → direct cutover, truncated → in_flight, resume-from-cursor (no probe on re-entry); null-guard when `to_credential_enc` is wiped.
+- `app/tests/storage/byok-migrate-route.test.ts` — 17 tests, 155 ms. Happy path (migration_id returned, credentials never in response body) + 3 auth branches + 8 × missing-field + invalid-provider + invalid-mode + Turnstile failure (probe never runs) + probe failure (zero DB writes) + exclusion-constraint 409.
+- `bunx vitest run tests/storage/` — 90/90 PASS (63 pre-existing + 27 new).
+- Lint + build clean: 239 files, 0 violations, Next.js 16 build 0 errors / 0 warnings.
+
+### Scope boundary
+- **Live E2E deferred** until a customer has BYOK creds to test with. Same reason as Sprint 3.1 — validation/migration can't be meaningfully exercised without real third-party storage credentials.
+- **Retention cleanup cron** (actually deleting the CS-managed bucket after 30 days): covered by the `retention_until` column landing now, but the delete-after-retention cron ships in Phase 4 Sprint 4.1 alongside the nightly verify cron (same storage-hygiene cadence).
+- **Admin-triggered migration** (`admin.storage_migrate` RPC) is implemented in this sprint; the admin-console UI panel to call it ships in a later admin-surface sprint.
+
 ## [ADR-1025 Sprint 3.1 — BYOK credential validation route + settings UI] — 2026-04-24
 
 **ADR:** ADR-1025 — Customer storage auto-provisioning

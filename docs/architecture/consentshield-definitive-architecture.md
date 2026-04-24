@@ -227,7 +227,9 @@ CAN INSERT: audit_log, processing_log, rights_request_events, deletion_receipts,
             export_configurations (ADR-1025 Sprint 2.1 — provisioning route UPSERTs here after
                                    a successful verification probe; migration 20260804000037),
             export_verification_failures (ADR-1025 Sprint 1.3 — probe failures;
-                                          migration 20260804000035)
+                                          migration 20260804000035),
+            storage_migrations (ADR-1025 Sprint 3.2 — BYOK migration orchestrator;
+                                migration 20260804000038)
 CAN SELECT: accounts, account_memberships, organisations, org_memberships, web_properties,
             plans, tracker_signatures, integration_connectors, retention_rules,
             notification_channels, rights_requests, consent_artefact_index,
@@ -237,6 +239,8 @@ CAN SELECT: accounts, account_memberships, organisations, org_memberships, web_p
                                 that was missing from the initial scoped-roles migration 010),
             export_configurations (ADR-1025 Sprint 2.1 — provisioning idempotency check;
                                    migration 20260804000037),
+            storage_migrations (ADR-1025 Sprint 3.2 — migration orchestrator loads rows at
+                                every chunk; migration 20260804000038),
             consent_events (DEPA — process-consent-event needs the originating event row),
             purpose_definitions (DEPA), purpose_connector_mappings (DEPA),
             consent_artefacts (DEPA), consent_expiry_queue (DEPA),
@@ -249,6 +253,9 @@ CAN UPDATE: rights_requests.status/assignee_id, consent_artefact_index.validity_
             export_configurations (ADR-1025 — full-row update via UPSERT; no column-level
                                    restriction because the orchestrator writes bucket_name +
                                    write_credential_enc + is_verified atomically),
+            storage_migrations (ADR-1025 Sprint 3.2 — orchestrator advances state
+                                queued→copying→completed/failed + bumps progress counters +
+                                wipes to_credential_enc on terminal state),
             consent_events.artefact_ids (DEPA — reconcile back-reference after artefact creation),
             consent_artefacts.status (DEPA — expiry enforcement and replacement only),
             consent_expiry_queue.notified_at/processed_at/superseded (DEPA — expiry pipeline),

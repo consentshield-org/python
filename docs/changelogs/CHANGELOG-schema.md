@@ -2,6 +2,40 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-1025 Sprint 3.2 — storage_migrations table + dispatch pipeline + admin.storage_migrate RPC] — 2026-04-24
+
+**ADR:** ADR-1025 — Customer storage auto-provisioning
+**Sprint:** Phase 3, Sprint 3.2 — Storage migration orchestrator (copy + cutover)
+
+### Added
+- `supabase/migrations/20260804000038_storage_migrations_and_dispatch.sql` — six-part migration:
+  1. **`public.storage_migrations`** table. Self-contained: snapshots source config at migration start (`from_config_snapshot` jsonb), carries target config (`to_config` jsonb) + encrypted target credential (`to_credential_enc` bytea, wiped on terminal state). State enum: `queued | copying | completed | failed`. Two indexes: `(org_id, started_at desc)` for history + `(state, last_activity_at)` partial on active states for the safety-net cron. An exclusion constraint `storage_migrations_active_unique` guarantees at most one `queued|copying` row per org — terminal rows stay as history alongside. `last_activity_at` is auto-bumped via `touch_storage_migration_activity()` BEFORE UPDATE trigger on any non-terminal transition.
+  2. **RLS**: `org_select` policy so customers can read their own org's migrations (powers the status-polling UI). No INSERT/UPDATE/DELETE from authenticated.
+  3. **cs_orchestrator grants**: SELECT + INSERT + UPDATE on `public.storage_migrations`.
+  4. **`public.dispatch_migrate_storage(p_migration_id uuid)`** — SECURITY DEFINER. Reads `cs_migrate_storage_url` + `cs_provision_storage_secret` from Vault, fires `net.http_post` to the Next.js `/api/internal/migrate-storage`. Soft-fails NULL on missing Vault. Called by: (a) AFTER INSERT trigger, (b) the route itself after chunk completion, (c) safety-net cron, (d) `admin.storage_migrate`.
+  5. **AFTER INSERT trigger** `storage_migrations_dispatch_after_insert` — fires `dispatch_migrate_storage` only for rows in `queued` state. EXCEPTION WHEN OTHERS swallow is load-bearing.
+  6. **`pg_cron` safety-net** `storage-migration-retry` — every minute. Sweeps active migrations with `last_activity_at < now() - interval '2 minutes'` AND `started_at > now() - interval '24 hours'`. Caps at 20 rows per run.
+- **`admin.storage_migrate(p_org_id uuid, p_to_config jsonb, p_to_credential_enc bytea, p_mode text, p_reason text) → jsonb`** — operator-triggered migration. Guards: `admin.require_admin('support')`, ≥10-char reason, valid mode (`forward_only` | `copy_existing`), non-null target-config + credential, org has a source `export_configurations` row, AND no active migration already queued/copying. Snapshots source into `from_config_snapshot`. Inserts `storage_migrations` row (trigger auto-dispatches). Writes `admin.admin_audit_log` entry with action `adr1025_storage_migrate`. Returns `{enqueued: true, migration_id, mode}`.
+
+### Operator step (completed 2026-04-24)
+Seeded new Vault secret via Supabase postgres user + Supavisor pooler:
+```sql
+select vault.create_secret(
+  'https://app.consentshield.in/api/internal/migrate-storage',
+  'cs_migrate_storage_url'
+);
+```
+The bearer (`cs_provision_storage_secret`) is shared with the provision-storage pipeline — same Vercel env, same trust boundary.
+
+### Tested
+- `bunx supabase db push` — 1 migration applied cleanly against dev DB.
+- Verification queries at the bottom of the migration file confirm the trigger, cron, and admin RPC landed. pg_cron row present at schedule `* * * * *`.
+- Orchestrator behavior verified end-to-end via mocked unit tests (90/90 storage tests PASS); live E2E deferred until first-customer BYOK flow.
+
+### Architecture changes
+- cs_orchestrator now has SELECT + INSERT + UPDATE on a new surface (`public.storage_migrations`). Added to the authoritative grant ledger in `consentshield-complete-schema-design.md` §5.1 + `consentshield-definitive-architecture.md` §5.
+- A new admin action `adr1025_storage_migrate` is recorded in `admin.admin_audit_log`. Operators auditing the audit log now see migrations alongside other platform_operator / support actions.
+
 ## [ADR-1025 Sprint 2.1 — provisioning dispatch + admin RPC + cs_orchestrator grants] — 2026-04-24
 
 **ADR:** ADR-1025 — Customer storage auto-provisioning
