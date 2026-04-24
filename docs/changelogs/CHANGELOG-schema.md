@@ -2,6 +2,41 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-1027 Sprint 1.2 — admin.admin_dashboard_tiles() RPC + account-tier tiles] — 2026-04-24
+
+**ADR:** ADR-1027 — Admin account-awareness pass
+**Sprint:** Phase 1, Sprint 1.2 — Dashboard tiles account-aware
+
+### Added
+- `supabase/migrations/20260804000043_adr1027_s12_admin_dashboard_tiles.sql` — `admin.admin_dashboard_tiles()` SECURITY DEFINER function, support-tier gated (`admin.require_admin('support')`), returns single-round-trip `jsonb` envelope:
+  - `generated_at`
+  - `org_tier`: latest `admin.platform_metrics_daily` row (total_orgs / active_orgs / total_consents / artefacts / rights_requests / worker_errors / buffer age), or `null` if no snapshot yet.
+  - `account_tier`:
+    - `accounts_total` — total row count of `public.accounts`
+    - `accounts_by_plan` — LEFT JOIN against `public.plans` so every active plan appears with count ≥ 0 (zero-count plans render too; dashboard histogram stays honest when a plan has no members). Ordered by `base_price_inr nulls last`.
+    - `accounts_by_status` — five-row ordered distribution (`trial` · `active` · `past_due` · `suspended` · `cancelled`).
+    - `orgs_per_account_p50` / `orgs_per_account_p90` / `orgs_per_account_max` — `percentile_cont` over a CTE of counts grouped by `account_id`.
+    - `trial_to_paid_rate_30d` / `trial_to_paid_numerator` / `trial_to_paid_denominator` — denominator = accounts whose `trial_ends_at` fell inside the last 30 days; numerator = subset now in `status='active'`. Rate is **NULL** when denominator is zero so the frontend can distinguish "no trials ended" from "0% converted".
+
+### Admin console
+- `admin/src/app/(operator)/page.tsx` — switched from direct `platform_metrics_daily` read to `admin.admin_dashboard_tiles()` RPC. New "Accounts" section above the existing "Organisations" section: four tiles (accounts total, orgs-per-account p50·p90·max, trial→paid 30d gauge with green ≥40 / amber ≥20 / red tones, suspended-accounts with past_due callout) + plan-distribution card. Org-tier section unchanged.
+- `admin/src/components/ops-dashboard/plan-distribution-card.tsx` — new CSS-grid horizontal histogram. One bar per active plan, width scaled to the tallest bar (not to total — so low-count plans stay visible), with count + percentage-share readout. Tone per plan uses the existing Tailwind palette (`text-3` / `navy` / `red-700` / `amber-500` / `green-600`). No new chart dependency.
+
+### Design
+- `docs/admin/design/consentshield-admin-screens.html` Operations Dashboard panel — prepended an "Accounts" label row + 4-tile grid (Accounts total, Orgs per account, Trial→paid 30d, Suspended accounts) + the plan-distribution histogram card, all above the existing 6-tile organisations grid. Copy + bar widths are illustrative of a 94-account, 9/21-converted, growth-heavy mix.
+- `docs/admin/design/ARCHITECTURE-ALIGNMENT-2026-04-16.md` — reconciliation tracker flipped Sprint 1.2 to ✅ wireframe + ✅ code.
+
+### Tested
+- [x] `cd admin && bunx tsc --noEmit` — PASS.
+- [x] `cd admin && bun run lint` — PASS.
+- [x] `bunx supabase db push` — applied cleanly.
+- [x] `bunx vitest run tests/admin/admin-dashboard-tiles.test.ts` — **5/5 PASS**: support-role envelope + seven-field shape + zero-count plans included + null-rate when denominator=0 + round-trip rate = round(numer/denom\*100, 1) + read_only rejected.
+
+### Why
+A flat 6-tile org-tier dashboard couldn't answer the operator questions that matter most for a billed multi-tenant SaaS: how many paying accounts do we have, what's the plan mix, what's the trial-to-paid rate, do we have enterprise accounts. Accounts came into the picture with ADR-0044 but never reached the landing page. Sprint 1.2 makes the accounts view first — the operator sees the marketable-product picture before the operational-health picture every time they land on the admin console.
+
+---
+
 ## [ADR-1027 Sprint 1.1 — admin_audit_log.account_id column + trigger + backfill] — 2026-04-24
 
 **ADR:** ADR-1027 — Admin account-awareness pass

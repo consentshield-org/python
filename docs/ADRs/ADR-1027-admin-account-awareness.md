@@ -118,20 +118,25 @@ Close every admin-account-awareness drift in one ADR. No deferrals to later ADRs
 - [ ] `bunx supabase db push` — pending (operator action; migration is idempotent).
 - [ ] `bun run test` — pending (depends on db push).
 
-#### Sprint 1.2 — Dashboard tiles account-aware
+#### Sprint 1.2 — Dashboard tiles account-aware · **[x] complete 2026-04-24**
 
 **Estimated effort:** 0.75 day
 
 **Prerequisite wireframe:** Update `docs/admin/design/consentshield-admin-screens.html` Dashboard panel to swap the tile row + add the plan-distribution chart + trial-conversion gauge.
 
 **Deliverables:**
-- [ ] `admin.admin_dashboard_tiles()` RPC — single round-trip returns all current tile metrics + new account-tier metrics (account count, accounts-by-plan histogram, orgs-per-account p50/p90, trial-to-paid conversion last 30d).
-- [ ] `admin/src/app/(operator)/page.tsx` — tile row reworked. Org-level tiles retained; new account-level tiles sit above them.
-- [ ] Basic recharts or CSS-grid histogram for the accounts-by-plan breakdown (no new dep — reuse whatever the ADR-0038 status page uses for its sparkline).
+- [x] Migration `20260804000043_adr1027_s12_admin_dashboard_tiles.sql` — `admin.admin_dashboard_tiles()` SECURITY DEFINER RPC, support-tier gated. Returns single-round-trip jsonb envelope `{generated_at, org_tier, account_tier}`. `org_tier` mirrors the existing `platform_metrics_daily` snapshot; `account_tier` computes live (low cardinality): `accounts_total`, `accounts_by_plan` (LEFT JOIN against `public.plans` so zero-count plans render), `accounts_by_status`, `orgs_per_account_p50/p90/max` (percentile_cont over a CTE of counts grouped by account), `trial_to_paid_rate_30d` + numerator + denominator. Rate is NULL when denominator is zero (avoids 0/0 NaN).
+- [x] `admin/src/app/(operator)/page.tsx` — switched from the direct `platform_metrics_daily` read to the new RPC. Added an "Accounts" section above the existing "Organisations" section: four tiles (accounts total, orgs-per-account p50·p90·max, trial→paid 30d gauge with green/amber/red tone thresholds, suspended accounts with past_due callout) + the plan-distribution card. Org-tier section unchanged below.
+- [x] `admin/src/components/ops-dashboard/plan-distribution-card.tsx` — new CSS-grid horizontal histogram. One bar per active plan, width scaled to max, with count + percentage share readout. No new chart dep; tone per plan (`trial_starter`/`starter`/`growth`/`pro`/`enterprise`) uses the existing Tailwind palette.
 
 **Testing plan:**
-- [ ] Unit: RPC returns shape; no metric returns NaN / infinity under an empty DB.
-- [ ] Integration: seed 5 accounts across 3 plans, 10 orgs, 2 trial-to-paid conversions in the last 30d → RPC returns the expected counts.
+- [x] `tests/admin/admin-dashboard-tiles.test.ts` — five tests: (1) support-role can call the RPC and envelope carries `generated_at` + `account_tier` + `org_tier` keys; (2) account_tier carries the seven expected fields with correct types; (3) accounts_by_plan covers every active plan (zero-count rows included); (4) trial_to_paid_rate_30d is null when denominator is zero, otherwise in `[0, 100]` and matches `round(numer/denom*100, 1)`; (5) read_only role is rejected.
+
+**Test results:**
+- [x] `cd admin && bunx tsc --noEmit` — PASS.
+- [x] `cd admin && bun run lint` — PASS (no warnings).
+- [x] `bunx supabase db push` — applied cleanly.
+- [x] `bunx vitest run tests/admin/admin-dashboard-tiles.test.ts` — **5/5 PASS** on live dev project.
 
 ### Phase 2 — Contextual surfaces
 

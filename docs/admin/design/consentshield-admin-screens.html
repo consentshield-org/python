@@ -336,6 +336,71 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
       </div>
     </div>
     <div class="content-area">
+      <!-- ADR-1027 Sprint 1.2 — Account-tier tile row. Sits above the
+           existing org-tier row so operators see the marketable product
+           picture (plan mix, trial→paid, enterprise-scale accounts) before
+           the operational health view. -->
+      <div style="margin-bottom:8px;font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em">Accounts</div>
+      <div class="grid-6" style="grid-template-columns:repeat(4,1fr);margin-bottom:12px">
+        <div class="metric-tile">
+          <div class="metric-tile-label">Accounts total</div>
+          <div class="metric-tile-value">94</div>
+          <div class="metric-tile-delta up">+6 (last 30d)</div>
+        </div>
+        <div class="metric-tile">
+          <div class="metric-tile-label">Orgs per account</div>
+          <div class="metric-tile-value">2 · 6 · 14</div>
+          <div class="metric-tile-delta">p50 · p90 · max</div>
+        </div>
+        <div class="metric-tile">
+          <div class="metric-tile-label">Trial→paid (30d)</div>
+          <div class="metric-tile-value" style="color:var(--green)">42%</div>
+          <div class="metric-tile-delta">9/21 converted</div>
+        </div>
+        <div class="metric-tile">
+          <div class="metric-tile-label">Suspended accounts</div>
+          <div class="metric-tile-value">1</div>
+          <div class="metric-tile-delta down">+2 past due</div>
+        </div>
+      </div>
+
+      <!-- Accounts-by-plan horizontal histogram. Pure CSS — no chart lib. -->
+      <div class="card" style="margin-bottom:18px">
+        <div class="card-header">
+          <div class="card-title">Accounts by plan</div>
+          <span style="font-size:11px;color:var(--text-3)">94 accounts total</span>
+        </div>
+        <div class="card-body" style="display:flex;flex-direction:column;gap:8px;font-size:12px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="width:140px;color:var(--text-2)">Trial (Starter limits)</span>
+            <div style="position:relative;height:18px;flex:1;background:var(--bg);border-radius:4px;overflow:hidden"><div style="position:absolute;inset:0 auto 0 0;width:12%;background:var(--text-3)"></div></div>
+            <span style="width:80px;text-align:right;font-family:ui-monospace">11 · 12%</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="width:140px;color:var(--text-2)">Starter</span>
+            <div style="position:relative;height:18px;flex:1;background:var(--bg);border-radius:4px;overflow:hidden"><div style="position:absolute;inset:0 auto 0 0;width:32%;background:var(--navy)"></div></div>
+            <span style="width:80px;text-align:right;font-family:ui-monospace">30 · 32%</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="width:140px;color:var(--text-2)">Growth</span>
+            <div style="position:relative;height:18px;flex:1;background:var(--bg);border-radius:4px;overflow:hidden"><div style="position:absolute;inset:0 auto 0 0;width:48%;background:var(--red)"></div></div>
+            <span style="width:80px;text-align:right;font-family:ui-monospace">45 · 48%</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="width:140px;color:var(--text-2)">Pro</span>
+            <div style="position:relative;height:18px;flex:1;background:var(--bg);border-radius:4px;overflow:hidden"><div style="position:absolute;inset:0 auto 0 0;width:7%;background:var(--amber)"></div></div>
+            <span style="width:80px;text-align:right;font-family:ui-monospace">7 · 7%</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="width:140px;color:var(--text-2)">Enterprise</span>
+            <div style="position:relative;height:18px;flex:1;background:var(--bg);border-radius:4px;overflow:hidden"><div style="position:absolute;inset:0 auto 0 0;width:1%;background:var(--green)"></div></div>
+            <span style="width:80px;text-align:right;font-family:ui-monospace">1 · 1%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Org-tier metrics (unchanged from the pre-ADR-1027 dashboard). -->
+      <div style="margin-bottom:8px;font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em">Organisations</div>
       <div class="grid-6" style="margin-bottom:16px">
         <div class="metric-tile">
           <div class="metric-tile-label">Total orgs</div>
