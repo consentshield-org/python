@@ -5158,3 +5158,33 @@
 | 18:21 | Edited docs/ADRs/ADR-1015-v1-api-integration-tests-and-developer-docs.md | added error handling | ~967 |
 | 18:21 | Edited docs/changelogs/CHANGELOG-marketing.md | added error handling | ~1158 |
 | 18:22 | Edited docs/ADRs/ADR-index.md | inline fix | ~275 |
+| 18:23 | Session end: 26 writes across 15 files (20260804000052_adr1003_s13_zero_storage_artefact_index.sql, zero-storage-bridge.ts, zero-storage-bridge.test.ts, cs-vault-setup.sql, zero-storage-invariant.test.ts) | 34 reads | ~197232 tok |
+| 18:31 | Created marketing/src/app/docs/cookbook/record-consent-at-checkout/page.mdx | — | ~2565 |
+| 18:32 | Created marketing/src/app/docs/cookbook/build-a-preference-center/page.mdx | — | ~3118 |
+| 18:32 | Edited app/src/lib/storage/sigv4.ts | added error handling | ~978 |
+| 18:33 | Created marketing/src/app/docs/cookbook/handle-a-rights-request/page.mdx | — | ~3369 |
+| 18:33 | Created app/src/lib/storage/validate.ts | — | ~2606 |
+| 18:34 | Edited app/src/app/api/orgs/[orgId]/storage/byok-validate/route.ts | expanded (+11 lines) | ~472 |
+| 18:34 | Edited app/src/app/api/orgs/[orgId]/storage/byok-validate/route.ts | 11→11 lines | ~102 |
+| 18:34 | Edited app/src/app/api/orgs/[orgId]/storage/byok-validate/route.ts | runVerificationProbe() → runScopeDownProbe() | ~263 |
+| 18:34 | Edited app/src/app/(dashboard)/dashboard/settings/storage/_components/byok-form.tsx | CSS: 1 | ~346 |
+| 18:34 | Created marketing/src/app/docs/cookbook/wire-deletion-connector-webhook/page.mdx | — | ~3692 |
+| 18:35 | Edited app/src/app/(dashboard)/dashboard/settings/storage/_components/byok-form.tsx | expanded (+23 lines) | ~302 |
+| 18:35 | Edited app/src/app/(dashboard)/dashboard/settings/storage/_components/byok-form.tsx | 10→12 lines | ~93 |
+| 18:35 | Edited app/src/app/(dashboard)/dashboard/settings/storage/_components/byok-form.tsx | modified if() | ~195 |
+| 18:35 | Edited app/src/app/(dashboard)/dashboard/settings/storage/_components/byok-form.tsx | expanded (+14 lines) | ~345 |
+| 18:35 | Edited app/src/app/(dashboard)/dashboard/settings/storage/_components/byok-form.tsx | expanded (+14 lines) | ~294 |
+| 18:35 | Edited app/src/app/(dashboard)/dashboard/settings/storage/_components/byok-form.tsx | modified ProbeChecksTable() | ~671 |
+| 18:36 | Created marketing/src/app/docs/cookbook/batch-verify-consents/page.mdx | — | ~3080 |
+| 18:37 | Created marketing/src/app/docs/cookbook/rotate-api-key-safely/page.mdx | — | ~3098 |
+| 18:37 | Edited app/tests/storage/sigv4.test.ts | expanded (+8 lines) | ~224 |
+| 18:37 | Edited app/tests/storage/sigv4.test.ts | added optional chaining | ~991 |
+| 18:38 | Created app/tests/storage/validate.test.ts | — | ~1926 |
+| 18:39 | Created marketing/src/app/docs/cookbook/build-dpb-audit-export/page.mdx | — | ~4366 |
+| 18:39 | Edited docs/ADRs/ADR-1003-processor-posture-and-healthcare-unlock.md | expanded (+8 lines) | ~926 |
+| 18:39 | Edited docs/changelogs/CHANGELOG-dashboard.md | expanded (+16 lines) | ~478 |
+| 18:40 | Edited docs/changelogs/CHANGELOG-api.md | expanded (+22 lines) | ~902 |
+| 18:40 | Edited docs/ADRs/ADR-1015-v1-api-integration-tests-and-developer-docs.md | added error handling | ~780 |
+| 18:40 | Edited docs/ADRs/ADR-index.md | inline fix | ~184 |
+| 18:41 | Edited docs/changelogs/CHANGELOG-marketing.md | added error handling | ~1221 |
+| 18:41 | Edited app/tests/storage/byok-validate-route.test.ts | modified constructor() | ~482 |

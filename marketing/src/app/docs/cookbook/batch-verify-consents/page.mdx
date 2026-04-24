@@ -1,0 +1,319 @@
+export const metadata = {
+  title: 'Batch-verify consents server-side',
+  description:
+    'Verify consent for thousands of data principals in a single call — POST /v1/consent/verify/batch patterns for marketing sends, data-pipeline gates, and periodic audits.',
+}
+
+<Breadcrumb trail={[
+  { label: 'Docs', href: '/docs' },
+  { label: 'Cookbook', href: '/docs' },
+  { label: 'Batch-verify consents' },
+]} />
+
+# Batch-verify consents server-side
+
+## Problem
+
+You're about to:
+
+- Send a marketing email blast to 50 000 recipients.
+- Run the nightly analytics ETL across 2 million pageview records.
+- Sync customer lists to a new CRM.
+
+Before any of those — DPDP §6 says you must verify that each data
+principal still has **active** consent for the specific purpose. Doing
+that one HTTP call at a time costs 50 000 round trips. Batch
+verification folds the whole check into a single request per 10 000
+identifiers.
+
+## Shape
+
+`POST /v1/consent/verify/batch` takes one `property_id` + one
+`identifier_type` + one `purpose_code` + up to **10 000 identifiers**.
+It returns a `results` array in the same order, each row carrying the
+current `status` plus the active artefact + revocation/expiry metadata
+when relevant.
+
+<Callout tone="info" title="One purpose per batch">
+The batch endpoint is scoped to *one purpose_code per call*. Verifying
+marketing + analytics consent together means two calls (or a Promise.all
+across several). This is deliberate — the compliance decision is
+per-purpose, and mixing purposes in one result envelope would
+complicate audit log shape.
+</Callout>
+
+## Full flow
+
+<CodeTabs tabs={[
+  {
+    label: 'cURL',
+    language: 'bash',
+    code: `# Verify marketing consent for 5 customers in one round trip.
+curl -X POST "https://api.consentshield.in/v1/consent/verify/batch" \\
+  -H "Authorization: Bearer $CS_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "property_id":     "3a4b8b21-5a11-4f37-9b7c-6f2e0d5c8b1a",
+    "identifier_type": "email",
+    "purpose_code":    "marketing",
+    "identifiers": [
+      "alice@example.com",
+      "bob@example.com",
+      "charlie@example.com",
+      "deepa@example.com",
+      "eve@example.com"
+    ]
+  }'
+
+# Response (200):
+# {
+#   "property_id":     "3a4b...",
+#   "identifier_type": "email",
+#   "purpose_code":    "marketing",
+#   "evaluated_at":    "2026-04-24T14:30:22Z",
+#   "results": [
+#     { "identifier": "alice@example.com",
+#       "status":     "granted",
+#       "active_artefact_id": "art_01J...",
+#       "revoked_at": null, "expires_at": "2027-03-14T..." },
+#     { "identifier": "bob@example.com",    "status": "revoked",
+#       "revoked_at": "2026-04-20T...", "active_artefact_id": null },
+#     { "identifier": "charlie@example.com", "status": "expired",
+#       "expires_at": "2026-04-10T...", "active_artefact_id": null },
+#     { "identifier": "deepa@example.com",   "status": "never_consented" },
+#     { "identifier": "eve@example.com",     "status": "granted", ... }
+#   ]
+# }`,
+  },
+  {
+    label: 'Node.js',
+    language: 'typescript',
+    code: `// batch-verify.ts — ships a full mailing list through the API with chunking + parallelism.
+const CS_API = 'https://api.consentshield.in/v1'
+const CHUNK  = 10_000
+
+interface VerifyRow {
+  identifier: string
+  status: 'granted' | 'revoked' | 'expired' | 'never_consented'
+  active_artefact_id: string | null
+  revoked_at: string | null
+  revocation_record_id: string | null
+  expires_at: string | null
+}
+
+export async function batchVerify(
+  propertyId: string,
+  purposeCode: string,
+  identifiers: string[],
+): Promise<VerifyRow[]> {
+  const chunks: string[][] = []
+  for (let i = 0; i < identifiers.length; i += CHUNK) {
+    chunks.push(identifiers.slice(i, i + CHUNK))
+  }
+
+  const results = await Promise.all(
+    chunks.map(async (chunk) => {
+      const res = await fetch(\`\${CS_API}/consent/verify/batch\`, {
+        method: 'POST',
+        headers: {
+          Authorization:  \`Bearer \${process.env.CS_API_KEY}\`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          property_id:     propertyId,
+          identifier_type: 'email',
+          purpose_code:    purposeCode,
+          identifiers:     chunk,
+        }),
+      })
+      if (res.status === 429) {
+        const retry = parseInt(res.headers.get('retry-after') ?? '1', 10) * 1000
+        await new Promise((ok) => setTimeout(ok, retry + Math.random() * 200))
+        return batchVerifyOne(propertyId, purposeCode, chunk)     // retry once
+      }
+      if (!res.ok) throw new Error(\`batch verify failed: \${res.status}\`)
+      const { results } = await res.json()
+      return results as VerifyRow[]
+    }),
+  )
+  return results.flat()
+}
+
+// Usage — filter the mailing list to only granted principals.
+export async function filterMailable(propertyId: string, allEmails: string[]) {
+  const rows = await batchVerify(propertyId, 'marketing', allEmails)
+  return rows.filter((r) => r.status === 'granted').map((r) => r.identifier)
+}
+
+async function batchVerifyOne(p: string, c: string, ids: string[]) {
+  // same body as the main Promise.all branch — factored out for retry reuse.
+  const res = await fetch(\`\${CS_API}/consent/verify/batch\`, {
+    method: 'POST',
+    headers: {
+      Authorization:  \`Bearer \${process.env.CS_API_KEY}\`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      property_id: p, identifier_type: 'email', purpose_code: c, identifiers: ids,
+    }),
+  })
+  if (!res.ok) throw new Error(\`retry batch verify failed: \${res.status}\`)
+  const { results } = await res.json()
+  return results as VerifyRow[]
+}`,
+  },
+  {
+    label: 'Python',
+    language: 'python',
+    code: `# batch_verify.py — concurrent chunked verification with backoff.
+import os, asyncio, httpx
+from itertools import islice
+from typing import Literal, TypedDict
+
+CS_API = "https://api.consentshield.in/v1"
+CHUNK  = 10_000
+
+class VerifyRow(TypedDict):
+    identifier: str
+    status: Literal["granted", "revoked", "expired", "never_consented"]
+    active_artefact_id: str | None
+    revoked_at: str | None
+    expires_at: str | None
+
+def chunked(seq, n):
+    it = iter(seq)
+    while True:
+        batch = list(islice(it, n))
+        if not batch: return
+        yield batch
+
+async def _verify_one(c: httpx.AsyncClient, property_id: str, purpose_code: str, ids: list[str]) -> list[VerifyRow]:
+    for attempt in range(3):
+        r = await c.post("/consent/verify/batch", json={
+            "property_id":     property_id,
+            "identifier_type": "email",
+            "purpose_code":    purpose_code,
+            "identifiers":     ids,
+        })
+        if r.status_code == 429:
+            wait = int(r.headers.get("retry-after", "1"))
+            await asyncio.sleep(wait + 0.1 * attempt)
+            continue
+        r.raise_for_status()
+        return r.json()["results"]
+    raise RuntimeError("batch verify exhausted retries")
+
+async def batch_verify(property_id: str, purpose_code: str, identifiers: list[str]) -> list[VerifyRow]:
+    async with httpx.AsyncClient(
+        base_url=CS_API,
+        headers={"Authorization": f"Bearer {os.environ['CS_API_KEY']}"},
+        timeout=30.0,
+    ) as c:
+        tasks = [_verify_one(c, property_id, purpose_code, chunk) for chunk in chunked(identifiers, CHUNK)]
+        return [row for result in await asyncio.gather(*tasks) for row in result]
+
+async def filter_mailable(property_id: str, emails: list[str]) -> list[str]:
+    rows = await batch_verify(property_id, "marketing", emails)
+    return [r["identifier"] for r in rows if r["status"] == "granted"]`,
+  },
+]} />
+
+## Four common use cases
+
+### 1. Marketing send filter
+
+```ts
+const mailable = await filterMailable(propertyId, fullList)
+await mailchimp.createCampaign({ list: mailable })
+```
+
+Only send to `status=granted`. Rejecting the rest is the point of the
+batch check.
+
+### 2. Data-pipeline gate
+
+```ts
+// Nightly ETL — filter pageviews to principals who still consented to analytics.
+const uniquePrincipals = unique(pageviews.map((p) => p.visitor_email))
+const verified = await batchVerify(propertyId, 'analytics', uniquePrincipals)
+const allowed = new Set(verified.filter((r) => r.status === 'granted').map((r) => r.identifier))
+const pipelineInput = pageviews.filter((p) => allowed.has(p.visitor_email))
+```
+
+Run this at the pipeline head. Everything downstream consumes the
+filtered set.
+
+### 3. CRM sync
+
+Before exporting to a new CRM, verify you still have active consent for
+every row. If `status !== 'granted'`, omit the row from the export —
+DPDP §8(3)'s accuracy obligation requires the CRM to contain only
+consented records.
+
+### 4. Periodic compliance audit
+
+Once a week, re-verify your entire active user base. Report:
+
+- `granted` count (expected)
+- `expired` count (principals you need to re-engage)
+- `revoked` count (principals to remove from every system)
+- `never_consented` count (data you shouldn't be holding — fix)
+
+## Gotchas
+
+### Cap is 10 000 identifiers per call
+
+Exceed it and the API returns **422** with `detail: identifiers array must not be empty` or `identifiers array exceeds 10000`. Chunk in your client code — see the samples.
+
+### `identifier` is echoed verbatim
+
+If you submit `Alice@Example.com` and the system normalises to
+`alice@example.com` internally, your result row still echoes
+`Alice@Example.com` in the `identifier` field. Match results back by
+position or by your pre-normalised string.
+
+### `never_consented` is not the same as `revoked`
+
+- **`never_consented`** → no record exists for this identifier + purpose.
+- **`revoked`** → consent once existed and was withdrawn.
+
+For a marketing send, both block dispatch — but for a rights-response,
+`revoked` means you must fan out deletion; `never_consented` means
+there's nothing to delete. The distinction matters.
+
+### `evaluated_at` is server-authoritative
+
+Use the response's `evaluated_at` to timestamp your filtered send, not
+your own wall clock. That timestamp is the forensic "we checked at
+this moment" evidence.
+
+### Rate limits apply across chunks
+
+If you fire 100 parallel 10 000-identifier calls, you'll eat a Growth
+plan's per-second budget. Cap concurrency at 5-10 in-flight calls.
+`Promise.all` with an explicit throttle, or the AsyncClient approach
+above (with sequential await inside the loop) — either works. See
+[rate limits](/docs/rate-limits).
+
+### Use `/v1/consent/verify` for single lookups
+
+If you're verifying one identifier, don't use the batch endpoint with
+a one-element array. `GET /v1/consent/verify` is lighter and
+cacheable.
+
+### Don't cache the results
+
+`status` changes under you when a user revokes. A 10-minute-old
+"granted" result is not safe to rely on. Either re-verify before the
+sensitive operation, or subscribe to the webhook stream (notification
+webhook kind=`consent.revoked`) for near-real-time invalidation.
+
+## Related
+
+- [`POST /v1/consent/verify/batch`](/docs/api/consent/verify-batch) — full endpoint reference + OpenAPI schema.
+- [`GET /v1/consent/verify`](/docs/api/consent/verify) — single-identifier variant.
+- [Artefacts vs. events](/docs/concepts/artefacts-vs-events) — why `active_artefact_id` matters when `status=granted`.
+- [Rate limits](/docs/rate-limits) — plan-tier matrix and `Retry-After` semantics for the chunked-parallel pattern.
+- [Build a DPB audit export](/docs/cookbook/build-dpb-audit-export) — how the per-purpose result counts roll into your quarterly export.
+
+<FeedbackStrip pagePath="marketing/src/app/docs/cookbook/batch-verify-consents/page.mdx" />

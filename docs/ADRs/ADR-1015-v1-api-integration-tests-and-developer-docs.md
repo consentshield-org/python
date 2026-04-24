@@ -150,24 +150,27 @@ Each page is authored in MDX and cross-links to the Scalar playground for intera
 
 **Status:** `[x] complete 2026-04-24`
 
-#### Sprint 2.2: Cookbook — 7 recipes
+#### Sprint 2.2: Cookbook — 7 recipes · `[x] complete 2026-04-24`
 
 **Estimated effort:** 5 days
 
 **Deliverables (each recipe includes problem / shape / full code in 3 languages / gotchas / related):**
-- [ ] `/docs/cookbook/record-consent-at-checkout` (per wireframe §Page 3).
-- [ ] `/docs/cookbook/build-a-preference-center`
-- [ ] `/docs/cookbook/handle-a-rights-request`
-- [ ] `/docs/cookbook/wire-deletion-connector-webhook`
-- [ ] `/docs/cookbook/batch-verify-consents`
-- [ ] `/docs/cookbook/rotate-api-key-safely`
-- [ ] `/docs/cookbook/build-dpb-audit-export`
+- [x] `/docs/cookbook/record-consent-at-checkout` — non-blocking server-side capture with outbox/queue retry pattern. cURL + Node (Next.js route + background queue) + Python. `client_request_id` idempotency, `captured_at` ±15 min window, rejection-recording guidance.
+- [x] `/docs/cookbook/build-a-preference-center` — list → revoke → grant flow over `/v1/consent/artefacts` + `/v1/consent/artefacts/{id}/revoke` + `/v1/consent/record`. cURL + Node (Next.js App Router API routes) + Python (FastAPI). `status=expired` vs `status=revoked` UX distinction.
+- [x] `/docs/cookbook/handle-a-rights-request` — DPDP §11-§14 end-to-end (erasure / access / correction / nomination). cURL + Node + Python. Identity-attestation string as forensic handle; erasure fan-out via `/v1/deletion/trigger`; 30-day SLA clock starts at `created_at`.
+- [x] `/docs/cookbook/wire-deletion-connector-webhook` — full custom-connector build-out. Node (Express), Python (FastAPI + RQ), Go (`net/http`). HMAC verify + raw-body gotcha per framework, `reason=test` short-circuit, Redis-SET-NX dedupe, 5-second ACK budget, signed callback_url post-back.
+- [x] `/docs/cookbook/batch-verify-consents` — 10 000-identifier chunking with concurrent-parallel backoff. cURL + Node (`Promise.all` retry-once) + Python (asyncio + httpx). Four use cases: marketing send filter / ETL gate / CRM sync / weekly compliance audit. `never_consented` vs `revoked` distinction.
+- [x] `/docs/cookbook/rotate-api-key-safely` — 4-step issue→overlap→drain→revoke playbook. cURL + Node + Python CI/CD guard scripts using `/v1/keys/self` for health checks. Incident-response variant for known-leaked keys. 2-year tombstone retention call-out.
+- [x] `/docs/cookbook/build-dpb-audit-export` — DPB quarterly export orchestrator. cURL (`aws s3 sync` + API tail) + Node (AWS SDK v3 + archiver) + Python (boto3 + cryptography). Hybrid R2-primary / API-tail source strategy, `MANIFEST.sha256` + PKCS#1 v1.5 signing, DPB verification recipe.
 
 **Testing plan:**
-- [ ] Each code sample in each recipe is copy-paste runnable in its stated language; verify by shelling the snippet in the integration-test harness (Phase 3).
-- [ ] Every recipe cross-links to the corresponding API-reference endpoint page.
+- [x] `cd marketing && bunx tsc --noEmit` — PASS.
+- [x] `cd marketing && bun run lint` — PASS (zero warnings).
+- [x] `cd marketing && bun run build` — PASS. All 7 cookbook routes prerender static. Total `/docs/*` surface now 22 static + 1 dynamic catchall.
+- [x] Every recipe cross-links to the relevant API-reference endpoint page (even though Phase 3 endpoint-reference pages are routed through Scalar, not dedicated MDX; this is the Sprint-1.2 catchall).
+- [ ] Each code sample copy-paste runnable in its stated language — deferred to Phase 3 Sprint 3.2 integration harness (the ADR's own acceptance criterion binds cookbook samples to partner-reproducible runs in Phase 3, not 2.2).
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete 2026-04-24`
 
 #### Sprint 2.3: Error catalog + API changelog + webhook signatures + status · `[x] complete 2026-04-24`
 

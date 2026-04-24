@@ -2,6 +2,33 @@
 
 Public marketing site (`marketing/` workspace → `consentshield.in`). New in 2026-04-21.
 
+## [ADR-1015 Sprint 2.2 — Cookbook: 7 recipes × 3 languages] — 2026-04-24
+
+**ADR:** ADR-1015 — v1 API integration tests + customer developer documentation
+**Sprint:** Phase 2, Sprint 2.2 — Cookbook
+
+### Added
+- `marketing/src/app/docs/cookbook/record-consent-at-checkout/page.mdx` — non-blocking server-side capture after the payment-provider webhook. cURL + Node (Next.js route + background queue) + Python (Celery/RQ-style async worker). Outbox-pattern vs queue-retry guidance; `client_request_id` idempotency namespacing; `captured_at` ±15 min server-clock window; rejection recording via `rejected_purpose_definition_ids`; 410 Gone → rotation signal, not retriable.
+- `marketing/src/app/docs/cookbook/build-a-preference-center/page.mdx` — self-service consent management for logged-in users. List → revoke → grant flow using `/v1/consent/artefacts` + `/v1/consent/artefacts/{id}/revoke` + `/v1/consent/record`. cURL + Node (Next.js App Router API routes) + Python (FastAPI). UX guidance: `status=expired` vs `status=revoked` distinction, replacement-chain semantics, pagination for long histories.
+- `marketing/src/app/docs/cookbook/handle-a-rights-request/page.mdx` — DPDP §11-§14 end-to-end (erasure / access / correction / nomination). cURL + Node + Python. `identity_verified_by` as forensic handle; erasure fan-out via parallel `/v1/deletion/trigger` across properties; 30-day SLA clock starts at `created_at`; closure-UX expectations (acknowledgement / status page / closure email / escalation path).
+- `marketing/src/app/docs/cookbook/wire-deletion-connector-webhook/page.mdx` — full custom-deletion-connector receiver build-out in Node (Express), Python (FastAPI + Redis + RQ), Go (`net/http`). HMAC verify with raw-body gotcha per framework; `reason=test` short-circuit for `/v1/integrations/{id}/test_delete` smoke tests; Redis `SET NX` dedupe on `request_id`; 5-second ACK budget; 2xx-on-callback requirement; signature-rotation 24 h dual-secret window.
+- `marketing/src/app/docs/cookbook/batch-verify-consents/page.mdx` — 10 000-identifier chunking pattern for mailing-list filter, ETL pipeline gate, CRM sync, weekly compliance audit. cURL + Node (`Promise.all` + retry-once on 429) + Python (`asyncio` + `httpx` + sequential-await-with-retry). `never_consented` vs `revoked` vs `expired` distinction; server-authoritative `evaluated_at` as audit evidence; don't-cache-results rule.
+- `marketing/src/app/docs/cookbook/rotate-api-key-safely/page.mdx` — 4-step zero-downtime rotation (issue → overlap → drain → revoke). cURL + Node + Python CI/CD guard scripts calling `/v1/keys/self` for health-check before traffic flip. Incident-response variant for known-leaked keys (skip overlap, accept blip). 2-year 410 Gone tombstone retention rule. Scope-tightening sequencing guidance.
+- `marketing/src/app/docs/cookbook/build-dpb-audit-export/page.mdx` — DPB-ready quarterly export orchestrator. Hybrid R2/S3-primary + API-tail source strategy per the "customer owns the compliance record" rule. cURL (`aws s3 sync` + paged API + `openssl dgst`) + Node (AWS SDK v3 + archiver + `node:crypto`) + Python (boto3 + `cryptography` PKCS#1 v1.5). DPB-expected package layout, `MANIFEST.sha256` + detached signature, verification recipe, air-gapped signing-key guidance.
+
+### Tested
+- [x] `cd marketing && bunx tsc --noEmit` — PASS.
+- [x] `cd marketing && bun run lint` — PASS (zero warnings).
+- [x] `cd marketing && bun run build` — PASS. All 7 cookbook routes prerender static. Total `/docs/*` surface now 22 static routes + 1 dynamic catchall.
+
+### Why
+Sprint 2.2 closes Phase 2's cookbook tier — the heaviest authoring pass in the whole ADR by far. Each recipe is grounded in the actual OpenAPI request/response shapes (e.g. `property_id` + `purpose_definition_ids` + `captured_at` + `client_request_id` on `/v1/consent/record`, not the simplified shape the Quickstart example used). Node and Python are on every recipe; Go appears on the deletion-webhook recipe where it's a natural receiver-side choice (webhook infra is often Go). cURL is on every recipe for the "copy-paste a bash one-liner" moment. Phase 3 (integration-test harness) will bind each sample to a copy-paste-runnable partner reproduction; 2.2 is the authoring complete.
+
+### Architecture Changes
+None. All additions are documentation files under `marketing/src/app/docs/cookbook/`.
+
+---
+
 ## [ADR-1015 Sprint 2.3 — Error catalog + API changelog + webhook signatures + status] — 2026-04-24
 
 **ADR:** ADR-1015 — v1 API integration tests + customer developer documentation

@@ -118,8 +118,8 @@
       "first_read": "2026-04-24T12:42:22.869Z"
     },
     "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-1003-processor-posture-and-healthcare-unlock.md": {
-      "count": 1,
-      "tokens": 5023,
+      "count": 2,
+      "tokens": 5513,
       "first_read": "2026-04-24T12:42:35.057Z"
     },
     "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/design/screen designs and ux/consentshield-developer-docs.html": {
@@ -148,8 +148,8 @@
       "first_read": "2026-04-24T12:43:44.633Z"
     },
     "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/changelogs/CHANGELOG-api.md": {
-      "count": 1,
-      "tokens": 33463,
+      "count": 2,
+      "tokens": 34362,
       "first_read": "2026-04-24T12:43:45.138Z"
     },
     "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/src/lib/notifications/adapters/custom-webhook.ts": {
@@ -168,9 +168,49 @@
       "first_read": "2026-04-24T12:46:22.629Z"
     },
     "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-index.md": {
-      "count": 1,
-      "tokens": 5658,
+      "count": 2,
+      "tokens": 5686,
       "first_read": "2026-04-24T12:51:59.628Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/src/lib/storage/verify.ts": {
+      "count": 1,
+      "tokens": 1397,
+      "first_read": "2026-04-24T12:58:51.006Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/src/lib/storage/sigv4.ts": {
+      "count": 1,
+      "tokens": 2873,
+      "first_read": "2026-04-24T12:59:26.031Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/src/app/docs/quickstart/page.mdx": {
+      "count": 1,
+      "tokens": 1713,
+      "first_read": "2026-04-24T12:59:28.107Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/public/openapi.yaml": {
+      "count": 7,
+      "tokens": 23845,
+      "first_read": "2026-04-24T12:59:43.139Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/src/app/api/orgs/[orgId]/storage/byok-validate/route.ts": {
+      "count": 1,
+      "tokens": 1761,
+      "first_read": "2026-04-24T13:00:08.150Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/tests/storage/sigv4.test.ts": {
+      "count": 1,
+      "tokens": 1066,
+      "first_read": "2026-04-24T13:07:18.660Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/changelogs/CHANGELOG-dashboard.md": {
+      "count": 1,
+      "tokens": 27664,
+      "first_read": "2026-04-24T13:09:36.120Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/tests/storage/byok-validate-route.test.ts": {
+      "count": 1,
+      "tokens": 2611,
+      "first_read": "2026-04-24T13:10:56.055Z"
     }
   },
   "files_written": [
@@ -329,6 +369,180 @@
       "action": "edit",
       "tokens": 294,
       "at": "2026-04-24T12:52:08.169Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/src/app/docs/cookbook/record-consent-at-checkout/page.mdx",
+      "action": "create",
+      "tokens": 2748,
+      "at": "2026-04-24T13:01:08.892Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/src/app/docs/cookbook/build-a-preference-center/page.mdx",
+      "action": "create",
+      "tokens": 3341,
+      "at": "2026-04-24T13:02:17.048Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/src/lib/storage/sigv4.ts",
+      "action": "edit",
+      "tokens": 978,
+      "at": "2026-04-24T13:02:40.641Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/src/app/docs/cookbook/handle-a-rights-request/page.mdx",
+      "action": "create",
+      "tokens": 3609,
+      "at": "2026-04-24T13:03:28.632Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/src/lib/storage/validate.ts",
+      "action": "create",
+      "tokens": 2606,
+      "at": "2026-04-24T13:03:33.061Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/src/app/api/orgs/[orgId]/storage/byok-validate/route.ts",
+      "action": "edit",
+      "tokens": 472,
+      "at": "2026-04-24T13:04:01.954Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/src/app/api/orgs/[orgId]/storage/byok-validate/route.ts",
+      "action": "edit",
+      "tokens": 102,
+      "at": "2026-04-24T13:04:11.135Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/src/app/api/orgs/[orgId]/storage/byok-validate/route.ts",
+      "action": "edit",
+      "tokens": 263,
+      "at": "2026-04-24T13:04:24.753Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/src/app/(dashboard)/dashboard/settings/storage/_components/byok-form.tsx",
+      "action": "edit",
+      "tokens": 346,
+      "at": "2026-04-24T13:04:49.838Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/src/app/docs/cookbook/wire-deletion-connector-webhook/page.mdx",
+      "action": "create",
+      "tokens": 3956,
+      "at": "2026-04-24T13:04:57.508Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/src/app/(dashboard)/dashboard/settings/storage/_components/byok-form.tsx",
+      "action": "edit",
+      "tokens": 302,
+      "at": "2026-04-24T13:05:01.483Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/src/app/(dashboard)/dashboard/settings/storage/_components/byok-form.tsx",
+      "action": "edit",
+      "tokens": 93,
+      "at": "2026-04-24T13:05:13.422Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/src/app/(dashboard)/dashboard/settings/storage/_components/byok-form.tsx",
+      "action": "edit",
+      "tokens": 195,
+      "at": "2026-04-24T13:05:21.919Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/src/app/(dashboard)/dashboard/settings/storage/_components/byok-form.tsx",
+      "action": "edit",
+      "tokens": 345,
+      "at": "2026-04-24T13:05:34.486Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/src/app/(dashboard)/dashboard/settings/storage/_components/byok-form.tsx",
+      "action": "edit",
+      "tokens": 294,
+      "at": "2026-04-24T13:05:44.898Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/src/app/(dashboard)/dashboard/settings/storage/_components/byok-form.tsx",
+      "action": "edit",
+      "tokens": 671,
+      "at": "2026-04-24T13:05:59.452Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/src/app/docs/cookbook/batch-verify-consents/page.mdx",
+      "action": "create",
+      "tokens": 3300,
+      "at": "2026-04-24T13:06:04.790Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/src/app/docs/cookbook/rotate-api-key-safely/page.mdx",
+      "action": "create",
+      "tokens": 3320,
+      "at": "2026-04-24T13:07:27.642Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/tests/storage/sigv4.test.ts",
+      "action": "edit",
+      "tokens": 224,
+      "at": "2026-04-24T13:07:34.756Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/tests/storage/sigv4.test.ts",
+      "action": "edit",
+      "tokens": 991,
+      "at": "2026-04-24T13:07:54.119Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/tests/storage/validate.test.ts",
+      "action": "create",
+      "tokens": 1926,
+      "at": "2026-04-24T13:08:25.374Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/src/app/docs/cookbook/build-dpb-audit-export/page.mdx",
+      "action": "create",
+      "tokens": 4678,
+      "at": "2026-04-24T13:09:03.851Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-1003-processor-posture-and-healthcare-unlock.md",
+      "action": "edit",
+      "tokens": 992,
+      "at": "2026-04-24T13:09:07.741Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/changelogs/CHANGELOG-dashboard.md",
+      "action": "edit",
+      "tokens": 512,
+      "at": "2026-04-24T13:09:46.086Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/changelogs/CHANGELOG-api.md",
+      "action": "edit",
+      "tokens": 966,
+      "at": "2026-04-24T13:10:19.962Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-1015-v1-api-integration-tests-and-developer-docs.md",
+      "action": "edit",
+      "tokens": 835,
+      "at": "2026-04-24T13:10:27.394Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-index.md",
+      "action": "edit",
+      "tokens": 197,
+      "at": "2026-04-24T13:10:39.414Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/changelogs/CHANGELOG-marketing.md",
+      "action": "edit",
+      "tokens": 1308,
+      "at": "2026-04-24T13:11:17.684Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/tests/storage/byok-validate-route.test.ts",
+      "action": "edit",
+      "tokens": 482,
+      "at": "2026-04-24T13:11:19.645Z"
     }
   ],
   "edit_counts": {
@@ -341,19 +555,34 @@
     "docs/runbooks/zero-storage-restart.md": 1,
     "docs/changelogs/CHANGELOG-schema.md": 1,
     "marketing/src/app/docs/errors/page.mdx": 1,
-    "docs/changelogs/CHANGELOG-api.md": 1,
-    "docs/ADRs/ADR-1003-processor-posture-and-healthcare-unlock.md": 1,
+    "docs/changelogs/CHANGELOG-api.md": 2,
+    "docs/ADRs/ADR-1003-processor-posture-and-healthcare-unlock.md": 2,
     "marketing/src/app/docs/changelog/page.mdx": 1,
     "marketing/src/app/docs/webhook-signatures/page.mdx": 1,
     "marketing/src/app/docs/status/page.mdx": 1,
     "marketing/src/app/docs/_data/search-index.ts": 2,
-    "docs/ADRs/ADR-1015-v1-api-integration-tests-and-developer-docs.md": 3,
-    "docs/changelogs/CHANGELOG-marketing.md": 1,
-    "docs/ADRs/ADR-index.md": 1
+    "docs/ADRs/ADR-1015-v1-api-integration-tests-and-developer-docs.md": 4,
+    "docs/changelogs/CHANGELOG-marketing.md": 2,
+    "docs/ADRs/ADR-index.md": 2,
+    "marketing/src/app/docs/cookbook/record-consent-at-checkout/page.mdx": 1,
+    "marketing/src/app/docs/cookbook/build-a-preference-center/page.mdx": 1,
+    "app/src/lib/storage/sigv4.ts": 1,
+    "marketing/src/app/docs/cookbook/handle-a-rights-request/page.mdx": 1,
+    "app/src/lib/storage/validate.ts": 1,
+    "app/src/app/api/orgs/[orgId]/storage/byok-validate/route.ts": 3,
+    "app/src/app/(dashboard)/dashboard/settings/storage/_components/byok-form.tsx": 7,
+    "marketing/src/app/docs/cookbook/wire-deletion-connector-webhook/page.mdx": 1,
+    "marketing/src/app/docs/cookbook/batch-verify-consents/page.mdx": 1,
+    "marketing/src/app/docs/cookbook/rotate-api-key-safely/page.mdx": 1,
+    "app/tests/storage/sigv4.test.ts": 2,
+    "app/tests/storage/validate.test.ts": 1,
+    "marketing/src/app/docs/cookbook/build-dpb-audit-export/page.mdx": 1,
+    "docs/changelogs/CHANGELOG-dashboard.md": 1,
+    "app/tests/storage/byok-validate-route.test.ts": 1
   },
-  "anatomy_hits": 31,
+  "anatomy_hits": 39,
   "anatomy_misses": 3,
-  "repeated_reads_warned": 2,
+  "repeated_reads_warned": 11,
   "cerebrum_warnings": 0,
-  "stop_count": 6
+  "stop_count": 7
 }

@@ -1,0 +1,258 @@
+export const metadata = {
+  title: 'Record consent at checkout',
+  description:
+    'Capture DPDP-compliant consent at checkout without blocking the submit — non-blocking POST /v1/consent/record with idempotent retries.',
+}
+
+<Breadcrumb trail={[
+  { label: 'Docs', href: '/docs' },
+  { label: 'Cookbook', href: '/docs' },
+  { label: 'Record consent at checkout' },
+]} />
+
+# Record consent at checkout
+
+## Problem
+
+The customer is on your checkout page, ticking a marketing-opt-in
+checkbox along with the purchase. You need the consent recorded as an
+immutable artefact for DPDP §6(4) — but you can't block the "Place
+order" button on a third-party API call, and you can't lose the consent
+if your server briefly can't reach ConsentShield.
+
+## Shape
+
+The call happens **server-side** right after your payment callback
+confirms the order. Three rules:
+
+1. **Non-blocking** — don't await the consent call inline with the order response.
+2. **Idempotent** — use `client_request_id` so retries can't double-record.
+3. **Durable** — on failure, persist the consent envelope and let a background worker retry.
+
+<Callout tone="info" title="Why server-side, not browser">
+Bearer tokens (`cs_live_*`) must never ship to the browser. The
+consent checkbox lives in the form; the actual API call lives in your
+order-confirmation handler. If you need browser-side capture, use the
+ConsentShield banner script, which uses a short-lived HMAC signing
+secret, not an API key.
+</Callout>
+
+## Prerequisites
+
+- Purpose defined in the dashboard — grab its `purpose_definition_id` via `GET /v1/purposes`.
+- Web property registered — grab its `property_id` via `GET /v1/properties`.
+- API key with the `write:consent` scope.
+
+```bash
+# One-time setup: fetch the purpose + property IDs you'll hard-code.
+curl -s "https://api.consentshield.in/v1/purposes" \
+  -H "Authorization: Bearer $CS_API_KEY" | jq '.items[] | {id, purpose_code}'
+
+curl -s "https://api.consentshield.in/v1/properties" \
+  -H "Authorization: Bearer $CS_API_KEY" | jq '.items[] | {id, domain}'
+```
+
+## Full flow
+
+<CodeTabs tabs={[
+  {
+    label: 'cURL',
+    language: 'bash',
+    code: `# After Razorpay / Stripe confirms the payment.
+curl -X POST "https://api.consentshield.in/v1/consent/record" \\
+  -H "Authorization: Bearer $CS_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "property_id":               "3a4b8b21-5a11-4f37-9b7c-6f2e0d5c8b1a",
+    "data_principal_identifier": "alice@example.com",
+    "identifier_type":           "email",
+    "purpose_definition_ids": [
+      "7f4b3b21-5a11-4f37-9b7c-6f2e0d5c8b1a"
+    ],
+    "rejected_purpose_definition_ids": [
+      "9e2c8a0c-1d8a-4a2c-a4bf-2b0e6b1f3c9d"
+    ],
+    "captured_at":       "2026-04-24T14:02:11Z",
+    "client_request_id": "order-78421:checkout-consent"
+  }'
+
+# 201 → { "event_id": "...", "artefact_ids": [ ... ], "idempotent_replay": false }
+# 200 → same shape but idempotent_replay: true (retry of a prior successful call)`,
+  },
+  {
+    label: 'Node.js',
+    language: 'typescript',
+    code: `// checkout-handler.ts — fires after payment-provider webhook confirms the order.
+import { enqueue } from './background-queue'
+
+interface CheckoutConsent {
+  orderId:        string
+  customerEmail:  string
+  acceptedPurposes: string[]   // purpose_definition_ids
+  rejectedPurposes: string[]
+}
+
+export async function recordCheckoutConsent(job: CheckoutConsent) {
+  const payload = {
+    property_id:               process.env.CS_PROPERTY_ID!,
+    data_principal_identifier: job.customerEmail,
+    identifier_type:           'email',
+    purpose_definition_ids:          job.acceptedPurposes,
+    rejected_purpose_definition_ids: job.rejectedPurposes,
+    captured_at:       new Date().toISOString(),
+    client_request_id: \`order-\${job.orderId}:checkout-consent\`,
+  }
+
+  const res = await fetch(
+    'https://api.consentshield.in/v1/consent/record',
+    {
+      method: 'POST',
+      headers: {
+        Authorization:  \`Bearer \${process.env.CS_API_KEY}\`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(5_000),
+    },
+  )
+
+  if (res.status === 201 || res.status === 200) {
+    const body = await res.json()
+    return { ok: true as const, event_id: body.event_id, replay: body.idempotent_replay }
+  }
+
+  if (res.status >= 500 || res.status === 429) {
+    // Retriable. Requeue with exponential backoff.
+    throw new Error(\`retriable: \${res.status}\`)
+  }
+
+  // 4xx → config drift. Log + surface; do NOT retry.
+  const problem = await res.json()
+  throw new Error(\`non-retriable: \${problem.title} — \${problem.detail}\`)
+}
+
+// Caller — returns the order response immediately; consent happens out-of-band.
+export async function onOrderConfirmed(order: Order) {
+  enqueue('record-consent', {
+    orderId:          order.id,
+    customerEmail:    order.email,
+    acceptedPurposes: order.marketingOptIn ? [process.env.CS_PURPOSE_MARKETING!] : [],
+    rejectedPurposes: order.marketingOptIn ? [] : [process.env.CS_PURPOSE_MARKETING!],
+  })
+  return { orderId: order.id, status: 'confirmed' }
+}`,
+  },
+  {
+    label: 'Python',
+    language: 'python',
+    code: `# checkout_handler.py — called from a Celery/RQ task, not inline with the order request.
+import os
+import httpx
+from datetime import datetime, timezone
+
+CS_API = "https://api.consentshield.in/v1"
+
+class Retriable(Exception): ...
+class NonRetriable(Exception): ...
+
+async def record_checkout_consent(
+    order_id: str,
+    customer_email: str,
+    accepted_purposes: list[str],
+    rejected_purposes: list[str],
+) -> dict:
+    payload = {
+        "property_id": os.environ["CS_PROPERTY_ID"],
+        "data_principal_identifier": customer_email,
+        "identifier_type": "email",
+        "purpose_definition_ids": accepted_purposes,
+        "rejected_purpose_definition_ids": rejected_purposes,
+        "captured_at": datetime.now(timezone.utc).isoformat(),
+        "client_request_id": f"order-{order_id}:checkout-consent",
+    }
+    async with httpx.AsyncClient(timeout=5.0) as c:
+        r = await c.post(
+            f"{CS_API}/consent/record",
+            headers={"Authorization": f"Bearer {os.environ['CS_API_KEY']}"},
+            json=payload,
+        )
+    if r.status_code in (200, 201):
+        return r.json()
+    if r.status_code >= 500 or r.status_code == 429:
+        raise Retriable(f"status {r.status_code}")
+    body = r.json()
+    raise NonRetriable(f"{body.get('title')}: {body.get('detail')}")`,
+  },
+]} />
+
+## Gotchas
+
+### `captured_at` drift
+
+The server rejects `captured_at` values more than **±15 minutes** from
+its own clock. Use your app server's time, not the browser's. If your
+background worker picks up a queued job hours after checkout, update
+`captured_at` to the current wall-clock — the artefact's `created_at`
+still records when the artefact was actually written, and a separate
+`captured_via` field signals the original channel.
+
+### Idempotency ≠ deduplication across orders
+
+`client_request_id` makes the **same** call idempotent. Two different
+orders that happen to use the same customer email must use different
+`client_request_id` values (order-42 vs order-43) or the second call
+will return the first order's artefact as a replay. Always namespace
+with the order ID (or similar stable primary key).
+
+### Record rejections too
+
+`rejected_purpose_definition_ids` is what DPDP §11 calls the *audit
+trail* for purposes the principal was shown but didn't accept. It
+doesn't create artefacts, but it writes an immutable row to
+`consent_events` that proves the choice was offered. Skip it and
+you're missing half the compliance picture.
+
+### Don't block on failure
+
+If the consent API is temporarily unreachable, your order must still
+complete. Two durable patterns:
+
+- **Outbox pattern** — write the consent envelope to your own DB in the same transaction as the order, then have a background worker drain it. Failure never loses a consent record.
+- **Queue retry** — push the job to SQS/RabbitMQ with visibility-timeout retries. Simpler, but relies on at-least-once delivery.
+
+Either way, the `client_request_id` protects against duplicates.
+
+### 410 Gone means someone rotated the key
+
+Not a transient failure. See
+[key rotation & tombstones](/docs/concepts/key-rotation-and-tombstones).
+Page whoever rotates production keys, not oncall.
+
+## Verify it worked
+
+Right after a successful call, your user-facing dashboard can confirm:
+
+```bash
+curl "https://api.consentshield.in/v1/consent/verify/batch" \
+  -X POST \
+  -H "Authorization: Bearer $CS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "property_id":     "3a4b8b21-5a11-4f37-9b7c-6f2e0d5c8b1a",
+    "identifier_type": "email",
+    "purpose_code":    "marketing",
+    "identifiers":     ["alice@example.com"]
+  }'
+
+# { "results": [{ "identifier": "alice@example.com", "status": "granted", ... }] }
+```
+
+## Related
+
+- [`POST /v1/consent/record`](/docs/api/consent/record) — full endpoint reference.
+- [Artefacts vs. events](/docs/concepts/artefacts-vs-events) — why the request returns an *artefact_id* rather than an event id.
+- [Purpose definitions](/docs/concepts/purpose-definitions) — how to configure the `purpose_definition_id` this recipe depends on.
+- [Build a preference center](/docs/cookbook/build-a-preference-center) — the next step: let logged-in users revise the consent you captured here.
+- [Error codes — 422 validation](/docs/errors#validation-errors-422) — what to do when the payload fails server-side validation.
+
+<FeedbackStrip pagePath="marketing/src/app/docs/cookbook/record-consent-at-checkout/page.mdx" />

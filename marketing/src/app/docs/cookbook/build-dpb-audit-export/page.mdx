@@ -1,0 +1,400 @@
+export const metadata = {
+  title: 'Build a DPB audit export',
+  description:
+    'Generate a DPB-ready quarterly audit export — consent statistics, rights-request history, deletion receipts, compliance posture — from ConsentShield + your own R2/S3 bucket.',
+}
+
+<Breadcrumb trail={[
+  { label: 'Docs', href: '/docs' },
+  { label: 'Cookbook', href: '/docs' },
+  { label: 'Build a DPB audit export' },
+]} />
+
+# Build a DPB audit export
+
+## Problem
+
+The Data Protection Board has asked you (or just warned sector-wide)
+for a quarterly audit package — consent decisions, withdrawal history,
+rights-request fulfilment, deletion receipts, posture scores. Your
+compliance team needs to compile it in under a week, and the DPB's
+format expectations include signed, immutable artefacts they can
+re-verify independently.
+
+## Shape
+
+A DPB-ready export is **not** a live API dashboard. It's a point-in-time
+package built from **your own R2/S3 bucket** — ConsentShield's database
+is a transient buffer; it wipes rows seconds-to-minutes after delivery.
+
+The canonical export sources:
+
+<ParamTable params={[
+  {
+    name: 'Customer storage (R2/S3) — canonical',
+    type: 'your bucket',
+    description: 'Every audit event, consent event, and deletion receipt is delivered here within ~5 minutes. This is the authoritative record for any date range older than the buffer window.',
+  },
+  {
+    name: 'v1 API — real-time slice',
+    type: 'buffer window',
+    description: '/v1/audit, /v1/consent/events, /v1/deletion/receipts, /v1/rights/requests, /v1/score — serve the recent (undelivered + just-delivered) window. Use these for the current-quarter tail + ops dashboards.',
+  },
+]} />
+
+<Callout tone="warn" title="Never build the export from the API alone">
+Rule 4 (CLAUDE.md): *the customer owns the compliance record.* Reading
+only from the v1 API will miss everything older than ~5 minutes — the
+buffer has already wiped it. Package exports must read R2/S3 as the
+primary source, and use the API only for the very recent tail.
+</Callout>
+
+## Prerequisites
+
+- R2/S3 bucket mounted in your export script (`s3:GetObject` + `s3:ListBucket`).
+- API key with `read:audit`, `read:consent`, `read:deletion`, `read:rights`, `read:score`.
+- A signing certificate for your quarterly package (self-signed or your CA's — DPB accepts either provided the chain is disclosed).
+
+## Full flow — orchestrator script
+
+<CodeTabs tabs={[
+  {
+    label: 'cURL',
+    language: 'bash',
+    code: `# ─────────────────────────────────────────────────────────
+# A DPB quarterly export — pieces to assemble.
+# ─────────────────────────────────────────────────────────
+
+# 1. Consent decisions (quarter-to-date) — from R2/S3 primary.
+aws s3 sync s3://your-bucket/consent/2026/Q2/ ./export/consent/
+
+# 2. Consent decisions (last ~5 min — not yet delivered).
+curl "https://api.consentshield.in/v1/consent/events?\\
+created_after=2026-04-01T00:00:00Z&limit=200" \\
+  -H "Authorization: Bearer $CS_API_KEY" > ./export/consent/buffer-tail.json
+
+# 3. Rights requests — quarter-to-date.
+curl "https://api.consentshield.in/v1/rights/requests?\\
+created_after=2026-04-01T00:00:00Z&limit=200" \\
+  -H "Authorization: Bearer $CS_API_KEY" > ./export/rights/requests.json
+
+# 4. Deletion receipts.
+aws s3 sync s3://your-bucket/deletion-receipts/2026/Q2/ ./export/deletion/
+curl "https://api.consentshield.in/v1/deletion/receipts?\\
+created_after=2026-04-01T00:00:00Z&limit=200" \\
+  -H "Authorization: Bearer $CS_API_KEY" > ./export/deletion/buffer-tail.json
+
+# 5. Audit trail — admin-surface events.
+aws s3 sync s3://your-bucket/audit/2026/Q2/ ./export/audit/
+curl "https://api.consentshield.in/v1/audit?\\
+created_after=2026-04-01T00:00:00Z&limit=200" \\
+  -H "Authorization: Bearer $CS_API_KEY" > ./export/audit/buffer-tail.json
+
+# 6. Consent score per property (current snapshot).
+for PROPERTY in $(curl -s "https://api.consentshield.in/v1/properties" \\
+  -H "Authorization: Bearer $CS_API_KEY" | jq -r '.items[].id'); do
+  curl "https://api.consentshield.in/v1/score?property_id=$PROPERTY" \\
+    -H "Authorization: Bearer $CS_API_KEY" >> ./export/posture.jsonl
+done
+
+# 7. Package: deterministic file ordering + SHA256 manifest + signed ZIP.
+find ./export -type f -print0 | sort -z | xargs -0 sha256sum > ./export/MANIFEST.sha256
+openssl dgst -sha256 -sign private.pem -out MANIFEST.sig ./export/MANIFEST.sha256
+zip -r "ConsentShield-Audit-Q2-2026.zip" ./export/ MANIFEST.sig
+
+# DPB gets the ZIP + your public cert. They verify the signature, then
+# recompute each file's SHA256 to confirm the manifest matches.`,
+  },
+  {
+    label: 'Node.js',
+    language: 'typescript',
+    code: `// build-audit-export.ts — orchestrator. Run quarterly via cron.
+import { S3Client, ListObjectsV2Command, GetObjectCommand } from '@aws-sdk/client-s3'
+import { createHash, createSign } from 'node:crypto'
+import { writeFileSync, readFileSync, mkdirSync } from 'node:fs'
+import path from 'node:path'
+import archiver from 'archiver'
+import { createWriteStream } from 'node:fs'
+
+const CS_API  = 'https://api.consentshield.in/v1'
+const headers = { Authorization: \`Bearer \${process.env.CS_API_KEY}\` }
+
+interface Quarter { year: number; q: 1 | 2 | 3 | 4 }
+
+function range(qtr: Quarter) {
+  const start = new Date(Date.UTC(qtr.year, (qtr.q - 1) * 3, 1))
+  const end   = new Date(Date.UTC(qtr.year, qtr.q * 3, 1))
+  return { startISO: start.toISOString(), endISO: end.toISOString() }
+}
+
+async function syncFromS3(bucket: string, prefix: string, outDir: string) {
+  const s3 = new S3Client({})
+  const out = path.resolve(outDir)
+  mkdirSync(out, { recursive: true })
+  let token: string | undefined
+  do {
+    const list = await s3.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: prefix, ContinuationToken: token }))
+    for (const obj of list.Contents ?? []) {
+      const body = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: obj.Key! }))
+      const bytes = await body.Body!.transformToByteArray()
+      writeFileSync(path.join(out, path.basename(obj.Key!)), bytes)
+    }
+    token = list.NextContinuationToken
+  } while (token)
+}
+
+async function csPaged(path: string, outFile: string) {
+  const all: unknown[] = []
+  let cursor: string | null = null
+  do {
+    const qs = cursor ? \`&cursor=\${encodeURIComponent(cursor)}\` : ''
+    const res = await fetch(\`\${CS_API}\${path}\${qs}\`, { headers })
+    if (!res.ok) throw new Error(\`\${path} → \${res.status}\`)
+    const body = await res.json() as { items: unknown[]; next_cursor: string | null }
+    all.push(...body.items)
+    cursor = body.next_cursor
+  } while (cursor)
+  writeFileSync(outFile, JSON.stringify(all, null, 2))
+}
+
+async function buildManifest(rootDir: string): Promise<string> {
+  const { globSync } = await import('glob')
+  const files = globSync('**/*', { cwd: rootDir, nodir: true }).sort()
+  const lines = files.map((f) => {
+    const hash = createHash('sha256').update(readFileSync(path.join(rootDir, f))).digest('hex')
+    return \`\${hash}  \${f}\`
+  })
+  const manifestPath = path.join(rootDir, 'MANIFEST.sha256')
+  writeFileSync(manifestPath, lines.join('\\n'))
+  return manifestPath
+}
+
+async function signManifest(manifestPath: string, keyPath: string): Promise<string> {
+  const signer = createSign('sha256')
+  signer.update(readFileSync(manifestPath))
+  const sig = signer.sign(readFileSync(keyPath), 'base64')
+  const sigPath = \`\${manifestPath}.sig\`
+  writeFileSync(sigPath, sig)
+  return sigPath
+}
+
+export async function buildQuarterlyExport(qtr: Quarter) {
+  const { startISO } = range(qtr)
+  const out = \`./export-\${qtr.year}-Q\${qtr.q}\`
+  mkdirSync(out, { recursive: true })
+
+  await Promise.all([
+    syncFromS3(process.env.AUDIT_BUCKET!, \`consent/\${qtr.year}/Q\${qtr.q}/\`,         \`\${out}/consent\`),
+    syncFromS3(process.env.AUDIT_BUCKET!, \`deletion-receipts/\${qtr.year}/Q\${qtr.q}/\`, \`\${out}/deletion\`),
+    syncFromS3(process.env.AUDIT_BUCKET!, \`audit/\${qtr.year}/Q\${qtr.q}/\`,           \`\${out}/audit\`),
+    csPaged(\`/consent/events?created_after=\${startISO}\`,    \`\${out}/consent/buffer-tail.json\`),
+    csPaged(\`/rights/requests?created_after=\${startISO}\`,   \`\${out}/rights/requests.json\`),
+    csPaged(\`/deletion/receipts?created_after=\${startISO}\`, \`\${out}/deletion/buffer-tail.json\`),
+    csPaged(\`/audit?created_after=\${startISO}\`,             \`\${out}/audit/buffer-tail.json\`),
+  ])
+
+  // Per-property posture snapshot.
+  const props = await fetch(\`\${CS_API}/properties\`, { headers }).then((r) => r.json())
+  const posture = await Promise.all(
+    props.items.map((p: { id: string }) =>
+      fetch(\`\${CS_API}/score?property_id=\${p.id}\`, { headers }).then((r) => r.json())),
+  )
+  writeFileSync(\`\${out}/posture.json\`, JSON.stringify(posture, null, 2))
+
+  // Sign the package.
+  const manifestPath = await buildManifest(out)
+  const sigPath      = await signManifest(manifestPath, process.env.SIGNING_KEY_PATH!)
+
+  // Zip.
+  const zipPath = \`./ConsentShield-Audit-\${qtr.year}-Q\${qtr.q}.zip\`
+  const stream  = createWriteStream(zipPath)
+  const archive = archiver('zip', { zlib: { level: 9 } })
+  archive.pipe(stream)
+  archive.directory(out, false)
+  archive.file(sigPath, { name: 'MANIFEST.sig' })
+  await archive.finalize()
+  return zipPath
+}
+
+if (require.main === module) {
+  buildQuarterlyExport({ year: 2026, q: 2 }).then((p) => console.log('wrote', p))
+}`,
+  },
+  {
+    label: 'Python',
+    language: 'python',
+    code: `# build_audit_export.py — quarterly orchestrator.
+import os, json, hashlib, zipfile, boto3, httpx
+from pathlib import Path
+from datetime import datetime, timezone, timedelta
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import padding
+
+CS_API  = "https://api.consentshield.in/v1"
+HEADERS = {"Authorization": f"Bearer {os.environ['CS_API_KEY']}"}
+
+def quarter_range(year: int, q: int):
+    start = datetime(year, (q-1)*3 + 1, 1, tzinfo=timezone.utc)
+    end   = datetime(year + (q // 4), ((q)%4)*3 + 1, 1, tzinfo=timezone.utc)
+    return start, end
+
+def sync_s3(bucket: str, prefix: str, out: Path):
+    out.mkdir(parents=True, exist_ok=True)
+    s3 = boto3.client("s3")
+    paginator = s3.get_paginator("list_objects_v2")
+    for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
+        for obj in page.get("Contents", []):
+            local = out / Path(obj["Key"]).name
+            s3.download_file(bucket, obj["Key"], str(local))
+
+def cs_paged(path: str, out_file: Path):
+    items, cursor = [], None
+    with httpx.Client(base_url=CS_API, headers=HEADERS, timeout=30.0) as c:
+        while True:
+            params = {"cursor": cursor} if cursor else {}
+            r = c.get(path, params=params)
+            r.raise_for_status()
+            body = r.json()
+            items.extend(body["items"])
+            cursor = body["next_cursor"]
+            if not cursor:
+                break
+    out_file.write_text(json.dumps(items, indent=2))
+
+def build_manifest(root: Path) -> Path:
+    files = sorted(p for p in root.rglob("*") if p.is_file())
+    lines = []
+    for f in files:
+        h = hashlib.sha256(f.read_bytes()).hexdigest()
+        lines.append(f"{h}  {f.relative_to(root)}")
+    manifest = root / "MANIFEST.sha256"
+    manifest.write_text("\\n".join(lines))
+    return manifest
+
+def sign_manifest(manifest: Path, key_path: str) -> Path:
+    key = serialization.load_pem_private_key(Path(key_path).read_bytes(), password=None)
+    sig = key.sign(manifest.read_bytes(), padding.PKCS1v15(), hashes.SHA256())
+    out = manifest.with_suffix(".sha256.sig")
+    out.write_bytes(sig)
+    return out
+
+def build_quarterly_export(year: int, q: int) -> Path:
+    start, _ = quarter_range(year, q)
+    out = Path(f"./export-{year}-Q{q}")
+    bucket = os.environ["AUDIT_BUCKET"]
+
+    sync_s3(bucket, f"consent/{year}/Q{q}/",           out / "consent")
+    sync_s3(bucket, f"deletion-receipts/{year}/Q{q}/", out / "deletion")
+    sync_s3(bucket, f"audit/{year}/Q{q}/",             out / "audit")
+
+    iso = start.isoformat().replace("+00:00", "Z")
+    cs_paged(f"/consent/events?created_after={iso}",    out / "consent/buffer-tail.json")
+    cs_paged(f"/rights/requests?created_after={iso}",   out / "rights/requests.json")
+    cs_paged(f"/deletion/receipts?created_after={iso}", out / "deletion/buffer-tail.json")
+    cs_paged(f"/audit?created_after={iso}",             out / "audit/buffer-tail.json")
+
+    manifest = build_manifest(out)
+    sig      = sign_manifest(manifest, os.environ["SIGNING_KEY_PATH"])
+
+    zip_path = Path(f"./ConsentShield-Audit-{year}-Q{q}.zip")
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
+        for f in out.rglob("*"):
+            if f.is_file():
+                z.write(f, f.relative_to(out))
+        z.write(sig, "MANIFEST.sig")
+    return zip_path
+
+if __name__ == "__main__":
+    print(build_quarterly_export(2026, 2))`,
+  },
+]} />
+
+## Package contents (DPB-expected layout)
+
+```
+ConsentShield-Audit-2026-Q2.zip
+├── consent/
+│   ├── 2026-04-*.jsonl            (daily-rotated from R2)
+│   ├── 2026-05-*.jsonl
+│   ├── 2026-06-*.jsonl
+│   └── buffer-tail.json           (API tail for the last ~5 min)
+├── deletion/
+│   ├── 2026-04-*.jsonl
+│   ├── …
+│   └── buffer-tail.json
+├── audit/
+│   ├── …
+│   └── buffer-tail.json
+├── rights/
+│   └── requests.json
+├── posture.json                   (per-property compliance score)
+├── MANIFEST.sha256                (SHA256 per file, sorted path order)
+└── MANIFEST.sig                   (PKCS#1 v1.5 SHA256 over MANIFEST.sha256)
+```
+
+The DPB verifies:
+
+1. Your signing cert chains to a disclosed root.
+2. `openssl dgst -sha256 -verify pubkey.pem -signature MANIFEST.sig MANIFEST.sha256` succeeds.
+3. Every line in `MANIFEST.sha256` re-hashes to the actual file bytes.
+4. Spot-checks a handful of JSON rows against what you claimed happened.
+
+## Gotchas
+
+### Time-range gaps between R2 and the API
+
+R2 sync grabs everything delivered as of now. The API tail catches the
+last ~5 minutes still in the buffer. Run them in that order — sync
+first, then API — to minimise the risk of double-counting or gap.
+Dedupe the union on `event_id` / `receipt_id` / `id` when you fold
+both sources into a single report.
+
+### `created_after` is inclusive; `created_before` is exclusive
+
+When slicing by quarter, use `created_after=2026-04-01T00:00:00Z` +
+`created_before=2026-07-01T00:00:00Z`. Events at exactly the quarter
+boundary land in the *later* quarter.
+
+### R2 eventual consistency
+
+S3/R2 is eventually consistent on LIST; a delivery that completed 5
+seconds ago may not appear in the next LIST call. Build the export at
+least 15 minutes after quarter-end, not instantly.
+
+### Don't trim the manifest
+
+DPB verification recomputes every line. If you filter out files you
+don't want to include, regenerate the manifest **after** filtering —
+never edit it. A signed manifest that doesn't match the bytes is worse
+than no signature.
+
+### `posture.json` is a snapshot, not a quarter
+
+The `/v1/score` endpoint returns the *current* posture, not a quarterly
+history. For a longitudinal posture track, snapshot `/v1/score` daily
+and keep the series in your own storage; include the series in the
+quarterly package.
+
+### Store the signing key air-gapped
+
+The signing key is what makes this package authoritative. HSM, offline
+laptop, or at minimum a cloud KMS with manual sign-authorisation — not
+a plaintext file in the CI runner. An attacker with the signing key
+can forge audit evidence.
+
+### Retain exports forever
+
+DPDP §11 allows data-principal access requests to reach back
+indefinitely. Quarterly exports are your side of the audit — do not
+delete them on your storage-class lifecycle rules after 7 years.
+
+## Related
+
+- [`GET /v1/audit`](/docs/api/account/audit) — buffer-tail audit events.
+- [`GET /v1/consent/events`](/docs/api/consent/events) — buffer-tail consent events.
+- [`GET /v1/deletion/receipts`](/docs/api/deletion/receipts) — buffer-tail deletion receipts.
+- [`GET /v1/rights/requests`](/docs/api/rights/requests) — rights-request ledger.
+- [Artefacts vs. events](/docs/concepts/artefacts-vs-events) — why the buffer wipes so fast.
+- [Handle a rights request](/docs/cookbook/handle-a-rights-request) — the daily-ops counterpart to quarterly compliance packaging.
+
+<FeedbackStrip pagePath="marketing/src/app/docs/cookbook/build-dpb-audit-export/page.mdx" />

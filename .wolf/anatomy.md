@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-24T12:52:08.162Z
-> Files: 1378 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-24T13:11:19.637Z
+> Files: 1387 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../tmp/
 
@@ -837,7 +837,7 @@
 
 ## app/src/app/(dashboard)/dashboard/settings/storage/_components/
 
-- `byok-form.tsx` — INITIAL — renders form (~5516 tok)
+- `byok-form.tsx` — INITIAL — renders form (~6946 tok)
 
 ## app/src/app/(dashboard)/dashboard/support-sessions/
 
@@ -999,7 +999,7 @@
 
 ## app/src/app/api/orgs/[orgId]/storage/byok-validate/
 
-- `route.ts` — ADR-1025 Phase 3 Sprint 3.1 — BYOK credential validation. (~1761 tok)
+- `route.ts` — ADR-1025 Phase 3 Sprint 3.1 — BYOK credential validation. (~1914 tok)
 
 ## app/src/app/api/orgs/[orgId]/storage/migrations/[migrationId]/
 
@@ -1234,7 +1234,8 @@
 - `retention-cleanup.ts` — ADR-1025 Phase 4 Sprint 4.1 — retention cleanup for post-migration (~2474 tok)
 - `rotate-org.ts` — ADR-1025 Phase 4 Sprint 4.1 — credential rotation for CS-managed buckets. (~1574 tok)
 - `sigv4.test.ts` — ADR-0040 Sprint 1.1 — sigv4 primitive tests. (~1062 tok)
-- `sigv4.ts` — ADR-0040 — hand-rolled AWS sigv4 for Cloudflare R2 S3 compatibility. (~2873 tok)
+- `sigv4.ts` — List-objects-v2 on the bucket root. Does not require an object key — (~3802 tok)
+- `validate.ts` — ADR-1003 Phase 2 Sprint 2.1 — BYOK credential scope-down probe. (~2606 tok)
 - `verify.ts` — ADR-1025 Phase 1 Sprint 1.3 — verification probe for any storage config. (~1397 tok)
 
 ## app/tests/
@@ -1283,7 +1284,7 @@
 ## app/tests/storage/
 
 - `byok-migrate-route.test.ts` — ADR-1025 Phase 3 Sprint 3.2 — customer-facing byok-migrate route tests. (~2333 tok)
-- `byok-validate-route.test.ts` — ADR-1025 Phase 3 Sprint 3.1 — byok-validate route unit tests. (~2611 tok)
+- `byok-validate-route.test.ts` — ADR-1025 Phase 3 Sprint 3.1 + ADR-1003 Sprint 2.1 — byok-validate route (~2639 tok)
 - `cf-provision.test.ts` — ADR-1025 Phase 1 Sprint 1.2 — unit tests for cf-provision.ts. (~4671 tok)
 - `endpoint.test.ts` — ADR-1019 Sprint 1.2 — endpoint derivation tests. (~700 tok)
 - `fetch-usage.test.ts` — ADR-1025 Phase 4 Sprint 4.2 — fetch-usage tests. (~1655 tok)
@@ -1293,7 +1294,8 @@
 - `provision-org.test.ts` — ADR-1025 Phase 2 Sprint 2.1 — unit tests for provision-org.ts. (~3018 tok)
 - `retention-cleanup.test.ts` — ADR-1025 Phase 4 Sprint 4.1 — retention-cleanup tests. (~1746 tok)
 - `rotate-org.test.ts` — ADR-1025 Phase 4 Sprint 4.1 — rotate-org tests. (~1718 tok)
-- `sigv4.test.ts` — ADR-0040 Sprint 1.1 — sigv4 primitive tests. (~1066 tok)
+- `sigv4.test.ts` — ADR-0040 Sprint 1.1 + ADR-1003 Sprint 2.1 — sigv4 primitive tests. (~2033 tok)
+- `validate.test.ts` — ADR-1003 Sprint 2.1 — scope-down probe orchestration tests. (~1926 tok)
 - `verify.test.ts` — ADR-1025 Phase 1 Sprint 1.3 — unit tests for the verification probe. (~2780 tok)
 
 ## app/tests/worker/
@@ -1380,7 +1382,7 @@
 - `ADR-0501-marketing-site-scaffold.md` — ADR-0501 — ConsentShield marketing site (`marketing/`) (~6079 tok)
 - `ADR-1001-truth-in-marketing-and-public-api-foundation.md` — ADR-1001: Truth-in-Marketing + Public API Foundation (~5650 tok)
 - `ADR-1002-dpdp-section6-runtime-enforcement.md` — ADR-1002: DPDP §6 Runtime Enforcement — Verify, Record, Artefact Ops, Deletion API (~7030 tok)
-- `ADR-1003-processor-posture-and-healthcare-unlock.md` — ADR-1003: Processor Posture + Healthcare Category Unlock (~5513 tok)
+- `ADR-1003-processor-posture-and-healthcare-unlock.md` — ADR-1003: Processor Posture + Healthcare Category Unlock (~6114 tok)
 - `ADR-1004-statutory-retention-material-change-silent-failure.md` — ADR-1004: Statutory Retention + Material-Change Re-consent + Silent-Failure Detection (~7531 tok)
 - `ADR-1005-operations-maturity.md` — ADR-1005: Operations Maturity — Webhook Reference, Support Model, Status Page, Multi-channel Alerts, (~7076 tok)
 - `ADR-1006-developer-experience-and-openapi.md` — ADR-1006: Developer Experience — Client Libraries + OpenAPI Spec + CI Drift Check (~2658 tok)
@@ -1392,7 +1394,7 @@
 - `ADR-1012-v1-dx-gap-fixes.md` — ADR-1012: v1 API — day-1 DX gap fixes (~2561 tok)
 - `ADR-1013-cs-orchestrator-direct-postgres.md` — ADR-1013: `cs_orchestrator` direct-Postgres migration (Next.js runtime) (~2726 tok)
 - `ADR-1014-e2e-test-harness-and-vertical-demos.md` — ADR-1014: End-to-end test harness + vertical demo sites (partner-evidence grade) (~15278 tok)
-- `ADR-1015-v1-api-integration-tests-and-developer-docs.md` — ADR-1015: v1 API integration tests + customer developer documentation (~6555 tok)
+- `ADR-1015-v1-api-integration-tests-and-developer-docs.md` — ADR-1015: v1 API integration tests + customer developer documentation (~7080 tok)
 - `ADR-1016-v1-orphan-scope-read-endpoints.md` — ADR-1016: v1 API — close the orphan `read:audit`, `read:security`, `read:score` scopes (~1836 tok)
 - `ADR-1017-admin-ops-readiness-flags.md` — ADR-1017: Admin ops-readiness flags — surface external blockers in the operator console (~1656 tok)
 - `ADR-1018-self-hosted-status-page.md` — ADR-1018: Self-hosted status page on admin + public surfaces (~2962 tok)
@@ -1405,7 +1407,7 @@
 - `ADR-1025-customer-storage-auto-provisioning.md` — ADR-1025: Customer storage auto-provisioning — hybrid managed R2 default + BYOK escape hatch (~13370 tok)
 - `ADR-1026-drop-hyperdrive-direct-supavisor.md` — ADR-1026: Rewind ADR-1010 Phase 3 — Worker connects directly to Supavisor; drop Hyperdrive binding (~5467 tok)
 - `ADR-1027-admin-account-awareness.md` — ADR-1027: Admin Account-Awareness Pass (~8082 tok)
-- `ADR-index.md` — ADR Index (~5686 tok)
+- `ADR-index.md` — ADR Index (~5751 tok)
 - `ADR-template.md` — ADR-NNNN: Title (~423 tok)
 - `adr-workflow.md` — ADR Workflow Rules (~557 tok)
 
@@ -1429,12 +1431,12 @@
 
 ## docs/changelogs/
 
-- `CHANGELOG-api.md` — Changelog — API (~34362 tok)
-- `CHANGELOG-dashboard.md` — Changelog — Dashboard (~27664 tok)
+- `CHANGELOG-api.md` — Changelog — API (~35172 tok)
+- `CHANGELOG-dashboard.md` — Changelog — Dashboard (~28074 tok)
 - `CHANGELOG-docs.md` — Changelog — Documentation (~12354 tok)
 - `CHANGELOG-edge-functions.md` — Changelog — Edge Functions (~4251 tok)
 - `CHANGELOG-infra.md` — Changelog — Infrastructure (~20809 tok)
-- `CHANGELOG-marketing.md` — Changelog — Marketing (~10925 tok)
+- `CHANGELOG-marketing.md` — Changelog — Marketing (~12016 tok)
 - `CHANGELOG-schema.md` — Changelog — Schema (~50818 tok)
 - `CHANGELOG-worker.md` — Changelog — Worker (~6025 tok)
 
@@ -1623,6 +1625,34 @@
 ## marketing/src/app/docs/concepts/rights-requests-lifecycle/
 
 - `page.mdx` — Rights requests lifecycle (~1851 tok)
+
+## marketing/src/app/docs/cookbook/batch-verify-consents/
+
+- `page.mdx` — Batch-verify consents server-side (~3080 tok)
+
+## marketing/src/app/docs/cookbook/build-a-preference-center/
+
+- `page.mdx` — Build a preference center (~3118 tok)
+
+## marketing/src/app/docs/cookbook/build-dpb-audit-export/
+
+- `page.mdx` — Build a DPB audit export (~4366 tok)
+
+## marketing/src/app/docs/cookbook/handle-a-rights-request/
+
+- `page.mdx` — Handle a rights request end-to-end (~3369 tok)
+
+## marketing/src/app/docs/cookbook/record-consent-at-checkout/
+
+- `page.mdx` — Record consent at checkout (~2565 tok)
+
+## marketing/src/app/docs/cookbook/rotate-api-key-safely/
+
+- `page.mdx` — Rotate an API key safely (~3098 tok)
+
+## marketing/src/app/docs/cookbook/wire-deletion-connector-webhook/
+
+- `page.mdx` — Wire a deletion-connector webhook (~3692 tok)
 
 ## marketing/src/app/docs/errors/
 

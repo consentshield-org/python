@@ -1,0 +1,317 @@
+export const metadata = {
+  title: 'Handle a rights request end-to-end',
+  description:
+    'Programmatic DPDP §11-§14 rights fulfilment — capture an erasure / access / correction / nomination request via API, drive it to completion against the 30-day SLA.',
+}
+
+<Breadcrumb trail={[
+  { label: 'Docs', href: '/docs' },
+  { label: 'Cookbook', href: '/docs' },
+  { label: 'Handle a rights request' },
+]} />
+
+# Handle a rights request end-to-end
+
+## Problem
+
+A customer emails your support desk asking for all their data to be
+erased (DPDP §13). Or calls your branch demanding access to everything
+on file (§12). Or submits a correction through your mobile app (§12
+too). You have **30 days** to complete the request, verify the
+requestor's identity first, and leave an audit trail that survives DPB
+scrutiny.
+
+Most integrations capture these through the hosted rights portal — but
+when the request lands through a branch, kiosk, call-centre, or your
+own mobile app, you need the **programmatic API** so the audit trail
+stays intact.
+
+## Shape
+
+The end-to-end flow is four steps:
+
+1. **Verify the requestor's identity** *on your side* — internal KYC, branch-officer badge check, existing authenticated session, etc. This happens before the API call; you pass a free-text attestation.
+2. **`POST /v1/rights/requests`** — captures the request with `status=new`. The response includes `sla_deadline` (30 days from creation by default).
+3. **Fulfil it** — for erasure, call `POST /v1/deletion/trigger` for every property the principal touched. For access, package the data and email a download link. For correction, update your own systems and echo the change.
+4. **Close the loop** — move the rights_request row to `completed` via the dashboard or internal RPC. The request becomes immutable after completion.
+
+<Callout tone="security" title="Identity verification is on you">
+The API does not re-verify the requestor's identity. The
+`identity_verified_by` free-text string is a **statement of record** —
+it goes into the audit trail exactly as provided and becomes the
+forensic handle a DPB investigator will follow. Use stable, explicable
+references: `"internal_kyc_check:2026-04-24"`, `"branch_officer:emp_4212"`,
+`"existing_session_uid_abc123:mfa_enrolled"`.
+</Callout>
+
+## Full flow
+
+<CodeTabs tabs={[
+  {
+    label: 'cURL',
+    language: 'bash',
+    code: `# 1. Create the rights request (after your own identity check).
+curl -X POST "https://api.consentshield.in/v1/rights/requests" \\
+  -H "Authorization: Bearer $CS_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "type":                 "erasure",
+    "requestor_name":       "Alice Example",
+    "requestor_email":      "alice@example.com",
+    "request_details":      "Full erasure across all services — email request of 2026-04-24.",
+    "identity_verified_by": "internal_kyc_check:2026-04-24",
+    "captured_via":         "email"
+  }'
+
+# Response (201):
+# {
+#   "id":             "req_5b8c9d0e-1f2a-3b4c-5d6e-7f8a9b0c1d2e",
+#   "status":         "new",
+#   "request_type":   "erasure",
+#   "captured_via":   "email",
+#   "identity_verified":    true,
+#   "identity_verified_by": "internal_kyc_check:2026-04-24",
+#   "sla_deadline":   "2026-05-24T14:02:11Z",
+#   "created_at":     "2026-04-24T14:02:11Z"
+# }
+
+# 2. For erasure — trigger deletion on every property the principal touched.
+# (For access/correction — skip to step 3; fulfil in your own systems.)
+curl -X POST "https://api.consentshield.in/v1/deletion/trigger" \\
+  -H "Authorization: Bearer $CS_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "property_id":               "3a4b…",
+    "data_principal_identifier": "alice@example.com",
+    "identifier_type":           "email",
+    "reason":    "rights_request",
+    "actor_type": "operator",
+    "actor_ref":  "ops@example.com"
+  }'
+# 202 → { "revoked_artefact_ids": [...], "revoked_count": 2, ... }
+
+# 3. Watch fulfilment.
+curl "https://api.consentshield.in/v1/deletion/receipts?\\
+data_principal_identifier=alice@example.com&identifier_type=email&limit=50" \\
+  -H "Authorization: Bearer $CS_API_KEY"
+
+# 4. Close the rights request — from the dashboard (Settings → Rights) or admin RPC.`,
+  },
+  {
+    label: 'Node.js',
+    language: 'typescript',
+    code: `// rights-handler.ts — invoked by your support desk / intake automation.
+const CS_API = 'https://api.consentshield.in/v1'
+
+interface IntakeRequest {
+  type:              'erasure' | 'access' | 'correction' | 'nomination'
+  requestorName:     string
+  requestorEmail:    string
+  details?:          string
+  channel:           'email' | 'call_center' | 'branch' | 'kiosk' | 'mobile_app' | 'other'
+  identityAttestation: string     // what you verified, not the secret
+  propertyId:        string       // your web property
+}
+
+export async function createRightsRequest(job: IntakeRequest) {
+  const res = await fetch(\`\${CS_API}/rights/requests\`, {
+    method: 'POST',
+    headers: {
+      Authorization:  \`Bearer \${process.env.CS_API_KEY}\`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      type:                 job.type,
+      requestor_name:       job.requestorName,
+      requestor_email:      job.requestorEmail.toLowerCase().trim(),
+      request_details:      job.details ?? null,
+      identity_verified_by: job.identityAttestation,
+      captured_via:         job.channel,
+    }),
+  })
+  if (!res.ok) throw new Error(\`rights_create_failed: \${res.status} \${await res.text()}\`)
+  const { id, sla_deadline } = await res.json()
+  return { id, slaDeadline: new Date(sla_deadline) }
+}
+
+export async function fulfilErasure(
+  rightsId: string,
+  email: string,
+  propertyIds: string[],
+  operator: string,
+) {
+  // Fire deletion triggers in parallel across every property the principal touched.
+  const results = await Promise.all(
+    propertyIds.map((propertyId) =>
+      fetch(\`\${CS_API}/deletion/trigger\`, {
+        method: 'POST',
+        headers: {
+          Authorization:  \`Bearer \${process.env.CS_API_KEY}\`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          property_id:               propertyId,
+          data_principal_identifier: email,
+          identifier_type:           'email',
+          reason:     'rights_request',
+          actor_type: 'operator',
+          actor_ref:  operator,
+        }),
+      }).then(async (r) => ({ propertyId, status: r.status, body: await r.json() })),
+    ),
+  )
+  const failures = results.filter((r) => r.status !== 202)
+  if (failures.length) throw new Error(\`partial_fulfilment: \${JSON.stringify(failures)}\`)
+  return results.map((r) => ({
+    property_id:  r.propertyId,
+    revoked:      r.body.revoked_count,
+    receipt_ids:  r.body.revoked_artefact_ids,
+  }))
+}
+
+// Poll receipts until all dispatches complete.
+export async function waitForReceipts(email: string, timeoutMs = 5 * 60_000) {
+  const deadline = Date.now() + timeoutMs
+  while (Date.now() < deadline) {
+    const qs = new URLSearchParams({
+      data_principal_identifier: email,
+      identifier_type:           'email',
+      limit:                     '100',
+    })
+    const r = await fetch(\`\${CS_API}/deletion/receipts?\${qs}\`, {
+      headers: { Authorization: \`Bearer \${process.env.CS_API_KEY}\` },
+    })
+    const { items } = await r.json()
+    const pending = items.filter((i: any) => i.status !== 'completed' && i.status !== 'failed')
+    if (!pending.length) return items
+    await new Promise((ok) => setTimeout(ok, 10_000))
+  }
+  throw new Error('timeout_waiting_for_receipts')
+}`,
+  },
+  {
+    label: 'Python',
+    language: 'python',
+    code: `# rights_handler.py — intake pipeline entry point.
+import os
+import httpx
+from datetime import datetime
+
+CS_API  = "https://api.consentshield.in/v1"
+HEADERS = {"Authorization": f"Bearer {os.environ['CS_API_KEY']}"}
+
+async def create_rights_request(
+    type_: str,
+    requestor_name: str,
+    requestor_email: str,
+    details: str | None,
+    identity_attestation: str,
+    channel: str,
+) -> dict:
+    async with httpx.AsyncClient(headers=HEADERS, timeout=10.0) as c:
+        r = await c.post(f"{CS_API}/rights/requests", json={
+            "type": type_,
+            "requestor_name": requestor_name,
+            "requestor_email": requestor_email.lower().strip(),
+            "request_details": details,
+            "identity_verified_by": identity_attestation,
+            "captured_via": channel,
+        })
+    r.raise_for_status()
+    body = r.json()
+    return {
+        "id": body["id"],
+        "sla_deadline": datetime.fromisoformat(body["sla_deadline"].replace("Z", "+00:00")),
+    }
+
+async def fulfil_erasure(
+    rights_id: str,
+    email: str,
+    property_ids: list[str],
+    operator: str,
+) -> list[dict]:
+    async with httpx.AsyncClient(headers=HEADERS, timeout=30.0) as c:
+        results = []
+        for prop in property_ids:
+            r = await c.post(f"{CS_API}/deletion/trigger", json={
+                "property_id": prop,
+                "data_principal_identifier": email,
+                "identifier_type": "email",
+                "reason": "rights_request",
+                "actor_type": "operator",
+                "actor_ref": operator,
+            })
+            r.raise_for_status()
+            results.append({"property_id": prop, **r.json()})
+        return results`,
+  },
+]} />
+
+## UX — what the requestor expects
+
+- **Acknowledgement within 48 hours** of request creation. DPDP §11 doesn't spell out "acknowledgement" separately from "completion" but audit-ready providers send one anyway.
+- **Status-at-a-glance** page for the requestor — they can check without contacting support.
+- **Closure email on completion** with the rights-request `id` + completion timestamp + summary of what was done.
+- **Escalation path** surfaced on every communication (DPB complaint route + your own grievance officer).
+
+The hosted `/rights` portal ships all four out of the box. When you
+use the programmatic API, you own this UX.
+
+## Gotchas
+
+### Email is lower-cased + trimmed server-side
+
+`requestor_email` is normalised before storage (`toLowerCase().trim()`
+equivalent). Do the same on your side if you correlate the request
+with other records in your own database.
+
+### `captured_via=api` is the default
+
+If you pass `captured_via=api` or omit the field, the audit trail
+records it as API-captured. When the request actually arrived by email
+or phone, set `captured_via` to match the real channel — the dashboard
+filters by it and DPB audits care about the provenance.
+
+### SLA clock starts at `created_at`, not at identity verification
+
+Even if you verified the requestor's identity two days before creating
+the API record, the 30-day clock starts at the server's
+`created_at` timestamp. Minimise intake-to-API latency.
+
+### `type=nomination` is for DPDP §14 nominees
+
+A `nomination` request is a data principal nominating another person
+to exercise their rights if they become incapacitated or pass away.
+Rare, but mandatory to support — and the fulfilment is *registering the
+nominee*, not running deletions.
+
+### Correction requests don't auto-update your data
+
+The API doesn't know what "corrected" means for your schema. When
+`type=correction`, capture the request, fulfil it in your own systems,
+then close the rights_request row from the dashboard. The API is the
+audit receipt, not the orchestrator.
+
+### Don't trigger deletion for access requests
+
+`type=access` means "give me a copy of my data" — a read-only operation.
+Don't call `/v1/deletion/trigger` for these. Package the data (CSV /
+PDF / JSON, whichever you're set up for) and deliver it via whatever
+download link your legal team has blessed.
+
+### Verify identity *before* the API call
+
+The API accepts the request once you attest identity was verified. If
+you haven't actually verified — and the DPB later disputes the
+attestation — you're on the hook for a DPDP §13(4) violation. The
+`identity_verified_by` string is a forensic claim.
+
+## Related
+
+- [`POST /v1/rights/requests`](/docs/api/rights/requests) — full endpoint reference.
+- [`POST /v1/deletion/trigger`](/docs/api/deletion/trigger) — the follow-up call for erasure requests.
+- [Rights requests lifecycle](/docs/concepts/rights-requests-lifecycle) — the state machine and SLA enforcement.
+- [Deletion connectors](/docs/concepts/deletion-connectors) — how erasure fans out to your integrated systems.
+- [Wire a deletion-connector webhook](/docs/cookbook/wire-deletion-connector-webhook) — the receiving side of the fan-out.
+
+<FeedbackStrip pagePath="marketing/src/app/docs/cookbook/handle-a-rights-request/page.mdx" />

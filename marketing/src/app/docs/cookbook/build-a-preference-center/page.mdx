@@ -1,0 +1,302 @@
+export const metadata = {
+  title: 'Build a preference center',
+  description:
+    'Self-service consent management for logged-in users — list active artefacts, flip purposes on/off, and keep the audit trail whole.',
+}
+
+<Breadcrumb trail={[
+  { label: 'Docs', href: '/docs' },
+  { label: 'Cookbook', href: '/docs' },
+  { label: 'Build a preference center' },
+]} />
+
+# Build a preference center
+
+## Problem
+
+Your logged-in users want a page that shows every consent they've ever
+given, which ones are currently active, and lets them flip any of them
+off without filing a rights request. DPDP §6(5) makes withdrawal a
+first-class operation — easier to revoke than to grant. Your preference
+center has to mirror that reality.
+
+## Shape
+
+A preference center is three API calls:
+
+1. **`GET /v1/consent/artefacts?data_principal_identifier=…&identifier_type=…&status=active`** — pull the user's active artefacts.
+2. **Render one row per purpose** — the `purpose_code` + `data_scope` are the user-visible labels.
+3. **On "Turn off"** — `POST /v1/consent/artefacts/{id}/revoke` with `reason_code=user_preference_change`.
+
+For purposes the user *hasn't* granted yet, the preference center is a
+**grant-new** flow — `POST /v1/consent/record` with the chosen
+`purpose_definition_ids`, exactly like the checkout recipe.
+
+<Callout tone="info" title="The artefact, not the event, is the UI model">
+Users reason about *the consent*, not *the decision moment*. A preference
+center lists **active artefacts** (one row per current permission), not
+consent events. Events are the audit log behind it.
+</Callout>
+
+## Full flow — server side
+
+<CodeTabs tabs={[
+  {
+    label: 'cURL',
+    language: 'bash',
+    code: `# 1. List the user's active artefacts.
+curl "https://api.consentshield.in/v1/consent/artefacts?\\
+data_principal_identifier=alice@example.com&\\
+identifier_type=email&\\
+status=active&\\
+limit=100" \\
+  -H "Authorization: Bearer $CS_API_KEY"
+
+# Response:
+# {
+#   "items": [
+#     { "artefact_id": "art_01J…", "purpose_code": "marketing",
+#       "data_scope": ["email_address"], "framework": "dpdp",
+#       "expires_at": "2027-03-14T…", ... }
+#   ],
+#   "next_cursor": null
+# }
+
+# 2. User flips "Marketing" OFF.
+curl -X POST "https://api.consentshield.in/v1/consent/artefacts/art_01J…/revoke" \\
+  -H "Authorization: Bearer $CS_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "reason_code": "user_preference_change",
+    "reason_notes": "Toggled off from preference center",
+    "actor_type": "user",
+    "actor_ref":  "user_abc123"
+  }'
+# 200 → { "revocation_id": "...", "revoked_at": "..." }
+
+# 3. User toggles "Analytics" back ON — that's a fresh record call.
+curl -X POST "https://api.consentshield.in/v1/consent/record" \\
+  -H "Authorization: Bearer $CS_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "property_id":               "3a4b…",
+    "data_principal_identifier": "alice@example.com",
+    "identifier_type":           "email",
+    "purpose_definition_ids":    ["9e2c…"],
+    "captured_at":       "2026-04-24T14:05:22Z",
+    "client_request_id": "user-abc123:pref-center:2026-04-24T14:05:22Z"
+  }'`,
+  },
+  {
+    label: 'Node.js',
+    language: 'typescript',
+    code: `// /app/api/preferences/route.ts — Next.js App Router.
+import { NextRequest, NextResponse } from 'next/server'
+
+const CS_API = 'https://api.consentshield.in/v1'
+
+async function csFetch(path: string, init?: RequestInit) {
+  return fetch(\`\${CS_API}\${path}\`, {
+    ...init,
+    headers: {
+      Authorization: \`Bearer \${process.env.CS_API_KEY}\`,
+      'Content-Type': 'application/json',
+      ...(init?.headers ?? {}),
+    },
+  })
+}
+
+// GET /api/preferences → list the current user's active artefacts.
+export async function GET(req: NextRequest) {
+  const session = await getSession(req)             // your auth helper
+  if (!session) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 })
+
+  const qs = new URLSearchParams({
+    data_principal_identifier: session.email,
+    identifier_type:           'email',
+    status:                    'active',
+    limit:                     '100',
+  })
+  const res = await csFetch(\`/consent/artefacts?\${qs}\`)
+  if (!res.ok) return NextResponse.json({ error: 'lookup_failed' }, { status: 502 })
+
+  const { items } = await res.json()
+  return NextResponse.json({
+    purposes: items.map((a: any) => ({
+      artefact_id: a.artefact_id,
+      code:        a.purpose_code,
+      scope:       a.data_scope,
+      expires_at:  a.expires_at,
+    })),
+  })
+}
+
+// POST /api/preferences { action: 'revoke', artefact_id } | { action: 'grant', purpose_definition_id }
+export async function POST(req: NextRequest) {
+  const session = await getSession(req)
+  if (!session) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 })
+
+  const body = await req.json()
+
+  if (body.action === 'revoke') {
+    const res = await csFetch(
+      \`/consent/artefacts/\${body.artefact_id}/revoke\`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          reason_code:  'user_preference_change',
+          reason_notes: 'Toggled off from preference center',
+          actor_type:   'user',
+          actor_ref:    session.userId,
+        }),
+      },
+    )
+    if (!res.ok) return NextResponse.json({ error: 'revoke_failed' }, { status: 502 })
+    return NextResponse.json({ ok: true })
+  }
+
+  if (body.action === 'grant') {
+    const res = await csFetch('/consent/record', {
+      method: 'POST',
+      body: JSON.stringify({
+        property_id:               process.env.CS_PROPERTY_ID!,
+        data_principal_identifier: session.email,
+        identifier_type:           'email',
+        purpose_definition_ids:    [body.purpose_definition_id],
+        captured_at:               new Date().toISOString(),
+        client_request_id:         \`\${session.userId}:pref:\${body.purpose_definition_id}:\${Date.now()}\`,
+      }),
+    })
+    if (!res.ok) return NextResponse.json({ error: 'grant_failed' }, { status: 502 })
+    const { artefact_ids } = await res.json()
+    return NextResponse.json({ ok: true, artefact_id: artefact_ids[0].artefact_id })
+  }
+
+  return NextResponse.json({ error: 'unknown_action' }, { status: 400 })
+}`,
+  },
+  {
+    label: 'Python',
+    language: 'python',
+    code: `# preferences.py — FastAPI route powering the preference center UI.
+import os
+import httpx
+from datetime import datetime, timezone
+from fastapi import APIRouter, Depends, HTTPException
+
+router = APIRouter(prefix="/api/preferences")
+
+CS_API  = "https://api.consentshield.in/v1"
+HEADERS = {"Authorization": f"Bearer {os.environ['CS_API_KEY']}"}
+
+def cs_client():
+    return httpx.AsyncClient(base_url=CS_API, headers=HEADERS, timeout=5.0)
+
+@router.get("")
+async def list_preferences(session = Depends(get_session)):
+    async with cs_client() as c:
+        r = await c.get("/consent/artefacts", params={
+            "data_principal_identifier": session.email,
+            "identifier_type": "email",
+            "status": "active",
+            "limit": 100,
+        })
+    r.raise_for_status()
+    return {
+        "purposes": [
+            {
+                "artefact_id": a["artefact_id"],
+                "code":        a["purpose_code"],
+                "scope":       a["data_scope"],
+                "expires_at":  a["expires_at"],
+            }
+            for a in r.json()["items"]
+        ],
+    }
+
+@router.post("/revoke")
+async def revoke(artefact_id: str, session = Depends(get_session)):
+    async with cs_client() as c:
+        r = await c.post(
+            f"/consent/artefacts/{artefact_id}/revoke",
+            json={
+                "reason_code":  "user_preference_change",
+                "reason_notes": "Toggled off from preference center",
+                "actor_type":   "user",
+                "actor_ref":    session.user_id,
+            },
+        )
+    if not r.is_success:
+        raise HTTPException(502, f"revoke_failed: {r.text}")
+    return {"ok": True}
+
+@router.post("/grant")
+async def grant(purpose_definition_id: str, session = Depends(get_session)):
+    async with cs_client() as c:
+        r = await c.post("/consent/record", json={
+            "property_id":               os.environ["CS_PROPERTY_ID"],
+            "data_principal_identifier": session.email,
+            "identifier_type":           "email",
+            "purpose_definition_ids":    [purpose_definition_id],
+            "captured_at":       datetime.now(timezone.utc).isoformat(),
+            "client_request_id": f"{session.user_id}:pref:{purpose_definition_id}:{datetime.now(timezone.utc).timestamp()}",
+        })
+    if not r.is_success:
+        raise HTTPException(502, f"grant_failed: {r.text}")
+    return {"ok": True, "artefact_id": r.json()["artefact_ids"][0]["artefact_id"]}`,
+  },
+]} />
+
+## UI hints
+
+- **Always show `expires_at`** when present — DPDP lets you specify a default purpose-expiry, and users appreciate transparency about re-consent schedules.
+- **Show `data_scope`** as human-readable chips under each purpose. The list is maintained in the dashboard's purpose definitions; treat it as the source of truth.
+- **Group by framework** when you run a mix — `dpdp`, `abdm`, `gdpr` in the artefact envelope signals which regulation is attached.
+- **Never mutate in place.** A revoke-then-grant sequence is two artefacts with a chronological replacement chain, not an update. The preference center should reflect this: "Off since Apr 24" + "On again Apr 26" is the audit truth.
+
+## Gotchas
+
+### Listing by identifier needs both fields
+
+`GET /v1/consent/artefacts` with `data_principal_identifier` requires
+`identifier_type` in the same request. Passing one without the other
+returns **422**. The server needs the type to normalise the identifier
+consistently (email → lower-cased, phone → E.164, etc.).
+
+### Large artefact histories — paginate
+
+The endpoint is cursor-paginated; `limit` caps at 200. A user who has
+been with you for 5 years may have 50+ artefacts across
+revoke/grant cycles. Fetch the first page, render, and
+prefetch subsequent pages on scroll if your UI needs the full history.
+Treat `next_cursor: null` as the end marker.
+
+### Revoke is the *only* way to turn off
+
+There is no "update" on an active artefact. To switch a purpose off,
+revoke it. If the user wants to turn it back on later, `POST
+/v1/consent/record` creates a **new** artefact. The old artefact stays
+in the record as revoked — DPDP §11 wants every decision durable.
+
+### Revoking an already-revoked artefact
+
+A second revoke on the same `artefact_id` returns **409 Conflict**.
+Treat as idempotent from the UI's perspective — refresh the list and
+move on. Don't retry automatically.
+
+### Users want to see *why* a purpose expired
+
+`status=expired` happens when `expires_at` passes without re-consent.
+Render a distinct visual state for `expired` vs `revoked` — user-
+triggered revocation and automatic expiry are very different events
+from the user's mental model.
+
+## Related
+
+- [`GET /v1/consent/artefacts`](/docs/api/consent/artefacts/list) — the list endpoint this recipe is built on.
+- [`POST /v1/consent/artefacts/{id}/revoke`](/docs/api/consent/artefacts/revoke) — how revoke works under the hood.
+- [Purpose definitions](/docs/concepts/purpose-definitions) — source of `purpose_code` + `data_scope` rendered in the UI.
+- [Record consent at checkout](/docs/cookbook/record-consent-at-checkout) — how those artefacts got there in the first place.
+- [Handle a rights request](/docs/cookbook/handle-a-rights-request) — the programmatic-DPDP-§13 flow when preference-center flip isn't enough.
+
+<FeedbackStrip pagePath="marketing/src/app/docs/cookbook/build-a-preference-center/page.mdx" />

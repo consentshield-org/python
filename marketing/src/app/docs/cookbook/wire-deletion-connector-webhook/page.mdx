@@ -1,0 +1,390 @@
+export const metadata = {
+  title: 'Wire a deletion-connector webhook',
+  description:
+    'Build a custom deletion-connector endpoint that receives ConsentShield fan-out, verifies the HMAC signature, runs the erasure in your system, and POSTs a receipt back.',
+}
+
+<Breadcrumb trail={[
+  { label: 'Docs', href: '/docs' },
+  { label: 'Cookbook', href: '/docs' },
+  { label: 'Wire a deletion-connector webhook' },
+]} />
+
+# Wire a deletion-connector webhook
+
+## Problem
+
+When a customer revokes consent or an erasure right is granted, you
+have 30 days to remove the principal's data from every system you hold
+it in — CRM, marketing automation, data warehouse, backups, the
+shadow Google Sheet someone started last quarter, all of it.
+ConsentShield's pre-built connectors (Mailchimp, HubSpot, etc.) cover
+the common cases. For everything else, you build a **custom webhook
+connector** that receives the fan-out, runs the erasure in your
+systems, and reports back.
+
+## Shape
+
+A custom deletion-connector endpoint is a single authenticated HTTPS
+POST handler. The contract:
+
+1. **You host it** at an HTTPS URL reachable from the public internet (`https://your-backend.example.com/hooks/consentshield`).
+2. **You verify our signature** using the shared `signing_secret` (set when you configured the connector in the dashboard).
+3. **You queue the work** async — never delete in-line; ACK within 5 seconds.
+4. **You POST a receipt back** to the signed `callback_url` we provided.
+
+The full signing scheme is documented in
+[webhook signatures — Scheme 1](/docs/webhook-signatures#scheme-1--deletion-connector-webhooks).
+This recipe walks the end-to-end build.
+
+<Callout tone="warn" title="Idempotency is your responsibility">
+The same deletion event may arrive more than once on network flake.
+Dedupe on the `request_id` in the payload — it's the same value across
+retries. First delivery → process + ACK. Subsequent deliveries →
+ACK immediately without re-running the erasure.
+</Callout>
+
+## Prerequisites
+
+- Dashboard → **Integrations → Deletion connectors → Add custom webhook**.
+- Copy the generated `signing_secret` (≥ 32 chars) into your secret manager.
+- Register your public webhook URL in the connector config.
+- Grant your API key the `write:deletion` scope so you can hit `/v1/integrations/{connector_id}/test_delete` to smoke-test before going live.
+
+## Full flow
+
+<CodeTabs tabs={[
+  {
+    label: 'Node.js (Express)',
+    language: 'typescript',
+    code: `// server.ts — production-ready deletion-connector endpoint.
+import express from 'express'
+import { createHmac, timingSafeEqual } from 'node:crypto'
+import { redis } from './redis'      // or any dedupe store
+import { queue } from './bullmq'     // or any background-job runner
+
+const app = express()
+
+// 1. RAW body. JSON parsing invalidates the signature — see the gotcha.
+app.post('/hooks/consentshield',
+  express.raw({ type: 'application/json' }),
+  async (req, res) => {
+    // 2. Verify the HMAC.
+    const sig = req.header('X-ConsentShield-Signature') ?? ''
+    const expected = createHmac('sha256', process.env.CS_WEBHOOK_SECRET!)
+      .update(req.body)
+      .digest('hex')
+    const a = Buffer.from(expected, 'hex')
+    const b = Buffer.from(sig, 'hex')
+    if (a.length !== b.length || !timingSafeEqual(a, b)) {
+      return res.status(403).send('invalid signature')
+    }
+
+    // 3. Parse.
+    const payload = JSON.parse(req.body.toString('utf8')) as {
+      event:          'deletion_request'
+      request_id:     string
+      receipt_id:     string
+      data_principal: { identifier: string; identifier_type: 'email' | 'phone' | string }
+      reason:         string
+      callback_url:   string
+      deadline:       string
+    }
+
+    // 4. Test-mode short-circuit. /v1/integrations/{id}/test_delete fires
+    //    against real connectors with reason='test' so you can verify the
+    //    handshake without touching real data.
+    if (payload.reason === 'test') {
+      await fetch(payload.callback_url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          request_id:       payload.request_id,
+          status:           'completed',
+          records_deleted:  0,
+          systems_affected: ['dry-run'],
+          completed_at:     new Date().toISOString(),
+        }),
+      })
+      return res.sendStatus(202)
+    }
+
+    // 5. Dedupe on request_id.
+    const seen = await redis.set(\`cs:seen:\${payload.request_id}\`, '1', 'EX', 86_400, 'NX')
+    if (seen !== 'OK') {
+      // Already processed — ACK fast, skip re-run.
+      return res.sendStatus(202)
+    }
+
+    // 6. Queue the real erasure; ACK fast.
+    await queue.add('consentshield-erase', payload)
+    return res.sendStatus(202)
+  },
+)
+
+// 7. The worker does the actual deletion + posts the callback.
+queue.process('consentshield-erase', async (job) => {
+  const p = job.data as any
+  const rowsDeleted = await eraseEverywhere(p.data_principal.identifier)
+
+  await fetch(p.callback_url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      request_id:       p.request_id,
+      status:           'completed',
+      records_deleted:  rowsDeleted.count,
+      systems_affected: rowsDeleted.systems,
+      completed_at:     new Date().toISOString(),
+    }),
+  })
+})
+
+async function eraseEverywhere(identifier: string) {
+  // Your real cross-system deletion logic. Must be idempotent.
+  return { count: 0, systems: [] as string[] }
+}
+
+app.listen(8080)`,
+  },
+  {
+    label: 'Python (FastAPI)',
+    language: 'python',
+    code: `# hooks.py — receive-verify-queue pattern for custom deletion connector.
+import hmac, hashlib, os, json, httpx
+from datetime import datetime, timezone
+from fastapi import FastAPI, Request, HTTPException
+from redis.asyncio import Redis
+from rq import Queue
+from rq.job import Job
+
+app   = FastAPI()
+redis = Redis.from_url(os.environ["REDIS_URL"])
+queue = Queue("consentshield-erase", connection=redis)
+SECRET = os.environ["CS_WEBHOOK_SECRET"].encode()
+
+def verify_sig(raw: bytes, header_sig: str) -> bool:
+    expected = hmac.new(SECRET, raw, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, header_sig)
+
+@app.post("/hooks/consentshield")
+async def consentshield_webhook(request: Request):
+    raw = await request.body()
+    sig = request.headers.get("X-ConsentShield-Signature", "")
+    if not verify_sig(raw, sig):
+        raise HTTPException(403, "invalid signature")
+
+    payload = json.loads(raw)
+    request_id = payload["request_id"]
+
+    # Test-mode short-circuit.
+    if payload.get("reason") == "test":
+        await post_receipt(payload["callback_url"], request_id, 0, ["dry-run"])
+        return {"ok": True}
+
+    # Dedupe.
+    if not await redis.set(f"cs:seen:{request_id}", "1", ex=86400, nx=True):
+        return {"ok": True}  # already processed
+
+    # Enqueue async; ACK fast.
+    queue.enqueue(erase_everywhere, payload)
+    return {"ok": True}
+
+def erase_everywhere(payload):
+    rows_deleted, systems = 0, []
+    # … your real deletion logic, must be idempotent …
+    httpx.post(payload["callback_url"], json={
+        "request_id":       payload["request_id"],
+        "status":           "completed",
+        "records_deleted":  rows_deleted,
+        "systems_affected": systems,
+        "completed_at":     datetime.now(timezone.utc).isoformat(),
+    })
+
+async def post_receipt(url: str, request_id: str, rows: int, systems: list[str]):
+    async with httpx.AsyncClient(timeout=5.0) as c:
+        await c.post(url, json={
+            "request_id":       request_id,
+            "status":           "completed",
+            "records_deleted":  rows,
+            "systems_affected": systems,
+            "completed_at":     datetime.now(timezone.utc).isoformat(),
+        })`,
+  },
+  {
+    label: 'Go',
+    language: 'go',
+    code: `// main.go — minimal production deletion-connector receiver.
+package main
+
+import (
+    "crypto/hmac"
+    "crypto/sha256"
+    "encoding/hex"
+    "encoding/json"
+    "io"
+    "net/http"
+    "os"
+    "time"
+)
+
+var (
+    secret = []byte(os.Getenv("CS_WEBHOOK_SECRET"))
+)
+
+type deletionReq struct {
+    Event         string            \`json:"event"\`
+    RequestID     string            \`json:"request_id"\`
+    ReceiptID     string            \`json:"receipt_id"\`
+    DataPrincipal map[string]string \`json:"data_principal"\`
+    Reason        string            \`json:"reason"\`
+    CallbackURL   string            \`json:"callback_url"\`
+    Deadline      string            \`json:"deadline"\`
+}
+
+func verifySig(raw []byte, sig string) bool {
+    mac := hmac.New(sha256.New, secret)
+    mac.Write(raw)
+    expected := hex.EncodeToString(mac.Sum(nil))
+    return hmac.Equal([]byte(expected), []byte(sig))
+}
+
+func webhookHandler(w http.ResponseWriter, r *http.Request) {
+    raw, _ := io.ReadAll(r.Body)
+    defer r.Body.Close()
+
+    if !verifySig(raw, r.Header.Get("X-ConsentShield-Signature")) {
+        http.Error(w, "invalid signature", http.StatusForbidden)
+        return
+    }
+
+    var p deletionReq
+    if err := json.Unmarshal(raw, &p); err != nil {
+        http.Error(w, "bad json", http.StatusBadRequest)
+        return
+    }
+
+    // Test-mode short-circuit.
+    if p.Reason == "test" {
+        postReceipt(p.CallbackURL, p.RequestID, 0, []string{"dry-run"})
+        w.WriteHeader(http.StatusAccepted)
+        return
+    }
+
+    // Dedupe via Redis SET NX (omitted for brevity) — enqueue real work.
+    go func() {
+        rows, systems := eraseEverywhere(p.DataPrincipal["identifier"])
+        postReceipt(p.CallbackURL, p.RequestID, rows, systems)
+    }()
+    w.WriteHeader(http.StatusAccepted)
+}
+
+func postReceipt(url, requestID string, rows int, systems []string) {
+    body, _ := json.Marshal(map[string]any{
+        "request_id":       requestID,
+        "status":           "completed",
+        "records_deleted":  rows,
+        "systems_affected": systems,
+        "completed_at":     time.Now().UTC().Format(time.RFC3339),
+    })
+    http.Post(url, "application/json", bytes.NewReader(body))
+}
+
+func eraseEverywhere(identifier string) (int, []string) {
+    // Your cross-system deletion logic. Must be idempotent.
+    return 0, nil
+}
+
+func main() {
+    http.HandleFunc("/hooks/consentshield", webhookHandler)
+    http.ListenAndServe(":8080", nil)
+}`,
+  },
+]} />
+
+## Smoke-test before going live
+
+The safest way to verify the handshake without touching real data is
+`/v1/integrations/{connector_id}/test_delete`. It posts a payload with
+`reason=test` and a synthetic `cs_test_principal_<uuid>` identifier.
+Your handler should detect `reason=test` and short-circuit (as the
+samples above do).
+
+```bash
+# Dashboard → Integrations → Deletion connectors → copy your connector_id.
+curl -X POST "https://api.consentshield.in/v1/integrations/$CONNECTOR_ID/test_delete" \
+  -H "Authorization: Bearer $CS_API_KEY"
+
+# Response (202):
+# {
+#   "receipt_id": "9d8e…",
+#   "data_principal_identifier": "cs_test_principal_5fa8…",
+#   "reason": "test",
+#   "status": "pending",
+#   "note":   "Customer webhook handler should inspect request_payload->>'reason'='test'..."
+# }
+```
+
+Limit: **10 test_delete calls per connector per hour.** Enough to
+verify the wiring; not enough to accidentally stress your endpoint.
+
+## Gotchas
+
+### Raw body only — JSON-parsing invalidates the signature
+
+`JSON.stringify(JSON.parse(body))` does not produce byte-identical
+output. Compute the HMAC over the raw request body bytes **before** your
+framework parses it:
+
+- **Express:** `express.raw({ type: 'application/json' })`.
+- **FastAPI:** `await request.body()` before `await request.json()`.
+- **Go `net/http`:** `io.ReadAll(r.Body)` is already raw.
+
+### Constant-time compare is mandatory
+
+Never `a === b` signatures. Timing side-channels leak the expected
+prefix one byte at a time. All three samples above use
+`timingSafeEqual` / `hmac.compare_digest` / `hmac.Equal`.
+
+### ACK within 5 seconds
+
+ConsentShield times out the POST at 5 seconds. Queue the erasure; don't
+run it inline. Slow handlers get retried (and your connector ends up
+marked **degraded** in your dashboard).
+
+### Don't swallow 5xx
+
+If your storage is down, return a 500 (or 503). ConsentShield treats
+5xx and 408/429 as retriable with exponential backoff. A 2xx ACK
+locks in the delivery — even if you then fail, there's no retry.
+
+### Signature-rotation overlap
+
+After rotation, both the old and new secret are accepted for a 24-hour
+window on our side. On *your* side, update your verifier to accept
+both during the rollout; after 24 hours the old secret is revoked.
+See
+[webhook signatures — rotation](/docs/webhook-signatures#rotating-a-signing-secret).
+
+### Don't reconstruct `callback_url`
+
+Use the exact string we provide — it's signed. URL-decoding,
+canonicalising, or rewriting it breaks the `sig` parameter and your
+receipt POSTs will bounce with 403.
+
+### 2xx on the callback is mandatory
+
+If your receipt POST returns non-2xx, we retry up to 5 times with
+exponential backoff. If it still fails, the receipt is marked
+`dispatch_failed` — a real human has to investigate from the
+dashboard.
+
+## Related
+
+- [Webhook signatures](/docs/webhook-signatures) — full signing-scheme reference (canonical payload, header contract, rotation).
+- [Deletion connectors](/docs/concepts/deletion-connectors) — pre-built vs custom; how fan-out works.
+- [`POST /v1/integrations/{connector_id}/test_delete`](/docs/api/deletion/test-delete) — the smoke-test endpoint.
+- [Handle a rights request](/docs/cookbook/handle-a-rights-request) — where the erasure fan-out originates.
+- [Key rotation & tombstones](/docs/concepts/key-rotation-and-tombstones) — how outbound API keys (not webhook secrets) behave under rotation.
+
+<FeedbackStrip pagePath="marketing/src/app/docs/cookbook/wire-deletion-connector-webhook/page.mdx" />

@@ -1,0 +1,286 @@
+export const metadata = {
+  title: 'Rotate an API key safely',
+  description:
+    'Zero-downtime API-key rotation — issue → overlap → drain → revoke, with the 410 Gone tombstone protecting you from silent failures.',
+}
+
+<Breadcrumb trail={[
+  { label: 'Docs', href: '/docs' },
+  { label: 'Cookbook', href: '/docs' },
+  { label: 'Rotate an API key safely' },
+]} />
+
+# Rotate an API key safely
+
+## Problem
+
+You need to rotate a production API key — scheduled quarterly rotation,
+suspected leak, departing employee, or secret-scanner flagged the key
+in a public repo. Simply revoking-and-reissuing causes a traffic blip
+while your fleet refreshes. Done carelessly, that blip is hours of
+failed API calls and a support incident.
+
+Zero-downtime rotation is a 4-step dance: **issue → overlap → drain →
+revoke**. The 410 Gone tombstone (ADR-1011) protects you from silently
+shipping a stale key to production.
+
+## Shape
+
+<ParamTable params={[
+  {
+    name: '1. Issue',
+    type: 'new plaintext',
+    description: 'Dashboard → Settings → API keys → New key. You see the plaintext exactly once. Don\'t revoke the old key yet.',
+  },
+  {
+    name: '2. Overlap',
+    type: 'both keys live',
+    description: 'Deploy the new plaintext to one production instance. Monitor /v1/keys/self via each to confirm both keys still resolve. Both keys are fully valid.',
+  },
+  {
+    name: '3. Drain',
+    type: 'old key traffic → 0',
+    description: 'Roll out the new plaintext to the rest of the fleet. Monitor the old key\'s last_used_at — when it stops advancing for 24+ hours, old-key traffic has drained.',
+  },
+  {
+    name: '4. Revoke',
+    type: 'old key → 410 Gone',
+    description: 'Dashboard → Settings → API keys → Revoke. For 2 years after revoke, the old plaintext returns 410 Gone (not 401) so any miss survives as a clear rotation signal.',
+  },
+]} />
+
+<Callout tone="tip" title="Why 410 Gone, not 401">
+`401 Unauthorized` is the response for keys that never existed, typos,
+and malformed headers. Treating rotated keys as `401` means a stale
+deployment looks indistinguishable from an attacker probe — and pages
+security. `410 Gone` (with `X-Consentshield-Key-Rotated-At` +
+`X-Consentshield-Key-Prefix` response headers) is a specific, actionable
+signal: *"somebody rotated this key — update your deployment."* See
+[key rotation & tombstones](/docs/concepts/key-rotation-and-tombstones).
+</Callout>
+
+## Full flow — operator script
+
+<CodeTabs tabs={[
+  {
+    label: 'cURL',
+    language: 'bash',
+    code: `# ─────────────────────────────────────────────────────────
+# Step 1 — Issue a new key from the dashboard.
+# Settings → API keys → New key → copy plaintext.
+# ─────────────────────────────────────────────────────────
+
+# Step 2 — Verify the new key works.
+curl "https://api.consentshield.in/v1/keys/self" \\
+  -H "Authorization: Bearer $NEW_KEY"
+
+# Response (200):
+# {
+#   "key_id": "01HRG6Z…",
+#   "account_id": "01HRG5…",
+#   "org_id":  "01HRG5K9X7…",
+#   "name":    "staging-integration (rotated 2026-04-24)",
+#   "key_prefix": "cs_live_01HRH5",
+#   "scopes":  ["read:consent", "write:consent"],
+#   "rate_tier": "growth",
+#   "created_at":   "2026-04-24T10:00:00Z",
+#   "last_used_at": "2026-04-24T10:05:22Z"
+# }
+
+# Step 3 — Deploy the new plaintext to production.
+# (Through your normal CI/CD — exact command depends on your secret manager.)
+
+# Step 4 — Watch old-key last_used_at drain. Repeat until last_used_at is > 24h old.
+curl "https://api.consentshield.in/v1/keys/self" \\
+  -H "Authorization: Bearer $OLD_KEY" | jq .last_used_at
+
+# Step 5 — Revoke the old key from the dashboard.
+# Settings → API keys → <old key> → Revoke.
+
+# Step 6 — Confirm the old key is dead.
+curl -i "https://api.consentshield.in/v1/_ping" \\
+  -H "Authorization: Bearer $OLD_KEY"
+# Expect:
+#   HTTP/1.1 410 Gone
+#   X-Consentshield-Key-Rotated-At: 2026-04-24T14:30:22Z
+#   X-Consentshield-Key-Prefix: cs_live_01HRG
+#
+#   { "type": "https://consentshield.in/errors/gone",
+#     "title": "Gone",
+#     "status": 410,
+#     "detail": "API key was rotated on 2026-04-24T14:30:22Z",
+#     "rotated_at": "2026-04-24T14:30:22Z",
+#     "key_id_prefix": "cs_live_01HRG" }`,
+  },
+  {
+    label: 'Node.js',
+    language: 'typescript',
+    code: `// rotate-check.ts — health-check helper your CI/CD runs post-rotation deploys.
+const CS_API = 'https://api.consentshield.in/v1'
+
+interface KeySelf {
+  key_id:        string
+  key_prefix:    string
+  scopes:        string[]
+  rate_tier:     string
+  created_at:    string
+  last_used_at:  string | null
+}
+
+export async function verifyNewKey(plaintext: string): Promise<KeySelf> {
+  const res = await fetch(\`\${CS_API}/keys/self\`, {
+    headers: { Authorization: \`Bearer \${plaintext}\` },
+  })
+  if (res.status === 410) {
+    const { rotated_at, key_id_prefix } = await res.json()
+    throw new Error(\`key \${key_id_prefix} was rotated at \${rotated_at} — do not deploy\`)
+  }
+  if (res.status === 401) {
+    throw new Error('key unknown or malformed — check the prefix + paste')
+  }
+  if (!res.ok) throw new Error(\`/keys/self returned \${res.status}\`)
+  return res.json()
+}
+
+// In CI — run this after secret-deploy, before flipping traffic.
+const plaintext = process.env.NEW_CS_API_KEY!
+verifyNewKey(plaintext).then(
+  (k) => console.log(\`OK — key \${k.key_prefix}, scopes \${k.scopes.join(',')}\`),
+  (e) => { console.error(e); process.exit(1) },
+)
+
+// After full rollout + 24 h drain — sanity-check that the OLD key is actually dead
+// so you don't revoke one that some straggler pod is still using.
+export async function confirmOldKeyIdle(oldPlaintext: string) {
+  const r = await fetch(\`\${CS_API}/keys/self\`, {
+    headers: { Authorization: \`Bearer \${oldPlaintext}\` },
+  })
+  if (!r.ok) throw new Error(\`old key /keys/self returned \${r.status}\`)
+  const { last_used_at } = await r.json() as { last_used_at: string | null }
+  if (!last_used_at) return true
+  const hoursAgo = (Date.now() - new Date(last_used_at).getTime()) / 3_600_000
+  if (hoursAgo < 24) throw new Error(\`old key last used \${hoursAgo.toFixed(1)}h ago — drain not complete\`)
+  return true
+}`,
+  },
+  {
+    label: 'Python',
+    language: 'python',
+    code: `# rotate_check.py — CI/CD guard script.
+import os, httpx
+from datetime import datetime, timezone, timedelta
+
+CS_API = "https://api.consentshield.in/v1"
+
+class Rotated(Exception): ...
+class Unknown(Exception): ...
+
+def verify_new_key(plaintext: str) -> dict:
+    r = httpx.get(f"{CS_API}/keys/self",
+                  headers={"Authorization": f"Bearer {plaintext}"},
+                  timeout=10.0)
+    if r.status_code == 410:
+        body = r.json()
+        raise Rotated(f"key {body['key_id_prefix']} was rotated at {body['rotated_at']}")
+    if r.status_code == 401:
+        raise Unknown("key unknown or malformed — check prefix + paste")
+    r.raise_for_status()
+    return r.json()
+
+def confirm_old_key_idle(old: str) -> bool:
+    r = httpx.get(f"{CS_API}/keys/self",
+                  headers={"Authorization": f"Bearer {old}"},
+                  timeout=10.0)
+    r.raise_for_status()
+    last = r.json().get("last_used_at")
+    if last is None:
+        return True
+    last_dt = datetime.fromisoformat(last.replace("Z", "+00:00"))
+    if datetime.now(timezone.utc) - last_dt < timedelta(hours=24):
+        raise RuntimeError(f"old key still in use — last_used_at={last}")
+    return True
+
+if __name__ == "__main__":
+    k = verify_new_key(os.environ["NEW_CS_API_KEY"])
+    print(f"OK — {k['key_prefix']} ({', '.join(k['scopes'])})")`,
+  },
+]} />
+
+## Incident-response variant — key definitely leaked
+
+The clean-rotation playbook assumes the old key is *safe to keep live*
+during the overlap. If the key **is known to be leaked** (found in a
+public repo, found in a log, tipped off by GitHub Secret Scanning),
+skip the drain:
+
+1. **Issue the new key immediately.**
+2. **Revoke the old key right away** — don't wait for drain. Pods that depended on the old key will fail; that's the correct trade-off.
+3. **Deploy the new plaintext in parallel.**
+4. **Accept the blip.** 410 Gone responses during the gap are loud, explicit, and page the right people.
+
+Exposed-secret rotations are intentionally disruptive — the cost of a
+few failed API calls is trivial against the cost of a leaked key sitting
+valid for another hour.
+
+## What to monitor
+
+- **`last_used_at` drift** — during overlap, both keys' `last_used_at` should advance. If only the old key moves, the new key isn't deployed; if only the new key moves, drain is done.
+- **`rate_tier` + `scopes`** — verify the new key inherited the exact same scopes. Rotation from the dashboard preserves scopes; an operator manually re-creating a key might not.
+- **410 count** — post-rotation, if your integration's error monitor shows 410s, *something is still carrying the old plaintext*. Find and fix it; don't suppress the alert.
+- **401 count** — should drop to baseline. A sudden 401 spike means your deploy went wrong (typo in the new plaintext).
+
+## Gotchas
+
+### Secret-scanner-triggered rotation paths
+
+GitHub Secret Scanning and similar tools often open a PR or post a
+webhook when a `cs_live_*` key leaks. If your repo is public, assume
+the key is compromised within minutes of the commit being pushed —
+not hours. Go straight to the incident-response variant above.
+
+### Don't rotate and revoke in one admin action
+
+The dashboard's "Rotate" button issues a new key **and** revokes the
+old one after a grace period (default: 24 h). If you want overlap
+longer than 24 h, click "New key" separately and manage the old key's
+lifecycle yourself via "Revoke" when drain is done.
+
+### Scopes on the new key
+
+A rotated key inherits the old key's scopes by default. If you're
+narrowing scope as part of the rotation (e.g. dropping `admin:keys`
+that no production code needs), do the deploy first, confirm no 403s
+for 24 h, then revoke the old key. The order matters: rotating + tightening scope in one step means a traffic blip on any surface that legitimately needed the removed scope.
+
+### Client libraries + `process.env` caching
+
+Some server frameworks read env vars once at boot and cache them. If
+your secret manager pushes a new value but your process doesn't
+reload, the pod keeps using the old plaintext until restart. SIGHUP
+your workers, or use a secret manager that triggers a rolling restart
+on rotation.
+
+### CI/CD secrets lag
+
+GitHub Actions, CircleCI, etc. read the secret at workflow start. A
+long-running workflow launched before the rotation will finish with
+the old key. If the old key is revoked mid-workflow, late steps hit
+410 Gone. Schedule rotations after deploys, not during.
+
+### The tombstone lasts 2 years
+
+The revoked plaintext continues to return **410 Gone** for 2 years
+after revoke. That's not an accident — DPB audits can arrive late, and
+proving "this access was rejected" six months later is table stakes.
+Don't re-issue the same plaintext "because it expired from the cache";
+it hasn't.
+
+## Related
+
+- [Authentication](/docs/authentication) — Bearer scheme + prefix matrix.
+- [Key rotation & tombstones](/docs/concepts/key-rotation-and-tombstones) — the full state machine + why 410 Gone.
+- [`GET /v1/keys/self`](/docs/api/account/keys-self) — the introspection endpoint this recipe uses as a health check.
+- [Error codes — 410 Gone](/docs/errors#authentication-errors-401--410) — what the tombstone response looks like on the wire.
+- [API changelog — v1.1.0](/docs/changelog#2026-04-21--v110--rotated-key-tombstone-410-gone) — when the 410 behaviour shipped.
+
+<FeedbackStrip pagePath="marketing/src/app/docs/cookbook/rotate-api-key-safely/page.mdx" />

@@ -13406,6 +13406,150 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-04-24T12:52:08.171Z"
+    },
+    {
+      "id": "bug-835",
+      "timestamp": "2026-04-24T13:02:40.643Z",
+      "error_message": "Missing error handling in function",
+      "file": "app/src/lib/storage/sigv4.ts",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T13:02:40.643Z"
+    },
+    {
+      "id": "bug-836",
+      "timestamp": "2026-04-24T13:04:01.958Z",
+      "error_message": "Significant refactor of ",
+      "file": "app/src/app/api/orgs/[orgId]/storage/byok-validate/route.ts",
+      "root_cause": "6 lines replaced/restructured",
+      "fix": "Rewrote 27→38 lines (6 removed) | Also: interface ValidateOk {; ok: true",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-04-24T13:04:11.137Z"
+    },
+    {
+      "id": "bug-837",
+      "timestamp": "2026-04-24T13:04:49.841Z",
+      "error_message": "Significant refactor of ",
+      "file": "app/src/app/(dashboard)/dashboard/settings/storage/_components/byok-form.tsx",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 15→24 lines (2 removed) | Also: | { name: 'validated'; probeId: string; durationMs; | { name: 'probe_failed'; failedStep: string; erro | Also: if (res.ok && json.ok) {; if (res.ok && json.ok === false) { | Also: Credentials validated; Round-trip probe <code>{stage.probeId}</code> comp | Also: Validation failed at step: {stage.failedStep}; <p className=\"mt-1 text-xs text-red-800\">{stage.er",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 5,
+      "last_seen": "2026-04-24T13:05:44.900Z"
+    },
+    {
+      "id": "bug-838",
+      "timestamp": "2026-04-24T13:05:59.454Z",
+      "error_message": "Null/undefined access in ",
+      "file": "app/src/app/(dashboard)/dashboard/settings/storage/_components/byok-form.tsx",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check)",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T13:05:59.454Z"
+    },
+    {
+      "id": "bug-839",
+      "timestamp": "2026-04-24T13:07:34.758Z",
+      "error_message": "Significant refactor of ",
+      "file": "app/tests/storage/sigv4.test.ts",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 14→22 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T13:07:34.758Z"
+    },
+    {
+      "id": "bug-840",
+      "timestamp": "2026-04-24T13:07:54.121Z",
+      "error_message": "Null/undefined access in ",
+      "file": "app/tests/storage/sigv4.test.ts",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check)",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T13:07:54.121Z"
+    },
+    {
+      "id": "bug-841",
+      "timestamp": "2026-04-24T13:09:07.744Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/ADRs/ADR-1003-processor-posture-and-healthcare-unlock.md",
+      "root_cause": "13 lines replaced/restructured",
+      "fix": "Rewrote 21→29 lines (13 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T13:09:07.744Z"
+    },
+    {
+      "id": "bug-842",
+      "timestamp": "2026-04-24T13:10:27.397Z",
+      "error_message": "Missing error handling in unknown",
+      "file": "docs/ADRs/ADR-1015-v1-api-integration-tests-and-developer-docs.md",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T13:10:27.397Z"
+    },
+    {
+      "id": "bug-843",
+      "timestamp": "2026-04-24T13:11:17.686Z",
+      "error_message": "Missing error handling in worker",
+      "file": "docs/changelogs/CHANGELOG-marketing.md",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T13:11:17.686Z"
     }
   ]
 }
