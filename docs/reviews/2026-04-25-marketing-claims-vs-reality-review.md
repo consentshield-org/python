@@ -1011,4 +1011,35 @@ Streams that do not gate any pre-release distribution and ship entirely in Q3/Q4
 3. **Bucket 2 is where the parallel-execution pattern (`feedback_parallel_adrs`) earns its keep.** Healthcare, Sector seed packs, Connectors, Enterprise, Incident, Withdrawal verification, GDPR-lite, Status — eight streams with non-overlapping code paths; round-robin sprint allocation works.
 4. **Bucket 3 is genuinely deferrable.** Marketplace is the only major Bucket-3 item, already publicly Q3/Q4-marked. Everything else in Bucket 3 promotes to Bucket 1 the moment a customer-of-record pulls — which is the correct behaviour.
 
+## Pending corrections (appended after the initial review closed)
+
+Two open conflicts surfaced when this review's decisions were reconciled against the existing ADR record. Both are resolved below.
+
+### Issue 18 — `status.consentshield.in` Better Stack decision vs already-shipped self-hosted status page (`ADR-1018`)
+
+**Conflict:** the review decided BUILD via Better Stack under a new `ADR-1300` series. ADR-1018 (Completed 2026-04-23) had already shipped a self-hosted status page on the customer app's `/status` route + admin panel + pg_cron probes, and explicitly chose self-hosted over StatusPage.io to avoid third-party SaaS spend.
+
+**Resolution (2026-04-25):** the user-direction is to **mark the self-hosting part of ADR-1018 as superseded and use ADR-1018 itself to document and plan the Better Stack integration**. Effects:
+- ADR-1018 is restructured into Phase 1 (Completed self-hosted, superseded as primary public surface) + Phase 2 (Better Stack integration, Proposed, 8 sprints).
+- Phase 1 self-hosted infrastructure stays running as an internal operator readout — useful for in-perimeter triage when Better Stack itself is degraded.
+- The proposed `ADR-1300` series is **withdrawn**; Phase 2 of ADR-1018 absorbs the entire Better Stack scope. Avoids opening a new ADR range that would have collided with the existing band reservations (the second conflict, below).
+- ADR-1018 Phase 2 acceptance criterion is the wireframe currently rendered at `marketing/src/app/docs/status/page.mdx`: seven monitored surfaces, per-surface uptime targets, 30-second multi-region probes, subscriber notifications, post-mortems for sev1 / sev2 incidents.
+
+**Status:** ADR-1018 row in `docs/ADRs/ADR-index.md` updated to `In Progress (Phase 1 Completed and superseded; Phase 2 Proposed)`. Pre-release blocker on external distribution of any link to `status.consentshield.in` keyed to ADR-1018 Phase 2 Sprint 2.4 (DNS cutover), not the originally-proposed ADR-1303.
+
+### Range collisions between the new ADR series proposed in this review and the existing index trailer
+
+**Conflict:** the review proposed `0500 / 0600 / 0700 / 0800 / 0900 / 1100 / 1200 / 1300` as new ADR ranges. The existing index trailer reserves `0501+` for the marketing site (with `ADR-0501` already In Progress) and `1001+` for the v2 whitepaper (with Terminal A's pipeline work occupying `1003 / 1007 / 1008 / 1019 / 1020 / 1021 / 1025–1027`). The review's `0500` collides with the marketing band; `1100 / 1200 / 1300` sit inside Terminal A's `1001+` band.
+
+**Resolution (2026-04-25):** **partially resolved.**
+- Issue 18's `1300` series is withdrawn (folded into ADR-1018 Phase 2; see above).
+- The remaining seven proposed ranges (`0500` healthcare, `0600` GDPR-lite, `0700` marketplace, `0800` enterprise platform, `0900` incident management, `1100` sector seed packs, `1200` withdrawal verification) **need renumbering** before any of those ADRs are drafted. Two options the founder can pick from:
+  - **Option R-1: shift down into the open `0059–0500` gap.** Cleanest band-discipline path. Suggest `0100` healthcare, `0200` GDPR-lite, `0300` marketplace, `0400` enterprise platform, `0600` incident management, `0700` sector seed packs, `0800` withdrawal verification (`0500` stays clear of the existing `0501+` marketing band).
+  - **Option R-2: amend the index trailer** to bracket the new bands explicitly so they coexist with `0501+` marketing and `1001+` v2 whitepaper without ambiguity. Less mechanical churn but the index becomes denser.
+- This sub-resolution is **not yet executed.** No ADR file has been authored under any of the seven contested ranges; the renumbering decision can land before any first sprint without disrupting in-flight work. Tracked here pending the founder's pick.
+
+**Status:** awaiting founder decision on Option R-1 vs R-2 for the seven-range renumbering. ADR-1018 Phase 2 (Issue 18 resolution above) does not depend on this decision.
+
+---
+
 **End of review.**

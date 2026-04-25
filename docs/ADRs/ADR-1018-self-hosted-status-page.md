@@ -1,14 +1,33 @@
-# ADR-1018: Self-hosted status page on admin + public surfaces
+# ADR-1018: Status page — Phase 1 self-hosted (superseded), Phase 2 Better Stack integration
 
-**Status:** Completed
-**Date proposed:** 2026-04-22
-**Date completed:** 2026-04-23
+**Status:** In Progress (Phase 1 Completed and superseded; Phase 2 Proposed)
+**Date proposed:** 2026-04-22 (Phase 1) · 2026-04-25 (Phase 2 supersession)
+**Phase 1 completed:** 2026-04-23
 **Supersedes (in part):** ADR-1005 Phase 4 Sprint 4.1/4.2 (StatusPage.io provisioning)
-**Related:** ADR-1017 (admin ops-readiness surface)
+**Related:** ADR-1017 (admin ops-readiness surface) · marketing-claims review 2026-04-25 Issue 18
 
 ---
 
-## Context
+## Supersession note (2026-04-25)
+
+Phase 1 (self-hosted status page on admin + customer-app `/status`) was scoped, built, and live by 2026-04-23. The marketing-claims review on 2026-04-25 (`docs/reviews/2026-04-25-marketing-claims-vs-reality-review.md` Issue 18) re-examined the public-facing claims that point at `status.consentshield.in` — *"real-time platform health, uptime metrics, and incident history"* with seven monitored surfaces, per-surface uptime targets, and *"probed every 30 seconds from three geographic regions"* — and concluded the self-hosted Phase 1 implementation does not meet that wireframe today and would require non-trivial work to do so (multi-region probes, subscriber email/RSS/webhook notifications, uptime-history rollups, incident-comms templating, etc.).
+
+Reversal of Phase 1's "no SaaS vendor" stance is deliberate. The self-hosted approach was the right v1 ship to retire ADR-1005's StatusPage.io scope; Phase 2 trades that for a vendor-managed surface that already does the work the marketing copy promises. Reasons to flip:
+
+- The compliance-perimeter argument that drove Phase 1's self-host stance is weaker than it first read — the public status page renders **brand and aggregate uptime numbers**, not customer data; nothing privacy-sensitive lives in `status_*` tables. The marketing wireframe is the binding spec; the data classification is benign.
+- BFSI / large-corporate procurement reads "Better Stack on `status.consentshield.in`" as a stronger trust signal than an in-product status route — the third-party ingestion path is what protects against "the platform telling us about its own outage."
+- Multi-region synthetic probes from a SaaS vendor are an order of magnitude cheaper to operate than building region-spread synthetic-probe infrastructure ourselves. The opportunity cost of building those primitives in-house (rather than buying them) is not justified for the audience size.
+- The Vercel password-protection rejection at $150/mo (which drove ADR-0502's in-house OTP gate) is a **different** category of decision. That was about gating access to consentshield.in's marketing content; the cost was unjustified for a confidential preview. Better Stack costs are on a different scale and produce a customer-facing trust artefact.
+
+**Phase 1 disposition.** The self-hosted Phase 1 stays running for now; it stops being the **primary** uptime surface once Phase 2 ships. Sprint 2.7 (decommissioning) lays out which subsystems retire in place and which migrate. No data migration — `status_*` tables are buffer / observation surfaces and are not customer-facing canonical records.
+
+**ADR-1300 retirement.** The marketing-claims review 2026-04-25 Issue 18 originally proposed an `ADR-1300` series for the Better Stack work. That series is **withdrawn**; this ADR-1018 absorbs it. Single ADR for "the public status page," with Phase 1 (self-hosted) and Phase 2 (Better Stack) as sequential phases of the same artefact. Avoids the open-ranges proliferation problem the review's "Pending corrections" trailer flagged.
+
+---
+
+## Phase 1 — Self-hosted status page (Completed 2026-04-23, superseded as primary surface)
+
+### Context
 
 ADR-1005 Phase 4 scoped a hosted `status.consentshield.in` via StatusPage.io (fallback: Cachet self-hosted on Vercel). BFSI procurement expects a real public status page. StatusPage.io is ~$29/mo for the entry-level plan and carries a third-party cookie + privacy-policy footprint; Cachet needs its own deployment.
 
@@ -16,7 +35,7 @@ Since we already own the admin app and the customer app, and we have the DB + cr
 
 The admin surface owns management (operators post incidents, adjust subsystems, see probe history). A thin public read-only view at `status.consentshield.in` renders the latest-known state of each subsystem + the last 90 days of resolved incidents. Automated probes run on pg_cron; operator-posted incidents overlay the automated state.
 
-## Decision
+### Decision (Phase 1)
 
 1. **Schema in `public`** (not `admin`) so the read path is unauthenticated — `status_subsystems`, `status_checks`, `status_incidents`. RLS opens SELECT to `anon`; INSERT / UPDATE restricted to admin roles via SECURITY DEFINER RPCs.
 2. **Admin panel** at `/admin/(operator)/status` — list + edit subsystems, view recent `status_checks`, post + resolve incidents.
@@ -25,11 +44,13 @@ The admin surface owns management (operators post incidents, adjust subsystems, 
 
 Design-wise the public page is deliberately plain — static-feeling, accessible, no cookies, no analytics. Operators see everything through the admin panel.
 
-## Consequences
+### Consequences (Phase 1)
 
 - Zero new SaaS spend. Zero external vendor for the status surface.
 - All status data stays inside ConsentShield's compliance perimeter — useful when the status page itself would need to reflect privacy-sensitive subsystem names.
 - Trade-off: ConsentShield itself hosts its own uptime surface. If the customer-app deployment goes down, the public status page goes with it. Mitigation: probes run from a different region than the app; future enhancement moves `status.consentshield.in` to a dedicated ultra-minimal Vercel project with its own Supabase read replica.
+
+The trade-off was the load-bearing reason to flip Phase 2 to Better Stack (Supersession note above) — *"the platform telling us about its own outage"* is exactly the failure mode the BFSI buyer rehearses.
 
 ---
 
@@ -102,7 +123,110 @@ Design-wise the public page is deliberately plain — static-feeling, accessible
 
 **Deferred (low priority):** linking from marketing footer + admin UI. Trivial follow-ups; no operational dependency.
 
-**Status:** `[x] complete`.
+**Status:** `[x] complete` — and **superseded as the primary public surface by Phase 2** (see Supersession note above). The `app.consentshield.in/status` route + admin panel + pg_cron probes continue to run as a secondary internal-readout until Sprint 2.7 retires them.
+
+---
+
+## Phase 2 — Better Stack integration (Proposed 2026-04-25)
+
+### Context
+
+Phase 1 shipped a working self-hosted status page but the Phase-1 wireframe doesn't satisfy the marketing-claims review's Issue-18 spec (multi-region 30-second probes, per-surface uptime targets, subscriber notifications, incident-comms post-mortems, public 90-day rolling history with per-component availability). Building those primitives in-house adds ~3–4 weeks of work for surface that isn't a product wedge. Better Stack (formerly Better Uptime + Better Logs / Logtail) ships every primitive the marketing copy promises and integrates in days — see the Supersession note for the full reasoning.
+
+### Decision (Phase 2)
+
+1. **External status surface** — `status.consentshield.in` cuts over from the Vercel-aliased self-hosted page to the Better Stack hosted public status page. The Better Stack page renders ConsentShield branding (custom domain + colours + logo) so the third-party-vendor framing stays implicit, not loud.
+2. **Seven monitors** mirroring the existing `marketing/src/app/docs/status/page.mdx` ParamTable (REST API v1, Worker event ingestion, Rights-request portal, Dashboard, Admin console, Deletion-connector dispatch, Notification dispatch). Cadences and targets per the marketing copy: 30-second from EU + US + APAC for the v1 REST API and Worker; 1-minute for the Dashboard; per-minute synthetic for Rights-request portal; internal heartbeat for Admin console; queue-depth/latency heartbeat for Deletion-connector and Notification dispatch.
+3. **Incident-comms templates** — sev1 / sev2 / sev3 incident severity, statuses `investigating` → `identified` → `monitoring` → `resolved`. Post-mortems for sev1 incidents publish within 14 business days; auto-link from the resolved incident card.
+4. **SLA surface alignment** — per-surface uptime targets currently rendered in the marketing copy (REST API 99.9%/mo, Worker 99.99%/mo, Dashboard 99.5%/mo) are honoured by Better Stack monitors; if the live measured value drops below the marketing target for any month, the status page surfaces the actual measured number rather than the marketing aspiration.
+5. **Subscriber notifications** — public subscribe form on the status page; channels: email (via Better Stack's native sender + Resend fallback for India-bound delivery), RSS, webhook. Customers self-serve subscription per-component.
+6. **Phase 1 disposition** — admin status panel + customer-app `/status` route + pg_cron probes stay running as **internal operator readouts**. They no longer power the public surface; they act as a redundant in-perimeter view that's useful when Better Stack itself is degraded (rare; their availability is order-of-magnitude better than ours).
+7. **No new ADR series** — Phase 2 lands inside this ADR-1018 rather than a new ADR-1300 series. The marketing-claims review's `1300–1399` band reservation is withdrawn.
+
+### Consequences (Phase 2)
+
+- **Cost:** Better Stack pricing is per-monitor / per-incident-channel; 7 monitors + email/SMS subscriber notifications + Slack incident integration sits in the low-three-figures-per-month band. Documented in the charter sprint when the operator picks the plan tier.
+- **Stronger trust artefact:** the BFSI / large-corporate buyer reads "Better Stack on `status.consentshield.in`" as more credible than an in-product status route — the third-party ingestion path is the safety against "the platform telling us about its own outage."
+- **Marketing copy at `marketing/src/app/docs/status/page.mdx`** continues to render unchanged; Better Stack's surface is the canonical truth it points at. No `/docs/status` rewrite needed beyond removing wording that no longer applies (e.g., the "hosted outside our primary infrastructure" line is now literally true).
+- **Phase 1 internal-readout cost** stays at zero — pg_cron + Edge Function are already running and serve as a backup view.
+- **Reversibility:** if Better Stack proves too expensive or insufficient, the Phase 1 internal route still works and can be re-promoted to primary by reversing Sprint 2.6's DNS cutover.
+
+### Implementation Plan
+
+#### Sprint 2.1 — Charter, plan tier selection, account creation
+
+**Deliverables:**
+- [ ] Operator creates Better Stack account on `consentshield` org name.
+- [ ] Plan tier selected and recorded in this ADR (likely "Team" or whichever tier exposes status-page custom-domain + 30-second checks + multi-region from EU + US + APAC).
+- [ ] Cost recorded in the operator-pending runbook.
+- [ ] API token generated, scoped to the workspace.
+- [ ] Token stored in `vercel env` for the `consentshield-marketing` project (env-var name: `BETTERSTACK_API_TOKEN`). Production scope only; preview not needed unless preview-deploy monitors are wanted later.
+
+#### Sprint 2.2 — Monitor matrix configured
+
+**Deliverables:**
+- [ ] **REST API v1** — 7 group-level synthetic checks (one per `/v1/*` group: `health`, `consent`, `deletion`, `rights`, `security`, `account`, plus a `_ping`-style global liveness). 30-second cadence; latency p50 / p95 / p99 thresholds.
+- [ ] **Worker event ingestion** — synthetic POST to `/v1/events` and `/v1/observations` with valid HMAC signature; 30-second cadence; verify signed-200 round-trip end-to-end so a green check actually proves the ingest path.
+- [ ] **Rights-request portal** — synthetic GET on `/rights` + Turnstile presence check; 5-minute cadence; OTP synthetic-delivery covered separately under (7).
+- [ ] **Dashboard** — auth'd synthetic login probe (test account, MFA-aware) + DEPA-panel render check + billing-page read; per-minute cadence.
+- [ ] **Admin console** — Better Stack heartbeat from inside the admin proxy (no external probe — leaks subsystem names otherwise); surfaces a binary up/down only.
+- [ ] **Deletion-connector dispatch** — heartbeat URL from `process-artefact-revocation` Edge Function on each successful sweep; surfaces "no successful dispatch in N minutes" as a fail.
+- [ ] **Notification dispatch** — Resend delivery health + custom-webhook adapter health; tracks per-org delivery-success rate.
+
+#### Sprint 2.3 — Incident-comms templates + post-mortem flow
+
+**Deliverables:**
+- [ ] Incident severity matrix in Better Stack — sev1 (full outage / data-path down), sev2 (degraded / partial), sev3 (advisory / planned).
+- [ ] Template library — `investigating` / `identified` / `monitoring` / `resolved` per severity; ConsentShield brand voice; aligns with the marketing copy's wording on `marketing/src/app/docs/status/page.mdx`.
+- [ ] Post-mortem publishing rule — sev1 / sev2 published within 14 business days; auto-linked from resolved incident card.
+- [ ] SLA-credit calculator surface — links to ADR-0806 (enterprise SLA surface from the `0800` Enterprise-platform series, when that ships).
+
+#### Sprint 2.4 — DNS cutover from Phase-1 self-hosted to Better Stack
+
+**Deliverables:**
+- [ ] Better Stack hosted status page configured at `status.betterstack.com/<workspace-slug>` first; smoke-tested.
+- [ ] Custom domain configured in Better Stack: `status.consentshield.in`. ConsentShield logo + brand palette uploaded.
+- [ ] DNS CNAME `status.consentshield.in` flipped from `cname.vercel-dns.com` (Phase 1) to Better Stack's status-page CNAME target.
+- [ ] Vercel domain alias removed from the `app` project: `bunx vercel domains rm status.consentshield.in --scope sanegondhis-projects`.
+- [ ] Host-based redirect in `app/src/app/page.tsx` (Phase 1 Sprint 1.5) left in place but now unreachable — Sprint 2.7 cleanup will remove it.
+- [ ] TLS verified: `curl -I https://status.consentshield.in` → `200` from Better Stack's CDN; ConsentShield-branded page renders.
+
+#### Sprint 2.5 — Uptime-target alignment + auto-degrade
+
+**Deliverables:**
+- [ ] Per-monitor SLA targets configured in Better Stack to match the marketing copy: REST API 99.9%/mo, Worker ingestion 99.99%/mo, Dashboard 99.5%/mo.
+- [ ] Acceptance criterion enforced on the public surface: if the live measured value drops below the marketing target for any month, the status-page rolling-90-day numbers are the source of truth (Better Stack does this natively; verify the rendering).
+- [ ] Marketing-side reconciliation: if a target is repeatedly missed for two consecutive months, the marketing copy at `marketing/src/app/docs/status/page.mdx` is rewritten down to the achievable number (per the "no aspirational claims" review discipline). Open a follow-up issue when triggered.
+
+#### Sprint 2.6 — Subscriber notifications
+
+**Deliverables:**
+- [ ] Public subscribe form on the Better Stack status page — channels: email, RSS, webhook.
+- [ ] Email sender — Better Stack native; `noreply@consentshield.in` verified as additional sender via Resend fallback (per `reference_email_deliverability` memory) for India-bound deliverability.
+- [ ] RSS feed verified — `https://status.consentshield.in/feed.xml` (or Better Stack's path) consumable by standard readers.
+- [ ] Webhook payload contract documented in `marketing/src/app/docs/status/page.mdx` as a follow-up.
+
+#### Sprint 2.7 — Phase 1 disposition
+
+Self-hosted Phase 1 stays running as an internal operator readout. This sprint records the long-term plan rather than retiring the code:
+
+**Disposition:**
+- [ ] **Keep running:** `public.status_subsystems` / `status_checks` / `status_incidents` tables; `run-status-probes` Edge Function on pg_cron `*/5 * * * *`; admin status panel at `/admin/(operator)/status`; customer-app `/status` route. These remain useful as an in-perimeter readout for operator triage.
+- [ ] **Remove:** the host-based redirect in `app/src/app/page.tsx` that maps `status.consentshield.in` → `/status` — that host now points at Better Stack so the redirect is dead code. Replace with `// host=status.consentshield.in is served by Better Stack — see ADR-1018 Phase 2.` comment.
+- [ ] **Vercel domain alias:** `bunx vercel domains rm status.consentshield.in` from the `app` Vercel project (Sprint 2.4 deliverable; reaffirmed here).
+- [ ] **Marketing copy:** the line *"hosted outside our primary infrastructure so the page stays reachable when the API itself is degraded"* in `marketing/src/app/docs/status/page.mdx` was true in Phase 1 only by virtue of being on a different Vercel project, and is **literally true** under Phase 2 (Better Stack runs entirely outside our infrastructure). Leave the line; possibly soften the qualifier when the rest of `/docs/status` is reviewed.
+- [ ] **Internal-only re-purposing:** an admin operator can still post a private incident in the Phase-1 admin panel for internal-only tracking (e.g., a maintenance window not yet ready for public communication). The `/admin/(operator)/status` panel remains the right tool for that. Better Stack publishes only what an operator publishes there.
+
+#### Sprint 2.8 — Marketing copy alignment
+
+**Deliverables:**
+- [ ] Audit `marketing/src/app/docs/status/page.mdx` against the Better Stack monitor matrix — confirm every claim resolves to a configured Better Stack monitor.
+- [ ] Confirm the marketing-claims review Issue 18 is fully resolved.
+- [ ] Update the marketing-claims review's "Pending corrections" trailer with a "Resolved" status pointing at this ADR.
+
+### Pre-release gate (Phase 2)
+
+External distribution of any link to `status.consentshield.in` holds until **Sprint 2.4 (DNS cutover)** completes. Sprints 2.5–2.8 can follow without blocking external distribution but are pre-launch blockers for the Issue-18 acceptance criterion (uptime-target alignment + subscriber notifications + copy alignment).
 
 ---
 
