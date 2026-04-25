@@ -14862,6 +14862,102 @@
       "related_bugs": [],
       "occurrences": 2,
       "last_seen": "2026-04-25T03:57:01.812Z"
+    },
+    {
+      "id": "bug-926",
+      "timestamp": "2026-04-25T04:00:44.603Z",
+      "error_message": "Incorrect value in code",
+      "file": "docs/ADRs/ADR-1003-processor-posture-and-healthcare-unlock.md",
+      "root_cause": "Had \"Sandbox mode — not for production data\"",
+      "fix": "Changed to `app/src/components/sandbox-banner.tsx`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-04-25T04:00:52.957Z"
+    },
+    {
+      "id": "bug-927",
+      "timestamp": "2026-04-25T04:01:37.460Z",
+      "error_message": "Incorrect value in code",
+      "file": "marketing/src/app/pricing/page.tsx",
+      "root_cause": "Had \"14-day free trial on Starter, Growth, and Pro.\"",
+      "fix": "Changed to \"30-day free trial on Starter, Growth, and Pro.\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T04:01:37.460Z"
+    },
+    {
+      "id": "bug-928",
+      "timestamp": "2026-04-25T04:01:40.748Z",
+      "error_message": "Type error",
+      "file": "packages/node-client/src/client.ts",
+      "root_cause": "Missing or incorrect type annotation",
+      "fix": "Added type assertion/annotation | Also: * GET `/v1/consent/verify` — single-identifier consent check; * Behaviour table:",
+      "tags": [
+        "auto-detected",
+        "type-fix",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-04-25T04:02:00.900Z"
+    },
+    {
+      "id": "bug-929",
+      "timestamp": "2026-04-25T04:01:55.740Z",
+      "error_message": "CSS fix: https",
+      "file": "marketing/src/app/docs/page.tsx",
+      "root_cause": "https: //consentshield.in/signup\">Start a 14-day trial</a>. → //consentshield.in/signup\">Start a 30-day trial</a>.",
+      "fix": "Changed https: //consentshield.in/signup\">Start a 14-day trial</a>. → //consentshield.in/signup\">Start a 30-day trial</a>.",
+      "tags": [
+        "auto-detected",
+        "style-fix",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T04:01:55.740Z"
+    },
+    {
+      "id": "bug-930",
+      "timestamp": "2026-04-25T04:02:04.333Z",
+      "error_message": "Incorrect value in code",
+      "file": "marketing/src/app/docs/status/page.mdx",
+      "root_cause": "Had 'All 15 /v1/* endpoints probed every 30 seconds fr",
+      "fix": "Changed to 'Every /v1/* endpoint probed every 30 seconds from",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "mdx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T04:02:04.333Z"
+    },
+    {
+      "id": "bug-931",
+      "timestamp": "2026-04-25T04:02:16.059Z",
+      "error_message": "Incorrect value in code",
+      "file": "marketing/src/components/sections/story.tsx",
+      "root_cause": "Had \"Real-time tracker monitoring against a signature ",
+      "fix": "Changed to \"Real-time tracker monitoring against a signature ",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T04:02:16.059Z"
     }
   ]
 }

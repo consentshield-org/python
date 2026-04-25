@@ -294,8 +294,8 @@ Also closes the secondary gap flagged in Terminal A's handoff: the Sprint 1.3 br
 - [x] **R2** Test-principal endpoint `POST /api/v1/sandbox/test-principals` returns `{ identifier: "cs_test_principal_<6-digit seq>", seq }`. Spec deviation vs the original `/api/v1/_sandbox/...` URL: Next.js App Router treats `_folder` as a private folder (no route), so the leading underscore had to drop. Backed by migration 60: `public.sandbox_test_principal_counters` (per-org monotonic seq, cs_orchestrator-only mutation) + `public.rpc_sandbox_next_test_principal(uuid)` (SECURITY DEFINER; refuses non-sandbox orgs with 42501). Route gates on `context.rate_tier === 'sandbox'` (defense-in-depth — the RPC is the structural gate).
 - [x] **R2** Compliance-score endpoint excludes sandbox orgs from cross-customer aggregates. Forward-promise satisfied via a database view `public.depa_compliance_metrics_prod` (filters out sandbox orgs at the schema layer). Customer-facing `/v1/score` is unchanged — it reads the per-org row directly so a sandbox org still sees its own score in the dashboard. Any aggregator (admin benchmarks, percentile rankings) reads from the view.
 - [x] **R2** Export manifest marks sandbox-org exports with `{ sandbox: true }` at the top of `manifest.json`. Implemented in `app/src/app/api/orgs/[orgId]/audit-export/route.ts`. The flag is read via a tiny `SELECT sandbox FROM organisations WHERE id = orgId` after the manifest RPC has already passed RLS membership.
-- [ ] **R3** Dashboard banner "Sandbox mode — not for production data" on every sandbox-org surface.
-- [ ] **R3** `docs/customer-docs/sandbox.md`.
+- [x] **R3** Dashboard banner — `app/src/components/sandbox-banner.tsx` (server component, purple "Sandbox" band, links to `/dashboard/sandbox`). Wired into the dashboard layout below the SuspendedOrgBanner. Renders only when the active org has `sandbox=true`.
+- [x] **R3** `docs/customer-docs/sandbox.md` — full customer-facing guide covering quick-reference table, provisioning flows (dashboard + SQL), API key minting, test-principal generator usage, export-manifest semantics, compliance-score impact, cleanup, and troubleshooting.
 
 **Testing plan:**
 - [x] **R1** `tests/integration/sandbox-provisioning.test.ts` — 3 cases:
@@ -306,7 +306,7 @@ Also closes the secondary gap flagged in Terminal A's handoff: the Sprint 1.3 br
 - [x] **R2** Sandbox org exports marked `{ sandbox: true }` at the top of `manifest.json`. Verified by inspection (the route writes the field next to `org_id` and `format_version`); end-to-end ZIP-extraction test deferred — would require Next.js HTTP harness.
 - [x] **R2** `public.depa_compliance_metrics_prod` view created with the sandbox filter. Verified by `\d+` after migration push.
 
-**Status:** `[~] in progress (R1 + R2 shipped 2026-04-25; R3 — sandbox banner + customer doc — pending)`
+**Status:** `[x] complete (R1 + R2 + R3 shipped 2026-04-25 — Phase 5 closed; live customer-facing surfaces deferred to operator click-through validation post-deploy)`
 
 ---
 

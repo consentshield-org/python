@@ -2,6 +2,22 @@
 
 Next.js UI changes.
 
+## [ADR-1003 Sprint 5.1 R3 — sandbox-mode banner] — 2026-04-25
+
+**ADR:** ADR-1003 — Processor Posture + Healthcare Category Unlock
+**Sprint:** Phase 5, Sprint 5.1 (round 3 of 3 — Phase 5 closes)
+
+### Customer app
+- `app/src/components/sandbox-banner.tsx` — server component. Renders a purple "Sandbox" band across the dashboard shell when the active org has `sandbox=true`. Includes the org name, a one-line warning ("Do not put real personal data here"), explicit notes about the cs_test_* key prefix and `{ sandbox: true }` export marker, and a "Manage sandbox orgs" link to `/dashboard/sandbox`.
+- `app/src/app/(dashboard)/layout.tsx` — wires the new banner below the `SuspendedOrgBanner`. Both can render simultaneously (a suspended sandbox is rare but legal); each band stays full-width and stacks above page content.
+
+### Rationale
+Sprint 5.1's deliverable "Dashboard banner 'Sandbox mode — not for production data' visible on every sandbox surface" — closed. The banner is purple to distinguish it from the red suspension banner; the language is plain and the next-action link goes to the management page where customers can spin up additional sandboxes or jump to settings to mint a `cs_test_*` key.
+
+### Tested
+- `cd app && bun run lint && bun run build` — clean. The dashboard layout builds with both banners without changes to other panels.
+- Manual click-through verification deferred to operator post-deploy.
+
 ## [ADR-1003 Sprint 5.1 R1 — sandbox provisioning page] — 2026-04-25
 
 **ADR:** ADR-1003 — Processor Posture + Healthcare Category Unlock

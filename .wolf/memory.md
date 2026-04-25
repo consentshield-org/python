@@ -5603,3 +5603,25 @@
 | 09:27 | Edited docs/ADRs/ADR-1003-processor-posture-and-healthcare-unlock.md | 8→9 lines | ~343 |
 | 09:27 | Edited docs/changelogs/CHANGELOG-schema.md | expanded (+19 lines) | ~693 |
 | 09:27 | Edited docs/changelogs/CHANGELOG-api.md | expanded (+20 lines) | ~721 |
+| 09:28 | Created app/src/components/sandbox-banner.tsx | — | ~698 |
+| 09:29 | Edited app/src/app/(dashboard)/layout.tsx | added 1 import(s) | ~80 |
+| 09:29 | Edited app/src/app/(dashboard)/layout.tsx | 2→3 lines | ~31 |
+| 09:29 | Edited docs/reviews/2026-04-25-marketing-claims-vs-reality-review.md | modified work() | ~2603 |
+| 09:30 | Session end: 213 writes across 74 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 84 reads | ~555586 tok |
+| 09:30 | Created docs/customer-docs/sandbox.md | — | ~2376 |
+| 09:30 | Created packages/node-client/src/types.ts | — | ~838 |
+| 09:30 | Edited docs/ADRs/ADR-1003-processor-posture-and-healthcare-unlock.md | 2→2 lines | ~143 |
+| 09:30 | Edited docs/ADRs/ADR-1003-processor-posture-and-healthcare-unlock.md | "[~] in progress (R1 + R2 " → "[x] complete (R1 + R2 + R" | ~45 |
+| 09:31 | Edited docs/changelogs/CHANGELOG-dashboard.md | expanded (+16 lines) | ~410 |
+| 09:31 | Edited docs/changelogs/CHANGELOG-docs.md | expanded (+15 lines) | ~520 |
+| 09:31 | Created packages/node-client/src/verify.ts | — | ~2231 |
+| 09:31 | Edited marketing/src/app/pricing/page.tsx | "14-day free trial on Star" → "30-day free trial on Star" | ~18 |
+| 09:31 | Edited packages/node-client/src/client.ts | expanded (+11 lines) | ~79 |
+| 09:31 | Edited marketing/src/app/docs/page.tsx | 4→4 lines | ~56 |
+| 09:31 | Edited marketing/src/app/docs/page.tsx | 8→9 lines | ~114 |
+| 09:31 | Edited marketing/src/app/docs/page.tsx | 14 → 30 | ~22 |
+| 09:32 | Edited packages/node-client/src/client.ts | added 2 condition(s) | ~704 |
+| 09:32 | Edited marketing/src/app/docs/status/page.mdx | "All 15 /v1/* endpoints pr" → "Every /v1/* endpoint prob" | ~38 |
+| 09:32 | Edited docs/ADRs/ADR-index.md | inline fix | ~295 |
+| 09:32 | Edited packages/node-client/src/index.ts | expanded (+15 lines) | ~158 |
+| 09:32 | Edited marketing/src/components/sections/story.tsx | "Real-time tracker monitor" → "Real-time tracker monitor" | ~116 |

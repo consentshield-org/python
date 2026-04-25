@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-25T03:57:47.085Z
-> Files: 1473 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-25T04:02:16.049Z
+> Files: 1477 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../tmp/
 
@@ -696,7 +696,7 @@
 
 ## app/src/app/(dashboard)/
 
-- `layout.tsx` — DashboardLayout (~128 tok)
+- `layout.tsx` — DashboardLayout (~202 tok)
 
 ## app/src/app/(dashboard)/dashboard/
 
@@ -1148,6 +1148,7 @@
 
 - `dashboard-nav.tsx` — navItems (~871 tok)
 - `otp-boxes.tsx` — OtpBoxes (~345 tok)
+- `sandbox-banner.tsx` — ADR-1003 Sprint 5.1 R3 — customer-side sandbox-mode banner. (~698 tok)
 - `suspended-banner.tsx` — ADR-0029 Sprint 4.1 + 2026-04-20 follow-up — customer-side suspension banner. (~804 tok)
 
 ## app/src/components/support/
@@ -1419,7 +1420,7 @@
 - `ADR-0501-marketing-site-scaffold.md` — ADR-0501 — ConsentShield marketing site (`marketing/`) (~6079 tok)
 - `ADR-1001-truth-in-marketing-and-public-api-foundation.md` — ADR-1001: Truth-in-Marketing + Public API Foundation (~5650 tok)
 - `ADR-1002-dpdp-section6-runtime-enforcement.md` — ADR-1002: DPDP §6 Runtime Enforcement — Verify, Record, Artefact Ops, Deletion API (~7030 tok)
-- `ADR-1003-processor-posture-and-healthcare-unlock.md` — ADR-1003: Processor Posture + Healthcare Category Unlock (~10176 tok)
+- `ADR-1003-processor-posture-and-healthcare-unlock.md` — ADR-1003: Processor Posture + Healthcare Category Unlock (~10289 tok)
 - `ADR-1004-statutory-retention-material-change-silent-failure.md` — ADR-1004: Statutory Retention + Material-Change Re-consent + Silent-Failure Detection (~7531 tok)
 - `ADR-1005-operations-maturity.md` — ADR-1005: Operations Maturity — Webhook Reference, Support Model, Status Page, Multi-channel Alerts, (~7076 tok)
 - `ADR-1006-developer-experience-and-openapi.md` — ADR-1006: Developer Experience — Client Libraries + OpenAPI Spec + CI Drift Check (~4481 tok)
@@ -1444,7 +1445,7 @@
 - `ADR-1025-customer-storage-auto-provisioning.md` — ADR-1025: Customer storage auto-provisioning — hybrid managed R2 default + BYOK escape hatch (~13370 tok)
 - `ADR-1026-drop-hyperdrive-direct-supavisor.md` — ADR-1026: Rewind ADR-1010 Phase 3 — Worker connects directly to Supavisor; drop Hyperdrive binding (~5467 tok)
 - `ADR-1027-admin-account-awareness.md` — ADR-1027: Admin Account-Awareness Pass (~8082 tok)
-- `ADR-index.md` — ADR Index (~8337 tok)
+- `ADR-index.md` — ADR Index (~8412 tok)
 - `ADR-template.md` — ADR-NNNN: Title (~423 tok)
 - `adr-workflow.md` — ADR Workflow Rules (~557 tok)
 
@@ -1469,8 +1470,8 @@
 ## docs/changelogs/
 
 - `CHANGELOG-api.md` — Changelog — API (~42191 tok)
-- `CHANGELOG-dashboard.md` — Changelog — Dashboard (~29233 tok)
-- `CHANGELOG-docs.md` — Changelog — Documentation (~13701 tok)
+- `CHANGELOG-dashboard.md` — Changelog — Dashboard (~29589 tok)
+- `CHANGELOG-docs.md` — Changelog — Documentation (~14155 tok)
 - `CHANGELOG-edge-functions.md` — Changelog — Edge Functions (~4251 tok)
 - `CHANGELOG-infra.md` — Changelog — Infrastructure (~24742 tok)
 - `CHANGELOG-marketing.md` — Changelog — Marketing (~14957 tok)
@@ -1482,6 +1483,7 @@
 - `byos-aws-s3.md` — BYOS on AWS S3 (~2074 tok)
 - `byos-cloudflare-r2.md` — BYOS on Cloudflare R2 (~1898 tok)
 - `healthcare-onboarding.md` — Healthcare onboarding (~3075 tok)
+- `sandbox.md` — Sandbox (~2228 tok)
 
 ## docs/design/
 
@@ -1543,7 +1545,7 @@
 - `2026-04-18-comprehensive-project-review.md` — ConsentShield — Comprehensive Review as of 2026-04-18 (~3553 tok)
 - `2026-04-20-api-key-security-review.md` — Security Review — API Key Surface (ADR-1001 Sprint 3.1) (~1833 tok)
 - `2026-04-21-v1-api-gap-audit.md` — v1 API Gap Audit — 2026-04-21 (~2913 tok)
-- `2026-04-25-marketing-claims-vs-reality-review.md` — Marketing claims vs. reality review (~26229 tok)
+- `2026-04-25-marketing-claims-vs-reality-review.md` — Marketing claims vs. reality review (~28486 tok)
 
 ## docs/runbooks/
 
@@ -1602,7 +1604,7 @@
 ## marketing/src/app/docs/
 
 - `layout.tsx` — ADR-1015 Phase 1 Sprint 1.1 — Docs shell. (~323 tok)
-- `page.tsx` — ADR-1015 Phase 2 Sprint 2.1 — Developer Hub landing. (~1654 tok)
+- `page.tsx` — ADR-1015 Phase 2 Sprint 2.1 — Developer Hub landing. (~1678 tok)
 
 ## marketing/src/app/docs/_components/
 
@@ -1738,7 +1740,7 @@
 
 ## marketing/src/app/pricing/
 
-- `page.tsx` — metadata (~774 tok)
+- `page.tsx` — metadata (~775 tok)
 
 ## marketing/src/app/privacy/
 
@@ -1784,7 +1786,7 @@
 - `pricing-preview.tsx` — TIERS (~1005 tok)
 - `signup-form.tsx` — TURNSTILE_SCRIPT — renders form (~3746 tok)
 - `solutions-tabs.tsx` — SECTORS (~4024 tok)
-- `story.tsx` — Story (~1279 tok)
+- `story.tsx` — Story (~1328 tok)
 - `timeline.tsx` — ENTRIES (~660 tok)
 
 ## marketing/src/content/legal/
@@ -1830,10 +1832,12 @@
 
 ## packages/node-client/src/
 
-- `client.ts` — Configuration for a `ConsentShieldClient` instance. (~1497 tok)
+- `client.ts` — Configuration for a `ConsentShieldClient` instance. (~2132 tok)
 - `errors.ts` — RFC 7807 problem-document body shape — matches `app/src/lib/api/auth.ts` (~1382 tok)
 - `http.ts` — Subset of the global fetch signature we depend on — sufficient for stubs. (~2378 tok)
-- `index.ts` — ADR-1006 Phase 1 — `@consentshield/node` public surface. (~178 tok)
+- `index.ts` — ADR-1006 Phase 1 — `@consentshield/node` public surface. (~248 tok)
+- `types.ts` — §5.1 verify-result statuses. Stable contract — adding a value is a (~838 tok)
+- `verify.ts` — Single-identifier verify input. camelCase per JS/TS convention. (~2231 tok)
 
 ## packages/node-client/tests/
 

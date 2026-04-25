@@ -2,6 +2,21 @@
 
 Documentation changes.
 
+## [ADR-1003 Sprint 5.1 R3 — sandbox customer doc] — 2026-04-25
+
+**ADR:** ADR-1003 — Processor Posture + Healthcare Category Unlock
+**Sprint:** Phase 5, Sprint 5.1 (round 3 of 3 — Phase 5 closes)
+
+### Added
+- `docs/customer-docs/sandbox.md` — full customer-facing guide for sandbox orgs. Covers the prod-vs-sandbox property table (org id / name suffix / API key prefix / rate tier / plan-gating / billing / cross-customer benchmarks / manifest marker), provisioning paths (dashboard form + raw SQL operator path), org switching, API key minting (cs_test_* + forced sandbox rate_tier), test-principal generator usage with `curl` examples, audit-export `manifest.json.sandbox` semantics, compliance-score impact (per-org row stays; cross-customer aggregator reads from the `_prod` view), cleanup procedure (with the `where sandbox = true` safety belt on the SQL deletion path), V1 vs V2 boundary (no promote-sandbox-to-prod path in v1), and a troubleshooting section keyed to the four observable error messages (P0004 + the three 42501 / 22023 cases).
+
+### Rationale
+Sprint 5.1 R3 closes Phase 5 with the customer-facing artefact. Backend + dashboard surfaces shipped in R1 + R2 are not self-explanatory to a procurement evaluator opening their first sandbox — the doc explicitly walks the two flows (engineer doing API-only smoke, compliance lead rehearsing rights-request workflows) and names the gotchas (Healthcare Starter requires zero_storage, sandbox keys are 100/hr, manifest marker matters for downstream audit lakes).
+
+### Tested
+- Static review against the migrations 59 + 60, the route handler at `/api/v1/sandbox/test-principals`, the audit-export route's manifest field, and the dashboard sandbox page + banner.
+- Live walk-through deferred to operator validation once a real test customer hits the doc.
+
 ## [ADR-1003 Sprint 4.1 — Healthcare onboarding + operator runbook] — 2026-04-25
 
 **ADR:** ADR-1003 — Processor Posture + Healthcare Category Unlock
