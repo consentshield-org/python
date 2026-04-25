@@ -88,8 +88,8 @@
       "first_read": "2026-04-25T01:21:42.168Z"
     },
     "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-index.md": {
-      "count": 7,
-      "tokens": 8661,
+      "count": 8,
+      "tokens": 9388,
       "first_read": "2026-04-25T01:22:20.394Z"
     },
     "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/changelogs/CHANGELOG-worker.md": {
@@ -551,6 +551,16 @@
       "count": 1,
       "tokens": 0,
       "first_read": "2026-04-25T05:40:05.261Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/src/app/(dashboard)/dashboard/settings/storage/page.tsx": {
+      "count": 1,
+      "tokens": 1449,
+      "first_read": "2026-04-25T05:55:03.600Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/src/app/api/internal/provision-storage": {
+      "count": 1,
+      "tokens": 0,
+      "first_read": "2026-04-25T05:55:19.769Z"
     }
   },
   "files_written": [
@@ -2593,6 +2603,12 @@
       "action": "edit",
       "tokens": 3295,
       "at": "2026-04-25T05:43:41.565Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-index.md",
+      "action": "edit",
+      "tokens": 201,
+      "at": "2026-04-25T05:44:05.146Z"
     }
   ],
   "edit_counts": {
@@ -2607,7 +2623,7 @@
     "docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md": 18,
     "docs/customer-docs/healthcare-onboarding.md": 1,
     "admin/src/app/(operator)/templates/[templateId]/page.tsx": 5,
-    "docs/ADRs/ADR-index.md": 13,
+    "docs/ADRs/ADR-index.md": 14,
     "docs/changelogs/CHANGELOG-worker.md": 2,
     "tests/integration/healthcare-template.test.ts": 1,
     "docs/ADRs/ADR-1003-processor-posture-and-healthcare-unlock.md": 9,
@@ -2748,9 +2764,9 @@
     "packages/node-client/examples/nextjs-mobile-record/README.md": 1,
     "packages/node-client/examples/nextjs-mobile-record/package.json": 1
   },
-  "anatomy_hits": 100,
-  "anatomy_misses": 10,
-  "repeated_reads_warned": 69,
+  "anatomy_hits": 101,
+  "anatomy_misses": 11,
+  "repeated_reads_warned": 70,
   "cerebrum_warnings": 0,
-  "stop_count": 61
+  "stop_count": 67
 }
