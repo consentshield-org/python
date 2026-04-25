@@ -946,4 +946,69 @@ The collateral-rewrite checklist:
 - Terminal B active on ADR-1006 / 1014 / 1015 — Terminal C does not edit `testing/`, `marketing/src/app/docs/test-verification/*`, or any of B's in-flight files. Issue 17's testing-domain attach was executed by Sudhindra (operator) inline, not by Terminal C.
 - The review-closing commit will stage by **explicit path** (per `feedback_explicit_git_staging` memory) so it does not sweep up A's or B's untracked files.
 
+---
+
+# Release-staging buckets
+
+Derived from the 22 decisions and the pre-release matrix above. Every line carries the originating Issue # for cross-reference.
+
+## Bucket 1 — Pre-release blockers (must ship before any paying-customer external distribution)
+
+**Code / engineering work (unconditional):**
+- **ADR-0023** — unified deletion dispatcher (revocation-triggered + rights-request-triggered into one call site). [Issue 2]
+- **ADR-0900 → ADR-0905** — incident charter, data model, detection inputs, categorisation + assessment, draft + approval, dispatch (DPB + affected principals). [Issue 8]
+- **ADR-0907** — audit-export manifest extensions: `tracker_observations_summary` + `violation_history` + `breach_notifications`. [Issues 8, 13, 19]
+- **ADR-1200 Phase 1 Sprints 1.1 → 1.4** — withdrawal-verification real-user correlation: revocation-trigger row, materialised-view sweep, dashboard surface, audit-export extension. [Issue 13]
+- **ADR-1007 Phase 1** — at least 3 connectors live end-to-end (Mailchimp + HubSpot + one more) for the Growth tier minimum. [Issue 1]
+- **ADR-1303** — DNS cutover for `status.consentshield.in` to the Better Stack hosted page. [Issue 18]
+- **ADR-1300 → ADR-1302** — Better Stack charter, monitor matrix, incident-comms policy. [Issue 18]
+- **All FIX-COPY edits** — 13-file marketing rewrite commit (trial duration, /v1/* count, "DPB-formatted" → "DPB-ready", DEPA-page rewrite, Contrast lede, exclusivity-language sweep). [Issues 15, 16, 19, 20, 21, 22]
+
+**Conditional pre-release blockers (only if the corresponding tier / sector goes to market pre-release):**
+- BFSI customers / BFSI Solutions tab → **ADR-0908** (triple breach timer) + **ADR-1103** (BFSI seed pack). [Issues 9, 10]
+- Healthcare Solutions tab + Healthcare-bundle subscriptions → **ADR-0500 → ADR-0502** (charter + ABHA + unified artefact). [Issues 3, 4]
+- D2C Solutions tab external distribution → **ADR-1107** (D2C seed pack) + **ADR-1007 Sprint 2.1** (Gupshup BSP). [Issues 10, 11]
+- Pro-tier "GDPR module" line → **ADR-0600 → ADR-0603** (charter + geo-detect + legal-basis + DPIA). [Issue 5]
+- Pro-tier "Consent probe testing" line → **ADR-1200 Phase 2 Sprints 2.1 → 2.3** (sandbox probe + scheduler + dashboard). [Issues 13, 14]
+- Enterprise tier per claim → **ADR-0801** (custom domain) + **ADR-0803-or-0804** (SSO) + **ADR-0805** (customer-KMS) + **ADR-0802** (white-label) per the bullet sold. [Issue 7]
+- CA-firm / multi-brand pitch → **ADR-0808** (per-property roles). [Issue 12]
+
+**Internal-collateral rewrite (operator-pending; pre-release before any external partnership distribution):**
+- Master Design Doc v1.4, Partnership Overview v5, BFSI Segment Brief v4 — tracked in the competitive briefing's §11 punch list. [Issue 22]
+
+## Bucket 2 — Now and continues into Q3/Q4 (start now; partial pre-release scope; additional scope extends)
+
+Each stream has Bucket-1 work that must ship before release plus follow-on sprints that complete in Q3/Q4.
+
+- **Healthcare bundle (ADR-0500 series).** Pre-release: ADR-0500 → ADR-0502. Continues Q3/Q4: **ADR-0503** (FHIR in-memory passthrough) → **ADR-0504** (prescription writer) → **ADR-0505** (drug-interaction; gated by clinical-partner MoU + legal review) → **ADR-0506** (billing flag wiring). [Issues 3, 4]
+- **Sector seed packs (ADR-1100 series).** Pre-release: ADR-1100 → ADR-1102 + ADR-1103 (BFSI) + ADR-1104 (Healthcare) + ADR-1107 (D2C, paired with Gupshup). Continues Q3/Q4: **ADR-1105** (SaaS) + **ADR-1106** (Edtech) + **ADR-1108** (60%-configured measurement gate). [Issue 10]
+- **Pre-built deletion connectors (ADR-1007).** Pre-release: 3 connectors live (Mailchimp + HubSpot + one Q3-pulled-forward). Continues Q3/Q4: the remaining 14 from the existing connectors README — CleverTap, Razorpay, WebEngage, MoEngage, Intercom, Freshdesk, Shopify, WooCommerce, Segment (Q3); Zoho CRM, Freshworks CRM, Zendesk, Campaign Monitor, Mixpanel (Q4). [Issue 1]
+- **WhatsApp BSP connectors (ADR-1007 Sprint 2.x).** Pre-release: Sprint 2.1 Gupshup (paired with ADR-1107). Continues Q3/Q4: **Sprint 2.2** Interakt → **Sprint 2.3** Karix → **Sprint 2.4** Tanla (also the partnership hook from competition briefing §4.5) → **Sprint 2.5** Route Mobile → **Sprint 2.6** Kaleyra. [Issue 11]
+- **Enterprise platform (ADR-0800 series).** Pre-release: per-capability gating on whatever's sold (typically ADR-0801 custom-domain + ADR-0803 / 0804 SSO). Continues Q3/Q4: **ADR-0802** (white-label branding), **ADR-0805** (customer-held KMS), **ADR-0806** (enterprise SLA surface), **ADR-0807** (operator console), **ADR-0808** (per-property role scoping). [Issues 7, 12]
+- **Incident management (ADR-0900 series).** Pre-release: ADR-0900 → ADR-0905 + ADR-0907 + ADR-0908 (BFSI). Continues Q3/Q4: **ADR-0906** (remediation tracker + post-incident review). [Issues 8, 9, 19]
+- **Withdrawal verification + sandbox probes (ADR-1200).** Pre-release: Phase 1 Sprints 1.1 → 1.4. Continues Q3/Q4: **Phase 1 Sprint 1.5** (RLS + integration tests for the Mrs Sharma path), **Phase 2 Sprint 2.4** (cost controls + plan-tier gating for sandbox probes). Phase 2 Sprints 2.1 → 2.3 are pre-release if the LAYER_3 "simulates users" copy stays live; if that copy gets a Q3/Q4 pill instead, all of Phase 2 moves to Bucket 3. [Issues 13, 14]
+- **GDPR-lite (ADR-0600 series).** Pre-release: ADR-0600 → ADR-0603. Continues Q3/Q4: **ADR-0604** (SCC tracker), **ADR-0605** (EU-rep field), **ADR-0606** (Article-30 RoPA export), **ADR-0607** (GDPR billing flag wiring). [Issue 5]
+- **Status & uptime via Better Stack (ADR-1300 series).** Pre-release: ADR-1300 → ADR-1303. Continues Q3/Q4: **ADR-1304** (uptime-target alignment + auto-degrade on miss), **ADR-1305** (subscriber notifications via email + RSS + webhook). [Issue 18]
+
+## Bucket 3 — Q3/Q4 only (publicly marked, no pre-release scope)
+
+Streams that do not gate any pre-release distribution and ship entirely in Q3/Q4 with explicit "Proposed — Q3/Q4 2026" public marking on the marketing surface:
+
+- **Marketplace / DPO matchmaking (ADR-0700 series).** Already marked publicly with the Q3/Q4 2026 pill on Product LAYER_3 + Pricing Enterprise per the Issue-6 decision. Series: **ADR-0700** (charter), **ADR-0701** (provider directory data model), **ADR-0702** (matching surface), **ADR-0703** (scoped-access for empanelled providers), **ADR-0704** (revenue-share billing wiring), **ADR-0705** (DPO onboarding + KYC). Auditors panel keeps its existing "bring-your-own DPO/CA" framing in the interim — no silent rebrand. [Issue 6]
+- **Healthcare bundle deferrable items.** ADR-0504 (prescription writer), ADR-0505 (drug-interaction; clinical-partner MoU + legal-review gates), ADR-0506 (billing flag wiring) — only deferrable if the bundle ships its first wave (0500 → 0503) without the writer / interaction-checker. [Issue 3]
+- **Sector seed packs deferred sectors.** ADR-1105 (SaaS) + ADR-1106 (Edtech) — only deferrable if the SaaS / Edtech Solutions tabs are downgraded to "Coming Q3 2026" pills in the rewrite commit per the Issue-10 fallback. If the tabs stay live as today, these graduate to Bucket 1. [Issue 10]
+- **Connector roadmap tail.** ADR-1007 Sprints 1.6 / 3.1 — the 14 connectors flagged Q3 / Q4 in the existing connectors README. [Issue 1]
+- **WhatsApp BSP roadmap tail.** ADR-1007 Sprints 2.2 → 2.6 — Interakt, Karix, Tanla, Route Mobile, Kaleyra. [Issue 11]
+- **Enterprise platform deferrables.** ADR-0802, ADR-0805, ADR-0806, ADR-0807, ADR-0808 (per-property roles) — deferrable to the extent Enterprise customers don't pull on the specific feature; promotes to Bucket 1 the moment a customer-of-record needs it. [Issues 7, 12]
+- **Incident remediation tracker / PIR.** ADR-0906. [Issue 8]
+- **GDPR-lite deferrables.** ADR-0604 / 0605 / 0606 / 0607. [Issue 5]
+- **Status-page polish.** ADR-1304 / ADR-1305. [Issue 18]
+
+## Load-balancing observations
+
+1. **Bucket 1 is large but tractable.** The pre-release blocker list is dominated by two coherent series (ADR-0900 incident management; ADR-1200 withdrawal verification) plus targeted single-ADR work (ADR-0023, ADR-0907, ADR-1303). The FIX-COPY commit lands in a single sitting.
+2. **The "conditional pre-release blockers" enable a staged launch.** If the launch is Starter + Growth only (no BFSI / Healthcare / Pro / Enterprise distribution), the conditional list collapses to ADR-1007 (3 connectors) + ADR-1107 (D2C seed pack) + ADR-1007 Sprint 2.1 (Gupshup). Pro / Enterprise / BFSI / Healthcare unlock as their respective ADRs ship.
+3. **Bucket 2 is where the parallel-execution pattern (`feedback_parallel_adrs`) earns its keep.** Healthcare, Sector seed packs, Connectors, Enterprise, Incident, Withdrawal verification, GDPR-lite, Status — eight streams with non-overlapping code paths; round-robin sprint allocation works.
+4. **Bucket 3 is genuinely deferrable.** Marketplace is the only major Bucket-3 item, already publicly Q3/Q4-marked. Everything else in Bucket 3 promotes to Bucket 1 the moment a customer-of-record pulls — which is the correct behaviour.
+
 **End of review.**
