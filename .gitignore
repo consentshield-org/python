@@ -79,6 +79,18 @@ reports/mutation/
 # Test coverage
 coverage/
 
+# Python — venv, build artefacts, caches, coverage
+packages/python-client/.venv/
+packages/python-client/build/
+packages/python-client/dist/
+packages/python-client/htmlcov/
+packages/python-client/.coverage
+packages/python-client/.pytest_cache/
+packages/python-client/.mypy_cache/
+packages/python-client/.ruff_cache/
+**/__pycache__/
+**/*.pyc
+
 # TypeScript
 *.tsbuildinfo
 

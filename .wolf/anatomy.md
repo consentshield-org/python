@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-25T05:44:05.139Z
-> Files: 1523 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-25T06:50:10.888Z
+> Files: 1545 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../tmp/
 
@@ -231,7 +231,7 @@
 
 ## ./
 
-- `.gitignore` — Git ignore rules (~380 tok)
+- `.gitignore` — Git ignore rules (~539 tok)
 - `.prettierrc` (~29 tok)
 - `.secrets` — Supabase (~972 tok)
 - `CLAUDE.md` — OpenWolf (~6199 tok)
@@ -246,7 +246,7 @@
 ## .claude/
 
 - `session-handoff-terminal-a.md` — Session handoff — 2026-04-25 (Terminal A — ADR-1003 Sprint 4.1 + Phase 1 operator actions) (~4412 tok)
-- `session-handoff.md` — Session handoff — 2026-04-25 (Terminal B — ADR-1014 Phase 4 closeout) (~3617 tok)
+- `session-handoff.md` — Session handoff — 2026-04-25 (Terminal B) (~7739 tok)
 
 ## .github/ISSUE_TEMPLATE/
 
@@ -1424,7 +1424,7 @@
 - `ADR-1003-processor-posture-and-healthcare-unlock.md` — ADR-1003: Processor Posture + Healthcare Category Unlock (~10912 tok)
 - `ADR-1004-statutory-retention-material-change-silent-failure.md` — ADR-1004: Statutory Retention + Material-Change Re-consent + Silent-Failure Detection (~7531 tok)
 - `ADR-1005-operations-maturity.md` — ADR-1005: Operations Maturity — Webhook Reference, Support Model, Status Page, Multi-channel Alerts, (~7076 tok)
-- `ADR-1006-developer-experience-and-openapi.md` — ADR-1006: Developer Experience — Client Libraries + OpenAPI Spec + CI Drift Check (~7651 tok)
+- `ADR-1006-developer-experience-and-openapi.md` — ADR-1006: Developer Experience — Client Libraries + OpenAPI Spec + CI Drift Check (~9371 tok)
 - `ADR-1007-connector-ecosystem-expansion.md` — ADR-1007: Connector Ecosystem Expansion + Platform Plugins (~2738 tok)
 - `ADR-1008-scale-audit-polish-and-p3-hardening.md` — ADR-1008: Scale + Audit Polish + P3 Hardening (~3065 tok)
 - `ADR-1009-v1-api-role-hardening.md` — ADR-1009: v1 API role hardening — remove service-role shortcut, adopt `cs_api` as designed (~5564 tok)
@@ -1446,7 +1446,7 @@
 - `ADR-1025-customer-storage-auto-provisioning.md` — ADR-1025: Customer storage auto-provisioning — hybrid managed R2 default + BYOK escape hatch (~13370 tok)
 - `ADR-1026-drop-hyperdrive-direct-supavisor.md` — ADR-1026: Rewind ADR-1010 Phase 3 — Worker connects directly to Supavisor; drop Hyperdrive binding (~5467 tok)
 - `ADR-1027-admin-account-awareness.md` — ADR-1027: Admin Account-Awareness Pass (~8082 tok)
-- `ADR-index.md` — ADR Index (~9516 tok)
+- `ADR-index.md` — ADR Index (~9827 tok)
 - `ADR-template.md` — ADR-NNNN: Title (~423 tok)
 - `adr-workflow.md` — ADR Workflow Rules (~557 tok)
 
@@ -1474,7 +1474,7 @@
 
 ## docs/changelogs/
 
-- `CHANGELOG-api.md` — Changelog — API (~46356 tok)
+- `CHANGELOG-api.md` — Changelog — API (~48581 tok)
 - `CHANGELOG-dashboard.md` — Changelog — Dashboard (~29589 tok)
 - `CHANGELOG-docs.md` — Changelog — Documentation (~14619 tok)
 - `CHANGELOG-edge-functions.md` — Changelog — Edge Functions (~4251 tok)
@@ -1504,7 +1504,7 @@
 - `consentshield-testing-strategy.md` — ConsentShield — The Testing Question (~6253 tok)
 - `consentshield-v2-complete-blueprint.md` — ConsentShield v2 — Complete Product Blueprint (~18422 tok)
 - `ConsentShield-Whitepaper-V2-Gaps-Combined.md` — ConsentShield — Whitepaper-to-Code Gap Document (Combined & Canonical) (~12397 tok)
-- `marketing-gate-otp-wireframe.md` — Marketing-site invite gate — wireframe spec (~2474 tok)
+- `marketing-gate-otp-wireframe.md` — Marketing-site invite gate — wireframe spec (~2432 tok)
 - `zero-storage-feature-matrix.md` — Zero-Storage feature matrix (gap inventory) (~2335 tok)
 
 ## docs/design/brand-assets/
@@ -1767,7 +1767,7 @@
 
 ## marketing/src/app/gate/
 
-- `gate-form.tsx` — GateForm — renders form (~1940 tok)
+- `gate-form.tsx` — GateForm — renders form (~1934 tok)
 - `page.tsx` — ADR-0502 Sprint 1.3 — gate entry surface. (~336 tok)
 
 ## marketing/src/app/pricing/
@@ -1844,9 +1844,9 @@
 
 ## marketing/src/lib/gate/
 
-- `allowlist.ts` — For diagnostics only — never expose this. (~220 tok)
+- `allowlist.ts` — For diagnostics only — never expose this. (~324 tok)
 - `cookies.ts` — Marketing site is `consentshield.in` and `www.consentshield.in`; cookie domain `.consentshield.in` c (~394 tok)
-- `jwt.ts` — HS256 sign + verify using Web Crypto. ADR-0502 Sprint 1.1. (~941 tok)
+- `jwt.ts` — HS256 sign + verify using Web Crypto. ADR-0502 Sprint 1.1. (~1066 tok)
 - `log.ts` — Keep first three octets of v4, first 64 bits of v6 — `feedback_session_fingerprint_server_only`. (~632 tok)
 - `otp.ts` — 6 numeric digits; biased-free uniform draw via crypto.randomInt. (~276 tok)
 - `rate-limit.ts` — Test-only — not exported through index. (~295 tok)
@@ -1921,6 +1921,37 @@
 - `methods.test.ts` — ADR-1006 Phase 1 Sprint 1.3 — record/revoke/artefacts/events/deletion/ (~5145 tok)
 - `verify-batch.test.ts` — ADR-1006 Phase 1 Sprint 1.2 — verifyBatch() compliance behaviour. (~2450 tok)
 - `verify.test.ts` — ADR-1006 Phase 1 Sprint 1.2 — verify() compliance behaviour. (~2769 tok)
+
+## packages/python-client/
+
+- `LICENSE.md` — ConsentShield Python Client — License (~348 tok)
+- `pyproject.toml` — Official Python client for the ConsentShield DPDP compliance API. Fail-closed by default; 2-second r (~586 tok)
+- `README.md` — Project documentation (~1245 tok)
+
+## packages/python-client/src/consentshield/
+
+- `__init__.py` — ADR-1006 Phase 2 — `consentshield` Python SDK public surface. (~770 tok)
+- `_builders.py` — ADR-1006 Phase 2 Sprint 2.1 — request builders + validation helpers. (~4584 tok)
+- `_config.py` — ADR-1006 Phase 2 Sprint 2.1 — shared constructor validation + (~977 tok)
+- `_http.py` — ADR-1006 Phase 2 Sprint 2.1 — HTTP transport. (~3090 tok)
+- `_verify.py` — ADR-1006 Phase 2 Sprint 2.1 — verify failure-outcome decision. (~973 tok)
+- `async_client.py` — ADR-1006 Phase 2 Sprint 2.1 — async ``AsyncConsentShieldClient``. (~4292 tok)
+- `client.py` — ADR-1006 Phase 2 Sprint 2.1 — sync ``ConsentShieldClient``. (~3883 tok)
+- `errors.py` — ADR-1006 Phase 2 Sprint 2.1 — error class hierarchy. (~1367 tok)
+- `types.py` — ADR-1006 Phase 2 Sprint 2.1 — wire-format types for the v1 API. (~2618 tok)
+
+## packages/python-client/tests/
+
+- `conftest.py` — Shared pytest fixtures + helpers. (~453 tok)
+- `test_async_client.py` — ADR-1006 Phase 2 Sprint 2.1 — async client smoke tests. (~1660 tok)
+- `test_client.py` — ADR-1006 Phase 2 Sprint 2.1 — sync client constructor + ping. (~1326 tok)
+- `test_errors.py` — ADR-1006 Phase 2 Sprint 2.1 — error class hierarchy. (~680 tok)
+- `test_fail_open_callback.py` — ADR-1006 Phase 2 Sprint 2.1 — on_fail_open callback wiring (sync). (~1486 tok)
+- `test_http.py` — ADR-1006 Phase 2 Sprint 2.1 — HTTP transport behaviour. (~2334 tok)
+- `test_iterators_and_validators.py` — ADR-1006 Phase 2 Sprint 2.1 — sync + async iterator coverage + extra (~2778 tok)
+- `test_methods.py` — ADR-1006 Phase 2 Sprint 2.1 — record/revoke/CRUD method coverage. (~3294 tok)
+- `test_verify_batch.py` — ADR-1006 Phase 2 Sprint 2.1 — verify_batch() compliance behaviour. (~1767 tok)
+- `test_verify.py` — ADR-1006 Phase 2 Sprint 2.1 — verify() compliance behaviour (sync). (~1788 tok)
 
 ## packages/shared-types/
 

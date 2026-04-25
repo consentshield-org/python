@@ -5759,3 +5759,56 @@
 | 11:24 | Session end: 341 writes across 121 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 110 reads | ~694923 tok |
 | 11:26 | Session end: 341 writes across 121 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 112 reads | ~696372 tok |
 | 11:28 | Session end: 341 writes across 121 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 112 reads | ~696372 tok |
+| 11:31 | Session end: 341 writes across 121 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 112 reads | ~696372 tok |
+| 11:32 | Created .claude/session-handoff.md | — | ~8255 |
+| 11:32 | Session end: 342 writes across 121 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 112 reads | ~705217 tok |
+| 11:33 | Session end: 342 writes across 121 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 112 reads | ~705217 tok |
+| 11:34 | Edited .gitignore | expanded (+6 lines) | ~112 |
+| 11:34 | Session end: 343 writes across 121 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 112 reads | ~706531 tok |
+| 11:35 | Created packages/python-client/pyproject.toml | — | ~586 |
+| 11:36 | Created packages/python-client/src/consentshield/errors.py | — | ~1367 |
+| 11:36 | Created packages/python-client/src/consentshield/types.py | — | ~2618 |
+| 11:37 | Session end: 346 writes across 124 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 112 reads | ~711143 tok |
+| 11:37 | Session end: 346 writes across 124 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 112 reads | ~711143 tok |
+| 11:38 | Edited marketing/src/lib/gate/jwt.ts | 11→12 lines | ~197 |
+| 11:38 | Edited marketing/src/lib/gate/jwt.ts | modified sign() | ~86 |
+| 11:38 | Edited marketing/src/lib/gate/jwt.ts | 6→6 lines | ~49 |
+| 11:38 | Session end: 349 writes across 124 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 112 reads | ~711475 tok |
+| 11:38 | Edited marketing/src/lib/gate/jwt.ts | modified hmacSha256() | ~389 |
+| 11:41 | Session end: 350 writes across 124 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 112 reads | ~711864 tok |
+| 11:42 | Created packages/python-client/src/consentshield/_http.py | — | ~3036 |
+| 11:42 | Created packages/python-client/src/consentshield/_config.py | — | ~977 |
+| 11:43 | Created packages/python-client/src/consentshield/_builders.py | — | ~4584 |
+| 11:44 | Created packages/python-client/src/consentshield/_verify.py | — | ~973 |
+| 11:45 | Created packages/python-client/src/consentshield/client.py | — | ~3883 |
+| 11:45 | Created packages/python-client/src/consentshield/async_client.py | — | ~4292 |
+| 11:46 | Created packages/python-client/src/consentshield/__init__.py | — | ~770 |
+| 11:46 | Created packages/python-client/tests/conftest.py | — | ~346 |
+| 11:46 | Created packages/python-client/tests/test_errors.py | — | ~680 |
+| 11:47 | Created packages/python-client/tests/test_client.py | — | ~1326 |
+| 11:47 | Created packages/python-client/tests/test_http.py | — | ~2282 |
+| 11:48 | Edited marketing/src/app/gate/gate-form.tsx | 10→6 lines | ~61 |
+| 11:48 | Edited docs/design/marketing-gate-otp-wireframe.md | 6→2 lines | ~38 |
+| 11:48 | Edited docs/design/marketing-gate-otp-wireframe.md | 2→2 lines | ~99 |
+| 11:48 | Created packages/python-client/tests/test_verify.py | — | ~1788 |
+| 11:48 | Session end: 365 writes across 136 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 112 reads | ~737008 tok |
+| 11:49 | Created packages/python-client/tests/test_verify_batch.py | — | ~1767 |
+| 11:50 | Created packages/python-client/tests/test_methods.py | — | ~3294 |
+| 11:50 | Created packages/python-client/tests/test_async_client.py | — | ~1660 |
+| 11:51 | Created packages/python-client/tests/test_fail_open_callback.py | — | ~1486 |
+| 11:51 | Edited marketing/src/lib/gate/allowlist.ts | modified getAllowlist() | ~324 |
+| 11:51 | Session end: 370 writes across 140 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 112 reads | ~745539 tok |
+| 12:01 | Edited marketing/src/app/gate/gate-form.tsx | modified GateForm() | ~54 |
+| 12:02 | Edited marketing/src/app/gate/gate-form.tsx | modified if() | ~137 |
+| 12:02 | Session end: 372 writes across 140 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 112 reads | ~745730 tok |
+| 12:07 | Created packages/python-client/LICENSE.md | — | ~371 |
+| 12:08 | Created packages/python-client/README.md | — | ~1328 |
+| 12:13 | Edited packages/python-client/tests/conftest.py | modified json_response() | ~270 |
+| 12:13 | Edited packages/python-client/tests/test_http.py | 4→8 lines | ~121 |
+| 12:15 | Created packages/python-client/tests/test_iterators_and_validators.py | — | ~2778 |
+| 12:16 | Edited packages/python-client/src/consentshield/_http.py | modified _backoff_seconds() | ~24 |
+| 12:16 | Edited packages/python-client/src/consentshield/_http.py | modified _build_url() | ~294 |
+| 12:18 | Edited docs/ADRs/ADR-1006-developer-experience-and-openapi.md | added error handling | ~1994 |
+| 12:18 | Edited docs/ADRs/ADR-index.md | inline fix | ~379 |
+| 12:19 | Edited docs/changelogs/CHANGELOG-api.md | modified suite() | ~2412 |
+| 12:20 | Edited .gitignore | expanded (+12 lines) | ~106 |

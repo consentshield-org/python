@@ -23,8 +23,8 @@
       "first_read": "2026-04-25T01:14:19.688Z"
     },
     "/Users/sudhindra/projects/aiSpirit/consent-sheild/.gitignore": {
-      "count": 1,
-      "tokens": 284,
+      "count": 3,
+      "tokens": 448,
       "first_read": "2026-04-25T01:15:19.940Z"
     },
     "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-1003-processor-posture-and-healthcare-unlock.md": {
@@ -183,8 +183,8 @@
       "first_read": "2026-04-25T01:41:45.053Z"
     },
     "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/changelogs/CHANGELOG-api.md": {
-      "count": 8,
-      "tokens": 45091,
+      "count": 9,
+      "tokens": 46356,
       "first_read": "2026-04-25T01:41:51.641Z"
     },
     "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/changelogs/CHANGELOG-dashboard.md": {
@@ -363,8 +363,8 @@
       "first_read": "2026-04-25T03:38:19.449Z"
     },
     "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-1006-developer-experience-and-openapi.md": {
-      "count": 4,
-      "tokens": 6553,
+      "count": 7,
+      "tokens": 7651,
       "first_read": "2026-04-25T03:39:33.930Z"
     },
     "/Users/sudhindra/projects/aiSpirit/consent-sheild/supabase/migrations/20260429000001_rbac_memberships.sql": {
@@ -561,6 +561,21 @@
       "count": 1,
       "tokens": 0,
       "first_read": "2026-04-25T05:55:19.769Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/packages/python-client/tests/conftest.py": {
+      "count": 1,
+      "tokens": 346,
+      "first_read": "2026-04-25T06:43:13.154Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/packages/python-client/tests/test_http.py": {
+      "count": 2,
+      "tokens": 2282,
+      "first_read": "2026-04-25T06:43:39.280Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/packages/python-client/src/consentshield/_http.py": {
+      "count": 2,
+      "tokens": 3038,
+      "first_read": "2026-04-25T06:46:01.257Z"
     }
   },
   "files_written": [
@@ -2609,6 +2624,258 @@
       "action": "edit",
       "tokens": 201,
       "at": "2026-04-25T05:44:05.146Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/.claude/session-handoff.md",
+      "action": "create",
+      "tokens": 8845,
+      "at": "2026-04-25T06:02:31.969Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/.gitignore",
+      "action": "edit",
+      "tokens": 120,
+      "at": "2026-04-25T06:04:03.261Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/packages/python-client/pyproject.toml",
+      "action": "create",
+      "tokens": 627,
+      "at": "2026-04-25T06:05:27.940Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/packages/python-client/src/consentshield/errors.py",
+      "action": "create",
+      "tokens": 1367,
+      "at": "2026-04-25T06:06:13.321Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/packages/python-client/src/consentshield/types.py",
+      "action": "create",
+      "tokens": 2618,
+      "at": "2026-04-25T06:06:59.606Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/src/lib/gate/jwt.ts",
+      "action": "edit",
+      "tokens": 197,
+      "at": "2026-04-25T06:08:28.307Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/src/lib/gate/jwt.ts",
+      "action": "edit",
+      "tokens": 86,
+      "at": "2026-04-25T06:08:34.139Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/src/lib/gate/jwt.ts",
+      "action": "edit",
+      "tokens": 49,
+      "at": "2026-04-25T06:08:39.343Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/src/lib/gate/jwt.ts",
+      "action": "edit",
+      "tokens": 389,
+      "at": "2026-04-25T06:08:59.982Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/packages/python-client/src/consentshield/_http.py",
+      "action": "create",
+      "tokens": 3036,
+      "at": "2026-04-25T06:12:05.541Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/packages/python-client/src/consentshield/_config.py",
+      "action": "create",
+      "tokens": 977,
+      "at": "2026-04-25T06:12:42.356Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/packages/python-client/src/consentshield/_builders.py",
+      "action": "create",
+      "tokens": 4584,
+      "at": "2026-04-25T06:13:37.910Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/packages/python-client/src/consentshield/_verify.py",
+      "action": "create",
+      "tokens": 973,
+      "at": "2026-04-25T06:14:05.229Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/packages/python-client/src/consentshield/client.py",
+      "action": "create",
+      "tokens": 3883,
+      "at": "2026-04-25T06:15:06.256Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/packages/python-client/src/consentshield/async_client.py",
+      "action": "create",
+      "tokens": 4292,
+      "at": "2026-04-25T06:15:59.884Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/packages/python-client/src/consentshield/__init__.py",
+      "action": "create",
+      "tokens": 770,
+      "at": "2026-04-25T06:16:18.738Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/packages/python-client/tests/conftest.py",
+      "action": "create",
+      "tokens": 346,
+      "at": "2026-04-25T06:16:41.140Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/packages/python-client/tests/test_errors.py",
+      "action": "create",
+      "tokens": 680,
+      "at": "2026-04-25T06:16:58.614Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/packages/python-client/tests/test_client.py",
+      "action": "create",
+      "tokens": 1326,
+      "at": "2026-04-25T06:17:20.976Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/packages/python-client/tests/test_http.py",
+      "action": "create",
+      "tokens": 2282,
+      "at": "2026-04-25T06:17:56.827Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/src/app/gate/gate-form.tsx",
+      "action": "edit",
+      "tokens": 61,
+      "at": "2026-04-25T06:18:05.020Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/design/marketing-gate-otp-wireframe.md",
+      "action": "edit",
+      "tokens": 40,
+      "at": "2026-04-25T06:18:10.963Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/design/marketing-gate-otp-wireframe.md",
+      "action": "edit",
+      "tokens": 106,
+      "at": "2026-04-25T06:18:19.016Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/packages/python-client/tests/test_verify.py",
+      "action": "create",
+      "tokens": 1788,
+      "at": "2026-04-25T06:18:24.239Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/packages/python-client/tests/test_verify_batch.py",
+      "action": "create",
+      "tokens": 1767,
+      "at": "2026-04-25T06:19:00.347Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/packages/python-client/tests/test_methods.py",
+      "action": "create",
+      "tokens": 3294,
+      "at": "2026-04-25T06:20:13.366Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/packages/python-client/tests/test_async_client.py",
+      "action": "create",
+      "tokens": 1660,
+      "at": "2026-04-25T06:20:45.227Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/packages/python-client/tests/test_fail_open_callback.py",
+      "action": "create",
+      "tokens": 1486,
+      "at": "2026-04-25T06:21:12.966Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/src/lib/gate/allowlist.ts",
+      "action": "edit",
+      "tokens": 324,
+      "at": "2026-04-25T06:21:25.304Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/src/app/gate/gate-form.tsx",
+      "action": "edit",
+      "tokens": 54,
+      "at": "2026-04-25T06:31:59.791Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/src/app/gate/gate-form.tsx",
+      "action": "edit",
+      "tokens": 137,
+      "at": "2026-04-25T06:32:06.541Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/packages/python-client/LICENSE.md",
+      "action": "create",
+      "tokens": 397,
+      "at": "2026-04-25T06:37:29.529Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/packages/python-client/README.md",
+      "action": "create",
+      "tokens": 1422,
+      "at": "2026-04-25T06:38:06.491Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/packages/python-client/tests/conftest.py",
+      "action": "edit",
+      "tokens": 270,
+      "at": "2026-04-25T06:43:23.355Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/packages/python-client/tests/test_http.py",
+      "action": "edit",
+      "tokens": 121,
+      "at": "2026-04-25T06:43:52.428Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/packages/python-client/tests/test_iterators_and_validators.py",
+      "action": "create",
+      "tokens": 2778,
+      "at": "2026-04-25T06:45:01.059Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/packages/python-client/src/consentshield/_http.py",
+      "action": "edit",
+      "tokens": 24,
+      "at": "2026-04-25T06:46:07.200Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/packages/python-client/src/consentshield/_http.py",
+      "action": "edit",
+      "tokens": 294,
+      "at": "2026-04-25T06:46:24.928Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-1006-developer-experience-and-openapi.md",
+      "action": "edit",
+      "tokens": 2136,
+      "at": "2026-04-25T06:48:02.805Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-index.md",
+      "action": "edit",
+      "tokens": 406,
+      "at": "2026-04-25T06:48:29.779Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/changelogs/CHANGELOG-api.md",
+      "action": "edit",
+      "tokens": 2584,
+      "at": "2026-04-25T06:49:55.210Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/.gitignore",
+      "action": "edit",
+      "tokens": 113,
+      "at": "2026-04-25T06:50:10.895Z"
     }
   ],
   "edit_counts": {
@@ -2617,13 +2884,13 @@
     "worker/tests/origin.test.ts": 2,
     "worker/package.json": 1,
     "worker/stryker.conf.mjs": 3,
-    ".gitignore": 5,
+    ".gitignore": 7,
     "docs/runbooks/adr-1003-phase-1-operator-actions.md": 2,
     "supabase/migrations/20260804000056_adr1003_s41_healthcare_template_seed.sql": 1,
     "docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md": 18,
     "docs/customer-docs/healthcare-onboarding.md": 1,
     "admin/src/app/(operator)/templates/[templateId]/page.tsx": 5,
-    "docs/ADRs/ADR-index.md": 14,
+    "docs/ADRs/ADR-index.md": 15,
     "docs/changelogs/CHANGELOG-worker.md": 2,
     "tests/integration/healthcare-template.test.ts": 1,
     "docs/ADRs/ADR-1003-processor-posture-and-healthcare-unlock.md": 9,
@@ -2635,7 +2902,7 @@
     "docs/changelogs/CHANGELOG-docs.md": 3,
     ".claude/session-handoff-terminal-a.md": 1,
     "docs/changelogs/CHANGELOG-dashboard.md": 3,
-    "docs/changelogs/CHANGELOG-api.md": 8,
+    "docs/changelogs/CHANGELOG-api.md": 9,
     "docs/admin/architecture/consentshield-admin-schema.md": 1,
     "docs/V2-BACKLOG.md": 1,
     "app/tests/api/auth.test.ts": 2,
@@ -2655,7 +2922,7 @@
     "docs/changelogs/CHANGELOG-infra.md": 2,
     "docs/changelogs/CHANGELOG-marketing.md": 2,
     "tests/integration/zero-storage-invariant.test.ts": 5,
-    ".claude/session-handoff.md": 1,
+    ".claude/session-handoff.md": 2,
     "../../../.claude/projects/-Users-sudhindra-projects-aiSpirit-consent-sheild/memory/project_adr1014_phase4_done.md": 1,
     "../../../.claude/projects/-Users-sudhindra-projects-aiSpirit-consent-sheild/memory/feedback_stryker_pattern.md": 1,
     "../../../.claude/projects/-Users-sudhindra-projects-aiSpirit-consent-sheild/memory/MEMORY.md": 2,
@@ -2670,7 +2937,7 @@
     "tests/e2e/utils/fixtures.ts": 1,
     "tests/e2e/utils/supabase-admin.ts": 1,
     "tests/e2e/worker-consent-event.spec.ts": 3,
-    "docs/ADRs/ADR-1006-developer-experience-and-openapi.md": 5,
+    "docs/ADRs/ADR-1006-developer-experience-and-openapi.md": 6,
     "packages/node-client/package.json": 3,
     "packages/node-client/tsconfig.json": 3,
     "packages/node-client/vitest.config.ts": 2,
@@ -2736,13 +3003,13 @@
     "marketing/src/app/robots.ts": 1,
     "marketing/src/app/layout.tsx": 1,
     "marketing/next.config.ts": 1,
-    "docs/design/marketing-gate-otp-wireframe.md": 1,
+    "docs/design/marketing-gate-otp-wireframe.md": 3,
     "packages/node-client/tsup.config.ts": 1,
     "docs/ADRs/ADR-0502-marketing-gate-otp.md": 1,
-    "marketing/src/lib/gate/jwt.ts": 1,
+    "marketing/src/lib/gate/jwt.ts": 5,
     "packages/node-client/LICENSE.md": 1,
     "marketing/src/lib/gate/otp.ts": 1,
-    "marketing/src/lib/gate/allowlist.ts": 1,
+    "marketing/src/lib/gate/allowlist.ts": 2,
     "marketing/src/lib/gate/log.ts": 1,
     "marketing/src/lib/gate/rate-limit.ts": 1,
     "marketing/src/lib/gate/templates.ts": 1,
@@ -2753,7 +3020,7 @@
     "packages/node-client/tests/iterators.test.ts": 1,
     "marketing/src/middleware.ts": 2,
     "marketing/src/app/gate/page.tsx": 1,
-    "marketing/src/app/gate/gate-form.tsx": 1,
+    "marketing/src/app/gate/gate-form.tsx": 4,
     "packages/node-client/examples/express-verify-middleware/middleware.ts": 1,
     "packages/node-client/examples/express-verify-middleware/app.ts": 1,
     "marketing/src/components/footer.tsx": 4,
@@ -2762,11 +3029,33 @@
     "packages/node-client/examples/express-verify-middleware/package.json": 1,
     "packages/node-client/examples/nextjs-mobile-record/app/api/consent/route.ts": 1,
     "packages/node-client/examples/nextjs-mobile-record/README.md": 1,
-    "packages/node-client/examples/nextjs-mobile-record/package.json": 1
+    "packages/node-client/examples/nextjs-mobile-record/package.json": 1,
+    "packages/python-client/pyproject.toml": 1,
+    "packages/python-client/src/consentshield/errors.py": 1,
+    "packages/python-client/src/consentshield/types.py": 1,
+    "packages/python-client/src/consentshield/_http.py": 3,
+    "packages/python-client/src/consentshield/_config.py": 1,
+    "packages/python-client/src/consentshield/_builders.py": 1,
+    "packages/python-client/src/consentshield/_verify.py": 1,
+    "packages/python-client/src/consentshield/client.py": 1,
+    "packages/python-client/src/consentshield/async_client.py": 1,
+    "packages/python-client/src/consentshield/__init__.py": 1,
+    "packages/python-client/tests/conftest.py": 2,
+    "packages/python-client/tests/test_errors.py": 1,
+    "packages/python-client/tests/test_client.py": 1,
+    "packages/python-client/tests/test_http.py": 2,
+    "packages/python-client/tests/test_verify.py": 1,
+    "packages/python-client/tests/test_verify_batch.py": 1,
+    "packages/python-client/tests/test_methods.py": 1,
+    "packages/python-client/tests/test_async_client.py": 1,
+    "packages/python-client/tests/test_fail_open_callback.py": 1,
+    "packages/python-client/LICENSE.md": 1,
+    "packages/python-client/README.md": 1,
+    "packages/python-client/tests/test_iterators_and_validators.py": 1
   },
-  "anatomy_hits": 101,
+  "anatomy_hits": 104,
   "anatomy_misses": 11,
-  "repeated_reads_warned": 70,
+  "repeated_reads_warned": 78,
   "cerebrum_warnings": 0,
-  "stop_count": 67
+  "stop_count": 78
 }

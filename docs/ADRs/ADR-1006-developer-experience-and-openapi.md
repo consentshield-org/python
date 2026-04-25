@@ -164,22 +164,48 @@ Ship four languages and one specification:
 
 ### Phase 2: Python library (G-003)
 
-#### Sprint 2.1: Package scaffold + method parity
+#### Sprint 2.1: Package scaffold + method parity (sync + async)
 
-**Estimated effort:** 3 days
+**Scope amendment (2026-04-25).** The original deliverable list said
+"`httpx` for HTTP (supports async + sync)" without committing to a
+client shape. After Phase-1's Node-SDK pattern landed, the natural
+choice for Python is **two clients** — sync `ConsentShieldClient` and
+async `AsyncConsentShieldClient` — matching the convention every
+major Python SDK uses (`httpx`, `openai`, `anthropic`, `redis-py`).
+Doubles the implementation surface; halves the integration friction
+(FastAPI users get native async, Django/Flask users get native sync).
+User-confirmed before Sprint 2.1 work started.
 
 **Deliverables:**
-- [ ] `consentshield` package layout with Poetry/uv or pip-tools
-- [ ] Py 3.9+ compatibility
-- [ ] Type hints on every public API; mypy clean
-- [ ] API parity with Node: same method names (snake_case adapted), same error types, same fail-closed default, same `CONSENT_VERIFY_FAIL_OPEN` env override
-- [ ] `httpx` for HTTP (supports async + sync)
+- [x] `packages/python-client/` Bun-workspace-adjacent layout (no Bun deps; pure Python). `pyproject.toml` with `hatchling` build backend; py.typed marker per PEP 561; Python ≥ 3.9 baseline; `httpx` dep `>=0.27,<1.0`; optional `[test]` extras (`pytest`, `pytest-httpx`, `respx`, `pytest-cov`); optional `[dev]` extras (`mypy`, `ruff`); strict tool configs for `pytest`, `coverage`, `mypy`, `ruff`. `LICENSE.md` proprietary text per CLAUDE.md authorship rules. `README.md` with the full method matrix + fail-open behaviour table.
+- [x] **Sync `ConsentShieldClient`** + **async `AsyncConsentShieldClient`** ship in parallel — 100% method parity. The only difference is every method on the async client returns `Awaitable[T]` and cursor iterators are `AsyncIterator[T]` instead of `Iterator[T]`.
+- [x] **Shared core** keeps the duplication minimal:
+  - `_config.py` — constructor validation + defaults + env override (cs_live_ prefix, positive timeout, non-negative integer max_retries, bool-only fail_open, `CONSENT_VERIFY_FAIL_OPEN=true|1` env honoured when option absent).
+  - `_builders.py` — every `build_*_request(...)` function runs synchronous validation + constructs the snake_case body/query at the network boundary + returns an `HttpRequest`. Both sync + async clients delegate to these builders, so validation logic exists in one place.
+  - `_verify.py` — `decide_failure_outcome(err, fail_open)` encodes the **non-negotiable compliance contract** (4xx ALWAYS raises, timeout/network/5xx + fail_open=False → `ConsentVerifyError`, fail_open=True → `OpenFailureEnvelope` with cause discriminator). Used by both sync + async verify.
+- [x] **HTTP transport** — `_http.py` ships sync `HttpClient` + async `AsyncHttpClient`. 2-second default timeout via `httpx.Timeout`. Exponential-backoff retry (100/400/1600 ms) on 5xx + transport errors up to `max_retries`. **Never** retries 4xx (caller bug). **Never** retries timeouts (compounds latency past compliance budget). RFC 7807 problem-document parsing onto `error.problem`. `X-CS-Trace-Id` round-trip.
+- [x] **Five-class error hierarchy** mirrors the Node SDK 1:1: `ConsentShieldError` base + `ConsentShieldApiError` (with `status` + `problem` fields) + `ConsentShieldNetworkError` + `ConsentShieldTimeoutError` (never retried) + `ConsentVerifyError` (compliance-critical wrapper). Every error carries optional `trace_id`.
+- [x] **14 methods + 5 cursor-iterating helpers** ship on each client (sync + async = 28 + 10 = 38 callable surfaces total): `ping` / `verify` / `verify_batch` / `record_consent` / `revoke_artefact` / `list_artefacts` / `iterate_artefacts` / `get_artefact` / `list_events` / `iterate_events` / `trigger_deletion` / `list_deletion_receipts` / `iterate_deletion_receipts` / `create_rights_request` / `list_rights_requests` / `iterate_rights_requests` / `list_audit_log` / `iterate_audit_log`. Same input names + same wire-format envelopes as the Node SDK (snake_case all the way through; Python convention + matches the server contract directly).
+- [x] **`on_fail_open` callback** closes the audit-trail wiring in both sync + async clients. Sync default: `logging.warning` with structured key/value pairs. Async default: same. Async path schedules awaitable callbacks fire-and-forget on the running event loop; sync throws + async rejections both swallowed with stderr log + never break the verify call site.
+- [x] **`is_open_failure(result)`** type guard re-exported from the package root.
 
-**Testing plan:**
-- [ ] Method-parity tests: same fixtures as Node library, same assertions
-- [ ] `mypy --strict` passes
+**Tested:**
+- [x] `pytest -q --cov` — **119 passed**; coverage **88.54%** total (statements/branches/functions/lines combined; all per-file ≥ 81% except `_http.py` at 81% — the lowest, still over the 80% gate). Fail-under = 80 enforced via `pyproject.toml` `[tool.coverage.report]`.
+- [x] `mypy --strict src/consentshield` — clean across 9 source files.
+- [x] **Test files (10 across `tests/`):**
+  - `test_errors.py` (7) — class hierarchy, message composition, trace_id propagation, `except ConsentShieldError` uniform catch.
+  - `test_client.py` (14) — constructor validation (cs_live_ prefix, timeout, max_retries, fail_open env override × 4 truthy/falsy cases), ping(), context-manager close.
+  - `test_http.py` (16) — URL composition, Bearer auth, 5xx exponential-backoff retry, retry exhaustion, transport-error retry, **4xx never retries** (sweep across 400/401/403/404/410/422), **timeout never retries**, problem-body parsing, non-JSON tolerance, query-string skips None.
+  - `test_verify.py` (12) — happy path, snake_case query, trace_id forward, synchronous validation, **fail-closed** raises `ConsentVerifyError` on 5xx + transport, **fail-open** returns envelope on 5xx + transport + timeout (with correct `cause`), **4xx ALWAYS raises** even when fail_open=True (sweep across 422/403/404).
+  - `test_verify_batch.py` (12) — POST shape, input order preserved; **client-side gates** (empty array → ValueError, > 10 000 → ValueError matching server cap, exactly 10 000 allowed at boundary, non-list → TypeError, non-string entry → TypeError); fail-closed/open + 4xx-never-opens (422 + 413).
+  - `test_methods.py` (15) — record/revoke/CRUD method shapes; URL encoding for path params; sync validation gates; 409 Conflict surfacing; trigger_deletion `purpose_codes` REQUIRED when `reason='consent_revoked'` enforced synchronously.
+  - `test_async_client.py` (7) — async smoke: ping, verify happy path, fail-closed/open on 5xx, 4xx-always-raises, async iterator walks pages, record_consent body shape.
+  - `test_fail_open_callback.py` (7) — fires once on verify fail-open with method ctx + envelope + trace_id; fires once on verify_batch fail-open; does NOT fire on success / fail_open=False / 4xx; sync throw inside callback doesn't break call site (caught + logged); default callback emits `logging.warning`.
+  - `test_iterators_and_validators.py` (22) — sync + async iterators for events/audit/deletion-receipts/rights-requests; extra builder validator branches (rejected_purpose_definition_ids non-array / non-string entries; trigger_deletion non-array purpose_codes / scope_override / invalid actor_type / non-string entry index; rights captured_via reject; revoke_artefact non-string reason_notes / actor_ref / empty id; get_artefact empty id).
 
-**Status:** `[ ] planned`
+**Spec amendment for Sprint 2.1 — `pip publish` / `wheel` build / examples deferred to Sprint 2.2.** SDK is publish-ready (pyproject.toml validated, mypy clean, 88.54% coverage); `python -m build` + `twine upload` + the Django/Flask/FastAPI examples ship in Sprint 2.2 (mirrors Sprint 1.4's deferral pattern for the Node SDK).
+
+**Status:** `[x] complete 2026-04-25 — sync + async clients ship with 100% Node-SDK method parity. 119 pytest tests; mypy --strict clean; coverage 88.54%. Sprint 2.2 next: Django middleware + Flask decorator + FastAPI dependency + PyPI publish.`
 
 #### Sprint 2.2: Integration examples + PyPI publish
 
