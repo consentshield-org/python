@@ -5668,3 +5668,27 @@
 | 09:44 | Edited docs/changelogs/CHANGELOG-docs.md | expanded (+16 lines) | ~527 |
 | 09:44 | Created packages/node-client/src/revoke.ts | — | ~548 |
 | 09:44 | Session end: 268 writes across 95 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 99 reads | ~626453 tok |
+| 09:44 | Created packages/node-client/src/artefacts.ts | — | ~679 |
+| 09:44 | Created packages/node-client/src/events.ts | — | ~400 |
+| 09:45 | Created packages/node-client/src/deletion.ts | — | ~1370 |
+| 09:45 | Session end: 271 writes across 97 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 99 reads | ~628902 tok |
+| 09:45 | Created packages/node-client/src/rights.ts | — | ~1321 |
+| 09:45 | Created packages/node-client/src/audit.ts | — | ~366 |
+| 09:46 | Edited packages/node-client/src/verify.ts | expanded (+18 lines) | ~243 |
+| 09:46 | Edited packages/node-client/src/verify.ts | modified verify() | ~300 |
+| 09:46 | Edited packages/node-client/src/verify.ts | modified verifyBatch() | ~55 |
+| 09:46 | Edited packages/node-client/src/verify.ts | added 2 condition(s) | ~474 |
+| 09:47 | Edited packages/node-client/src/client.ts | expanded (+48 lines) | ~488 |
+| 09:47 | Edited packages/node-client/src/client.ts | expanded (+12 lines) | ~213 |
+| 09:47 | Edited packages/node-client/src/client.ts | modified constructor() | ~79 |
+| 09:47 | Edited packages/node-client/src/client.ts | 4→5 lines | ~90 |
+| 09:47 | Edited packages/node-client/src/client.ts | modified verify() | ~44 |
+| 09:48 | Session end: 282 writes across 99 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 102 reads | ~634031 tok |
+| 09:48 | Edited packages/node-client/src/client.ts | modified verifyBatch() | ~1629 |
+| 09:48 | Edited packages/node-client/src/index.ts | expanded (+34 lines) | ~339 |
+| 09:50 | Session end: 284 writes across 99 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 102 reads | ~635999 tok |
+| 09:50 | Created packages/node-client/tests/methods.test.ts | — | ~5145 |
+| 09:51 | Created packages/node-client/tests/fail-open-callback.test.ts | — | ~2094 |
+| 09:52 | Edited docs/ADRs/ADR-1006-developer-experience-and-openapi.md | expanded (+6 lines) | ~1501 |
+| 09:52 | Edited docs/ADRs/ADR-index.md | inline fix | ~435 |
+| 09:53 | Edited docs/changelogs/CHANGELOG-api.md | expanded (+30 lines) | ~1696 |

@@ -2,6 +2,36 @@
 
 API route changes.
 
+## [ADR-1006 Phase 1 Sprint 1.3 — `@consentshield/node` record/revoke/artefacts/events/deletion/rights/audit + onFailOpen audit-trail wiring] — 2026-04-25
+
+**ADR:** ADR-1006 — Developer Experience: Client Libraries + OpenAPI + CI Drift Check
+**Sprint:** Phase 1, Sprint 1.3 (eight method modules + the compliance-critical fail-open audit-trail callback)
+
+### Added
+- `packages/node-client/src/types.ts` extended with every Sprint 1.3 envelope: `RecordEnvelope` + `RecordedArtefact`, `RevokeEnvelope`, `ArtefactListItem` + `ArtefactListEnvelope` + `ArtefactDetail` + `ArtefactRevocation`, `EventListItem` + `EventListEnvelope`, `DeletionReason` + `DeletionTriggerEnvelope` + `DeletionReceiptRow` + `DeletionReceiptsEnvelope`, `RightsRequestType` + `RightsRequestStatus` + `RightsCapturedVia` + `RightsRequestCreatedEnvelope` + `RightsRequestItem` + `RightsRequestListEnvelope`, `AuditLogItem` + `AuditLogEnvelope`. snake_case fields preserved exactly (server contract).
+- `packages/node-client/src/record.ts` — `recordConsent({ propertyId, dataPrincipalIdentifier, identifierType, purposeDefinitionIds, rejectedPurposeDefinitionIds?, capturedAt, clientRequestId? })` → POST `/v1/consent/record`. Synchronous gates: empty `purposeDefinitionIds` → `RangeError`; non-string entry → `TypeError`. `clientRequestId` is the idempotency key.
+- `packages/node-client/src/revoke.ts` — `revokeArtefact(artefactId, { reasonCode, reasonNotes?, actorType, actorRef? })` → POST `/v1/consent/artefacts/{id}/revoke`. URL-encodes the path. Synchronous validation on `actorType`. Server 409 (terminal-state artefact) surfaces as `ConsentShieldApiError(409)`.
+- `packages/node-client/src/artefacts.ts` — `listArtefacts` + `iterateArtefacts` async-iterator + `getArtefact` (returns `ArtefactDetail | null` — null on JSON-null body for an unknown id; URL-encoded path).
+- `packages/node-client/src/events.ts` — `listEvents` + `iterateEvents`.
+- `packages/node-client/src/deletion.ts` — `triggerDeletion` + `listDeletionReceipts` + `iterateDeletionReceipts`. Synchronous gates: `reason` validation; `purposeCodes` REQUIRED when `reason === 'consent_revoked'`; `actorType` whitelist.
+- `packages/node-client/src/rights.ts` — `createRightsRequest` (gates `type` + required `requestorName/Email` + required `identityVerifiedBy`) + `listRightsRequests` (gates `status`/`requestType`/`capturedVia` whitelists) + `iterateRightsRequests`.
+- `packages/node-client/src/audit.ts` — `listAuditLog` + `iterateAuditLog`.
+- **Compliance-load-bearing**: `packages/node-client/src/verify.ts` extended with `FailOpenCallback` type + `invokeFailOpenCallback` helper. `verify()` and `verifyBatch()` accept a fourth `onFailOpen` parameter; invoked once after building the `OpenFailureEnvelope`, before returning. Fire-and-forget — promise return is NOT awaited; sync/async throws caught + emitted via `console.error`; never break the verify call site.
+- `packages/node-client/src/client.ts` — wires the 9 new methods + 5 async-iterator helpers + the `onFailOpen` constructor option onto `ConsentShieldClient`. Default `onFailOpen` implementation: structured `console.warn('[@consentshield/node] fail-open verify override', { method, cause, reason, traceId })`. JSDoc on each method spells out the route + idempotency semantics.
+- `packages/node-client/src/index.ts` — re-exports every new envelope type + input type + `FailOpenCallback`.
+- `packages/node-client/tests/methods.test.ts` (~22 cases) — for each of the 8 method modules: snake_case body / query composition, URL encoding for path params, synchronous validation gates fire BEFORE fetch, 4xx surfaces as `ConsentShieldApiError`, `getArtefact` null-body handling, `iterateArtefacts` walks 2 pages by following `next_cursor`, `triggerDeletion` rejects `reason=consent_revoked` without `purposeCodes` synchronously, allows `reason=erasure_request` without, `createRightsRequest`/`listRightsRequests` reject invalid enum values.
+- `packages/node-client/tests/fail-open-callback.test.ts` (8 cases) — fires once on verify fail-open with method ctx + envelope + traceId; fires once on verifyBatch fail-open with `method=verifyBatch`; does NOT fire on success / `failOpen=false` / 4xx (4xx-always-throws); does not crash the call site when callback throws synchronously OR returns a rejected promise (both surfaced via `console.error`); default callback emits a structured `console.warn`.
+
+### Architecture Changes
+- **Sprint 1.2's deferred audit-trail wiring is closed.** Original ADR text said "writes an audit record via the `/v1/audit/override` endpoint (to be added)". No such endpoint exists; the SDK now exposes a callback hook instead, leaving the audit sink choice to the customer (Sentry / structured logger / custom `/v1/audit` POST). Default implementation is `console.warn` — never silent — so the override always surfaces somewhere even if the caller forgets to wire a sink. Production wiring is documented in the README and the JSDoc on `onFailOpen`.
+- **The verify-class compliance contract still applies.** The 9 new methods (record / revoke / artefact CRUD / events / deletion / rights / audit) are NOT verify-class — they don't carry the fail-closed/open dichotomy. Failure modes (timeout / network / 4xx / 5xx) all surface as the corresponding `ConsentShieldError` subclass. The verify-only contract stays load-bearing.
+- **URL-encoding for path params** on `revokeArtefact` + `getArtefact` defends against artefact ids that contain `/`, `#`, `&`, `?`, or other URL-meaningful characters. Without it a path like `consent/artefacts/with/slashes/revoke` would parse as a different route. Tested with `'with/slashes#and&special'` → `with%2Fslashes%23and%26special`.
+- **Async-iterator helpers (`iterateArtefacts`, `iterateEvents`, `iterateDeletionReceipts`, `iterateRightsRequests`, `iterateAuditLog`)** wrap the cursor-pagination pattern as `for await (const item of ...)`. Each helper walks pages until `next_cursor === null`. The underlying `list*` methods stay available for callers that want raw page control.
+
+### Tested
+- [x] `cd packages/node-client && bun run test` — **94 passed** (7 files, +30 over Sprint 1.2's 64) — PASS
+- [x] `cd packages/node-client && bun run typecheck` — clean — PASS
+
 ## [ADR-1006 Phase 1 Sprint 1.2 — `@consentshield/node` verify + verifyBatch] — 2026-04-25
 
 **ADR:** ADR-1006 — Developer Experience: Client Libraries + OpenAPI + CI Drift Check

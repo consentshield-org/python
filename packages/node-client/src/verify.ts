@@ -105,6 +105,24 @@ function decideFailureOutcome(
 }
 
 /**
+ * Audit-trail callback signature. Invoked once per fail-open outcome
+ * (after the OpenFailureEnvelope has been built but before it is
+ * returned to the caller). The default implementation in client.ts
+ * emits a structured `console.warn`; production callers wire this to
+ * Sentry / a structured logger / a `/v1/audit` POST that records the
+ * compliance override deliberately.
+ *
+ * The callback is fire-and-forget — its returned promise (if any) is
+ * NOT awaited, so a slow audit sink does not extend caller latency.
+ * Throws inside the callback are caught and discarded with a
+ * `console.error`; the OpenFailureEnvelope is still returned.
+ */
+export type FailOpenCallback = (
+  envelope: OpenFailureEnvelope,
+  ctx: { method: 'verify' | 'verifyBatch' },
+) => void | Promise<void>
+
+/**
  * GET /v1/consent/verify — single-identifier check.
  *
  * Returns the §5.1 envelope on success. On any failure:
@@ -120,6 +138,7 @@ export async function verify(
   http: HttpClient,
   input: VerifyInput,
   failOpen: boolean,
+  onFailOpen?: FailOpenCallback,
 ): Promise<VerifyEnvelope | OpenFailureEnvelope> {
   validateRequired(input.propertyId, 'propertyId')
   validateRequired(input.dataPrincipalIdentifier, 'dataPrincipalIdentifier')
@@ -143,6 +162,7 @@ export async function verify(
   } catch (err) {
     const outcome = decideFailureOutcome(err, failOpen)
     if ('rethrow' in outcome) throw outcome.rethrow
+    invokeFailOpenCallback(onFailOpen, outcome.open, 'verify')
     return outcome.open
   }
 }
@@ -163,6 +183,7 @@ export async function verifyBatch(
   http: HttpClient,
   input: VerifyBatchInput,
   failOpen: boolean,
+  onFailOpen?: FailOpenCallback,
 ): Promise<VerifyBatchEnvelope | OpenFailureEnvelope> {
   validateRequired(input.propertyId, 'propertyId')
   validateRequired(input.identifierType, 'identifierType')
@@ -204,7 +225,43 @@ export async function verifyBatch(
   } catch (err) {
     const outcome = decideFailureOutcome(err, failOpen)
     if ('rethrow' in outcome) throw outcome.rethrow
+    invokeFailOpenCallback(onFailOpen, outcome.open, 'verifyBatch')
     return outcome.open
+  }
+}
+
+/**
+ * Fire-and-forget invocation of the fail-open audit callback. Promise
+ * results are NOT awaited — the calling verify() / verifyBatch() returns
+ * the OpenFailureEnvelope immediately. Synchronous throws are caught + a
+ * console.error is emitted so a buggy callback doesn't break the verify
+ * call site itself.
+ */
+function invokeFailOpenCallback(
+  cb: FailOpenCallback | undefined,
+  envelope: OpenFailureEnvelope,
+  method: 'verify' | 'verifyBatch',
+): void {
+  if (!cb) return
+  try {
+    const result = cb(envelope, { method })
+    if (result && typeof (result as Promise<void>).then === 'function') {
+      void (result as Promise<void>).catch((err) => {
+        // eslint-disable-next-line no-console
+        console.error(
+          '@consentshield/node: onFailOpen callback rejected for',
+          method,
+          err,
+        )
+      })
+    }
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error(
+      '@consentshield/node: onFailOpen callback threw for',
+      method,
+      err,
+    )
   }
 }
 

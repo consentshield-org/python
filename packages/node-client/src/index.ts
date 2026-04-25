@@ -20,13 +20,47 @@ export type { FetchImpl, HttpRequest } from './http'
 
 export {
   isOpenFailure,
+  type FailOpenCallback,
   type VerifyInput,
   type VerifyBatchInput,
 } from './verify'
 
+export type { RecordConsentInput } from './record'
+export type { RevokeActorType, RevokeArtefactInput } from './revoke'
+export type { ListArtefactsInput } from './artefacts'
+export type { ListEventsInput } from './events'
 export type {
+  DeletionActorType,
+  ListDeletionReceiptsInput,
+  TriggerDeletionInput,
+} from './deletion'
+export type { CreateRightsRequestInput, ListRightsRequestsInput } from './rights'
+export type { ListAuditLogInput } from './audit'
+
+export type {
+  ArtefactDetail,
+  ArtefactListEnvelope,
+  ArtefactListItem,
+  ArtefactRevocation,
+  AuditLogEnvelope,
+  AuditLogItem,
+  DeletionReason,
+  DeletionReceiptRow,
+  DeletionReceiptsEnvelope,
+  DeletionTriggerEnvelope,
+  EventListEnvelope,
+  EventListItem,
   IdentifierType,
   OpenFailureEnvelope,
+  RecordEnvelope,
+  RecordedArtefact,
+  RevokeEnvelope,
+  RightsCapturedVia,
+  RightsRequestCreatedEnvelope,
+  RightsRequestItem,
+  RightsRequestListEnvelope,
+  RightsRequestStatus,
+  RightsRequestType,
   VerifyBatchEnvelope,
   VerifyBatchResultRow,
   VerifyEnvelope,

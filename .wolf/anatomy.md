@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-25T04:14:30.371Z
-> Files: 1490 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-25T04:23:49.992Z
+> Files: 1497 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../tmp/
 
@@ -1423,7 +1423,7 @@
 - `ADR-1003-processor-posture-and-healthcare-unlock.md` — ADR-1003: Processor Posture + Healthcare Category Unlock (~10912 tok)
 - `ADR-1004-statutory-retention-material-change-silent-failure.md` — ADR-1004: Statutory Retention + Material-Change Re-consent + Silent-Failure Detection (~7531 tok)
 - `ADR-1005-operations-maturity.md` — ADR-1005: Operations Maturity — Webhook Reference, Support Model, Status Page, Multi-channel Alerts, (~7076 tok)
-- `ADR-1006-developer-experience-and-openapi.md` — ADR-1006: Developer Experience — Client Libraries + OpenAPI Spec + CI Drift Check (~5308 tok)
+- `ADR-1006-developer-experience-and-openapi.md` — ADR-1006: Developer Experience — Client Libraries + OpenAPI Spec + CI Drift Check (~6553 tok)
 - `ADR-1007-connector-ecosystem-expansion.md` — ADR-1007: Connector Ecosystem Expansion + Platform Plugins (~2738 tok)
 - `ADR-1008-scale-audit-polish-and-p3-hardening.md` — ADR-1008: Scale + Audit Polish + P3 Hardening (~3065 tok)
 - `ADR-1009-v1-api-role-hardening.md` — ADR-1009: v1 API role hardening — remove service-role shortcut, adopt `cs_api` as designed (~5564 tok)
@@ -1445,7 +1445,7 @@
 - `ADR-1025-customer-storage-auto-provisioning.md` — ADR-1025: Customer storage auto-provisioning — hybrid managed R2 default + BYOK escape hatch (~13370 tok)
 - `ADR-1026-drop-hyperdrive-direct-supavisor.md` — ADR-1026: Rewind ADR-1010 Phase 3 — Worker connects directly to Supavisor; drop Hyperdrive binding (~5467 tok)
 - `ADR-1027-admin-account-awareness.md` — ADR-1027: Admin Account-Awareness Pass (~8082 tok)
-- `ADR-index.md` — ADR Index (~8661 tok)
+- `ADR-index.md` — ADR Index (~8988 tok)
 - `ADR-template.md` — ADR-NNNN: Title (~423 tok)
 - `adr-workflow.md` — ADR Workflow Rules (~557 tok)
 
@@ -1473,7 +1473,7 @@
 
 ## docs/changelogs/
 
-- `CHANGELOG-api.md` — Changelog — API (~43534 tok)
+- `CHANGELOG-api.md` — Changelog — API (~45091 tok)
 - `CHANGELOG-dashboard.md` — Changelog — Dashboard (~29589 tok)
 - `CHANGELOG-docs.md` — Changelog — Documentation (~14619 tok)
 - `CHANGELOG-edge-functions.md` — Changelog — Edge Functions (~4251 tok)
@@ -1845,20 +1845,27 @@
 
 ## packages/node-client/src/
 
-- `client.ts` — Configuration for a `ConsentShieldClient` instance. (~2132 tok)
+- `artefacts.ts` — Opaque cursor returned by a previous call. Pass `null`/omit to start. (~679 tok)
+- `audit.ts` — ADR-1006 Phase 1 Sprint 1.3 — listAuditLog + cursor iterator. (~366 tok)
+- `client.ts` — Configuration for a `ConsentShieldClient` instance. (~4340 tok)
+- `deletion.ts` — Required when reason === 'consent_revoked'; otherwise optional. (~1370 tok)
 - `errors.ts` — RFC 7807 problem-document body shape — matches `app/src/lib/api/auth.ts` (~1382 tok)
+- `events.ts` — ADR-1006 Phase 1 Sprint 1.3 — listEvents (consent events). (~400 tok)
 - `http.ts` — Subset of the global fetch signature we depend on — sufficient for stubs. (~2378 tok)
-- `index.ts` — ADR-1006 Phase 1 — `@consentshield/node` public surface. (~248 tok)
+- `index.ts` — ADR-1006 Phase 1 — `@consentshield/node` public surface. (~517 tok)
 - `record.ts` — Purpose definition ids the data principal accepted. MUST be non-empty. (~953 tok)
 - `revoke.ts` — Free-form short code surfaced in the audit trail. Required. (~548 tok)
+- `rights.ts` — Description of how the requestor's identity was confirmed (e.g. "in-branch ID check by branch-mgr-AB (~1321 tok)
 - `types.ts` — §5.1 verify-result statuses. Stable contract — adding a value is a (~2354 tok)
-- `verify.ts` — Single-identifier verify input. camelCase per JS/TS convention. (~2231 tok)
+- `verify.ts` — Single-identifier verify input. camelCase per JS/TS convention. (~2811 tok)
 
 ## packages/node-client/tests/
 
 - `client.test.ts` — ADR-1006 Phase 1 Sprint 1.1 — ConsentShieldClient constructor + defaults. (~1506 tok)
 - `errors.test.ts` — ADR-1006 Phase 1 Sprint 1.1 — error class hierarchy. (~933 tok)
+- `fail-open-callback.test.ts` — ADR-1006 Phase 1 Sprint 1.3 — onFailOpen callback wiring. (~2094 tok)
 - `http.test.ts` — ADR-1006 Phase 1 Sprint 1.1 — HTTP transport behaviour. (~3343 tok)
+- `methods.test.ts` — ADR-1006 Phase 1 Sprint 1.3 — record/revoke/artefacts/events/deletion/ (~5145 tok)
 - `verify-batch.test.ts` — ADR-1006 Phase 1 Sprint 1.2 — verifyBatch() compliance behaviour. (~2450 tok)
 - `verify.test.ts` — ADR-1006 Phase 1 Sprint 1.2 — verify() compliance behaviour. (~2769 tok)
 

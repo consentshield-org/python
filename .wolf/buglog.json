@@ -15070,6 +15070,86 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-04-25T04:13:49.143Z"
+    },
+    {
+      "id": "bug-939",
+      "timestamp": "2026-04-25T04:16:17.508Z",
+      "error_message": "Type error",
+      "file": "packages/node-client/src/verify.ts",
+      "root_cause": "Missing or incorrect type annotation",
+      "fix": "Added type assertion/annotation | Also: invokeFailOpenCallback(onFailOpen, outcome.open, 'verifyBatc; /**",
+      "tags": [
+        "auto-detected",
+        "type-fix",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-04-25T04:16:50.158Z"
+    },
+    {
+      "id": "bug-940",
+      "timestamp": "2026-04-25T04:17:59.058Z",
+      "error_message": "Wrong return value",
+      "file": "packages/node-client/src/client.ts",
+      "root_cause": "Was returning: verifyImpl(this.http, input, this.failOpen)",
+      "fix": "Now returns: verifyImpl(this.http, input, this.failOpen, this.o",
+      "tags": [
+        "auto-detected",
+        "return-value",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T04:17:59.058Z"
+    },
+    {
+      "id": "bug-941",
+      "timestamp": "2026-04-25T04:18:33.343Z",
+      "error_message": "Missing await",
+      "file": "packages/node-client/src/client.ts",
+      "root_cause": "Async call without await — returned Promise instead of value",
+      "fix": "Added await to async call",
+      "tags": [
+        "auto-detected",
+        "async-fix",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T04:18:33.343Z"
+    },
+    {
+      "id": "bug-942",
+      "timestamp": "2026-04-25T04:22:28.353Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/ADRs/ADR-1006-developer-experience-and-openapi.md",
+      "root_cause": "12 lines replaced/restructured",
+      "fix": "Rewrote 17→23 lines (12 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T04:22:28.353Z"
+    },
+    {
+      "id": "bug-943",
+      "timestamp": "2026-04-25T04:23:50.003Z",
+      "error_message": "Missing await",
+      "file": "docs/changelogs/CHANGELOG-api.md",
+      "root_cause": "Async call without await — returned Promise instead of value",
+      "fix": "Added await to async call",
+      "tags": [
+        "auto-detected",
+        "async-fix",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T04:23:50.003Z"
     }
   ]
 }

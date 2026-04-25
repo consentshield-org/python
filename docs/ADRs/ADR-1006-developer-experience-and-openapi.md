@@ -113,23 +113,29 @@ Ship four languages and one specification:
 
 **Status:** `[x] complete 2026-04-25 — verify + verifyBatch ship with the non-negotiable compliance contract (4xx-always-throws + fail-closed default + fail-open opt-in with cause discriminator). 64 unit tests pass; typecheck clean. Sprint 1.3 next: record + revoke + triggerDeletion + artefact CRUD + automatic audit POST for fail-open overrides.`
 
-#### Sprint 1.3: Record + revoke + triggerDeletion + artefact helpers
-
-**Estimated effort:** 2 days
+#### Sprint 1.3: Record + revoke + triggerDeletion + artefact helpers + audit-trail wiring
 
 **Deliverables:**
-- [ ] `client.recordConsent(...)` → returns `{ eventId, artefactIds, createdAt }`
-- [ ] `client.revokeArtefact(id, { reasonCode, actorType })`
-- [ ] `client.triggerDeletion(...)` → returns receipt IDs
-- [ ] `client.listArtefacts({ ... })` with cursor iteration
-- [ ] `client.getArtefact(id)`
-- [ ] `client.listRightsRequests({ ... })` + `client.createRightsRequest(...)`
+- [x] `src/types.ts` extended with every Sprint 1.3 envelope: `RecordEnvelope` + `RecordedArtefact`, `RevokeEnvelope`, `ArtefactListItem` + `ArtefactListEnvelope` + `ArtefactDetail` + `ArtefactRevocation`, `EventListItem` + `EventListEnvelope`, `DeletionReason` + `DeletionTriggerEnvelope` + `DeletionReceiptRow` + `DeletionReceiptsEnvelope`, `RightsRequestType` + `RightsRequestStatus` + `RightsCapturedVia` + `RightsRequestCreatedEnvelope` + `RightsRequestItem` + `RightsRequestListEnvelope`, `AuditLogItem` + `AuditLogEnvelope`. snake_case fields preserved (server contract).
+- [x] **Eight method modules** under `packages/node-client/src/`:
+  - `record.ts` — `recordConsent({ propertyId, dataPrincipalIdentifier, identifierType, purposeDefinitionIds, rejectedPurposeDefinitionIds?, capturedAt, clientRequestId? })` → POST `/v1/consent/record`. Synchronous gates: empty `purposeDefinitionIds` → `RangeError`; non-string entry → `TypeError`. `clientRequestId` is the idempotency key — same id within the org dedupes to the same `event_id` with `idempotent_replay: true`.
+  - `revoke.ts` — `revokeArtefact(artefactId, { reasonCode, reasonNotes?, actorType, actorRef? })` → POST `/v1/consent/artefacts/{id}/revoke`. URL-encodes the artefact id. Synchronous gates: missing reasonCode → `TypeError`; invalid actorType (not `user|operator|system`) → `TypeError`. Server returns 409 Conflict on terminal-state artefact (revoked + replaced) — surfaced as `ConsentShieldApiError`.
+  - `artefacts.ts` — `listArtefacts({ propertyId?, purposeCode?, status?, identifierType?, cursor?, limit? })` + `iterateArtefacts(...)` async-iterator + `getArtefact(id, { traceId?, signal? })` (returns `ArtefactDetail | null` — null when the JSON body is `null` for an unknown id; URL-encoded path).
+  - `events.ts` — `listEvents` + `iterateEvents`.
+  - `deletion.ts` — `triggerDeletion({ propertyId, dataPrincipalIdentifier, identifierType, reason, purposeCodes?, scopeOverride?, actorType?, actorRef? })` + `listDeletionReceipts` + `iterateDeletionReceipts`. Synchronous gates: `reason` must be `consent_revoked|erasure_request|retention_expired`; `purposeCodes` REQUIRED when `reason === 'consent_revoked'`.
+  - `rights.ts` — `createRightsRequest({ type, requestorName, requestorEmail, requestDetails?, identityVerifiedBy, capturedVia? })` + `listRightsRequests` + `iterateRightsRequests`. Synchronous gates: `type` must be `erasure|access|correction|nomination`; `status` must be `new|in_progress|completed|rejected`; `capturedVia` must be one of the eight whitelisted strings.
+  - `audit.ts` — `listAuditLog({ eventType?, entityType?, createdAfter?, createdBefore?, cursor?, limit? })` + `iterateAuditLog`.
+- [x] **Compliance-load-bearing audit-trail wiring** — closes the Sprint 1.2 deferred deliverable. New `onFailOpen` constructor option of type `FailOpenCallback = (envelope, ctx: { method: 'verify' | 'verifyBatch' }) => void | Promise<void>`. Default implementation: structured `console.warn('[@consentshield/node] fail-open verify override', { method, cause, reason, traceId })`. Production callers wire to Sentry / a structured logger / a custom `/v1/audit` POST. Fire-and-forget — promise return is NOT awaited; throws inside the callback are caught + emitted via `console.error` and never break the verify call site. `verify()` and `verifyBatch()` invoke it once after building the `OpenFailureEnvelope`, before returning.
+- [x] `client.ts` — wires the 9 new methods + 5 async-iterator helpers + the `onFailOpen` option onto `ConsentShieldClient`. JSDoc on each method spells out the route + idempotency semantics.
+- [x] `index.ts` — re-exports every new envelope type + input type + `FailOpenCallback`.
 
-**Testing plan:**
-- [ ] Each method tested against mock server
-- [ ] Idempotent revoke replay returns same revocation_record_id
+**Tested:**
+- [x] `cd packages/node-client && bun run test` — **94 passed** (7 files, +30 over Sprint 1.2's 64) — PASS
+- [x] `cd packages/node-client && bun run typecheck` — clean — PASS
+- [x] `tests/methods.test.ts` (~22 cases) — for each of the 8 method modules: snake_case body / query composition, URL encoding for path params (artefact id with `/`/`#`/`&`/`?`), synchronous validation gates fire BEFORE fetch (none of these gate-trigger cases call `fetchMock`), 4xx surfaces as `ConsentShieldApiError` (sample: revoke 409 Conflict on terminal-state artefact), `getArtefact` returns null on JSON-null body for unknown id, `iterateArtefacts` walks 2 pages by following `next_cursor`, `triggerDeletion` rejects `reason=consent_revoked` without `purposeCodes` synchronously, `triggerDeletion` allows `reason=erasure_request` without `purposeCodes`, `createRightsRequest` rejects invalid `type`, `listRightsRequests` rejects invalid `status`.
+- [x] `tests/fail-open-callback.test.ts` (8 cases) — fires once on `verify` fail-open with method ctx + envelope + traceId; fires once on `verifyBatch` fail-open with `method=verifyBatch`; does NOT fire on success / `failOpen=false` / 4xx (4xx-always-throws); does not crash the call site when callback throws synchronously OR returns a rejected promise (both surfaced via `console.error`); default callback (no `onFailOpen` supplied) emits a structured `console.warn`.
 
-**Status:** `[ ] planned`
+**Status:** `[x] complete 2026-04-25 — record + revoke + triggerDeletion + 5 list+iterate helpers + getArtefact + createRightsRequest + listRightsRequests + listAuditLog ship; onFailOpen audit-trail callback closes the Sprint 1.2 deferred deliverable. 94 unit tests pass; typecheck clean. Sprint 1.4 next: dual ESM+CJS build via tsup + .d.ts emission + npm publish + Express/Next.js integration examples.`
 
 #### Sprint 1.4: Publish + integration examples
 

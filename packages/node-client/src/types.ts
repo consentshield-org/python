@@ -56,6 +56,198 @@ export interface VerifyBatchEnvelope {
   results: VerifyBatchResultRow[]
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+// ADR-1006 Sprint 1.3 — record + revoke + artefact CRUD + events + deletion
+// + rights + audit envelope shapes. Mirror the server contracts in
+// app/src/lib/{consent,deletion,api}/* exactly.
+// ─────────────────────────────────────────────────────────────────────────
+
+/** One artefact created by a `recordConsent` call. */
+export interface RecordedArtefact {
+  purpose_definition_id: string
+  purpose_code: string
+  artefact_id: string
+  status: string
+}
+
+/** §5.2 record-consent response envelope. */
+export interface RecordEnvelope {
+  event_id: string
+  created_at: string
+  artefact_ids: RecordedArtefact[]
+  /** True when the same `client_request_id` already produced this event — replay-safe by design. */
+  idempotent_replay: boolean
+}
+
+/** §5.3 revoke-artefact response envelope. */
+export interface RevokeEnvelope {
+  artefact_id: string
+  status: 'revoked'
+  revocation_record_id: string
+  /** True when the artefact was already revoked — replay-safe. */
+  idempotent_replay: boolean
+}
+
+/** Single row in the GET /v1/consent/artefacts list. */
+export interface ArtefactListItem {
+  artefact_id: string
+  property_id: string
+  purpose_code: string
+  purpose_definition_id: string
+  data_scope: string[]
+  framework: string
+  status: string
+  expires_at: string | null
+  revoked_at: string | null
+  revocation_record_id: string | null
+  replaced_by: string | null
+  identifier_type: string | null
+  created_at: string
+}
+
+export interface ArtefactListEnvelope {
+  items: ArtefactListItem[]
+  /** Opaque cursor — pass back into `cursor` to fetch the next page; `null` when exhausted. */
+  next_cursor: string | null
+}
+
+/** Revocation detail attached to GET /v1/consent/artefacts/{id}. */
+export interface ArtefactRevocation {
+  id: string
+  reason: string | null
+  revoked_by_type: string
+  revoked_by_ref: string | null
+  created_at: string
+}
+
+/** Full artefact detail returned by `getArtefact(id)`. */
+export interface ArtefactDetail extends ArtefactListItem {
+  revocation: ArtefactRevocation | null
+  /** Chain of artefact_ids superseding this one, oldest → newest. */
+  replacement_chain: string[]
+}
+
+/** Single row in the GET /v1/consent/events list. */
+export interface EventListItem {
+  id: string
+  property_id: string
+  source: string
+  event_type: string
+  purposes_accepted_count: number
+  purposes_rejected_count: number
+  identifier_type: string | null
+  artefact_count: number
+  created_at: string
+}
+
+export interface EventListEnvelope {
+  items: EventListItem[]
+  next_cursor: string | null
+}
+
+/** Reason discriminator for `triggerDeletion`. */
+export type DeletionReason = 'consent_revoked' | 'erasure_request' | 'retention_expired'
+
+/** §5.5 deletion-trigger response envelope. */
+export interface DeletionTriggerEnvelope {
+  reason: DeletionReason
+  revoked_artefact_ids: string[]
+  revoked_count: number | null
+  initial_status: string
+  note: string
+}
+
+/** Single row in the GET /v1/deletion/receipts list. */
+export interface DeletionReceiptRow {
+  id: string
+  trigger_type: string
+  trigger_id: string | null
+  artefact_id: string | null
+  connector_id: string | null
+  target_system: string
+  status: string
+  retry_count: number
+  failure_reason: string | null
+  requested_at: string | null
+  confirmed_at: string | null
+  created_at: string
+}
+
+export interface DeletionReceiptsEnvelope {
+  items: DeletionReceiptRow[]
+  next_cursor: string | null
+}
+
+/** Allowed values for `createRightsRequest({ type })`. */
+export type RightsRequestType = 'erasure' | 'access' | 'correction' | 'nomination'
+
+/** Allowed values for `listRightsRequests({ status })`. */
+export type RightsRequestStatus = 'new' | 'in_progress' | 'completed' | 'rejected'
+
+/** Allowed values for `createRightsRequest({ capturedVia })`. */
+export type RightsCapturedVia =
+  | 'portal'
+  | 'api'
+  | 'kiosk'
+  | 'branch'
+  | 'call_center'
+  | 'mobile_app'
+  | 'email'
+  | 'other'
+
+/** Response envelope from POST /v1/rights/requests. */
+export interface RightsRequestCreatedEnvelope {
+  id: string
+  status: RightsRequestStatus
+  request_type: RightsRequestType
+  captured_via: RightsCapturedVia
+  identity_verified: boolean
+  identity_verified_by: string
+  /** ISO 8601 — DPDP §13(3) hard-coded 30-day SLA from the server. */
+  sla_deadline: string
+  created_at: string
+}
+
+/** Single row in the GET /v1/rights/requests list. */
+export interface RightsRequestItem {
+  id: string
+  request_type: RightsRequestType
+  requestor_name: string
+  requestor_email: string
+  status: RightsRequestStatus
+  captured_via: RightsCapturedVia
+  identity_verified: boolean
+  identity_verified_at: string | null
+  identity_method: string | null
+  sla_deadline: string
+  response_sent_at: string | null
+  created_by_api_key_id: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface RightsRequestListEnvelope {
+  items: RightsRequestItem[]
+  next_cursor: string | null
+}
+
+/** Single row in the GET /v1/audit list. */
+export interface AuditLogItem {
+  id: string
+  actor_id: string | null
+  actor_email: string | null
+  event_type: string
+  entity_type: string | null
+  entity_id: string | null
+  payload: unknown
+  created_at: string
+}
+
+export interface AuditLogEnvelope {
+  items: AuditLogItem[]
+  next_cursor: string | null
+}
+
 /**
  * Fail-open shape returned by `verify` / `verifyBatch` when:
  *   (a) the SDK is in fail-open mode (`failOpen: true` or
