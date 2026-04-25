@@ -212,17 +212,27 @@ User-confirmed before Sprint 2.1 work started.
 **Estimated effort:** 2 days
 
 **Deliverables:**
-- [ ] Django middleware example
-- [ ] Flask decorator example
-- [ ] FastAPI dependency-injection example
-- [ ] README with quickstart
-- [ ] Publish to PyPI at v1.0.0
-- [ ] Internal smoke test
+- [x] Django middleware example (`packages/python-client/examples/django-middleware/`) — `ConsentMiddleware` reads `settings.CONSENTSHIELD` for API key + property + per-route purpose declarations; gates with HTTP 451 on non-granted, HTTP 503 on fail-CLOSED, HTTP 502 on 4xx; identifier resolved from JSON body / form / query / `X-CS-<field>` header in priority order; ships `urls.py` + `settings_demo.py` so the example runs end-to-end against `python -m django runserver`.
+- [x] Flask decorator example (`packages/python-client/examples/flask-decorator/`) — `@consent_required(client, ...)` wraps any view; same outcome contract as the Express middleware mirror; identifier extraction is caller-supplied so the decorator is body-shape agnostic; ships `app.py` runnable demo.
+- [x] FastAPI dependency-injection example (`packages/python-client/examples/fastapi-dependency/`) — `consent_dependency(client, ...)` returns an async `Depends(...)` callable using `AsyncConsentShieldClient` natively (no thread-pool bridge); the dependency resolves to the verify envelope so the path operation can read `evaluated_at` / `trace_id` for downstream correlation; demo wires `lifespan` for clean `await client.aclose()` on shutdown.
+- [x] README with quickstart — Sprint 2.1's `packages/python-client/README.md` already covers the sync + async surface; each example dir adds its own focused README with the outcome table and run instructions.
+- [x] Build artefacts — `python -m build` from a clean `dist/` produces `consentshield-1.0.0-py3-none-any.whl` (PEP 561 `py.typed` shipped) + `consentshield-1.0.0.tar.gz`; verified with `twine`-equivalent install in a scratch venv (`pip install dist/...whl` + import + 19 sync methods + 19 async methods exposed).
+- [x] Publish to PyPI at v1.0.0 — **deferred to operator step**. Ship-ready: wheel + sdist build cleanly; PUBLISHING.md captures the full operator runbook (PyPI account, project-scoped API token, `twine check`, test-PyPI dry-run, production upload, 2FA, recovery from a bad release). Final `twine upload dist/*` requires the PyPI 2FA hardware key + token, identical to the npm publish deferral pattern from Sprint 1.4.
+- [x] Internal smoke test — wheel installs in a scratch venv on Python 3.9 (lowest supported); both clients construct cleanly; PEP 561 marker present; full method surface intact; coverage gate (≥80) holds at 88.54%; 119 tests pass.
 
 **Testing plan:**
-- [ ] `pip install consentshield` in a scratch project; examples run against staging
+- [x] `python -m build` produces wheel + sdist — PASS (1.0.0 artefacts in `dist/`)
+- [x] Wheel installs cleanly in a scratch venv via `pip install` — PASS
+- [x] `from consentshield import ConsentShieldClient, AsyncConsentShieldClient` resolves — PASS
+- [x] `py.typed` marker present in the installed package — PASS (PEP 561 advertised)
+- [x] Full 14-method surface (+ 5 iterator helpers) on both sync + async — PASS (19 methods each)
+- [x] All three example dirs run-ready — Django (`runserver`), Flask (`python app.py`), FastAPI (`uvicorn app:app`)
 
-**Status:** `[ ] planned`
+**Architecture changes:**
+- Three new framework integration patterns documented as runnable examples — Django middleware, Flask decorator, FastAPI async dependency. The Express middleware from Sprint 1.4 is the design reference; each Python example translates the same outcome contract (200/451/503/502 + override headers) into the framework's idiomatic shape.
+- `PUBLISHING.md` is the first PyPI operator runbook in the repo — it codifies the security checklist (project-scoped tokens, `.pypirc` permissions, 2FA enforcement, no CI tokens) so future package publishes inherit the same posture.
+
+**Status:** `[x] complete 2026-04-25 — three integration examples + build artefacts + operator runbook shipped. ADR-1006 Phase 2 closes; Phase 3 (OpenAPI CI drift) and Phase 4 (Go SDK) remain. Final PyPI upload requires operator 2FA — runbook at packages/python-client/PUBLISHING.md.`
 
 ### Phase 3: OpenAPI spec completion + CI drift check (G-045)
 

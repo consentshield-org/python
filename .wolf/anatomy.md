@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-25T06:50:10.888Z
-> Files: 1545 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-25T07:53:20.485Z
+> Files: 1556 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../tmp/
 
@@ -246,7 +246,7 @@
 ## .claude/
 
 - `session-handoff-terminal-a.md` — Session handoff — 2026-04-25 (Terminal A — ADR-1003 Sprint 4.1 + Phase 1 operator actions) (~4412 tok)
-- `session-handoff.md` — Session handoff — 2026-04-25 (Terminal B) (~7739 tok)
+- `session-handoff.md` — Session handoff — 2026-04-25 (Terminal B) (~4700 tok)
 
 ## .github/ISSUE_TEMPLATE/
 
@@ -1424,7 +1424,7 @@
 - `ADR-1003-processor-posture-and-healthcare-unlock.md` — ADR-1003: Processor Posture + Healthcare Category Unlock (~10912 tok)
 - `ADR-1004-statutory-retention-material-change-silent-failure.md` — ADR-1004: Statutory Retention + Material-Change Re-consent + Silent-Failure Detection (~7531 tok)
 - `ADR-1005-operations-maturity.md` — ADR-1005: Operations Maturity — Webhook Reference, Support Model, Status Page, Multi-channel Alerts, (~7076 tok)
-- `ADR-1006-developer-experience-and-openapi.md` — ADR-1006: Developer Experience — Client Libraries + OpenAPI Spec + CI Drift Check (~9371 tok)
+- `ADR-1006-developer-experience-and-openapi.md` — ADR-1006: Developer Experience — Client Libraries + OpenAPI Spec + CI Drift Check (~10253 tok)
 - `ADR-1007-connector-ecosystem-expansion.md` — ADR-1007: Connector Ecosystem Expansion + Platform Plugins (~2738 tok)
 - `ADR-1008-scale-audit-polish-and-p3-hardening.md` — ADR-1008: Scale + Audit Polish + P3 Hardening (~3065 tok)
 - `ADR-1009-v1-api-role-hardening.md` — ADR-1009: v1 API role hardening — remove service-role shortcut, adopt `cs_api` as designed (~5564 tok)
@@ -1446,7 +1446,7 @@
 - `ADR-1025-customer-storage-auto-provisioning.md` — ADR-1025: Customer storage auto-provisioning — hybrid managed R2 default + BYOK escape hatch (~13370 tok)
 - `ADR-1026-drop-hyperdrive-direct-supavisor.md` — ADR-1026: Rewind ADR-1010 Phase 3 — Worker connects directly to Supavisor; drop Hyperdrive binding (~5467 tok)
 - `ADR-1027-admin-account-awareness.md` — ADR-1027: Admin Account-Awareness Pass (~8082 tok)
-- `ADR-index.md` — ADR Index (~9827 tok)
+- `ADR-index.md` — ADR Index (~10227 tok)
 - `ADR-template.md` — ADR-NNNN: Title (~423 tok)
 - `adr-workflow.md` — ADR Workflow Rules (~557 tok)
 
@@ -1474,7 +1474,7 @@
 
 ## docs/changelogs/
 
-- `CHANGELOG-api.md` — Changelog — API (~48581 tok)
+- `CHANGELOG-api.md` — Changelog — API (~50126 tok)
 - `CHANGELOG-dashboard.md` — Changelog — Dashboard (~29589 tok)
 - `CHANGELOG-docs.md` — Changelog — Documentation (~14619 tok)
 - `CHANGELOG-edge-functions.md` — Changelog — Edge Functions (~4251 tok)
@@ -1925,8 +1925,28 @@
 ## packages/python-client/
 
 - `LICENSE.md` — ConsentShield Python Client — License (~348 tok)
+- `PUBLISHING.md` — PUBLISHING — `consentshield` (PyPI) (~1338 tok)
 - `pyproject.toml` — Official Python client for the ConsentShield DPDP compliance API. Fail-closed by default; 2-second r (~586 tok)
 - `README.md` — Project documentation (~1245 tok)
+
+## packages/python-client/examples/django-middleware/
+
+- `consent_middleware.py` — ADR-1006 Phase 2 Sprint 2.2 — Django consent middleware example. (~1516 tok)
+- `README.md` — Project documentation (~505 tok)
+- `settings_demo.py` — Minimal Django settings for running the consent-middleware demo. (~288 tok)
+- `urls.py` — Demo URLconf for the Django middleware example. Wire into your (~230 tok)
+
+## packages/python-client/examples/fastapi-dependency/
+
+- `app.py` — FastAPI demo. Run with: (~434 tok)
+- `consent_dependency.py` — ADR-1006 Phase 2 Sprint 2.2 — FastAPI Depends(...) consent gate. (~1405 tok)
+- `README.md` — Project documentation (~577 tok)
+
+## packages/python-client/examples/flask-decorator/
+
+- `app.py` — Flask demo wiring the @consent_required decorator on /api/marketing/send. (~374 tok)
+- `consent_required.py` — ADR-1006 Phase 2 Sprint 2.2 — Flask `@consent_required` decorator. (~1211 tok)
+- `README.md` — Project documentation (~365 tok)
 
 ## packages/python-client/src/consentshield/
 

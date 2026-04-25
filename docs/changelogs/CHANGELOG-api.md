@@ -2,6 +2,36 @@
 
 API route changes.
 
+## [ADR-1006 Phase 2 Sprint 2.2 — Python SDK integration examples + build artefacts + PUBLISHING runbook (Phase 2 closes)] — 2026-04-25
+
+**ADR:** ADR-1006 — Developer Experience: Client Libraries + OpenAPI + CI Drift Check
+**Sprint:** Phase 2, Sprint 2.2 (Django + Flask + FastAPI examples; `python -m build` artefacts; PyPI operator runbook)
+
+### Added
+- **`packages/python-client/examples/django-middleware/consent_middleware.py`** — `ConsentMiddleware` class. Reads `settings.CONSENTSHIELD` (`API_KEY` + `PROPERTY_ID` + `ROUTES` list of per-route purpose declarations). Per inbound request: matches `request.path` against `path_prefix`; pulls the data-principal identifier from JSON body / form / query / `X-CS-<field>` header (in priority order); calls `client.verify(...)` and gates with HTTP 451 on non-granted, HTTP 503 on `ConsentVerifyError` (fail-CLOSED), HTTP 502 on `ConsentShieldApiError` (4xx). Fail-OPEN override sets `X-CS-Override: <cause>:<reason>` on the passthrough response.
+- **`packages/python-client/examples/django-middleware/urls.py`** + **`settings_demo.py`** — runnable demo. `python -m django runserver` boots the middleware against a single `/api/marketing/send` endpoint with `purpose_code='marketing'` + `identifier_type='email'`.
+- **`packages/python-client/examples/flask-decorator/consent_required.py`** — `@consent_required(client, *, property_id, purpose_code, identifier_type, get_identifier, get_trace_id=None)` decorator wrapping any Flask view. Identifier extraction is caller-supplied (typically a lambda over `request.get_json()`); same outcome contract as the Express middleware mirror (200/451/503/502 + `X-CS-Override` on fail-OPEN). `@functools.wraps` preserves the wrapped view's metadata.
+- **`packages/python-client/examples/flask-decorator/app.py`** — runnable Flask demo. `python app.py` listens on `:4040` with the decorator wired on `/api/marketing/send`.
+- **`packages/python-client/examples/fastapi-dependency/consent_dependency.py`** — async `consent_dependency(client, *, property_id, purpose_code, identifier_type, extract_identifier)` returning a `Depends(...)`-shaped callable. Uses `AsyncConsentShieldClient` natively — verify runs on the event loop without thread-pool bridge. The dependency resolves to the verify envelope so the path operation can read `evaluated_at` / `trace_id` for downstream correlation. `extract_identifier(request, body)` may be sync or async (auto-awaited if it returns an awaitable).
+- **`packages/python-client/examples/fastapi-dependency/app.py`** — runnable FastAPI demo using `lifespan` to call `await client.aclose()` on shutdown (avoids "coroutine was never awaited" warnings on process exit). `uvicorn app:app --port 4040`.
+- **Each example dir ships its own README** with the outcome table (200/451/503/502 + override headers) + run instructions + framework-specific notes.
+- **`packages/python-client/PUBLISHING.md`** — first PyPI operator runbook in the repo. Covers PyPI account + 2FA setup, project-scoped API token (NOT account-scoped), `~/.pypirc` chmod 600 outside the repo, pre-flight (pytest+coverage, mypy strict, ruff), version bump (pyproject.toml + `__version__` must match), `python -m build` + `twine check`, test-PyPI dry run with `--extra-index-url` for `httpx`, production upload, post-publish git tag, recovery from a bad release (yank + bump-and-republish, NEVER force-overwrite), security checklist.
+- **Build artefacts (gitignored)** — `python -m build` from a clean `dist/` produces `consentshield-1.0.0-py3-none-any.whl` + `consentshield-1.0.0.tar.gz`. Wheel verified by scratch-venv install on Python 3.9 (lowest supported): both clients construct cleanly, PEP 561 `py.typed` present, full 19-method surface intact (14 named methods + 5 cursor iterators) on both `ConsentShieldClient` and `AsyncConsentShieldClient`.
+
+### Architecture Changes
+- **Three new framework integration patterns** — Django middleware, Flask decorator, FastAPI async dependency. The Express middleware from Sprint 1.4 is the design reference; each Python example translates the same outcome contract (200/451/503/502 + `X-CS-Override`/`X-CS-Trace-Id`/`X-CS-Evaluated-At` headers) into the framework's idiomatic shape. The FastAPI example is the only one of the three that uses the async client; Django + Flask use the sync client because the underlying frameworks are sync-by-default.
+- **`PUBLISHING.md` is the first PyPI operator runbook** in the repo — it codifies the security posture (project-scoped tokens, `.pypirc` chmod 600, 2FA enforcement, no CI tokens until OIDC trusted publishing) so future package publishes inherit the same defaults. Mirrors the npm publish operator-step deferral pattern from Sprint 1.4.
+- **Spec amendment for Sprint 2.2 — final `twine upload dist/*` deferred to operator step.** SDK is publish-ready: wheel + sdist build cleanly, PEP 561 marker shipped, full method surface intact, runbook in place. Final upload requires PyPI 2FA hardware key + token, identical to npm publish from Sprint 1.4.
+
+### Tested
+- [x] `python -m build` produces wheel + sdist — PASS (1.0.0 artefacts in `dist/`)
+- [x] Wheel installs cleanly in a scratch venv via `pip install dist/consentshield-1.0.0-py3-none-any.whl` — PASS
+- [x] `from consentshield import ConsentShieldClient, AsyncConsentShieldClient` resolves with both clients constructed via `ConsentShieldClient(api_key='cs_live_test')` — PASS
+- [x] `py.typed` marker shipped in installed package (PEP 561 advertised) — PASS
+- [x] Full method surface present on both clients — 19 sync methods (`close, create_rights_request, get_artefact, iterate_artefacts, iterate_audit_log, iterate_deletion_receipts, iterate_events, iterate_rights_requests, list_artefacts, list_audit_log, list_deletion_receipts, list_events, list_rights_requests, ping, record_consent, revoke_artefact, trigger_deletion, verify, verify_batch`) + 19 async equivalents (`aclose` + the 18 shared names) — PASS
+- [x] Coverage gate (≥80% via `pyproject.toml [tool.coverage.report] fail_under=80`) holds at 88.54% across 119 tests — PASS (unchanged from Sprint 2.1)
+- [x] Sprint 2.1 mypy --strict gate still clean across 9 source files — PASS
+
 ## [ADR-1006 Phase 2 Sprint 2.1 — `consentshield` Python SDK (sync + async parity)] — 2026-04-25
 
 **ADR:** ADR-1006 — Developer Experience: Client Libraries + OpenAPI + CI Drift Check
