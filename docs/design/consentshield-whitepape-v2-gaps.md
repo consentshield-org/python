@@ -576,7 +576,7 @@ The v2.0 whitepaper accurately describes the **target product** at end-of-Phase-
 
 **Acceptance criteria:**
 - Java: `com.consentshield:consentshield-client:1.0.0` published to Maven Central
-- Go: `github.com/consentshield/go-client` available as Go module
+- Go: `github.com/consentshield-org/go-client` available as Go module
 - Both have API parity with Node.js (G-002) and Python (G-003) libraries
 - Both ship with fail-closed default
 - Spring Boot integration example for Java; net/http example for Go

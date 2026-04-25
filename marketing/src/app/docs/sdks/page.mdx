@@ -20,7 +20,7 @@ matches your stack.
 |---|---|---|---|
 | Node.js / TypeScript | [`@consentshield/node`](/docs/sdks/node) | `npm install @consentshield/node` | Node 18+ |
 | Python | [`consentshield`](/docs/sdks/python) | `pip install consentshield` | Python 3.9+ |
-| Go | [`github.com/consentshield/go-client`](/docs/sdks/go) | `go get github.com/consentshield/go-client` | Go 1.22+ |
+| Go | [`github.com/consentshield-org/go-client`](/docs/sdks/go) | `go get github.com/consentshield-org/go-client` | Go 1.22+ |
 
 All three are at **v1.0.0**, hand-rolled by us, exact-pinned, and
 ship the full 14-method API surface plus paginators for every list
@@ -113,7 +113,7 @@ if result["status"] != "granted":
   {
     label: 'Go',
     language: 'go',
-    code: `import consentshield "github.com/consentshield/go-client"
+    code: `import consentshield "github.com/consentshield-org/go-client"
 
 client, _ := consentshield.NewClient(consentshield.Config{
     APIKey: os.Getenv("CS_API_KEY"),

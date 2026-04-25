@@ -1,3 +1,3 @@
-module github.com/consentshield/go-client
+module github.com/consentshield-org/go-client
 
 go 1.22

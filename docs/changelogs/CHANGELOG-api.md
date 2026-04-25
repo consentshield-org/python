@@ -9,8 +9,8 @@ API route changes.
 
 ### Added
 
-#### Go SDK — `github.com/consentshield/go-client`
-- **`packages/go-client/go.mod`** — module `github.com/consentshield/go-client`, `go 1.22`. Zero runtime deps — pure standard library.
+#### Go SDK — `github.com/consentshield-org/go-client`
+- **`packages/go-client/go.mod`** — module `github.com/consentshield-org/go-client`, `go 1.22`. Zero runtime deps — pure standard library.
 - **`packages/go-client/consentshield.go`** — package documentation + `Version` constant. The compliance contract is captured in the package doc so `go doc` surfaces it on the package overview page.
 - **`packages/go-client/client.go`** — `Client` struct (concurrency-safe), `NewClient(cfg)` validating constructor, `Config.WithFailOpen(...)` builder for explicit fail-open control (always wins over env).
 - **`packages/go-client/errors.go`** — five-class hierarchy: `Error` interface (returns `TraceID()`), `*APIError` (status + RFC 7807 `*ProblemJSON`), `*NetworkError` (transport-level wrap, `Unwrap()`-able), `*TimeoutError` (per-attempt timeout, never retried), `*VerifyError` (compliance-critical wrap, `Unwrap()`-able). `IsAPIError(err)` + `IsVerifyError(err)` convenience predicates.
@@ -32,7 +32,7 @@ API route changes.
 
 ### Architecture Changes
 - **Phase 4 scope amendment 2026-04-25 — Java abandoned.** The original Phase 4 had two sprints: 4.1 Java (Maven Central) + 4.2 Go. Java was dropped because (a) BFSI customer demand has not surfaced yet, (b) the Java publish flow (Sonatype OSSRH onboarding + GPG signing + jakarta.* vs javax.* fork bookkeeping) is materially heavier than npm/PyPI/go-proxy, and (c) the OpenAPI spec at `marketing/public/openapi.yaml` is sufficient for Java callers to generate a client today. A native Java SDK can be picked up under a future ADR if Tier-1 BFSI adoption demands it.
-- **The Go SDK closes the SDK matrix for ADR-1006.** Three official SDKs ship at v1.0.0: Node (`@consentshield/node`), Python (`consentshield`), Go (`github.com/consentshield/go-client`). All three carry the same compliance contract (4xx ALWAYS errors, fail-CLOSED default, fail-OPEN env override, on-fail-open audit-trail callback in Node + Python, `errors.As`-discriminable in Go), the same trace-id round-trip (`X-CS-Trace-Id`), the same VerifyBatch boundary (10 000 identifiers, client-gated before network), and the same set of `OpenFailureCause` discriminators (`timeout` / `network` / `server_error`).
+- **The Go SDK closes the SDK matrix for ADR-1006.** Three official SDKs ship at v1.0.0: Node (`@consentshield/node`), Python (`consentshield`), Go (`github.com/consentshield-org/go-client`). All three carry the same compliance contract (4xx ALWAYS errors, fail-CLOSED default, fail-OPEN env override, on-fail-open audit-trail callback in Node + Python, `errors.As`-discriminable in Go), the same trace-id round-trip (`X-CS-Trace-Id`), the same VerifyBatch boundary (10 000 identifiers, client-gated before network), and the same set of `OpenFailureCause` discriminators (`timeout` / `network` / `server_error`).
 - **First Go module in the repo.** The SDK is the first Go production code in `packages/`. The repo's existing infrastructure (TypeScript + Python + Bun workspace) is unchanged; the Go module lives outside the Bun workspace and is built/tested via `go test ./...` from `packages/go-client/`.
 
 ### Tested

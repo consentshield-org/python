@@ -32,7 +32,7 @@ const DESCRIPTIONS: Record<string, { description?: string; keywords?: string[] }
   '/docs/sdks': { description: 'Node / Python / Go client libraries — overview + install matrix', keywords: ['libraries', 'client', 'package', 'npm', 'pypi', 'go module'] },
   '/docs/sdks/node': { description: '@consentshield/node — TypeScript-first SDK with sync + async surface (npm install)', keywords: ['node', 'typescript', 'npm', '@consentshield/node', 'express', 'nextjs', 'fail-open', 'fail-closed'] },
   '/docs/sdks/python': { description: 'consentshield (PyPI) — sync + async clients with httpx (pip install)', keywords: ['python', 'pypi', 'pip', 'consentshield', 'django', 'flask', 'fastapi', 'asyncio', 'httpx'] },
-  '/docs/sdks/go': { description: 'github.com/consentshield/go-client — context.Context-first idiomatic Go (go get)', keywords: ['go', 'golang', 'go module', 'gin', 'chi', 'net/http', 'context', 'paginator'] },
+  '/docs/sdks/go': { description: 'github.com/consentshield-org/go-client — context.Context-first idiomatic Go (go get)', keywords: ['go', 'golang', 'go module', 'gin', 'chi', 'net/http', 'context', 'paginator'] },
   '/docs/concepts/dpdp-in-3-minutes': { description: 'DPDP Act summary', keywords: ['dpdp', 'law', 'act', 'privacy'] },
   '/docs/concepts/artefacts-vs-events': { description: 'When to record which', keywords: ['artefact', 'event', 'depa'] },
   '/docs/concepts/purpose-definitions': { description: 'Anatomy of a purpose row', keywords: ['purpose', 'legal basis'] },

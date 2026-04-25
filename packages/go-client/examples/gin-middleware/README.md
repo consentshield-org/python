@@ -11,7 +11,7 @@ own module:
 cd packages/go-client/examples/gin-middleware
 go mod init consentshield-gin-example
 go get github.com/gin-gonic/gin
-go get github.com/consentshield/go-client@latest
+go get github.com/consentshield-org/go-client@latest
 # (then drop the `//go:build ignore` line off middleware.go +
 #  add a main.go that mounts the route)
 go run .

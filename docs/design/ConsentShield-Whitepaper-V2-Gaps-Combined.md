@@ -687,7 +687,7 @@ Bold cells are hard blockers — without them, the customer cannot contract.
 
 **Acceptance criteria:**
 - Java: `com.consentshield:consentshield-client:1.0.0` on Maven Central
-- Go: `github.com/consentshield/go-client` as Go module
+- Go: `github.com/consentshield-org/go-client` as Go module
 - API parity with Node + Python (G-002/G-003)
 - Fail-closed default
 - Spring Boot example (Java); net/http example (Go)

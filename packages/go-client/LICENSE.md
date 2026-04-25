@@ -2,7 +2,7 @@
 
 (c) 2026 Sudhindra Anegondhi. All rights reserved.
 
-This module — `github.com/consentshield/go-client` — is the official
+This module — `github.com/consentshield-org/go-client` — is the official
 Go client library for the ConsentShield DPDP compliance platform.
 
 ## Permitted use

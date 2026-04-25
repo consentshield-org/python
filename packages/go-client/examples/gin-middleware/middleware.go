@@ -9,7 +9,7 @@
 //	cd packages/go-client/examples/gin-middleware
 //	go mod init consentshield-gin-example
 //	go get github.com/gin-gonic/gin
-//	go get github.com/consentshield/go-client@latest
+//	go get github.com/consentshield-org/go-client@latest
 //	go run .
 
 //go:build ignore
@@ -21,7 +21,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	consentshield "github.com/consentshield/go-client"
+	consentshield "github.com/consentshield-org/go-client"
 )
 
 // Options mirror the net/http example.

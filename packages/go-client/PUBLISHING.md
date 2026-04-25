@@ -1,4 +1,4 @@
-# PUBLISHING — `github.com/consentshield/go-client`
+# PUBLISHING — `github.com/consentshield-org/go-client`
 
 Operator runbook for publishing the Go SDK. Go modules don't have a
 central registry — distribution is via Git tags on the public
@@ -8,15 +8,15 @@ GitHub repo, served through the Go module proxy
 ## Prerequisite — public Git repository
 
 The module path baked into `go.mod` is
-`github.com/consentshield/go-client`. The canonical Git repo MUST live
+`github.com/consentshield-org/go-client`. The canonical Git repo MUST live
 at that path, public, with the SDK at the repo root or a sub-directory
 called `go-client/` (the path resolves to the repo's root by default;
 if the SDK lives in a sub-directory the module path becomes
-`github.com/consentshield/<repo>/go-client`).
+`github.com/consentshield-org/<repo>/go-client`).
 
-If the org `consentshield` is not yet reserved on GitHub, reserve it
-first. Until then the module path is aspirational and `go get`
-returns 404.
+The org `consentshield-org` is reserved on GitHub (the bare
+`consentshield` name was unavailable at registration time). The
+canonical SDK repo lives at https://github.com/consentshield-org/go-client.
 
 ## Per-release tag
 
@@ -57,19 +57,19 @@ Mismatches cause `go get` to fail with "ambiguous version".
 ```sh
 # Force-fetch through the proxy.
 GOPROXY=https://proxy.golang.org GOFLAGS=-mod=mod \
-  go list -m -versions github.com/consentshield/go-client
+  go list -m -versions github.com/consentshield-org/go-client
 
 # Smoke install in a scratch project:
 mkdir -p /tmp/cs-go-smoke && cd /tmp/cs-go-smoke
 go mod init smoke
-go get github.com/consentshield/go-client@vX.Y.Z
+go get github.com/consentshield-org/go-client@vX.Y.Z
 go build .
 ```
 
 ## v2 + breaking changes
 
 A `v2` API requires the module path to gain a `/v2` suffix:
-`github.com/consentshield/go-client/v2`. This is the official Go
+`github.com/consentshield-org/go-client/v2`. This is the official Go
 module convention. New `v2.0.0+` tags will not be picked up by
 existing `v1` callers — that's the point: we never break compatibility
 in-place.
