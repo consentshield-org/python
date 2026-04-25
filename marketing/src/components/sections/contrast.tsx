@@ -10,9 +10,15 @@ export function Contrast() {
             Enforcement engines check reality.
           </h2>
           <p>
-            Every other DPDP tool in India is a documentation tool. They
-            record what you <em>say</em> your compliance posture is.
-            ConsentShield records what your website <em>actually does</em>.
+            There are two postures a DPDP tool can take. A{' '}
+            <strong>documentation tool</strong> records what you{' '}
+            <em>say</em> your compliance posture is — banner configured,
+            notice published, policy uploaded. An{' '}
+            <strong>enforcement engine</strong> records what your website{' '}
+            <em>actually does</em> — which third-party scripts fired,
+            whether the banner was respected, whether revocation actually
+            stopped the downstream flow. ConsentShield is built as an
+            enforcement engine.
           </p>
         </div>
         <div className="contrast-grid">

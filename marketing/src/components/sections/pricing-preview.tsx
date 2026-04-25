@@ -74,9 +74,9 @@ const TIERS: Tier[] = [
     ctaHref: '/contact',
     features: [
       'Everything in Pro',
-      'White-label + custom domains',
+      'White-label + custom domains (phased rollout — ADR-0800 series)',
       'Unlimited deletion connectors',
-      'DPO matchmaking',
+      'DPO matchmaking (Proposed · Q3/Q4 2026)',
       'BFSI Regulatory Exemption Engine',
     ],
   },

@@ -39,7 +39,7 @@ export function Story() {
           <StoryCard
             num="02"
             title="Enforce"
-            body="Real-time tracker monitoring against a signature database. When a user withdraws consent, ConsentShield revokes the artefact, orchestrates deletion across connected systems, and verifies enforcement with a re-scan."
+            body="Real-time tracker monitoring against a signature database. When a user withdraws consent, ConsentShield revokes the artefact, evicts it from the validity cache, and issues a signed deletion request to each connected system. Connectors perform the actual delete and post back a signed receipt; tracker observations are correlated against revoked artefacts to flag any downstream firing."
             points={[
               'Tracker detection for GA, Meta, CleverTap, Razorpay, others',
               'Artefact-scoped deletion with signed receipts',
@@ -68,7 +68,7 @@ export function Story() {
             title="Prove"
             body={
               <>
-                One-click DPB-formatted evidence package. The full artefact
+                One-click DPB-ready evidence package. The full artefact
                 register, consent logs, tracker observations, violation
                 history, and deletion receipts — written to{' '}
                 <strong>your</strong> storage, not ours. ConsentShield is a

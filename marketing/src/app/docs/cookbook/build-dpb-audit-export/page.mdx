@@ -21,11 +21,25 @@ compliance team needs to compile it in under a week, and the DPB's
 format expectations include signed, immutable artefacts they can
 re-verify independently.
 
+<Callout tone="info" title="No DPB-published normative format yet">
+The Data Protection Board has not yet published a normative export
+format. The package shape on this page is ConsentShield's interpretation
+of likely DPB demand under DPDP §6(4) and §8(6); it will track any
+official DPB specification once published.
+</Callout>
+
 ## Shape
 
 A DPB-ready export is **not** a live API dashboard. It's a point-in-time
 package built from **your own R2/S3 bucket** — ConsentShield's database
 is a transient buffer; it wipes rows seconds-to-minutes after delivery.
+
+<Callout tone="info" title="Default storage vs. BYOS">
+Default-storage customers download the package via a signed URL from
+ConsentShield's R2 bucket. BYOS-mode customers receive the package
+written directly to their own R2 / S3 bucket and reference that bucket
+as the canonical source — which is the path this cookbook assumes.
+</Callout>
 
 The canonical export sources:
 
@@ -309,7 +323,7 @@ if __name__ == "__main__":
   },
 ]} />
 
-## Package contents (DPB-expected layout)
+## Package contents (recommended layout)
 
 ```
 ConsentShield-Audit-2026-Q2.zip

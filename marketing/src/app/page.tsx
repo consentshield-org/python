@@ -12,7 +12,7 @@ import { ROUTES } from '@/lib/routes'
 export const metadata: Metadata = {
   title: "ConsentShield — India's DPDP compliance enforcement engine",
   description:
-    "ConsentShield is the DEPA-native compliance engine for India's DPDP Act. Collect consent as artefacts, enforce it in real time, prove it with an audit trail the DPB can read.",
+    "ConsentShield is built DEPA-native to MeitY BRD standards for India's DPDP Act. Collect consent as artefacts, enforce it in real time, prove it with an audit trail the DPB can read.",
 }
 
 export default function Home() {

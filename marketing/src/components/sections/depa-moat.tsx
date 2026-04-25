@@ -42,14 +42,17 @@ export function DepaMoat() {
             Built on DEPA — not retrofitted from GDPR.
           </h2>
           <p className="lede">
-            Every India-focused competitor uses a GDPR-adapted consent model: a
-            single event row with an array of accepted purposes. This works for
-            cookie banners. It does not satisfy DEPA&apos;s core requirement —{' '}
+            DEPA — Data Empowerment and Protection Architecture — is the
+            iSPIRT-designed consent infrastructure that underpins India Stack
+            and the model the MeitY BRD now requires. ConsentShield&apos;s
+            schema was designed artefact-first before the first customer row
+            was written:{' '}
             <strong>
-              that each data flow is authorised by a discrete, independently
-              revocable, time-bounded, machine-readable artefact
+              one artefact per purpose, time-bounded, independently
+              revocable, machine-readable
             </strong>
-            .
+            , with chain-of-custody from grant to deletion receipt in a
+            single query.
           </p>
         </div>
         <div className="depa-principles">

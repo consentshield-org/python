@@ -60,8 +60,8 @@ export default function DocsHome() {
           <div className="card-icon">⌘</div>
           <div className="card-title">API reference</div>
           <div className="card-sub">
-            All 15 endpoints — authentication, request/response schemas,
-            errors, and an inline playground.
+            The full <code>/v1/*</code> reference — authentication,
+            request/response schemas, errors, and an inline playground.
           </div>
           <div className="card-foot">EXPLORE →</div>
         </Link>
@@ -91,8 +91,9 @@ export default function DocsHome() {
             type: '',
             description: (
               <>
-                15 REST endpoints across <code>health</code> ·{' '}
+                REST endpoints across <code>health</code> ·{' '}
                 <code>consent</code> · <code>deletion</code> ·{' '}
+                <code>rights</code> · <code>security</code> ·{' '}
                 <code>account</code>. Browse the{' '}
                 <Link href="/docs/api">interactive reference</Link>.
               </>
@@ -134,7 +135,7 @@ export default function DocsHome() {
         The ConsentShield dashboard covers 90% of the product surface without
         writing code — banner configuration, rights-request console, DEPA
         artefacts, reports.{' '}
-        <a href="https://consentshield.in/signup">Start a 14-day trial</a>.
+        <a href="https://consentshield.in/signup">Start a 30-day trial</a>.
       </Callout>
 
       <h2 id="stay-in-the-loop">Stay in the loop</h2>

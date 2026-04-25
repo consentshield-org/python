@@ -64,7 +64,7 @@ const LAYER_2: Feature[] = [
   },
   {
     name: 'Audit export package',
-    desc: 'One-click DPB-formatted evidence: artefact register, consent logs, tracker observations, violation history, rights request history, breach notifications, data inventory.',
+    desc: 'One-click DPB-ready evidence: artefact register, consent logs, tracker observations, violation history, rights request history, breach notifications, data inventory.',
   },
 ]
 
@@ -74,16 +74,16 @@ const LAYER_3: Feature[] = [
     desc: 'Dual-framework coverage. Banner detects visitor location and applies the right framework. Adds legal basis documentation, DPIA templates, SCC tracking, EU representative.',
   },
   {
-    name: 'Consent probe testing',
-    desc: 'Automated synthetic compliance testing. ConsentShield simulates users with specific consent states and verifies trackers behave correctly for the artefact state they govern.',
+    name: 'Consent probe testing — sandbox-based runtime probes (Proposed · Q3/Q4 2026)',
+    desc: 'Static-HTML probe testing today. Full sandbox-based runtime probes — simulating users with specific consent states and verifying trackers behave correctly for the artefact state they govern — land with ADR-1200 Phase 2 in Q3/Q4 2026.',
   },
   {
-    name: 'DPO-as-a-Service marketplace',
-    desc: 'Curated marketplace of empanelled Data Protection Officers with auditor-level dashboard access. DPO carries legal liability; ConsentShield carries software liability.',
+    name: 'DPO-as-a-Service marketplace (Proposed · Q3/Q4 2026)',
+    desc: 'A curated marketplace of empanelled Data Protection Officers, designed so the DPO carries legal liability while ConsentShield carries software liability. Opening in phases through Q3/Q4 2026 under ADR-0700. Today, customers can bring their own DPO or CA firm and grant scoped access via the Auditors panel.',
   },
   {
     name: 'Sector templates',
-    desc: 'Pre-configured kits for six verticals: SaaS, edtech, fintech/BFSI (NBFC + broking), e-commerce, healthcare. Each pre-populates inventory, Purpose Definitions, and notice.',
+    desc: 'Pre-configured kits for five verticals: BFSI, healthcare, SaaS, edtech, D2C / e-commerce. Each pre-populates inventory, Purpose Definitions, and notice scaffolding via the ADR-1100 sector seed packs.',
   },
   {
     name: 'Compliance API',
@@ -116,7 +116,7 @@ const LAYER_4: Feature[] = [
   },
   {
     name: 'BFSI regulatory overlay',
-    desc: 'Regulatory Exemption Engine for SEBI retention-vs-erasure conflicts. Third-party consent flows for nominees and guarantors. Dual breach notification timelines.',
+    desc: 'Regulatory Exemption Engine mapping DPDP erasure rights against RBI KYC, PMLA, SEBI LODR, CICRA, and IRDAI retention statutes. Third-party consent flows for nominees, guarantors, and co-borrowers. Triple breach notification timelines (DPB 72h + RBI 6h + SEBI 6h).',
   },
   {
     name: 'BYOS bring-your-own-storage',

@@ -133,14 +133,14 @@ const GROUPS: Group[] = [
     name: 'Enterprise-only',
     rows: [
       {
-        feature: 'White-label + custom domains',
+        feature: 'White-label + custom domains (phased — ADR-0800)',
         starter: '—',
         growth: '—',
         pro: '—',
         enterprise: '✓',
       },
       {
-        feature: 'DPO matchmaking',
+        feature: 'DPO matchmaking (Proposed · Q3/Q4 2026)',
         starter: '—',
         growth: '—',
         pro: '—',

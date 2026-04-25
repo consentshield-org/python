@@ -295,7 +295,7 @@ const SECTORS: Sector[] = [
     heading: 'Digital NBFCs and broking/wealth platforms.',
     description:
       'Digital-first NBFCs and SEBI-registered broking platforms carry the same DPDP obligations as large banks — with none of the internal compliance infrastructure. Sensitive financial data at scale (KYC, bureau data, contact permissions, trading history), dual regulatory obligations under DPDP plus RBI/SEBI, and no existing tool that maps these intersections into operational software.',
-    stat: { num: 'First', label: 'India-native Regulatory Exemption Engine' },
+    stat: { num: '5+', label: 'Statutes mapped — RBI KYC, PMLA, SEBI LODR, CICRA, IRDAI' },
     features: [
       {
         icon: (
@@ -315,7 +315,7 @@ const SECTORS: Sector[] = [
           </svg>
         ),
         title: 'Regulatory Exemption Engine',
-        desc: 'Resolves SEBI retention requirements vs DPDP erasure rights. The only India-native tool that maps these intersections into operational software.',
+        desc: 'A queryable mapping of DPDP erasure rights against RBI KYC, PMLA, SEBI LODR, CICRA, and IRDAI retention statutes — resolved per artefact at deletion time, with the suppression chain captured in the audit trail.',
       },
       {
         icon: (
@@ -356,8 +356,8 @@ const SECTORS: Sector[] = [
             />
           </svg>
         ),
-        title: 'Dual breach notification timelines',
-        desc: "RBI's 6-hour notification track and DPDP's 72-hour track in one workflow. One incident, two correctly-timed notifications.",
+        title: 'Triple breach notification timelines',
+        desc: "DPB's 72-hour track, RBI's 6-hour track, and SEBI's 6-hour track in one workflow. One incident, three correctly-timed notifications, each with its own approval state and dispatch receipt.",
       },
     ],
   },

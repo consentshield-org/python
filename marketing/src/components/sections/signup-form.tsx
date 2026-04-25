@@ -432,7 +432,7 @@ export function SignupForm({ defaultPlan = 'growth' }: { defaultPlan?: Plan }) {
           lineHeight: 1.5,
         }}
       >
-        14-day free trial. No credit card. You can change your plan during
+        30-day free trial. No credit card. You can change your plan during
         onboarding.
       </p>
     </form>

@@ -8,7 +8,7 @@ import { DOWNLOAD_BRIEF, ROUTES } from '@/lib/routes'
 export const metadata: Metadata = {
   title: 'DEPA · ConsentShield',
   description:
-    'The only India-native compliance platform with DEPA baked into the data model. One artefact per purpose, revocable, time-bounded, machine-readable.',
+    'Built DEPA-native to MeitY BRD standards, with two sector-specific operational extensions: the BFSI Regulatory Exemption Engine and the ABDM unified artefact model for healthcare. Architecture and ADR record published in our public repo.',
 }
 
 export default function DepaPage() {

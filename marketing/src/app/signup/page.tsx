@@ -11,7 +11,7 @@ import { SignupForm, type Plan } from '@/components/sections/signup-form'
 export const metadata: Metadata = {
   title: 'Sign up · ConsentShield',
   description:
-    "Start your 14-day free trial. We'll email a setup link, then walk you through the 7-step onboarding (about 5 minutes).",
+    "Start your 30-day free trial. We'll email a setup link, then walk you through the 7-step onboarding (about 5 minutes).",
 }
 
 const VALID: ReadonlyArray<Plan> = ['starter', 'growth', 'pro']
@@ -48,7 +48,7 @@ export default async function SignupPage({ searchParams }: PageProps) {
 
             <div className="contact-options">
               <Bullet>
-                <strong>14-day free trial</strong> on Starter / Growth / Pro.
+                <strong>30-day free trial</strong> on Starter / Growth / Pro.
                 No credit card required.
               </Bullet>
               <Bullet>

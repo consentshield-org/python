@@ -9,15 +9,18 @@ export function DepaHero() {
         <div className="depa-hero-copy">
           <span className="eyebrow">DEPA-native architecture</span>
           <h1 className="display-lg">
-            The only India-native compliance platform with DEPA baked into the
-            data model.
+            Built DEPA-native to MeitY BRD standards, with sector-specific
+            extensions for BFSI and healthcare.
           </h1>
           <p className="lede">
             DEPA — Data Empowerment and Protection Architecture — is the
-            iSPIRT-designed consent infrastructure that underpins India Stack.
-            It&apos;s already how ABDM&apos;s health consent artefacts work.
-            It&apos;s the model DPDP is converging toward. And it&apos;s the
-            structural frame every other tool in this market got wrong.
+            iSPIRT-designed consent infrastructure that underpins India Stack
+            and the model the MeitY BRD now requires. ConsentShield&apos;s
+            schema was designed artefact-first before the first customer row
+            was written: one artefact per purpose, time-bounded, independently
+            revocable, machine-readable, with chain-of-custody from grant to
+            deletion receipt in a single query. Architecture and ADR record
+            published in our public repo.
           </p>
           <div
             style={{
