@@ -20,11 +20,79 @@ import type { PublishedRun } from './types'
 
 const PUBLISHED_RUNS: PublishedRun[] = [
   {
+    // ADR-1014 Phase 4 baseline — three Stryker configurations aggregated
+    // by scripts/run-mutation-suite.ts. Sprint 4.4 is the publication
+    // point; the underlying scores were produced by Sprints 4.1 / 4.2 /
+    // 4.3. Aggregate score below is the arithmetic mean of the three
+    // module scores: (91.07 + 95.65 + 100.00) / 3 = 95.57.
+    runId: '06EW0M4Q9C2P3S5SVJ6X8Y4F7N',
+    date: '2026-04-25T16:55:00Z',
+    commitSha: '55d6275a8e9c',
+    branch: 'main',
+    mutationScore: 95.57,
+    mutation: [
+      {
+        id: 'worker',
+        label: 'Worker (hmac + validateOrigin)',
+        score: 91.07,
+        killed: 50,
+        survived: 5,
+        equivalent: 5,
+        noCoverage: 0,
+        timeout: 1,
+        sprint: '4.1'
+      },
+      {
+        id: 'delivery',
+        label: 'Delivery pipeline (canonical-json + object-key + endpoint)',
+        score: 95.65,
+        killed: 66,
+        survived: 3,
+        equivalent: 3,
+        noCoverage: 0,
+        timeout: 0,
+        sprint: '4.2'
+      },
+      {
+        id: 'v1',
+        label: 'v1 API pure helpers (auth + v1-helpers + rate-limits)',
+        score: 100.0,
+        killed: 25,
+        survived: 0,
+        equivalent: 0,
+        noCoverage: 0,
+        timeout: 0,
+        sprint: '4.3'
+      }
+    ],
+    tally: {
+      // Phase 4 is mutation-testing-only — no Playwright tests in scope.
+      // Tally counts the underlying unit-test pool that Stryker ran each
+      // mutant against: 49 (worker) + 197 (delivery+storage) + 55 (v1) = 301.
+      total: 301,
+      expected: 301,
+      unexpected: 0,
+      skipped: 0,
+      flaky: 0
+    },
+    status: 'green',
+    browsers: [],
+    verticals: [],
+    sprints: ['4.1', '4.2', '4.3', '4.4'],
+    phases: [4],
+    archiveUrl: null,
+    archiveSealRoot: null,
+    partnerReproduction: false,
+    notes:
+      'ADR-1014 Phase 4 mutation-testing baseline. Three Stryker configurations aggregated by scripts/run-mutation-suite.ts: worker security-critical surfaces (Sprint 4.1), delivery-pipeline pure surfaces (Sprint 4.2), v1 API pure helpers (Sprint 4.3). Sprint 4.4 wires the CI gate (.github/workflows/mutation.yml) and publishes this entry. Threshold gate ≥80% on every module — passed. Total 8 surviving mutants are documented as equivalent in the ADR Test Results sections; sigv4 mutation kill-set is tracked as a Phase 4 follow-up sprint.'
+  },
+  {
     runId: '06EW0J6DWR37XMF841KD0D183W',
     date: '2026-04-25T16:16:03Z',
     commitSha: '02c330b6c3c5',
     branch: 'main',
     mutationScore: null,
+    mutation: null,
     tally: {
       total: 8,
       expected: 8,

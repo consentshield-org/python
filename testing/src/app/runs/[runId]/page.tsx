@@ -129,6 +129,71 @@ export default async function RunPage({ params }: PageProps) {
         </dl>
       </section>
 
+      {run.mutation && run.mutation.length > 0 ? (
+        <section className="mt-8">
+          <h2 className="text-lg font-semibold text-ink">Mutation testing breakdown</h2>
+          <p className="mt-2 text-sm text-slate-600">
+            Per-module Stryker score. The aggregate &ldquo;score&rdquo; column reads as
+            <em> killed / (killed + survived + timeout + noCoverage)</em>; equivalent
+            mutants are documented in the ADR and counted under
+            &ldquo;survived&rdquo;. See{' '}
+            <a
+              className="underline hover:text-ink"
+              href="https://consentshield.in/docs/test-verification/mutation-testing"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              /docs/test-verification/mutation-testing
+            </a>{' '}
+            for what each module covers and what survivors mean.
+          </p>
+          <div className="mt-3 overflow-x-auto rounded-lg border border-slate-200">
+            <table className="min-w-full text-sm">
+              <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-600">
+                <tr>
+                  <th className="px-3 py-2 text-left">Module</th>
+                  <th className="px-3 py-2 text-right">Sprint</th>
+                  <th className="px-3 py-2 text-right">Score</th>
+                  <th className="px-3 py-2 text-right">Killed</th>
+                  <th className="px-3 py-2 text-right">Survived</th>
+                  <th className="px-3 py-2 text-right">Equivalent</th>
+                  <th className="px-3 py-2 text-right">Timeout</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200">
+                {run.mutation.map((m) => (
+                  <tr key={m.id}>
+                    <td className="px-3 py-2 text-ink">{m.label}</td>
+                    <td className="px-3 py-2 text-right font-mono text-slate-700">{m.sprint}</td>
+                    <td
+                      className={`px-3 py-2 text-right font-mono font-semibold ${
+                        m.score >= 90
+                          ? 'text-emerald-700'
+                          : m.score >= 80
+                          ? 'text-amber-700'
+                          : 'text-red-700'
+                      }`}
+                    >
+                      {m.score.toFixed(2)}%
+                    </td>
+                    <td className="px-3 py-2 text-right font-mono text-slate-700">{m.killed}</td>
+                    <td
+                      className={`px-3 py-2 text-right font-mono ${
+                        m.survived > m.equivalent ? 'text-red-700' : 'text-slate-700'
+                      }`}
+                    >
+                      {m.survived}
+                    </td>
+                    <td className="px-3 py-2 text-right font-mono text-slate-500">{m.equivalent}</td>
+                    <td className="px-3 py-2 text-right font-mono text-slate-500">{m.timeout}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
+
       {run.notes ? (
         <section className="mt-8">
           <h2 className="text-lg font-semibold text-ink">Notes</h2>

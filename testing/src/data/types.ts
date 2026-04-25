@@ -22,6 +22,39 @@ export interface RunTally {
   flaky: number
 }
 
+/**
+ * ADR-1014 Phase 4 Sprint 4.4 — per-module Stryker score.
+ *
+ * One entry per Stryker configuration that ran. The `score` field is the
+ * "% Mutation score (covered)" reported by Stryker — i.e. NoCoverage
+ * mutants are excluded from the denominator on purpose; the mutate scope
+ * is line-ranged in each conf.mjs to match what the unit suite can reach.
+ *
+ * `survived` and `equivalent` SHOULD sum to (total - killed - timeout):
+ *   - survived: actual gaps in the test suite (red flag).
+ *   - equivalent: mutants whose behaviour change can't be observed from
+ *     outside the function (documented in the ADR Test Results section).
+ * If a module published with survived > 0 + equivalent === 0, that's a
+ * regression worth investigating — the gate did not catch it but the
+ * audit-trail discipline did.
+ */
+export interface ModuleMutationScore {
+  /** Stable id the aggregate driver writes; matches scripts/run-mutation-suite.ts. */
+  id: 'worker' | 'delivery' | 'v1'
+  /** Human-readable label rendered in the run-detail page. */
+  label: string
+  /** Mutation score 0-100 as a number (one decimal place). */
+  score: number
+  killed: number
+  survived: number
+  /** Survived mutants the ADR has classified as equivalent (no observable behaviour change). */
+  equivalent: number
+  noCoverage: number
+  timeout: number
+  /** Sprint id that produced this baseline (e.g. '4.1', '4.2', '4.3'). */
+  sprint: string
+}
+
 export interface PublishedRun {
   /** ULID-shaped, matches the test-harness `E2E_RUN_ID` env var. */
   runId: string
@@ -31,8 +64,20 @@ export interface PublishedRun {
   commitSha: string
   /** Branch the run was against (usually `main`). */
   branch: string
-  /** Stryker mutation score as a 0-100 integer percentage. null until Phase 4 sprints ship. */
+  /**
+   * Aggregate Stryker mutation score as a 0-100 number (rounded to two
+   * decimal places). Mean across `mutation` modules when present;
+   * otherwise null. Kept in addition to the per-module breakdown so the
+   * list view stays compact.
+   */
   mutationScore: number | null
+  /**
+   * Per-module Stryker breakdown. null until Sprint 4.4's CI gate
+   * publishes the first integrated run; populated after that for any
+   * run that ran the aggregate suite. Phase 5 reproduction runs may
+   * leave this null (mutation testing isn't part of the partner kit).
+   */
+  mutation: ModuleMutationScore[] | null
   tally: RunTally
   /** Overall status — derived from tally (green = 0 unexpected; partial = unexpected > 0 AND within known-partial list; red = otherwise). */
   status: RunStatus

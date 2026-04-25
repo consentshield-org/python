@@ -20,10 +20,10 @@
 | Phase 1 — Harness foundations | 5/5 `[x]` | ✅ Complete |
 | Phase 2 — Vertical demo sites on Railway | 4/4 `[x]` | ✅ Complete (Playwright runtime green deferred per-sprint pending ADR-1010 Worker migration) |
 | Phase 3 — Full-pipeline E2E suites | 6/7 `[x]` + 1 `[~]` | 🟡 Sprint 3.2 partial — R2 delivery + end-to-end trace-id blocked on `consent_events.trace_id` column + Worker header propagation. `deliver-consent-events` Edge Function itself has since shipped (ADR-1019). |
-| Phase 4 — Stryker mutation testing | 3/4 `[x]` + 1 `[ ]` | 🟢 Sprint 4.1 complete (Worker `hmac.ts` + `validateOrigin` at 91.07%; `timingSafeEqual` length-bypass killed). Sprint 4.2 complete (delivery pipeline pure surfaces — `canonical-json` 100% / `object-key` 90.91% / `endpoint` 92.00%, overall 95.65%; sigv4 internals deferred to a focused follow-up). Sprint 4.3 complete (v1 pure helpers — `auth.ts` + `v1-helpers.ts` + `rate-limits.ts` at **100.00%**; 3 regex anchor/quantifier mutants killed by 'malformed' vs 'invalid' reason-code distinction). 4.4 planned. |
+| Phase 4 — Stryker mutation testing | 4/4 `[x]` | ✅ Complete 2026-04-25. Sprint 4.1 (Worker `hmac.ts` + `validateOrigin` at 91.07%; `timingSafeEqual` length-bypass killed). Sprint 4.2 (delivery pipeline pure surfaces at 95.65%; sigv4 internals deferred to a focused follow-up). Sprint 4.3 (v1 pure helpers at **100.00%**; 3 regex anchor/quantifier mutants killed by reason-code distinction). Sprint 4.4 (aggregate driver + nightly CI gate + per-module score publication on `testing.consentshield.in` + `/docs/test-verification/mutation-testing` partner page). |
 | Phase 5 — Partner reproduction kit + evidence publication | 4/4 `[x]` | ✅ Complete 2026-04-25. Sprint 5.1 (partner bootstrap — unblocks ADR-1015 Phase 3) · Sprint 5.2 (`/docs/test-verification` runbook) · Sprint 5.3 (`testing.consentshield.in` public index — code-complete; Vercel provisioning is operator follow-up) · Sprint 5.4 (8 sacrificial controls + CI gate). |
 
-22 of 24 sprints fully complete; 1 partial; 1 planned (Phase 4 Sprint 4.4 — CI gate + `testing.consentshield.in` integration). One Phase 4 follow-up tracked: `app/src/lib/storage/sigv4.ts` mutation kill-set (deferred from Sprint 4.2 pending pinned AWS sigv4 test vectors).
+23 of 24 sprints fully complete; 1 partial (Sprint 3.2 R2-delivery + trace-id, blocked on `consent_events.trace_id` column + Worker header propagation). One Phase 4 follow-up tracked outside the sprint count: `app/src/lib/storage/sigv4.ts` mutation kill-set (deferred from Sprint 4.2 pending pinned AWS sigv4 test vectors).
 
 ---
 
@@ -603,12 +603,50 @@ The 26 errors are TypeScript-infeasible mutations the checker rejected before ex
 
 #### Sprint 4.4: CI gate
 
-**Deliverables:**
-- [ ] Nightly Stryker run publishes HTML to `testing.consentshield.in/runs/<sha>/mutation/`.
-- [ ] Threshold gate: score < 80% fails the nightly build.
-- [ ] Partner-readable explanation page: `/docs/test-verification/mutation-testing`.
+**Spec amendment.** The original deliverable wording — "Nightly Stryker run publishes HTML to `testing.consentshield.in/runs/<sha>/mutation/`" — described per-run HTML uploads to a path under the published-runs site. Sprint 5.3's actual layout doesn't carry mutation HTML at run-detail URLs (the testing site is fully static + git-tracked data with no upload pipeline). The Sprint 4.4 implementation publishes per-module **scores + counts** as structured fields on the `PublishedRun` schema (`mutation: ModuleMutationScore[] | null`); the **HTML reports** are uploaded as 30-day-retention GitHub Actions artefacts on the nightly workflow rather than to the public testing site. Reviewers who want per-mutant detail can either run the suite locally (`bun run test:mutation`) or download the artefacts from the workflow run. The published score table at `testing.consentshield.in/runs/<runId>` carries the killed/survived/equivalent breakdown in human-readable form.
 
-**Status:** `[ ] planned`
+**Deliverables:**
+- [x] `scripts/run-mutation-suite.ts` — aggregate driver. Runs `worker/`, `app/` (delivery), `app/` (v1) Stryker configs sequentially via `bun run test:mutation:{,delivery,v1}`. Parses each `mutation.json`, computes per-module score (`(killed + timeout) / (killed + survived + timeout + noCoverage)`), renders a single human-readable summary table, writes `reports/mutation/summary.json`, exits 1 if any module is below its `break: 80` threshold. Flags: `--module worker|delivery|v1` runs a single module; `--skip-runs` / `--report-only` parses existing reports without re-running Stryker (useful in CI to re-assert the gate after a separate run, and locally to re-tabulate after editing thresholds).
+- [x] `package.json` (root) — new scripts `test:mutation` (full aggregate) + `test:mutation:report-only` (parse-only).
+- [x] `.github/workflows/mutation.yml` — nightly schedule at 04:30 UTC + manual `workflow_dispatch`. Bun setup → `bun install --frozen-lockfile` → `bun run test:mutation` (with `continue-on-error` so artefacts upload even on failure) → upload the three module HTML reports + `reports/mutation/summary.json` as the `mutation-html-reports` artefact (30-day retention) → re-assert the gate (fail the build if Stryker step failed). `timeout-minutes: 25` cap. PR runs are not gated — Stryker's per-mutant subprocess fan-out makes per-PR execution expensive for low marginal value (the same kills surface overnight); active feature work uses the per-module commands locally.
+- [x] `testing/src/data/types.ts` — extended `PublishedRun` with `mutation: ModuleMutationScore[] | null` (per-module breakdown: id, label, score, killed, survived, equivalent, noCoverage, timeout, sprint). The existing `mutationScore: number | null` field is retained as the aggregate (mean of module scores) for the list-view summary. `ModuleMutationScore.id` is constrained to the three Phase-4 module ids the aggregate driver writes (`'worker' | 'delivery' | 'v1'`).
+- [x] `testing/src/data/runs.ts` — new published run added at the head of the array: `runId 06EW0M4Q9C2P3S5SVJ6X8Y4F7N` / commit `55d6275a8e9c` / branch `main` / aggregate score **95.57** (mean of 91.07 + 95.65 + 100.00) with the three per-module entries fully populated (50/5/5/0/1, 66/3/3/0/0, 25/0/0/0/0). Tally counts the underlying unit-test pool (49 + 197 + 55 = 301 tests Stryker ran each mutant against). Sprint tags `['4.1', '4.2', '4.3', '4.4']`; phase `[4]`. Notes line summarises the equivalent-mutant total (8 across the three modules) + the sigv4 deferral.
+- [x] `testing/src/app/runs/[runId]/page.tsx` — new "Mutation testing breakdown" section between coverage block and notes. Renders per-module table with columns: Module / Sprint / Score (colour-coded: ≥90 emerald, 80-90 amber, <80 red) / Killed / Survived (red when survived > equivalent) / Equivalent / Timeout. Section is hidden entirely when `run.mutation === null` so Phase 5 reproduction runs (no Stryker layer) don't show an empty table. Runs cleanly through `cd testing && bun run build` — 11 prerendered pages including the new run + 4 new sprint param pages.
+- [x] `marketing/src/app/docs/test-verification/mutation-testing/page.mdx` (~165 lines) — partner-readable explainer. Sections: lead / why-it-matters callout / what's-in-scope ParamTable (3 rows, one per Phase-4 module) / what's-out-of-scope (PL/pgSQL RPCs, I/O wrappers, Next.js handlers, sigv4 deferral) / how-to-read-published-scores ParamTable (Score / Killed / Survived / Equivalent semantics) / no-Stryker-disable-comments callout (Rule 13) / run-it-locally (3 commands + aggregate driver + report-only mode) / CI-gate semantics (nightly schedule + manual trigger + failure mode) / FAQ (5 entries: why 80%, why three configs, can-I-see-a-survivor, what-if-not-equivalent, why-no-sigv4) / further reading (links to test-verification parent + controls sibling + ADR §Phase 4).
+- [x] `marketing/src/app/docs/_data/nav.ts` — new "Mutation testing" entry under Reference, between "Sacrificial controls" and "Status & uptime".
+- [x] `marketing/src/app/docs/_data/search-index.ts` — DESCRIPTIONS entry; 9 Cmd-K keywords (stryker / mutation / mutant / kill / survived / equivalent / threshold / gate / assertion).
+
+**Architecture note — per-module HTML still ships as CI artefacts.** The original "publishes HTML to testing.consentshield.in/runs/<sha>/mutation/" wording predates Sprint 5.3's "no upload pipeline; everything is git-tracked" architectural decision. Reconciling: the published score breakdown (the structured numbers) IS on the public testing site, where reviewers see it without downloading anything; the per-mutant HTML detail is one click away in the GitHub Actions artefact, retained for 30 days. That keeps the public site dependency-free while still giving auditors an end-to-end audit trail on demand.
+
+**Architecture note — gate verified by negative control.** A scratch script that flips 20 `Killed` entries to `Survived` in the v1 mutation.json then runs `bun run test:mutation:report-only` confirmed the aggregate driver correctly reports `❌ 1 module(s) under their break threshold: v1 (56% < 80%)` and exits with code 1. The canonical mutation.json was regenerated by re-running `bun run test:mutation:v1` to restore the 100% baseline.
+
+**Status:** `[x] complete 2026-04-25 — Phase 4 closes. Aggregate gate at 95.57% across three modules; nightly CI workflow + threshold gate live; per-module breakdown publishes on testing.consentshield.in via the extended PublishedRun schema; partner-readable explainer at /docs/test-verification/mutation-testing.`
+
+##### Test Results — Sprint 4.4
+
+```text
+$ bun run test:mutation                                       # full aggregate
+━━━ Aggregate mutation summary ━━━
+module                                     |  score% |  killed |  survived |  noCov |  timeout |  errors |   gate
+-----------------------------------------------------------------------------------------------------------------
+Worker (hmac + validateOrigin)             |   91.07 |      50 |         5 |      0 |        1 |      26 |    ≥80
+Delivery pipeline (canonical-json + ...)   |   95.65 |      66 |         3 |      0 |        0 |      19 |    ≥80
+v1 API pure helpers (auth + ...)           |  100.00 |      25 |         0 |      0 |        0 |      26 |    ≥80
+✅ All modules passed their break threshold.
+
+$ bun run test:mutation:report-only                           # parse-only
+✅ All modules passed their break threshold.
+
+# Negative control (forced 20 Killed → Survived in v1 mutation.json)
+❌ 1 module(s) under their break threshold: v1 (56% < 80%)
+exit code: 1                                                  # gate works
+
+$ cd testing && bun run build                                 # site builds
+○ /runs/06EW0M4Q9C2P3S5SVJ6X8Y4F7N (with new mutation table) — prerendered
+
+$ cd marketing && bun run build                               # marketing builds
+○ /docs/test-verification/mutation-testing — prerendered (24 static /docs/* routes total)
+```
 
 ---
 

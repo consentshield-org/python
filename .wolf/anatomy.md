@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-25T01:55:10.442Z
-> Files: 1443 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-25T02:17:52.092Z
+> Files: 1446 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../tmp/
 
@@ -234,7 +234,7 @@
 - `.secrets` — Supabase (~972 tok)
 - `CLAUDE.md` — OpenWolf (~6199 tok)
 - `debug_rpc.ts` — Declares main (~218 tok)
-- `package.json` — Node.js package manifest (~236 tok)
+- `package.json` — Node.js package manifest (~279 tok)
 - `sentry.client.config.ts` (~166 tok)
 - `sentry.server.config.ts` (~166 tok)
 - `tsconfig.base.json` (~110 tok)
@@ -253,6 +253,7 @@
 ## .github/workflows/
 
 - `monorepo-isolation.yml` — ADR-0026 Sprint 4.1 — monorepo isolation guard. (~337 tok)
+- `mutation.yml` — ADR-1014 Phase 4 Sprint 4.4 — nightly Stryker mutation gate. (~666 tok)
 
 ## admin/
 
@@ -1411,7 +1412,7 @@
 - `ADR-1011-revoked-key-tombstone.md` — ADR-1011: Revoked-key tombstone — rotate+revoke plaintexts return 410 (~1088 tok)
 - `ADR-1012-v1-dx-gap-fixes.md` — ADR-1012: v1 API — day-1 DX gap fixes (~2561 tok)
 - `ADR-1013-cs-orchestrator-direct-postgres.md` — ADR-1013: `cs_orchestrator` direct-Postgres migration (Next.js runtime) (~2726 tok)
-- `ADR-1014-e2e-test-harness-and-vertical-demos.md` — ADR-1014: End-to-end test harness + vertical demo sites (partner-evidence grade) (~24407 tok)
+- `ADR-1014-e2e-test-harness-and-vertical-demos.md` — ADR-1014: End-to-end test harness + vertical demo sites (partner-evidence grade) (~26342 tok)
 - `ADR-1015-v1-api-integration-tests-and-developer-docs.md` — ADR-1015: v1 API integration tests + customer developer documentation (~7655 tok)
 - `ADR-1016-v1-orphan-scope-read-endpoints.md` — ADR-1016: v1 API — close the orphan `read:audit`, `read:security`, `read:score` scopes (~1836 tok)
 - `ADR-1017-admin-ops-readiness-flags.md` — ADR-1017: Admin ops-readiness flags — surface external blockers in the operator console (~1656 tok)
@@ -1425,7 +1426,7 @@
 - `ADR-1025-customer-storage-auto-provisioning.md` — ADR-1025: Customer storage auto-provisioning — hybrid managed R2 default + BYOK escape hatch (~13370 tok)
 - `ADR-1026-drop-hyperdrive-direct-supavisor.md` — ADR-1026: Rewind ADR-1010 Phase 3 — Worker connects directly to Supavisor; drop Hyperdrive binding (~5467 tok)
 - `ADR-1027-admin-account-awareness.md` — ADR-1027: Admin Account-Awareness Pass (~8082 tok)
-- `ADR-index.md` — ADR Index (~7125 tok)
+- `ADR-index.md` — ADR Index (~7436 tok)
 - `ADR-template.md` — ADR-NNNN: Title (~423 tok)
 - `adr-workflow.md` — ADR Workflow Rules (~557 tok)
 
@@ -1453,8 +1454,8 @@
 - `CHANGELOG-dashboard.md` — Changelog — Dashboard (~28720 tok)
 - `CHANGELOG-docs.md` — Changelog — Documentation (~13701 tok)
 - `CHANGELOG-edge-functions.md` — Changelog — Edge Functions (~4251 tok)
-- `CHANGELOG-infra.md` — Changelog — Infrastructure (~23450 tok)
-- `CHANGELOG-marketing.md` — Changelog — Marketing (~14515 tok)
+- `CHANGELOG-infra.md` — Changelog — Infrastructure (~24742 tok)
+- `CHANGELOG-marketing.md` — Changelog — Marketing (~14957 tok)
 - `CHANGELOG-schema.md` — Changelog — Schema (~53354 tok)
 - `CHANGELOG-worker.md` — Changelog — Worker (~7257 tok)
 
@@ -1524,7 +1525,7 @@
 - `2026-04-18-comprehensive-project-review.md` — ConsentShield — Comprehensive Review as of 2026-04-18 (~3553 tok)
 - `2026-04-20-api-key-security-review.md` — Security Review — API Key Surface (ADR-1001 Sprint 3.1) (~1833 tok)
 - `2026-04-21-v1-api-gap-audit.md` — v1 API Gap Audit — 2026-04-21 (~2913 tok)
-- `2026-04-25-marketing-claims-vs-reality-review.md` — Marketing claims vs. reality review (~7079 tok)
+- `2026-04-25-marketing-claims-vs-reality-review.md` — Marketing claims vs. reality review (~13127 tok)
 
 ## docs/runbooks/
 
@@ -1601,8 +1602,8 @@
 
 ## marketing/src/app/docs/_data/
 
-- `nav.ts` — HTTP method pill for API-reference entries; undefined elsewhere. (~1466 tok)
-- `search-index.ts` — Group label (appears as a muted header in the palette). (~2273 tok)
+- `nav.ts` — HTTP method pill for API-reference entries; undefined elsewhere. (~1491 tok)
+- `search-index.ts` — Group label (appears as a muted header in the palette). (~2358 tok)
 
 ## marketing/src/app/docs/_styles/
 
@@ -1704,6 +1705,10 @@
 ## marketing/src/app/docs/test-verification/controls/
 
 - `page.mdx` — Sacrificial controls (~2301 tok)
+
+## marketing/src/app/docs/test-verification/mutation-testing/
+
+- `page.mdx` — Mutation testing (~2994 tok)
 
 ## marketing/src/app/docs/webhook-signatures/
 
@@ -1826,6 +1831,7 @@
 - `e2e-verify-evidence.ts` — ADR-1014 Sprint 1.4 — Partner-facing evidence-seal verifier. (~941 tok)
 - `mint-role-jwt.ts` — ADR-1009 Phase 2 — mint an HS256 JWT for a scoped Postgres role so Supabase (~832 tok)
 - `partner-bootstrap.ts` — ADR-1014 Sprint 5.1 — interactive partner reproduction bootstrap. Prompts for Supabase URL + service-role key (hidden) + anon key + optional CF account ID; wraps e2e-bootstrap.ts with env overrides; produces .env.partner (0600, gitignored). Idempotent via --force. Unblocks ADR-1015 Phase 3. (~3723 tok)
+- `run-mutation-suite.ts` — ADR-1014 Phase 4 Sprint 4.4 — Aggregate Stryker driver + threshold gate. (~2556 tok)
 - `smoke-test-rate-limit.ts` — Declares main (~242 tok)
 - `verify-adr-1025-sprint-11.ts` — ADR-1025 Phase 1 Sprint 1.1 end-to-end verification. (~2997 tok)
 - `verify-adr-1025-sprint-21.ts` — ADR-1025 Phase 2 Sprint 2.1 end-to-end verification. (~2293 tok)
@@ -2435,7 +2441,7 @@
 
 ## testing/src/app/runs/[runId]/
 
-- `page.tsx` — generateStaticParams (~2365 tok)
+- `page.tsx` — generateStaticParams — renders table (~3264 tok)
 
 ## testing/src/app/sprints/[id]/
 
@@ -2453,8 +2459,8 @@
 
 ## testing/src/data/
 
-- `runs.ts` — ADR-1014 Sprint 5.3 — Published-run index. (~915 tok)
-- `types.ts` — Tests that Playwright reported `status === expectedStatus` (positives that passed + controls that fa (~1043 tok)
+- `runs.ts` — ADR-1014 Sprint 5.3 — Published-run index. (~1604 tok)
+- `types.ts` — Tests that Playwright reported `status === expectedStatus` (positives that passed + controls that fa (~1590 tok)
 
 ## tests/admin/
 

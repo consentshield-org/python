@@ -1,0 +1,66 @@
+# ADR-1014 Phase 4 Sprint 4.4 — nightly Stryker mutation gate.
+#
+# Runs the three Phase-4 Stryker configurations (worker / delivery / v1)
+# via the aggregate driver at scripts/run-mutation-suite.ts. Fails the
+# build if any module is below its `break: 80` threshold.
+#
+# Why nightly only? Stryker spawns N processes per mutant + recompiles
+# TypeScript per checker invocation. The current full run takes ~1 min
+# 30 s end-to-end on a clean cache; per-PR execution would dominate the
+# critical path of every feature merge for low marginal value (the same
+# kills surface against `main` overnight). PR work should run the
+# per-module scripts locally (bun run test:mutation:{worker,delivery,v1})
+# for fast iteration.
+#
+# The workflow can also be triggered manually via `gh workflow run
+# mutation.yml` for one-off verification, e.g. after a Stryker config
+# change or after closing the sigv4 follow-up sprint.
+
+name: mutation
+
+on:
+  schedule:
+    # 04:30 UTC every night — well after the daytime PR queue drains.
+    - cron: '30 4 * * *'
+  workflow_dispatch:
+
+jobs:
+  stryker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install workspace dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Run aggregate Stryker suite (worker + delivery + v1)
+        id: stryker
+        run: bun run test:mutation
+        # Continue even on failure so we can still upload the HTML reports
+        # for inspection. The final step re-asserts the gate.
+        continue-on-error: true
+
+      - name: Upload mutation HTML reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-html-reports
+          path: |
+            worker/reports/mutation/
+            app/reports/mutation/delivery/
+            app/reports/mutation/v1/
+            reports/mutation/summary.json
+          retention-days: 30
+
+      - name: Re-assert threshold gate (fail build if any module < 80%)
+        if: steps.stryker.outcome != 'success'
+        run: |
+          echo "::error::Mutation suite failed the threshold gate."
+          echo "See the uploaded mutation-html-reports artifact for per-mutant detail."
+          exit 1

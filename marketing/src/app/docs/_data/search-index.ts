@@ -50,6 +50,7 @@ const DESCRIPTIONS: Record<string, { description?: string; keywords?: string[] }
   '/docs/status': { description: 'Platform health + uptime targets + incident notifications', keywords: ['status', 'uptime', 'incident', 'sla', 'downtime'] },
   '/docs/test-verification': { description: 'Partner reproduction — clone, bootstrap, run E2E against your own Supabase, verify sealed evidence', keywords: ['reproduce', 'partner', 'audit', 'e2e', 'evidence', 'reproducibility', 'sealed', 'manifest', 'bootstrap'] },
   '/docs/test-verification/controls': { description: 'Sacrificial controls — 8 intentionally-broken tests that prove the harness is honest', keywords: ['sacrificial', 'controls', 'test.fail', 'inversion', 'harness', 'discipline', 'gate', 'ci', 'canary'] },
+  '/docs/test-verification/mutation-testing': { description: 'Stryker mutation testing — flips operators in production code and re-runs the suite; survivors expose weak assertions', keywords: ['stryker', 'mutation', 'mutant', 'kill', 'survived', 'equivalent', 'threshold', 'gate', 'assertion'] },
   '/openapi.yaml': { description: 'Full OpenAPI 3.1 spec', keywords: ['openapi', 'yaml', 'spec'] },
   'https://status.consentshield.in': { description: 'Status page + uptime', keywords: ['status', 'uptime', 'outage'] },
 }

@@ -2,6 +2,21 @@
 
 Public marketing site (`marketing/` workspace → `consentshield.in`). New in 2026-04-21.
 
+## [ADR-1014 Sprint 4.4 — /docs/test-verification/mutation-testing partner-readable explainer] — 2026-04-25
+
+**ADR:** ADR-1014 — End-to-end test harness + vertical demo sites
+**Sprint:** Phase 4, Sprint 4.4
+
+### Added
+- `marketing/src/app/docs/test-verification/mutation-testing/page.mdx` (~165 lines) — partner-readable mutation-testing explainer. Sections: lead / why-it-matters callout / what's-in-scope ParamTable (3 rows, one per Phase-4 module: Worker, delivery pipeline, v1 helpers) / what's-out-of-scope (PL/pgSQL RPCs, I/O wrappers, Next.js handlers, sigv4 deferral) / how-to-read-published-scores ParamTable (Score / Killed / Survived / Equivalent semantics) / no-Stryker-disable-comments callout (cites Rule 13) / run-it-locally (3 per-module commands + aggregate driver + report-only mode) / CI-gate semantics (nightly schedule + manual trigger + failure mode) / FAQ (5 entries: why 80%, why three configs, can-I-see-a-survivor, what-if-not-equivalent, why-no-sigv4) / further reading (links to test-verification parent + controls sibling + ADR §Phase 4 on GitHub).
+- `marketing/src/app/docs/_data/nav.ts` — new "Mutation testing" entry under Reference, between "Sacrificial controls" and "Status & uptime".
+- `marketing/src/app/docs/_data/search-index.ts` — DESCRIPTIONS entry; 9 Cmd-K keywords (stryker, mutation, mutant, kill, survived, equivalent, threshold, gate, assertion).
+
+### Tested
+- [x] `cd marketing && bun run build` — 24 static `/docs/*` routes (up from 23) including `/docs/test-verification/mutation-testing` listed as `○ (Static)` — PASS
+- [x] Sidebar nav verified — "Mutation testing" appears under Reference, between sacrificial-controls and status sibling links.
+- [x] Cmd-K palette finds the page via any of the 9 curated keywords.
+
 ## [ADR-1014 Sprint 5.3 — /docs/test-verification reference-archive callout flipped live] — 2026-04-25
 
 **ADR:** ADR-1014 — E2E test harness + vertical demo sites

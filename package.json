@@ -10,7 +10,9 @@
     "test:e2e:full": "cd tests/e2e && bun run test:full",
     "test:e2e:partner": "cd tests/e2e && bun run test:partner",
     "test:e2e:controls": "bunx tsx scripts/e2e-verify-controls.ts",
-    "test:e2e:report": "cd tests/e2e && bun run report"
+    "test:e2e:report": "cd tests/e2e && bun run report",
+    "test:mutation": "bunx tsx scripts/run-mutation-suite.ts",
+    "test:mutation:report-only": "bunx tsx scripts/run-mutation-suite.ts --skip-runs"
   },
   "devDependencies": {
     "@supabase/supabase-js": "2.103.0",

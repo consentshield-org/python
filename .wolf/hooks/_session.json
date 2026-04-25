@@ -133,8 +133,8 @@
       "first_read": "2026-04-25T01:32:06.017Z"
     },
     "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md": {
-      "count": 2,
-      "tokens": 20680,
+      "count": 4,
+      "tokens": 24407,
       "first_read": "2026-04-25T01:33:19.374Z"
     },
     "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/tests/storage/sigv4.test.ts": {
@@ -221,6 +221,61 @@
       "count": 1,
       "tokens": 546,
       "first_read": "2026-04-25T01:52:49.590Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/testing/src/data/types.ts": {
+      "count": 1,
+      "tokens": 1043,
+      "first_read": "2026-04-25T02:04:25.394Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/testing/src/data/runs.ts": {
+      "count": 1,
+      "tokens": 915,
+      "first_read": "2026-04-25T02:04:30.302Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/.github/workflows/monorepo-isolation.yml": {
+      "count": 1,
+      "tokens": 337,
+      "first_read": "2026-04-25T02:04:43.146Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/package.json": {
+      "count": 1,
+      "tokens": 236,
+      "first_read": "2026-04-25T02:05:41.870Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/testing/src/app/runs/[runId]/page.tsx": {
+      "count": 1,
+      "tokens": 2365,
+      "first_read": "2026-04-25T02:07:54.862Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/.env.local": {
+      "count": 1,
+      "tokens": 0,
+      "first_read": "2026-04-25T02:08:03.168Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/src/app/docs/test-verification/page.mdx": {
+      "count": 1,
+      "tokens": 3274,
+      "first_read": "2026-04-25T02:09:06.346Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/src/app/docs/_data/nav.ts": {
+      "count": 1,
+      "tokens": 1466,
+      "first_read": "2026-04-25T02:09:20.682Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/src/app/docs/_data/search-index.ts": {
+      "count": 1,
+      "tokens": 2273,
+      "first_read": "2026-04-25T02:09:57.440Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/changelogs/CHANGELOG-infra.md": {
+      "count": 1,
+      "tokens": 23450,
+      "first_read": "2026-04-25T02:16:42.458Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/changelogs/CHANGELOG-marketing.md": {
+      "count": 1,
+      "tokens": 14515,
+      "first_read": "2026-04-25T02:17:32.893Z"
     }
   },
   "files_written": [
@@ -631,6 +686,144 @@
       "action": "edit",
       "tokens": 1443,
       "at": "2026-04-25T01:55:10.450Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/reviews/2026-04-25-marketing-claims-vs-reality-review.md",
+      "action": "edit",
+      "tokens": 1540,
+      "at": "2026-04-25T01:56:12.135Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/reviews/2026-04-25-marketing-claims-vs-reality-review.md",
+      "action": "edit",
+      "tokens": 998,
+      "at": "2026-04-25T01:57:23.896Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/reviews/2026-04-25-marketing-claims-vs-reality-review.md",
+      "action": "edit",
+      "tokens": 2018,
+      "at": "2026-04-25T01:59:29.520Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/reviews/2026-04-25-marketing-claims-vs-reality-review.md",
+      "action": "edit",
+      "tokens": 1336,
+      "at": "2026-04-25T02:04:58.255Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/scripts/run-mutation-suite.ts",
+      "action": "create",
+      "tokens": 2518,
+      "at": "2026-04-25T02:05:38.784Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/package.json",
+      "action": "edit",
+      "tokens": 78,
+      "at": "2026-04-25T02:05:48.095Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/scripts/run-mutation-suite.ts",
+      "action": "edit",
+      "tokens": 59,
+      "at": "2026-04-25T02:06:02.381Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/scripts/run-mutation-suite.ts",
+      "action": "edit",
+      "tokens": 20,
+      "at": "2026-04-25T02:06:06.249Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/scripts/run-mutation-suite.ts",
+      "action": "edit",
+      "tokens": 96,
+      "at": "2026-04-25T02:06:21.999Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/.github/workflows/mutation.yml",
+      "action": "create",
+      "tokens": 666,
+      "at": "2026-04-25T02:06:55.860Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/testing/src/data/types.ts",
+      "action": "edit",
+      "tokens": 687,
+      "at": "2026-04-25T02:07:23.664Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/testing/src/data/runs.ts",
+      "action": "edit",
+      "tokens": 898,
+      "at": "2026-04-25T02:07:50.559Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/testing/src/app/runs/[runId]/page.tsx",
+      "action": "edit",
+      "tokens": 967,
+      "at": "2026-04-25T02:08:10.852Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/src/app/docs/_data/nav.ts",
+      "action": "edit",
+      "tokens": 96,
+      "at": "2026-04-25T02:09:35.899Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/src/app/docs/_data/search-index.ts",
+      "action": "edit",
+      "tokens": 158,
+      "at": "2026-04-25T02:10:06.862Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/marketing/src/app/docs/test-verification/mutation-testing/page.mdx",
+      "action": "create",
+      "tokens": 3208,
+      "at": "2026-04-25T02:11:39.129Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/reviews/2026-04-25-marketing-claims-vs-reality-review.md",
+      "action": "edit",
+      "tokens": 1402,
+      "at": "2026-04-25T02:11:58.664Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md",
+      "action": "edit",
+      "tokens": 161,
+      "at": "2026-04-25T02:14:51.922Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md",
+      "action": "edit",
+      "tokens": 93,
+      "at": "2026-04-25T02:15:00.085Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md",
+      "action": "edit",
+      "tokens": 2288,
+      "at": "2026-04-25T02:16:06.515Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-index.md",
+      "action": "edit",
+      "tokens": 709,
+      "at": "2026-04-25T02:16:37.561Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/changelogs/CHANGELOG-infra.md",
+      "action": "edit",
+      "tokens": 1526,
+      "at": "2026-04-25T02:17:24.743Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/changelogs/CHANGELOG-marketing.md",
+      "action": "edit",
+      "tokens": 567,
+      "at": "2026-04-25T02:17:52.100Z"
     }
   ],
   "edit_counts": {
@@ -642,15 +835,15 @@
     ".gitignore": 3,
     "docs/runbooks/adr-1003-phase-1-operator-actions.md": 1,
     "supabase/migrations/20260804000056_adr1003_s41_healthcare_template_seed.sql": 1,
-    "docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md": 8,
+    "docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md": 11,
     "docs/customer-docs/healthcare-onboarding.md": 1,
     "admin/src/app/(operator)/templates/[templateId]/page.tsx": 5,
-    "docs/ADRs/ADR-index.md": 5,
+    "docs/ADRs/ADR-index.md": 6,
     "docs/changelogs/CHANGELOG-worker.md": 1,
     "tests/integration/healthcare-template.test.ts": 1,
     "docs/ADRs/ADR-1003-processor-posture-and-healthcare-unlock.md": 2,
     "docs/changelogs/CHANGELOG-schema.md": 1,
-    "docs/reviews/2026-04-25-marketing-claims-vs-reality-review.md": 8,
+    "docs/reviews/2026-04-25-marketing-claims-vs-reality-review.md": 13,
     "app/package.json": 3,
     "app/stryker.delivery.conf.mjs": 3,
     "app/tsconfig.stryker.json": 2,
@@ -664,11 +857,22 @@
     "app/tests/api/v1-helpers.test.ts": 1,
     "app/tests/api/rate-limits.test.ts": 1,
     "app/stryker.v1.conf.mjs": 2,
-    "app/tsconfig.stryker.v1.json": 1
+    "app/tsconfig.stryker.v1.json": 1,
+    "scripts/run-mutation-suite.ts": 4,
+    "package.json": 1,
+    ".github/workflows/mutation.yml": 1,
+    "testing/src/data/types.ts": 1,
+    "testing/src/data/runs.ts": 1,
+    "testing/src/app/runs/[runId]/page.tsx": 1,
+    "marketing/src/app/docs/_data/nav.ts": 1,
+    "marketing/src/app/docs/_data/search-index.ts": 1,
+    "marketing/src/app/docs/test-verification/mutation-testing/page.mdx": 1,
+    "docs/changelogs/CHANGELOG-infra.md": 1,
+    "docs/changelogs/CHANGELOG-marketing.md": 1
   },
-  "anatomy_hits": 42,
-  "anatomy_misses": 2,
-  "repeated_reads_warned": 13,
+  "anatomy_hits": 52,
+  "anatomy_misses": 3,
+  "repeated_reads_warned": 15,
   "cerebrum_warnings": 0,
-  "stop_count": 14
+  "stop_count": 24
 }

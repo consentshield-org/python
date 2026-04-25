@@ -96,6 +96,7 @@ export const DOCS_NAV: NavGroup[] = [
       { label: 'API changelog', href: '/docs/changelog' },
       { label: 'Reproduce our tests', href: '/docs/test-verification' },
       { label: 'Sacrificial controls', href: '/docs/test-verification/controls' },
+      { label: 'Mutation testing', href: '/docs/test-verification/mutation-testing' },
       { label: 'Status & uptime', href: 'https://status.consentshield.in', external: true },
     ],
   },

@@ -5433,3 +5433,36 @@
 | 07:24 | Session end: 66 writes across 30 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 44 reads | ~304629 tok |
 | 07:24 | Edited docs/ADRs/ADR-index.md | added error handling | ~331 |
 | 07:25 | Edited docs/changelogs/CHANGELOG-api.md | added error handling | ~1347 |
+| 07:25 | Session end: 68 writes across 30 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 44 reads | ~307705 tok |
+| 07:26 | Edited docs/reviews/2026-04-25-marketing-claims-vs-reality-review.md | modified Claim() | ~1437 |
+| 07:26 | Session end: 69 writes across 30 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 44 reads | ~309245 tok |
+| 07:27 | Session end: 69 writes across 30 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 44 reads | ~309245 tok |
+| 07:27 | Edited docs/reviews/2026-04-25-marketing-claims-vs-reality-review.md | modified Claim() | ~931 |
+| 07:27 | Session end: 70 writes across 30 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 44 reads | ~310243 tok |
+| 07:29 | Edited docs/reviews/2026-04-25-marketing-claims-vs-reality-review.md | modified Claim() | ~1884 |
+| 07:29 | Session end: 71 writes across 30 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 44 reads | ~312261 tok |
+| 07:34 | Session end: 71 writes across 30 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 46 reads | ~317946 tok |
+| 07:34 | Edited docs/reviews/2026-04-25-marketing-claims-vs-reality-review.md | modified Claim() | ~1247 |
+| 07:35 | Session end: 72 writes across 30 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 47 reads | ~319619 tok |
+| 07:35 | Created scripts/run-mutation-suite.ts | — | ~2518 |
+| 07:35 | Session end: 73 writes across 31 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 48 reads | ~322373 tok |
+| 07:35 | Edited package.json | 2→4 lines | ~78 |
+| 07:36 | Edited scripts/run-mutation-suite.ts | added 1 import(s) | ~59 |
+| 07:36 | Edited scripts/run-mutation-suite.ts | inline fix | ~20 |
+| 07:36 | Edited scripts/run-mutation-suite.ts | 6→7 lines | ~96 |
+| 07:36 | Created .github/workflows/mutation.yml | — | ~666 |
+| 07:37 | Edited testing/src/data/types.ts | added error handling | ~687 |
+| 07:37 | Edited testing/src/data/runs.ts | expanded (+68 lines) | ~898 |
+| 07:38 | Edited testing/src/app/runs/[runId]/page.tsx | CSS: hover, https | ~967 |
+| 07:38 | Session end: 81 writes across 34 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 50 reads | ~328209 tok |
+| 07:39 | Edited marketing/src/app/docs/_data/nav.ts | 3→4 lines | ~96 |
+| 07:40 | Edited marketing/src/app/docs/_data/search-index.ts | 1→2 lines | ~158 |
+| 07:41 | Created marketing/src/app/docs/test-verification/mutation-testing/page.mdx | — | ~2994 |
+| 07:41 | Edited docs/reviews/2026-04-25-marketing-claims-vs-reality-review.md | modified Claim() | ~1308 |
+| 07:42 | Session end: 85 writes across 37 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 53 reads | ~340086 tok |
+| 07:44 | Edited docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md | inline fix | ~150 |
+| 07:45 | Edited docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md | "testing.consentshield.in" → "consent_events.trace_id" | ~87 |
+| 07:46 | Edited docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md | expanded (+38 lines) | ~2135 |
+| 07:46 | Edited docs/ADRs/ADR-index.md | inline fix | ~662 |
+| 07:47 | Edited docs/changelogs/CHANGELOG-infra.md | expanded (+24 lines) | ~1424 |
+| 07:47 | Edited docs/changelogs/CHANGELOG-marketing.md | expanded (+15 lines) | ~529 |

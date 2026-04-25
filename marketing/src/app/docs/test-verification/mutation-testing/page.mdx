@@ -1,0 +1,232 @@
+export const metadata = {
+  title: 'Mutation testing',
+  description:
+    'Stryker mutation testing baseline — flips operators in production code and re-runs the unit suite. Surviving mutants expose weak assertions. ConsentShield publishes per-module scores per nightly CI run.',
+}
+
+<Breadcrumb trail={[
+  { label: 'Docs', href: '/docs' },
+  { label: 'Reference', href: '/docs' },
+  { label: 'Reproduce our tests', href: '/docs/test-verification' },
+  { label: 'Mutation testing' },
+]} />
+
+# Mutation testing
+
+This page documents ConsentShield's **Stryker mutation testing
+baseline** — a second-order assurance layer on top of unit tests.
+Where unit tests answer "did the code produce the right output for
+this input?", mutation testing answers "would my tests notice if the
+code were silently broken?".
+
+If you only care about the bottom line: every nightly build runs three
+Stryker configurations and publishes the scores at
+[testing.consentshield.in](https://testing.consentshield.in). The
+threshold gate fails the build if any module is below 80%.
+
+<Callout tone="info" title="Why mutation testing matters here">
+A test suite that always passes is only as good as its assertions.
+A regression in a matcher (`toEqual`/`toBe` swallowing a wrong type),
+in a stub return shape, in an `expect.any()` over-relaxation — any of
+these can let real bugs ship. Mutation testing systematically rewrites
+production code (flips `===` to `!==`, drops branch bodies, replaces
+strings with empty literals, removes guards) and re-runs the suite.
+A mutation that **survives** means no test detected the change. The
+assertion is weaker than it looks.
+
+This is the layer that catches "the suite is green but a regression
+shipped anyway."
+</Callout>
+
+## What's in scope
+
+The Phase 4 baseline mutates three modules of TypeScript that carry
+load-bearing security or correctness invariants:
+
+<ParamTable params={[
+  {
+    name: 'Worker (worker/src/hmac.ts + validateOrigin)',
+    type: 'Sprint 4.1',
+    description: 'HMAC-SHA256 verification for /v1/events + /v1/observations on the Cloudflare Worker, plus the Origin/Referer allow-list check that authenticates browser-side consent events. The dangerous timingSafeEqual length-bypass mutant (would let attackers append bytes to a valid signature) is killed.',
+  },
+  {
+    name: 'Delivery pipeline (app/src/lib/delivery/{canonical-json,object-key} + storage/endpoint)',
+    type: 'Sprint 4.2',
+    description: 'Canonical-JSON serialiser whose output is content-hashed before R2 upload; the <prefix><event_type>/<YYYY>/<MM>/<DD>/<id>.json key derivation; the per-provider endpoint URL derivation that R2 writes target.',
+  },
+  {
+    name: 'v1 API pure helpers (app/src/lib/api/{auth,v1-helpers,rate-limits})',
+    type: 'Sprint 4.3',
+    description: 'Bearer-token Bearer-pattern regex (anchors + quantifier), RFC 7807 problem-builder, scope-presence + org-scope gates that fence every /v1/* request, rate-tier lookup with starter fallback. Three regex-anchor mutants on the Bearer pattern (auth-bypass risks if shipped) are killed.',
+  },
+]} />
+
+## What's out of scope (and why)
+
+**The SECURITY DEFINER RPCs themselves.** Functions like
+`assert_api_key_binding`, `rpc_consent_record`, and the per-row fences
+live in PL/pgSQL inside Postgres, not in TypeScript. Stryker has no
+SQL mutator, and adding one would target query *shape* rather than
+the assertion logic that matters here. The RPC contracts are tested
+end-to-end by `tests/integration/v1-*.test.ts` (real bearer-token
+holder against a live Supabase project) + `tests/rls/*.test.ts`
+(cross-account isolation). Wrong fence ⇒ either the wrong account
+sees data (caught by RLS-isolation) or the right one is refused
+(caught by happy-path).
+
+**I/O wrappers.** Postgres clients, Sentry adapters, R2 SDK calls.
+Mutation-testing them at the unit layer mostly produces fixture-shape
+mutants. They're covered by Phase 3 E2E suites against real
+infrastructure.
+
+**Next.js route handlers.** Need a Next.js request context to behave;
+exercised by Phase 3 E2E suites.
+
+**`app/src/lib/storage/sigv4.ts`** — explicitly deferred from Sprint
+4.2 to a focused follow-up sprint. Existing tests pin URL shape and
+a signature-pattern regex but never the EXACT signature bytes for a
+known input. Killing internal signing-chain mutations needs pinned
+AWS sigv4 test vectors with a mocked clock — the kill-set is tracked
+as a Phase 4 follow-up.
+
+## How to read the published scores
+
+Every published run on
+[testing.consentshield.in](https://testing.consentshield.in) carries
+a "Mutation testing breakdown" table when the run executed the
+aggregate suite. Each row shows:
+
+<ParamTable params={[
+  {
+    name: 'Score',
+    type: '0-100% with one decimal',
+    description: 'killed / (killed + survived + timeout + noCoverage). ≥90 = green; 80-90 = amber; <80 = red and the gate fails. Read alongside the Survived and Equivalent columns: a high score with N survivors all marked equivalent is healthier than a slightly higher score with one un-classified survivor.',
+  },
+  {
+    name: 'Killed',
+    type: 'count',
+    description: 'Mutants caught by an existing test — the test fails when the mutant is live, passes when the original code runs.',
+  },
+  {
+    name: 'Survived',
+    type: 'count',
+    description: 'Mutants that no test caught. Ideally zero. When non-zero, every survivor MUST be classified as either (a) a test gap to fix, or (b) an equivalent mutant.',
+  },
+  {
+    name: 'Equivalent',
+    type: 'count',
+    description: 'Survived mutants whose behaviour change cannot be observed from outside the function — e.g. flipping `extractable: false` on a Web Crypto key handle (the digest is identical regardless), or removing an early-return guard whose downstream code reaches the same outcome via fall-through. Documented per-mutant in the ADR Test Results section.',
+  },
+]} />
+
+A module is **healthy** if Score ≥ 80 AND Survived === Equivalent.
+A non-zero `(Survived - Equivalent)` is the regression flag.
+
+<Callout tone="warn" title="Why we don't silence equivalents in production code">
+Stryker supports `// Stryker disable next-line` comments that mute
+specific mutants. We deliberately do NOT use them. Per Rule 13 of the
+project (don't modify production code for tooling artefacts), we keep
+the production code unchanged and document each equivalent mutant in
+the ADR's Test Results section. The audit trail lives in
+[ADR-1014](https://github.com/aiSpirit-systems/consentshield/blob/main/docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md),
+not as silently-suppressed comments scattered across files.
+</Callout>
+
+## Run it locally
+
+Three commands. Each runs in ~15-90 seconds depending on the module.
+
+```bash
+# Worker — hmac.ts + origin.ts (~15s)
+cd worker && bun run test:mutation
+
+# Delivery pipeline — canonical-json + object-key + endpoint (~20s)
+cd app && bun run test:mutation:delivery
+
+# v1 pure helpers — auth + v1-helpers + rate-limits (~20s)
+cd app && bun run test:mutation:v1
+```
+
+The aggregate driver runs all three sequentially and emits a single
+machine-readable summary at `reports/mutation/summary.json`:
+
+```bash
+# From the repo root
+bun run test:mutation
+
+# Re-parse existing reports without re-running Stryker
+bun run test:mutation:report-only
+
+# Run a single module
+bunx tsx scripts/run-mutation-suite.ts --module worker
+```
+
+Each individual run also writes an interactive HTML report:
+
+- `worker/reports/mutation/index.html`
+- `app/reports/mutation/delivery/index.html`
+- `app/reports/mutation/v1/index.html`
+
+Open any of them in a browser to see every mutation Stryker tried,
+which tests ran against it, and which survived. The HTML report is
+the audit artefact.
+
+## CI gate
+
+The nightly workflow at
+[`.github/workflows/mutation.yml`](https://github.com/aiSpirit-systems/consentshield/blob/main/.github/workflows/mutation.yml)
+runs the aggregate suite, uploads the three HTML reports as
+30-day-retention artefacts, and re-asserts the threshold gate:
+
+- Schedule: 04:30 UTC nightly
+- Manual trigger: `gh workflow run mutation.yml`
+- Failure mode: any module below `break: 80` fails the build (red ❌)
+
+PR runs are not gated — Stryker's per-mutant subprocess fan-out makes
+it expensive per-PR for low marginal value (the same kills surface
+overnight). For active feature work, run the per-module commands
+locally for fast iteration.
+
+## Frequently asked
+
+<ParamTable params={[
+  {
+    name: 'Why 80% and not 100%?',
+    type: 'thresholds',
+    description: 'Real production code carries equivalent mutants — semantically-identical changes that cannot be killed without modifying the production code itself. We aim for 80% as a break threshold and 90% as a "high" target. Two of the three modules clear 90% at the current baseline (Worker 91.07, Delivery 95.65). The v1 helpers clear 100% with zero survivors.',
+  },
+  {
+    name: 'Why three configs and not one?',
+    type: 'modularity',
+    description: 'Each Stryker config targets a workspace boundary (worker / app/lib/delivery / app/lib/api) so failing one module does not block the others from publishing scores. The aggregate driver produces a single summary; the per-module commands are also useful for fast feedback during refactors.',
+  },
+  {
+    name: 'Can I see a mutant that survived?',
+    type: 'audit trail',
+    description: 'Yes. Open the HTML report for a module (paths above), navigate to the file, and click any red span. Each mutant shows: the original line, the mutated line, the mutation type, and the tests that ran against it. Equivalent mutants are also listed in the ADR Test Results sections per sprint.',
+  },
+  {
+    name: 'What if a survivor is not equivalent?',
+    type: 'fix path',
+    description: 'Add a test that distinguishes the mutant from the original. The ADR Test Results sections include "iteration trace" entries showing exactly which test was added to kill which survivor (e.g. Sprint 4.3 added two reason-code-distinguishing tests to kill three regex mutants).',
+  },
+  {
+    name: 'Why is sigv4 not in the score?',
+    type: 'deferred follow-up',
+    description: 'The existing sigv4 unit tests pin URL shape and a signature-pattern regex but never the EXACT signature bytes for a known input — Stryker mutations to canonical-request assembly or the HMAC chain produce different-but-still-valid signatures that pass the shape-only assertions. Killing them needs pinned AWS sigv4 test vectors with a mocked clock — a focused exercise tracked as a Phase 4 follow-up sprint.',
+  },
+]} />
+
+## Further reading
+
+- [Reproduce our tests](/docs/test-verification) — the parent runbook
+  for partner reproduction of the full E2E suite.
+- [Sacrificial controls](/docs/test-verification/controls) — the
+  assertion-layer canary that complements mutation testing.
+  Mutation testing catches weak assertions in *production code*;
+  sacrificial controls catch a regressed *test framework*.
+- [ADR-1014 §Phase 4](https://github.com/aiSpirit-systems/consentshield/blob/main/docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md)
+  — the source of truth for Sprint 4.1 / 4.2 / 4.3 / 4.4 scope,
+  amendments, equivalent-mutant policy, and per-iteration scores.
+
+<FeedbackStrip page="docs/test-verification/mutation-testing" />
