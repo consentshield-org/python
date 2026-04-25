@@ -1,14 +1,15 @@
 // HS256 sign + verify using Web Crypto. ADR-0502 Sprint 1.1.
 //
-// Zero external dep — `crypto.subtle` is native to the Vercel Node and
-// Edge runtimes. We hand-roll the JWT envelope rather than pull `jose`
-// because the marketing project's dependency surface stays flat (CLAUDE
-// rule 16 spirit).
-
-import { webcrypto } from 'node:crypto'
+// Zero external dep — `crypto.subtle` is native to both the Vercel Node
+// and Edge runtimes (Edge runtime is what the Next.js middleware ships
+// on by default, and it cannot import `node:crypto`). We use the global
+// `crypto` rather than `node:crypto` so this module loads cleanly in
+// both runtimes; same reason we avoid `Buffer` in favour of `btoa`/
+// `atob`. JWT envelope is hand-rolled rather than pulling `jose`
+// because the marketing dependency surface stays flat (CLAUDE rule 16).
 
 const HEADER = { alg: 'HS256', typ: 'JWT' } as const
-const HEADER_B64 = base64UrlEncode(JSON.stringify(HEADER))
+const HEADER_B64 = base64UrlEncode(stringToBytes(JSON.stringify(HEADER)))
 
 export interface JwtPayload {
   // Standard claims we use.
@@ -19,7 +20,7 @@ export interface JwtPayload {
 }
 
 export async function sign(payload: JwtPayload, secret: string): Promise<string> {
-  const payloadB64 = base64UrlEncode(JSON.stringify(payload))
+  const payloadB64 = base64UrlEncode(stringToBytes(JSON.stringify(payload)))
   const signingInput = `${HEADER_B64}.${payloadB64}`
   const sig = await hmacSha256(signingInput, secret)
   return `${signingInput}.${sig}`
@@ -38,7 +39,7 @@ export async function verify<T extends JwtPayload = JwtPayload>(
   if (!constantTimeEqual(expected, sigB64)) throw new JwtError('signature', 'signature mismatch')
   let payload: T
   try {
-    payload = JSON.parse(base64UrlDecode(payloadB64)) as T
+    payload = JSON.parse(bytesToString(base64UrlDecode(payloadB64))) as T
   } catch {
     throw new JwtError('malformed', 'payload not JSON')
   }
@@ -57,26 +58,37 @@ export class JwtError extends Error {
 
 async function hmacSha256(message: string, secret: string): Promise<string> {
   const encoder = new TextEncoder()
-  const key = await webcrypto.subtle.importKey(
+  const key = await crypto.subtle.importKey(
     'raw',
     encoder.encode(secret),
     { name: 'HMAC', hash: 'SHA-256' },
     false,
     ['sign'],
   )
-  const sigBuf = await webcrypto.subtle.sign('HMAC', key, encoder.encode(message))
+  const sigBuf = await crypto.subtle.sign('HMAC', key, encoder.encode(message))
   return base64UrlEncode(new Uint8Array(sigBuf))
 }
 
-function base64UrlEncode(input: string | Uint8Array): string {
-  const bytes = typeof input === 'string' ? new TextEncoder().encode(input) : input
-  // Buffer.from is faster than manual btoa loops; available in Node + Vercel runtimes.
-  return Buffer.from(bytes).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+function stringToBytes(s: string): Uint8Array {
+  return new TextEncoder().encode(s)
 }
 
-function base64UrlDecode(input: string): string {
+function bytesToString(bytes: Uint8Array): string {
+  return new TextDecoder().decode(bytes)
+}
+
+function base64UrlEncode(bytes: Uint8Array): string {
+  let bin = ''
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i] as number)
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+
+function base64UrlDecode(input: string): Uint8Array {
   const padded = input + '='.repeat((4 - (input.length % 4)) % 4)
-  return Buffer.from(padded.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8')
+  const bin = atob(padded.replace(/-/g, '+').replace(/_/g, '/'))
+  const bytes = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+  return bytes
 }
 
 function constantTimeEqual(a: string, b: string): boolean {
