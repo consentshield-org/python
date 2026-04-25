@@ -156,13 +156,21 @@ Phase 1 shipped a working self-hosted status page but the Phase-1 wireframe does
 #### Sprint 2.1 — Charter, plan tier selection, account creation
 
 **Deliverables:**
-- [ ] Operator creates Better Stack account, owned by `info@consentshield.in` (canonical org-level identity, not the founder personal Gmail).
-- [ ] Plan tier selected and recorded in this ADR — pick the lowest tier that exposes 30-second checks + multi-region (EU + US + APAC at minimum) + custom domain on the status page + Slack/webhook incident integration. Better Stack has no workspace / team / organisation entity — every resource attaches to the user account that owns it.
-- [ ] Cost recorded in the operator-pending runbook.
-- [ ] API token generated, named `consentshield-marketing-prod`, account-level scope (BS tokens don't have finer scoping).
-- [ ] Token stored in `vercel env` for the `consentshield-marketing` project (env-var name: `BETTERSTACK_API_TOKEN`). Production scope only; preview not needed unless preview-deploy monitors are wanted later.
+- [x] Operator created Better Stack account, owned by `info@consentshield.in`. Completed 2026-04-25.
+- [x] Plan tier selected: **Free / $0/mo**. Founder direction (2026-04-25): stay on free tier through pre-launch; upgrade at the moment we open external distribution of `status.consentshield.in`. Marketing copy at `marketing/src/app/docs/status/page.mdx` stays as the post-upgrade target spec; aspirational-but-not-misleading because the page itself is gated behind the marketing OTP gate (ADR-0502) until launch.
+- [x] Cost recorded: $0/mo while on free tier; Sprint 2.5 launch-gate triggers the upgrade decision (likely the Hobbyist or Team tier, whichever exposes 30-second multi-region + custom domain + email/RSS/webhook subscribers).
+- [x] API token generated, named `consentshield-marketing-prod`, account-level scope.
+- [x] Token stored in `vercel env` for the `consentshield-marketing` project as `BETTERSTACK_API_TOKEN` on **Production + Preview** scopes. Verified via `bunx vercel@latest env ls`.
 
 **Operator runbook:** `docs/runbooks/adr-1018-phase-2-better-stack-sprint-2-1.md`.
+
+### Free-tier vs marketing-copy reconciliation note
+
+The marketing copy promises 30-second multi-region cadence, custom domain, and email/RSS/webhook subscribers — none of which BS free typically exposes. Sprint 2.2 below will configure what free actually allows (likely 3-minute single-region monitors); Sprints 2.4 + 2.5 + 2.6 are **gated on an upgrade-at-launch operator decision**. Pre-release blocker on external distribution of `status.consentshield.in` therefore now reads *"upgrade tier + complete Sprints 2.4 → 2.6"* rather than *"complete Sprint 2.4 DNS cutover"* alone.
+
+The marketing copy stays untouched in the meantime because:
+1. It's the post-upgrade target spec (no honesty gap once we ship).
+2. The `/docs/status` page is itself behind the ADR-0502 marketing-site OTP gate — a confidential-preview reader who hits the claims is also under invitation, not a member of the public who'd be misled by aspirational copy.
 
 #### Sprint 2.2 — Monitor matrix configured
 

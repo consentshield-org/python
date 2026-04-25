@@ -2,6 +2,32 @@
 
 Vercel, Cloudflare, Supabase config changes.
 
+## [ADR-1018 Phase 2 Sprint 2.1 — Better Stack account + token (free tier)] — 2026-04-25
+
+**ADR:** ADR-1018 — Status page (Phase 1 self-hosted superseded; Phase 2 Better Stack)
+**Sprint:** Phase 2, Sprint 2.1
+**Runbook:** `docs/runbooks/adr-1018-phase-2-better-stack-sprint-2-1.md`
+
+### Added
+
+- Better Stack account on `info@consentshield.in` (canonical org-level identity, not founder personal Gmail). BS has no workspace / team / organisation entity — every resource attaches directly to the user account.
+- API token `consentshield-marketing-prod` generated, account-level scope.
+- `BETTERSTACK_API_TOKEN` env var seeded on the `consentshield-marketing` Vercel project for both **Production** and **Preview** scopes. Verified via `bunx vercel@latest env ls`. (Preview seeded with `bunx vercel@39` per the v52 preview-env-add bug recorded in the Vercel-setup memory.)
+
+### Changed
+
+- ADR-1018 Phase 2 Sprint 2.1 deliverables flipped from `[ ]` to `[x]`; tier + cost recorded inline in the ADR.
+
+### Decision noted
+
+- Tier: **Free, $0/mo** through pre-launch. Founder direction (2026-04-25): upgrade at the moment of opening external distribution of `status.consentshield.in`. Marketing copy at `marketing/src/app/docs/status/page.mdx` left untouched as the post-upgrade target spec; honest because `/docs/status` is itself behind the ADR-0502 marketing-site OTP gate, so the only readers today are invited prospects, not the public.
+- Pre-release blocker on external distribution of `status.consentshield.in` is now *"upgrade tier + complete Sprints 2.4 → 2.6"* rather than just *"complete Sprint 2.4 DNS cutover"*.
+
+### Tested
+
+- [x] `bunx vercel@latest env ls` — `BETTERSTACK_API_TOKEN` shows on both Production + Preview, encrypted, ~5s ago.
+- [ ] BS API smoke test (Sprint 2.2 first deliverable) — pending.
+
 ## [ADR-1003 Sprint 3.2 — zero-storage 100K load harness] — 2026-04-25
 
 **ADR:** ADR-1003 — Processor Posture + Healthcare Category Unlock
