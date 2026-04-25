@@ -22,8 +22,24 @@ export const metadata: Metadata = {
   title:
     "ConsentShield — India's DPDP compliance enforcement engine",
   description:
-    'ConsentShield is the DEPA-native compliance engine for India\'s DPDP Act. Collect consent as artefacts, enforce it in real time, prove it with an audit trail the DPB can read.',
+    'ConsentShield is built DEPA-native to MeitY BRD standards for India\'s DPDP Act. Collect consent as artefacts, enforce it in real time, prove it with an audit trail the DPB can read.',
   metadataBase: new URL('https://consentshield.in'),
+  // Confidential preview — gated to invited prospects only.
+  // belt-and-braces noindex at the document level, layered with
+  // robots.ts (crawler allowlist) and X-Robots-Tag (HTTP header).
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: {
+      index: false,
+      follow: false,
+      noimageindex: true,
+      'max-snippet': -1,
+      'max-image-preview': 'none',
+      'max-video-preview': -1,
+    },
+  },
   openGraph: {
     title: 'ConsentShield',
     description:

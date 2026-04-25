@@ -41,6 +41,13 @@ const SECURITY_HEADERS = [
     value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
   },
   { key: 'X-Frame-Options', value: 'DENY' },
+  // Confidential preview — server-side noindex / nofollow for any
+  // crawler that ignored robots.ts and the document <meta name="robots">.
+  // Includes an explicit `noai`/`noimageai` for AI-trainer compliance.
+  {
+    key: 'X-Robots-Tag',
+    value: 'noindex, nofollow, noarchive, nosnippet, noimageindex, noai, noimageai',
+  },
   {
     key: 'Content-Security-Policy-Report-Only',
     value: CSP_REPORT_ONLY,
