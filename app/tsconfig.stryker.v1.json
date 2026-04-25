@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": [
+    "next-env.d.ts",
+    "src/lib/api/auth.ts",
+    "src/lib/api/v1-helpers.ts",
+    "src/lib/api/rate-limits.ts",
+    "src/lib/api/cs-api-client.ts",
+    "src/lib/api/log-request.ts",
+    "src/lib/api/context.ts"
+  ],
+  "exclude": ["node_modules", "tests", ".next", "../worker", "../supabase/functions"]
+}

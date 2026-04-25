@@ -20,10 +20,10 @@
 | Phase 1 — Harness foundations | 5/5 `[x]` | ✅ Complete |
 | Phase 2 — Vertical demo sites on Railway | 4/4 `[x]` | ✅ Complete (Playwright runtime green deferred per-sprint pending ADR-1010 Worker migration) |
 | Phase 3 — Full-pipeline E2E suites | 6/7 `[x]` + 1 `[~]` | 🟡 Sprint 3.2 partial — R2 delivery + end-to-end trace-id blocked on `consent_events.trace_id` column + Worker header propagation. `deliver-consent-events` Edge Function itself has since shipped (ADR-1019). |
-| Phase 4 — Stryker mutation testing | 2/4 `[x]` + 2 `[ ]` | 🟢 Sprint 4.1 complete (Worker `hmac.ts` + `validateOrigin` baseline at 91.07%; `timingSafeEqual` length-bypass killed). Sprint 4.2 complete (delivery pipeline pure surfaces — `canonical-json` 100% / `object-key` 90.91% / `endpoint` 92.00%, overall 95.65%; sigv4 internals deferred to a focused follow-up sprint pending pinned AWS test vectors). 4.3/4.4 planned. |
+| Phase 4 — Stryker mutation testing | 3/4 `[x]` + 1 `[ ]` | 🟢 Sprint 4.1 complete (Worker `hmac.ts` + `validateOrigin` at 91.07%; `timingSafeEqual` length-bypass killed). Sprint 4.2 complete (delivery pipeline pure surfaces — `canonical-json` 100% / `object-key` 90.91% / `endpoint` 92.00%, overall 95.65%; sigv4 internals deferred to a focused follow-up). Sprint 4.3 complete (v1 pure helpers — `auth.ts` + `v1-helpers.ts` + `rate-limits.ts` at **100.00%**; 3 regex anchor/quantifier mutants killed by 'malformed' vs 'invalid' reason-code distinction). 4.4 planned. |
 | Phase 5 — Partner reproduction kit + evidence publication | 4/4 `[x]` | ✅ Complete 2026-04-25. Sprint 5.1 (partner bootstrap — unblocks ADR-1015 Phase 3) · Sprint 5.2 (`/docs/test-verification` runbook) · Sprint 5.3 (`testing.consentshield.in` public index — code-complete; Vercel provisioning is operator follow-up) · Sprint 5.4 (8 sacrificial controls + CI gate). |
 
-21 of 24 sprints fully complete; 1 partial; 2 planned (Phase 4 Sprints 4.3 / 4.4). One Phase 4 follow-up tracked: `app/src/lib/storage/sigv4.ts` mutation kill-set (deferred from Sprint 4.2 pending pinned AWS sigv4 test vectors).
+22 of 24 sprints fully complete; 1 partial; 1 planned (Phase 4 Sprint 4.4 — CI gate + `testing.consentshield.in` integration). One Phase 4 follow-up tracked: `app/src/lib/storage/sigv4.ts` mutation kill-set (deferred from Sprint 4.2 pending pinned AWS sigv4 test vectors).
 
 ---
 
@@ -540,11 +540,66 @@ The 19 errors are TypeScript-infeasible mutations the checker rejected before ex
 
 #### Sprint 4.3: v1 RPC baseline
 
-**Deliverables:**
-- [ ] Stryker config for `app/src/app/api/v1/**/*.ts` + the SECURITY DEFINER RPC wrappers.
-- [ ] Baseline + kill escaped mutants on: `assert_api_key_binding`, idempotency-key handling, per-row fencing.
+**Spec amendment.** The proposal targeted "the SECURITY DEFINER RPC wrappers" (`assert_api_key_binding`, idempotency-key handling, per-row fencing). Those RPCs themselves live in PL/pgSQL inside Postgres, not in TypeScript — Stryker can't mutate them directly. Sprint 4.3's actual mutate scope is the **TypeScript** surface that fronts the v1 API surface: the Bearer-token verifier, the RFC 7807 problem-builder, the scope-and-org-presence gates, and the rate-tier dictionary. The RPC contracts themselves are exercised by the Phase 3 E2E suites + integration / RLS tests; Sprint 4.4's CI gate will surface cumulative kill-set across all of Phase 4.
 
-**Status:** `[ ] planned`
+**Deliverables:**
+- [x] `app/stryker.v1.conf.mjs` — Stryker 9.6.1 with `vitest-runner` + `typescript-checker` plugins. Mutate scope:
+  - `src/lib/api/auth.ts:34-45` — `verifyBearerToken` pre-SQL branches (header-presence + Bearer regex).
+  - `src/lib/api/auth.ts:96-109` — `problemJson` RFC 7807 builder.
+  - `src/lib/api/v1-helpers.ts:41-65` — `gateScopeOrProblem` + `requireOrgOrProblem` synchronous gates.
+  - `src/lib/api/rate-limits.ts` (entire file) — `TIER_LIMITS` + `limitsForTier` fallback chain.
+  Threshold gate `low: 80 / high: 90 / break: 80`. HTML + JSON reporters under `app/reports/mutation/v1/`.
+- [x] `app/tsconfig.stryker.v1.json` — Stryker-only tsconfig for the v1 mutate scope (mirrors the Sprint 4.2 pattern; excludes `tests/` to avoid pre-existing lax-mode test-file typing breaking the checker init).
+- [x] `app/package.json` — new script `test:mutation:v1`.
+- [x] `.gitignore` — `app/.stryker-tmp-v1/`.
+- [x] **New unit tests authored** (no pre-existing coverage for these surfaces):
+  - `app/tests/api/auth.test.ts` (~22 cases) — `verifyBearerToken` malformed-header branches: null / empty / non-Bearer scheme / lowercase scheme / non-`cs_live_` prefix / `cs_test_` prefix / upper-case prefix / empty-after-prefix / trailing space / inner whitespace / no separator / double-space separator. Plus the **regex-anchor + quantifier kill tests**: `JunkBearer cs_live_abc` MUST return `'malformed'` (not `'invalid'` — defends the `^` anchor); `Bearer cs_live_abcdef0123` MUST return `'invalid'` (regex-pass + SQL-fail — defends the `\S+` quantifier and `\S` vs `\s` character class). Plus `problemJson` exhaustive shape tests.
+  - `app/tests/api/v1-helpers.test.ts` (~14 cases) — `gateScopeOrProblem` happy/empty/missing/case-sensitive/no-prefix-bleed/Forbidden type-URL; `requireOrgOrProblem` present/null/empty-string/Bad-Request type-URL/route-name in detail.
+  - `app/tests/api/rate-limits.test.ts` (~19 cases) — exhaustive 7-tier matrix on both `TIER_LIMITS` table + `limitsForTier`; unknown-tier fallback to STARTER (not enterprise / growth / pro — defends fallback-flip mutants); reference-equality for fallback path; empty-string lookup.
+- [x] Baseline at 88% → after adding the 3 regex-kill tests → **100.00% mutation score** on all three modules. Zero survivors.
+
+**Why "the SECURITY DEFINER RPCs themselves" weren't in scope.** PL/pgSQL functions aren't TypeScript files. Stryker doesn't have a Postgres mutator. There are language-level mutation tools for SQL (e.g. SQLancer, sqlsmith) but they target query *shape*, not assertion logic, and adding one would be a wholly separate Phase-5 ADR. Today the RPCs are tested by:
+- `tests/integration/v1-*.test.ts` — exercises every `/v1/*` route as a real bearer-token holder against a live Supabase project. Catches API-key-binding regressions because a wrong fence would either let the wrong account see data (caught by RLS-isolation tests) or refuse the right one (caught by happy-path tests).
+- `tests/rls/*.test.ts` — cross-org/cross-account isolation, run on every deploy.
+- The Phase 3 E2E suites — full pipeline including the `assert_api_key_binding` fence as part of the pos/neg test pair.
+
+**Equivalent-mutant carve-out.** None. All 25 mutants in scope were killed by the test suite — the first 100% Phase 4 module set.
+
+**Most-dangerous mutants killed.** Three regex mutations on `verifyBearerToken`'s Bearer-pattern, all auth-bypass risks if they shipped:
+- `^Bearer (cs_live_\S+)$` → `Bearer (cs_live_\S+)$` (drop `^` anchor) — would let a header like `JunkBearer cs_live_abc` pass the regex and reach the SQL verifier. Killed via the `JunkBearer` test that asserts the rejection reason is `'malformed'` (regex-fail) NOT `'invalid'` (SQL-fail-via-catch).
+- `^Bearer (cs_live_\S+)$` → `^Bearer (cs_live_\S)$` (drop `+` quantifier) — would refuse multi-char tokens. Killed via the `Bearer cs_live_abcdef0123` test that asserts the rejection reason is `'invalid'` (regex-pass + SQL-fail) NOT `'malformed'`.
+- `^Bearer (cs_live_\S+)$` → `^Bearer (cs_live_\s+)$` (\S → \s) — would refuse text and accept whitespace. Killed by the same multi-char test.
+
+**Status:** `[x] complete 2026-04-25 — v1 pure helpers at 100.00% mutation score (auth 100%, v1-helpers 100%, rate-limits 100%); 3 regex-anchor + quantifier mutants killed via 'malformed' vs 'invalid' reason-code distinction; threshold gate ≥80% wired into `bun run test:mutation:v1`.`
+
+##### Test Results — Sprint 4.3
+
+```text
+$ cd app && bun run test tests/api                       # baseline pool
+ Test Files  3 passed (3)
+      Tests  55 passed (55)
+   Duration  199ms
+
+$ cd app && bun run test:mutation:v1                     # final
+----------------|------------------|----------|-----------|------------|----------|----------|
+                | % Mutation score |          |           |            |          |          |
+File            |  total | covered | # killed | # timeout | # survived | # no cov | # errors |
+----------------|--------|---------|----------|-----------|------------|----------|----------|
+All files       | 100.00 |  100.00 |       25 |         0 |          0 |        0 |       26 |
+ auth.ts        | 100.00 |  100.00 |       11 |         0 |          0 |        0 |       14 |
+ rate-limits.ts | 100.00 |  100.00 |        2 |         0 |          0 |        0 |        8 |
+ v1-helpers.ts  | 100.00 |  100.00 |       12 |         0 |          0 |        0 |        4 |
+----------------|--------|---------|----------|-----------|------------|----------|----------|
+Final mutation score of 100.00 is greater than or equal to break threshold 80
+```
+
+| Iteration | Mutation score | Notes |
+|---|---|---|
+| Baseline (entire `auth.ts` + entire `v1-helpers.ts` + `rate-limits.ts`) | 42.31% (rate-limits 100 / v1-helpers 48 / auth 32; 25 NoCoverage) | NoCoverage mutants in `auth.ts` SQL branch + `v1-helpers.ts` `readContext` / `respondV1` (Next.js-runtime-bound). |
+| After narrowing scope to pre-SQL + pure-gate branches | 88.00% (rate-limits 100 / v1-helpers 100 / auth 72.73; 3 regex survivors) | Three regex mutants survived because no test entered the SQL fall-through branch. |
+| After adding `JunkBearer` + `Bearer cs_live_abcdef0123` reason-code-distinguishing tests | **100.00%** (no survivors) | The `'malformed'` (regex-fail) vs `'invalid'` (regex-pass + SQL-catch) reason-code distinction kills all three regex mutants in two tests. |
+
+The 26 errors are TypeScript-infeasible mutations the checker rejected before execution. Sprint 4.3 closes with no equivalent-mutant carve-out — the cleanest Phase 4 module set so far.
 
 #### Sprint 4.4: CI gate
 

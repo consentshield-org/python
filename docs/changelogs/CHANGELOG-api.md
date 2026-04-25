@@ -2,6 +2,40 @@
 
 API route changes.
 
+## [ADR-1014 Sprint 4.3 — Stryker mutation testing baseline (v1 pure helpers)] — 2026-04-25
+
+**ADR:** ADR-1014 — End-to-end test harness + vertical demo sites
+**Sprint:** Phase 4, Sprint 4.3
+
+### Added
+- `app/stryker.v1.conf.mjs` — Stryker 9.6.1 with `vitest-runner` + `typescript-checker` plugins; `coverageAnalysis: 'perTest'`; threshold gate `low: 80 / high: 90 / break: 80`; HTML + JSON reporters under `app/reports/mutation/v1/`. Mutate scope (line-ranged so the SQL-bound + Next.js-runtime-bound branches are not penalised as NoCoverage):
+  - `src/lib/api/auth.ts:34-45` — `verifyBearerToken` pre-SQL branches (header-presence + Bearer regex).
+  - `src/lib/api/auth.ts:96-109` — `problemJson` RFC 7807 builder.
+  - `src/lib/api/v1-helpers.ts:41-65` — `gateScopeOrProblem` + `requireOrgOrProblem` synchronous gates.
+  - `src/lib/api/rate-limits.ts` (entire file) — `TIER_LIMITS` table + `limitsForTier` fallback chain.
+- `app/tsconfig.stryker.v1.json` — Stryker-only tsconfig that scopes the typescript-checker to the v1 mutate targets (mirrors the Sprint 4.2 pattern; excludes `tests/` to avoid pre-existing lax-mode test-file typing breaking the checker init).
+- `app/package.json` — new script `test:mutation:v1`.
+- `app/tests/api/auth.test.ts` (~22 cases) — `verifyBearerToken` malformed-header branches: null / empty / non-Bearer scheme / lowercase scheme / non-`cs_live_` prefix / `cs_test_` prefix / upper-case prefix / empty-after-prefix / trailing space / inner whitespace / no separator / double-space separator. Plus the **regex-anchor + quantifier kill tests**: `JunkBearer cs_live_abc` MUST return `'malformed'` (defends the `^` anchor); `Bearer cs_live_abcdef0123` MUST return `'invalid'` (regex-pass + SQL-fail — defends the `\S+` quantifier and `\S` vs `\s` character class). Plus `problemJson` exhaustive shape tests (canonical four fields, type-URL slugification, multi-space title collapse, extras-spread last-write-wins, no-extras key list).
+- `app/tests/api/v1-helpers.test.ts` (~14 cases) — `gateScopeOrProblem` happy / empty / missing / case-sensitive / no-prefix-bleed (defends `.includes` vs `.some(s => s.startsWith(...))` mutants) / Forbidden type-URL; `requireOrgOrProblem` present / null / empty-string-as-missing / Bad-Request type-URL / route-name in detail.
+- `app/tests/api/rate-limits.test.ts` (~19 cases) — exhaustive 7-tier matrix on both `TIER_LIMITS` table + `limitsForTier`; unknown-tier fallback to STARTER (not enterprise / growth / pro — defends fallback-flip mutants); reference-equality for fallback path; empty-string lookup.
+
+### Changed
+- `.gitignore` — `app/.stryker-tmp-v1/`.
+
+### Architecture Changes
+- **Spec amendment for Sprint 4.3 scope.** ADR-1014 originally targeted "the SECURITY DEFINER RPC wrappers" (`assert_api_key_binding`, idempotency-key handling, per-row fencing). Those RPCs themselves live in PL/pgSQL inside Postgres, not in TypeScript — Stryker can't mutate them directly. Sprint 4.3's actual mutate scope is the TypeScript surface that fronts the v1 API: the Bearer-token verifier, the RFC 7807 problem-builder, the scope-and-org-presence gates, and the rate-tier dictionary. The PL/pgSQL RPC contracts themselves stay covered by `tests/integration/v1-*.test.ts` + `tests/rls/*.test.ts` + the Phase 3 E2E suites, which exercise them end-to-end as a real bearer-token holder against a live Supabase project. Sprint 4.4's CI gate will surface cumulative kill-set across all of Phase 4.
+- **Most-dangerous-mutant kill — three regex mutants on the Bearer pattern, all auth-bypass risks if shipped.** Killed by a `'malformed'` (regex-fail) vs `'invalid'` (regex-pass + SQL-fail-via-catch) reason-code distinction in the test asserts:
+  - Drop `^` anchor → `JunkBearer cs_live_abc` would substring-match the tail and reach the SQL verifier. Killed.
+  - Drop `+` quantifier on `\S` → would refuse multi-char tokens. Killed via the SQL-fall-through reason-code distinction.
+  - Flip `\S` → `\s` → would accept whitespace, refuse text. Killed by the same multi-char test.
+- **No equivalent-mutant carve-out.** All 25 mutants in scope were killed — the cleanest Phase 4 module set so far. Three Phase 4 sprints in: Sprint 4.1 had 5 equivalents, Sprint 4.2 had 3, Sprint 4.3 has 0.
+
+### Tested
+- [x] `cd app && bun run test tests/api` — 55 passed (3 files) — PASS
+- [x] `cd app && bun run test:mutation:v1` — **100.00% mutation score** (auth.ts 100%, v1-helpers.ts 100%, rate-limits.ts 100%); 25 killed, 0 survived, 0 timeouts, 26 typecheck-rejected mutants. Above the `break: 80` threshold gate.
+- [x] **Iteration trace.** Baseline at 42.31% (NoCoverage on the SQL + Next.js-runtime branches). Narrowed scope to pre-SQL + pure-gate branches → 88.00% (3 regex survivors). Added 2 reason-code-distinguishing tests → **100.00%**.
+- [x] Pre-existing app vitest pool unaffected — all delivery + storage tests still pass; no regression in the 197 baseline.
+
 ## [ADR-1014 Sprint 4.2 — Stryker mutation testing baseline (delivery pipeline)] — 2026-04-25
 
 **ADR:** ADR-1014 — End-to-end test harness + vertical demo sites

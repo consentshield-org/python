@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-25T01:45:50.290Z
-> Files: 1438 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-25T01:55:10.442Z
+> Files: 1443 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../tmp/
 
@@ -229,7 +229,7 @@
 
 ## ./
 
-- `.gitignore` — Git ignore rules (~336 tok)
+- `.gitignore` — Git ignore rules (~342 tok)
 - `.prettierrc` (~29 tok)
 - `.secrets` — Supabase (~972 tok)
 - `CLAUDE.md` — OpenWolf (~6199 tok)
@@ -656,10 +656,12 @@
 ## app/
 
 - `next.config.ts` — Declares NOINDEX_VALUE (~148 tok)
-- `package.json` — Node.js package manifest (~424 tok)
+- `package.json` — Node.js package manifest (~440 tok)
 - `stryker.delivery.conf.mjs` — ADR-1014 Phase 4 Sprint 4.2 — Stryker mutation testing for the (~1078 tok)
+- `stryker.v1.conf.mjs` — /route.ts) (~943 tok)
 - `tsconfig.json` — TypeScript configuration (~117 tok)
 - `tsconfig.stryker.json` (~93 tok)
+- `tsconfig.stryker.v1.json` (~116 tok)
 - `vercel.json` (~33 tok)
 
 ## app/public/
@@ -1249,6 +1251,12 @@
 - `invitation-dispatch.test.ts` — Declares InvitationRole (~695 tok)
 - `invitations-marketing-signature.test.ts` — ADR-0044 Phase 2.6 — HMAC sign/verify for /api/internal/invites. (~755 tok)
 
+## app/tests/api/
+
+- `auth.test.ts` — ADR-1014 Phase 4 Sprint 4.3 — unit coverage for app/src/lib/api/auth.ts. (~2179 tok)
+- `rate-limits.test.ts` — ADR-1014 Phase 4 Sprint 4.3 — unit coverage for app/src/lib/api/rate-limits.ts. (~850 tok)
+- `v1-helpers.test.ts` — ADR-1014 Phase 4 Sprint 4.3 — unit coverage for the pure synchronous (~1233 tok)
+
 ## app/tests/auth/
 
 - `bootstrap-org.test.ts` — ADR-0042 — unit tests for ensureOrgBootstrap idempotency guard. (~933 tok)
@@ -1403,7 +1411,7 @@
 - `ADR-1011-revoked-key-tombstone.md` — ADR-1011: Revoked-key tombstone — rotate+revoke plaintexts return 410 (~1088 tok)
 - `ADR-1012-v1-dx-gap-fixes.md` — ADR-1012: v1 API — day-1 DX gap fixes (~2561 tok)
 - `ADR-1013-cs-orchestrator-direct-postgres.md` — ADR-1013: `cs_orchestrator` direct-Postgres migration (Next.js runtime) (~2726 tok)
-- `ADR-1014-e2e-test-harness-and-vertical-demos.md` — ADR-1014: End-to-end test harness + vertical demo sites (partner-evidence grade) (~22610 tok)
+- `ADR-1014-e2e-test-harness-and-vertical-demos.md` — ADR-1014: End-to-end test harness + vertical demo sites (partner-evidence grade) (~24407 tok)
 - `ADR-1015-v1-api-integration-tests-and-developer-docs.md` — ADR-1015: v1 API integration tests + customer developer documentation (~7655 tok)
 - `ADR-1016-v1-orphan-scope-read-endpoints.md` — ADR-1016: v1 API — close the orphan `read:audit`, `read:security`, `read:score` scopes (~1836 tok)
 - `ADR-1017-admin-ops-readiness-flags.md` — ADR-1017: Admin ops-readiness flags — surface external blockers in the operator console (~1656 tok)
@@ -1417,7 +1425,7 @@
 - `ADR-1025-customer-storage-auto-provisioning.md` — ADR-1025: Customer storage auto-provisioning — hybrid managed R2 default + BYOK escape hatch (~13370 tok)
 - `ADR-1026-drop-hyperdrive-direct-supavisor.md` — ADR-1026: Rewind ADR-1010 Phase 3 — Worker connects directly to Supavisor; drop Hyperdrive binding (~5467 tok)
 - `ADR-1027-admin-account-awareness.md` — ADR-1027: Admin Account-Awareness Pass (~8082 tok)
-- `ADR-index.md` — ADR Index (~6860 tok)
+- `ADR-index.md` — ADR Index (~7125 tok)
 - `ADR-template.md` — ADR-NNNN: Title (~423 tok)
 - `adr-workflow.md` — ADR Workflow Rules (~557 tok)
 
@@ -1441,7 +1449,7 @@
 
 ## docs/changelogs/
 
-- `CHANGELOG-api.md` — Changelog — API (~37488 tok)
+- `CHANGELOG-api.md` — Changelog — API (~38717 tok)
 - `CHANGELOG-dashboard.md` — Changelog — Dashboard (~28720 tok)
 - `CHANGELOG-docs.md` — Changelog — Documentation (~13701 tok)
 - `CHANGELOG-edge-functions.md` — Changelog — Edge Functions (~4251 tok)
@@ -1516,7 +1524,7 @@
 - `2026-04-18-comprehensive-project-review.md` — ConsentShield — Comprehensive Review as of 2026-04-18 (~3553 tok)
 - `2026-04-20-api-key-security-review.md` — Security Review — API Key Surface (ADR-1001 Sprint 3.1) (~1833 tok)
 - `2026-04-21-v1-api-gap-audit.md` — v1 API Gap Audit — 2026-04-21 (~2913 tok)
-- `2026-04-25-marketing-claims-vs-reality-review.md` — Marketing claims vs. reality review (~3658 tok)
+- `2026-04-25-marketing-claims-vs-reality-review.md` — Marketing claims vs. reality review (~7079 tok)
 
 ## docs/runbooks/
 
