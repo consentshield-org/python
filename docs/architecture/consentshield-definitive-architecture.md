@@ -1201,6 +1201,7 @@ If question 5 is yes, write it yourself. A day of work eliminates a permanent su
 | Feature Flags | `/flags` | `admin.kill_switches` | 0036 |
 | Admin Users | `/admins` | `admin.admin_users` with invite / role-change / disable | 0045 |
 | Audit Log | `/audit-log` + `/audit-log/export` | `admin.admin_audit_log` partitioned monthly | 0028 |
+| Status Page (operator) | `/status` | `public.status_subsystems` + `status_checks` + `status_incidents`; subsystem state-flip + incident post / resolve via SECURITY DEFINER RPCs | 1018 Phase 1 |
 
 ## Appendix B — Observability data model (post-ADR-0049)
 
@@ -1245,3 +1246,40 @@ Admin Route Handlers under `admin/src/app/api/admin/*` may use `SUPABASE_SERVICE
 3. Keep non-auth work (reads, joins, user-visible data) on the authed `cs_admin` client.
 
 Implemented via `admin/src/lib/supabase/service.ts` + `admin/src/lib/admin/lifecycle.ts` — Route Handlers and Server Actions both delegate to the shared lifecycle helper so the RPC-first-then-auth.admin ordering lives in one place.
+
+## Appendix E — Public status surface (`status.consentshield.in`)
+
+Status-page architecture is owned by ADR-1018, structured in two phases. Phase 1 is shipped and runs as an internal operator readout; Phase 2 lifts the public-facing surface to a vendor-managed page (Better Stack) post-launch.
+
+### Phase 1 — Self-hosted (ADR-1018 Phase 1, Completed 2026-04-23, superseded as primary public surface 2026-04-25)
+
+A schema + admin panel + read-only public route + pg_cron probe loop, all inside ConsentShield's compliance perimeter:
+
+| Layer | Surface |
+|---|---|
+| Schema | `public.status_subsystems` · `public.status_checks` (append-only probe results) · `public.status_incidents` — see schema doc §13. |
+| RLS | Anon SELECT open on all three tables (public read path needs it). Writes only via four admin SECURITY DEFINER RPCs gated on `admin.require_admin('support')`: `admin.set_status_subsystem_state`, `admin.post_status_incident`, `admin.update_status_incident`, `admin.resolve_status_incident`. `cs_orchestrator` has INSERT/UPDATE on `status_checks` for the probe cron. |
+| Admin surface | `admin/(operator)/status` — list + edit subsystems, view recent checks, post + update + resolve incidents. Audit-logged via `admin.admin_audit_log`. Listed in Appendix A. |
+| Public surface | `app/(public)/status` on the customer app — anon-readable subsystem cards (state + 90-day uptime) + open-incidents banner + collapsible 90-day resolved history with postmortem links. `revalidate = 60`. Outside `proxy.ts` matcher so the auth gate doesn't fire. |
+| Probe loop | `supabase/functions/run-status-probes` — fetches each subsystem's `health_url` (8s timeout), writes one `status_checks` row, reconciles `current_state` (eager recovery on a single operational probe; failure requires 3 consecutive non-operational checks before auto-flipping; respects manual `maintenance` without stomp). Scheduled via pg_cron `*/5 * * * *`. Heartbeat cron `*/15 * * * *` raises an `admin.ops_readiness_flags` row if no `status_checks` row has landed in 30 minutes. |
+| Health endpoints probed | `/api/health` on the customer app + `functions/v1/health` on Supabase Edge — both unauthenticated liveness checks; named `health` (not `_health`) because Supabase rejects Function names that start with `_`. |
+| DNS (Phase 1) | `status.consentshield.in` CNAME → `cname.vercel-dns.com`; aliased to the `app` Vercel project; host-based redirect in `app/src/app/page.tsx` maps the alias root → `/status`. TLS auto-issued. |
+
+After ADR-1018 Phase 2 cuts over, the customer-app `/status` route + admin panel + pg_cron probes continue to run as a **secondary in-perimeter readout** — useful for operator triage when Better Stack itself is degraded — but no longer power the public surface.
+
+### Phase 2 — Better Stack vendor-hosted (ADR-1018 Phase 2, Proposed 2026-04-25)
+
+Pivots the public surface from self-hosted to vendor-hosted. The reasoning, recorded in ADR-1018 Phase 2's Supersession note: BFSI / large-corporate procurement reads "Better Stack on `status.consentshield.in`" as a stronger trust signal than an in-product status route — the third-party ingestion path is the safety against *"the platform telling us about its own outage."*
+
+| Layer | Surface (post-Phase-2) |
+|---|---|
+| Vendor | Better Stack (formerly Better Uptime + Better Logs / Logtail). Account owned by `info@consentshield.in` (canonical org-level identity, not the founder personal address). |
+| Resources | 7 monitors mirroring the marketing wireframe at `marketing/src/app/docs/status/page.mdx` — REST API v1, Worker event ingestion, Rights-request portal, Dashboard, Admin console, Deletion-connector dispatch, Notification dispatch. Cadences per the wireframe (30-second multi-region for v1 + Worker; per-minute for Dashboard; 5-minute for Rights portal). |
+| Status page | Vendor-hosted public page with ConsentShield branding (custom domain + colours + logo) so the third-party-vendor framing stays implicit. |
+| DNS (Phase 2) | `status.consentshield.in` CNAME flipped from Phase-1's `cname.vercel-dns.com` to Better Stack's status-page CNAME target; Vercel domain alias removed; host-based redirect in `app/src/app/page.tsx` retired. |
+| Subscriber notifications | Email + RSS + webhook; `noreply@consentshield.in` as additional sender via Resend fallback for India deliverability. |
+| Incident-comms | sev1 / sev2 / sev3 severity matrix; `investigating` → `identified` → `monitoring` → `resolved` lifecycle; sev1 / sev2 post-mortems published within 14 business days; Slack integration on `#consentshield-status` for sev1 / sev2; sev3 stays email-only. |
+| Auth surface | `BETTERSTACK_API_TOKEN` env var on `consentshield-marketing` Vercel project Production + Preview scopes. Token name `consentshield-marketing-prod`, account-level scope (BS tokens have no finer scoping). |
+| Free-tier interim | Tier remains **Free, $0/mo** through pre-launch; founder direction (2026-04-25) is to upgrade at the moment of opening external distribution of `status.consentshield.in`. Sprints 2.4 → 2.6 fully deliver only post-upgrade. The free-tier deploy still allows Sprint 2.2 monitor configuration at whatever cadence + region count free exposes. |
+
+The pre-release blocker on external distribution of `status.consentshield.in` reads *"upgrade Better Stack tier + complete ADR-1018 Phase 2 Sprints 2.4 → 2.6"* — captured in the marketing-claims review's pending-corrections trailer.

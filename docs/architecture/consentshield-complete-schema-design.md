@@ -2862,3 +2862,135 @@ Enforced at RPC level:
 - `admin.admin_invite_create(p_user_id, p_display_name, p_admin_role, p_reason)` — raises 42501 if target user has any `public.account_memberships` or `public.org_memberships` rows. Migration `20260504000003`.
 
 Combined with proxy-level enforcement (admin proxy rejects non-`is_admin`; customer proxy rejects `is_admin=true`), these guards prevent any single `auth.users` row from holding both customer and admin identities.
+
+---
+
+## 13. Status page schema (ADR-1018, April 2026)
+
+ADR-1018 added three `public.*` tables for the self-hosted status surface (Phase 1, Completed 2026-04-23). All three keep RLS enabled with anon SELECT open so the customer-app `/status` route renders without auth; writes are restricted to admin SECURITY DEFINER RPCs gated on `admin.require_admin('support')`. Migration `20260804000013_status_page.sql` for the schema; migration `20260804000019_audit_log_column_fix.sql` for the audit-log column-set correction; migration `20260804000015_status_probes_cron.sql` for the probe + heartbeat pg_cron schedules.
+
+Phase 2 (ADR-1018 Phase 2, Proposed 2026-04-25) shifts the public surface to Better Stack and demotes these tables to internal operator readout. The schema does **not** change in Phase 2; the tables continue to capture pg_cron probe results + admin-posted incidents for the in-perimeter triage view.
+
+### 13.1 `public.status_subsystems`
+
+Catalogue of the surfaces being monitored. Seeded with six subsystems on Sprint 1.1: `banner_cdn`, `consent_capture_api`, `verification_api`, `deletion_orchestration`, `dashboard`, `notification_channels`.
+
+```sql
+create table public.status_subsystems (
+  id                          uuid        primary key default gen_random_uuid(),
+  slug                        text        not null unique,
+  display_name                text        not null,
+  description                 text,
+  health_url                  text,           -- nullable for subsystems probed indirectly
+  current_state               text        not null default 'operational'
+    check (current_state in ('operational','degraded','down','maintenance')),
+  last_state_change_at        timestamptz,
+  last_state_change_note      text,
+  sort_order                  int         not null default 0,
+  is_public                   boolean     not null default true,
+  created_at                  timestamptz not null default now(),
+  updated_at                  timestamptz not null default now()
+);
+
+alter table public.status_subsystems enable row level security;
+
+-- Public read: subsystem cards on /status are anon-readable.
+create policy status_subsystems_anon_read on public.status_subsystems
+  for select to anon, authenticated using (is_public = true);
+
+-- Writes only via admin RPC; cs_orchestrator gets UPDATE for the probe loop's
+-- current_state reconciliation.
+grant select on public.status_subsystems to anon, authenticated;
+grant select, update on public.status_subsystems to cs_orchestrator;
+```
+
+### 13.2 `public.status_checks` (append-only probe results)
+
+One row per probe per subsystem. Append-only; cleanup is informally bounded by 90-day retention queries on `/status` (no scheduled prune today — the table grows monotonically and will eventually be partitioned or pruned in a follow-up sprint when row count justifies the cost).
+
+```sql
+create table public.status_checks (
+  id              uuid        primary key default gen_random_uuid(),
+  subsystem_id    uuid        not null references public.status_subsystems(id) on delete cascade,
+  checked_at      timestamptz not null default now(),
+  status          text        not null
+    check (status in ('operational','degraded','down','maintenance','error')),
+  latency_ms      int,
+  error_message   text,
+  source_region   text                  -- e.g. 'us-east-1'; null in single-region probes
+);
+
+create index status_checks_recent_idx
+  on public.status_checks (subsystem_id, checked_at desc);
+
+alter table public.status_checks enable row level security;
+
+create policy status_checks_anon_read on public.status_checks
+  for select to anon, authenticated using (true);
+
+grant select on public.status_checks to anon, authenticated;
+grant insert, select on public.status_checks to cs_orchestrator;
+```
+
+### 13.3 `public.status_incidents`
+
+Operator-posted incidents overlay the automated `current_state`. Lifecycle: `investigating` → `identified` → `monitoring` → `resolved`; each transition timestamps a corresponding `*_at` column. Open-incidents banner on `/status` filters `where status <> 'resolved'`.
+
+```sql
+create table public.status_incidents (
+  id                       uuid        primary key default gen_random_uuid(),
+  title                    text        not null,
+  description              text        not null,
+  severity                 text        not null
+    check (severity in ('sev1','sev2','sev3')),
+  status                   text        not null default 'investigating'
+    check (status in ('investigating','identified','monitoring','resolved')),
+  affected_subsystems      uuid[]      not null default '{}',
+  started_at               timestamptz not null default now(),
+  identified_at            timestamptz,
+  monitoring_at            timestamptz,
+  resolved_at              timestamptz,
+  postmortem_url           text,
+  created_by               uuid        references admin.admin_users(id),
+  last_update_note         text,
+  created_at               timestamptz not null default now(),
+  updated_at               timestamptz not null default now()
+);
+
+create index status_incidents_open_idx
+  on public.status_incidents (status, started_at desc)
+  where status <> 'resolved';
+
+create index status_incidents_all_idx
+  on public.status_incidents (started_at desc);
+
+alter table public.status_incidents enable row level security;
+
+create policy status_incidents_anon_read on public.status_incidents
+  for select to anon, authenticated using (true);
+
+grant select on public.status_incidents to anon, authenticated;
+grant insert, select, update on public.status_incidents to cs_orchestrator;
+```
+
+### 13.4 Admin RPCs
+
+Four SECURITY DEFINER RPCs gate all writes through `admin.require_admin('support')` and audit-log to `admin.admin_audit_log`:
+
+- `admin.set_status_subsystem_state(p_slug text, p_state text, p_note text)` — flips `current_state` + sets `last_state_change_at` and `last_state_change_note`.
+- `admin.post_status_incident(p_title, p_description, p_severity, p_affected_subsystems uuid[])` — creates a new incident in `status='investigating'`.
+- `admin.update_status_incident(p_id, p_new_status, p_note)` — advances the lifecycle (`investigating` → `identified` → `monitoring`) and stamps the corresponding `*_at` column; raises if the transition isn't valid.
+- `admin.resolve_status_incident(p_id, p_postmortem_url)` — terminal state; sets `status='resolved'` and `resolved_at`.
+
+### 13.5 Probe loop (Edge Function + pg_cron)
+
+`supabase/functions/run-status-probes` iterates subsystems with non-null `health_url`, fetches each with an 8-second timeout, writes one `status_checks` row, and reconciles `current_state`:
+
+- **Eager recovery**: a single operational probe flips a non-operational subsystem back to `operational`.
+- **Lazy degrade**: 3 consecutive non-operational checks required before auto-flipping to `degraded` / `down`.
+- **Maintenance respected**: never auto-overwrites `current_state='maintenance'` (operator explicitly set it).
+
+Two pg_cron schedules (migration `20260804000015_status_probes_cron.sql`):
+
+- `status-probes-5min` on `*/5 * * * *` calls `run-status-probes`.
+- `status-probes-heartbeat-check` on `*/15 * * * *` — pure SQL; inserts an `admin.ops_readiness_flags` row (category `infra`, severity `high`) if no `status_checks` row has been written in the last 30 minutes. Idempotent: only inserts when no matching `pending`/`in_progress` flag already exists.
