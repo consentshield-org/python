@@ -1,6 +1,6 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-25T02:29:42.663Z
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-25T02:47:23.917Z
 > Files: 1452 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../tmp/
@@ -661,7 +661,7 @@
 - `next.config.ts` — Declares NOINDEX_VALUE (~148 tok)
 - `package.json` — Node.js package manifest (~459 tok)
 - `stryker.delivery.conf.mjs` — ADR-1014 Phase 4 Sprint 4.2 — Stryker mutation testing for the (~1078 tok)
-- `stryker.sigv4.conf.mjs` — ADR-1014 Phase-4 follow-up — Stryker mutation testing for the (~688 tok)
+- `stryker.sigv4.conf.mjs` — ADR-1014 Phase-4 follow-up — Stryker mutation testing for the (~1150 tok)
 - `stryker.v1.conf.mjs` — /route.ts) (~943 tok)
 - `tsconfig.json` — TypeScript configuration (~117 tok)
 - `tsconfig.stryker.json` (~93 tok)
@@ -1317,7 +1317,7 @@
 - `provision-org.test.ts` — ADR-1025 Phase 2 Sprint 2.1 — unit tests for provision-org.ts. (~3018 tok)
 - `retention-cleanup.test.ts` — ADR-1025 Phase 4 Sprint 4.1 — retention-cleanup tests. (~1746 tok)
 - `rotate-org.test.ts` — ADR-1025 Phase 4 Sprint 4.1 — rotate-org tests. (~1718 tok)
-- `sigv4.test.ts` — ADR-0040 Sprint 1.1 + ADR-1003 Sprint 2.1 + ADR-1014 Phase 4 follow-up (~4066 tok)
+- `sigv4.test.ts` — ADR-0040 Sprint 1.1 + ADR-1003 Sprint 2.1 + ADR-1014 Phase 4 follow-up (~6581 tok)
 - `validate.test.ts` — ADR-1003 Sprint 2.1 — scope-down probe orchestration tests. (~1926 tok)
 - `verify.test.ts` — ADR-1025 Phase 1 Sprint 1.3 — unit tests for the verification probe. (~2780 tok)
 
@@ -1416,7 +1416,7 @@
 - `ADR-1011-revoked-key-tombstone.md` — ADR-1011: Revoked-key tombstone — rotate+revoke plaintexts return 410 (~1088 tok)
 - `ADR-1012-v1-dx-gap-fixes.md` — ADR-1012: v1 API — day-1 DX gap fixes (~2561 tok)
 - `ADR-1013-cs-orchestrator-direct-postgres.md` — ADR-1013: `cs_orchestrator` direct-Postgres migration (Next.js runtime) (~2726 tok)
-- `ADR-1014-e2e-test-harness-and-vertical-demos.md` — ADR-1014: End-to-end test harness + vertical demo sites (partner-evidence grade) (~26342 tok)
+- `ADR-1014-e2e-test-harness-and-vertical-demos.md` — ADR-1014: End-to-end test harness + vertical demo sites (partner-evidence grade) (~28590 tok)
 - `ADR-1015-v1-api-integration-tests-and-developer-docs.md` — ADR-1015: v1 API integration tests + customer developer documentation (~7655 tok)
 - `ADR-1016-v1-orphan-scope-read-endpoints.md` — ADR-1016: v1 API — close the orphan `read:audit`, `read:security`, `read:score` scopes (~1836 tok)
 - `ADR-1017-admin-ops-readiness-flags.md` — ADR-1017: Admin ops-readiness flags — surface external blockers in the operator console (~1656 tok)
@@ -1430,7 +1430,7 @@
 - `ADR-1025-customer-storage-auto-provisioning.md` — ADR-1025: Customer storage auto-provisioning — hybrid managed R2 default + BYOK escape hatch (~13370 tok)
 - `ADR-1026-drop-hyperdrive-direct-supavisor.md` — ADR-1026: Rewind ADR-1010 Phase 3 — Worker connects directly to Supavisor; drop Hyperdrive binding (~5467 tok)
 - `ADR-1027-admin-account-awareness.md` — ADR-1027: Admin Account-Awareness Pass (~8082 tok)
-- `ADR-index.md` — ADR Index (~7436 tok)
+- `ADR-index.md` — ADR Index (~7702 tok)
 - `ADR-template.md` — ADR-NNNN: Title (~423 tok)
 - `adr-workflow.md` — ADR Workflow Rules (~557 tok)
 
@@ -1454,7 +1454,7 @@
 
 ## docs/changelogs/
 
-- `CHANGELOG-api.md` — Changelog — API (~38717 tok)
+- `CHANGELOG-api.md` — Changelog — API (~40034 tok)
 - `CHANGELOG-dashboard.md` — Changelog — Dashboard (~28720 tok)
 - `CHANGELOG-docs.md` — Changelog — Documentation (~13701 tok)
 - `CHANGELOG-edge-functions.md` — Changelog — Edge Functions (~4251 tok)
@@ -1825,7 +1825,7 @@
 - `adr-1019-sprint-11-backfill.sql` — ADR-1019 Sprint 1.1 — pre-delivery backfill. (~620 tok)
 - `adr-1019-sprint-11-grants-audit.sql` — ADR-1019 Sprint 1.1 — cs_delivery grants audit. (~857 tok)
 - `bootstrap-admin.ts` — ADR-0027 Sprint 4.1 — admin bootstrap one-shot. (~1746 tok)
-- `capture-sigv4-vectors.ts` — ADR-1014 Phase-4 follow-up — generate pinned sigv4 test vectors. (~2657 tok)
+- `capture-sigv4-vectors.ts` — ADR-1014 Phase-4 follow-up — generate pinned sigv4 test vectors. (~3360 tok)
 - `check-env-isolation.ts` — ADR-0026 Sprint 4.1 — env-var isolation guard. (~1068 tok)
 - `check-no-admin-imports-in-app.ts` — ADR-0026 Sprint 4.1 — cross-import guard: app/ must not reference admin/. (~989 tok)
 - `check-no-customer-imports-in-admin.ts` — ADR-0026 Sprint 4.1 — cross-import guard: admin/ must not reference app/. (~910 tok)
@@ -1836,7 +1836,7 @@
 - `e2e-verify-evidence.ts` — ADR-1014 Sprint 1.4 — Partner-facing evidence-seal verifier. (~941 tok)
 - `mint-role-jwt.ts` — ADR-1009 Phase 2 — mint an HS256 JWT for a scoped Postgres role so Supabase (~832 tok)
 - `partner-bootstrap.ts` — ADR-1014 Sprint 5.1 — interactive partner reproduction bootstrap. Prompts for Supabase URL + service-role key (hidden) + anon key + optional CF account ID; wraps e2e-bootstrap.ts with env overrides; produces .env.partner (0600, gitignored). Idempotent via --force. Unblocks ADR-1015 Phase 3. (~3723 tok)
-- `run-mutation-suite.ts` — ADR-1014 Phase 4 Sprint 4.4 — Aggregate Stryker driver + threshold gate. (~2556 tok)
+- `run-mutation-suite.ts` — ADR-1014 Phase 4 Sprint 4.4 — Aggregate Stryker driver + threshold gate. (~2714 tok)
 - `smoke-test-rate-limit.ts` — Declares main (~242 tok)
 - `verify-adr-1025-sprint-11.ts` — ADR-1025 Phase 1 Sprint 1.1 end-to-end verification. (~2997 tok)
 - `verify-adr-1025-sprint-21.ts` — ADR-1025 Phase 2 Sprint 2.1 end-to-end verification. (~2293 tok)
@@ -2465,8 +2465,8 @@
 
 ## testing/src/data/
 
-- `runs.ts` — ADR-1014 Sprint 5.3 — Published-run index. (~1604 tok)
-- `types.ts` — Tests that Playwright reported `status === expectedStatus` (positives that passed + controls that fa (~1590 tok)
+- `runs.ts` — ADR-1014 Sprint 5.3 — Published-run index. (~2446 tok)
+- `types.ts` — Tests that Playwright reported `status === expectedStatus` (positives that passed + controls that fa (~1592 tok)
 
 ## tests/admin/
 

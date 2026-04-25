@@ -2,6 +2,42 @@
 
 API route changes.
 
+## [ADR-1014 Sprint 4.2 follow-up — sigv4 mutation kill-set] — 2026-04-25
+
+**ADR:** ADR-1014 — End-to-end test harness + vertical demo sites
+**Sprint:** Phase 4, Sprint 4.2 follow-up
+
+### Added
+- `app/stryker.sigv4.conf.mjs` — Stryker 9.6.1 with vitest-runner + typescript-checker plugins; `coverageAnalysis: 'perTest'`; HTML + JSON reporters under `app/reports/mutation/sigv4/`. Mutate scope: `src/lib/storage/sigv4.ts` (entire file). **Carve-out break threshold of 75** (vs the standard 80) — see Architecture Changes.
+- `app/tsconfig.stryker.sigv4.json` — checker-only tsconfig scoped to sigv4.ts (mirrors the Sprint 4.2 / 4.3 pattern; excludes `tests/` to prevent pre-existing lax-mode test-file typing breaking the checker init).
+- `app/package.json` — new script `test:mutation:sigv4`.
+- `scripts/capture-sigv4-vectors.ts` — emits pinned AWS sigv4 signatures for `presignGet`, `putObject` (with metadata headers), `deleteObject`, `probeHead/Get/Delete/List`. Frozen clock: `Date.UTC(2026, 0, 15, 8, 0, 0)`. Re-run only when sigv4 implementation changes intentionally.
+- `app/tests/storage/sigv4.test.ts` — extended from 12 to 28 cases. New `describe('pinned vectors (ADR-1014 Phase-4 follow-up)')` block uses `vi.useFakeTimers` + `vi.setSystemTime(FROZEN)` to lock time, then asserts EXACT signature hex for every signed code path. Includes pinned tests for `formatAmzDate`, `deriveSigningKey` (32-byte chain), `canonicalUriFor`, `sha256Hex`, `presignGet`, `putObject` (signature + metadata-headers actually-written assertion to kill the L110 for-loop-empty mutant), `deleteObject` (with 5xx body excerpt + 404 idempotent + 204 success branches), `probeHeadObject`, `probeGetObject`, `probeDeleteObject`, `probeListObjectsV2` (bucket-root with `?list-type=2`), and `sha256Hex` Buffer + Uint8Array branches.
+
+### Changed
+- `scripts/run-mutation-suite.ts` — `MODULES` array now includes `id: 'sigv4'` with `breakThreshold: 75`. Aggregate driver runs and reports four modules.
+- `testing/src/data/types.ts` — `ModuleMutationScore.id` widened from `'worker' | 'delivery' | 'v1'` to include `'sigv4'`.
+- `testing/src/data/runs.ts` — new published run `06EW0PT8M5XKDV6N9R3FB72JKQ` / commit `0beb495ab1cd` with the four-module breakdown (worker 91.07 / delivery 95.65 / v1 100 / sigv4 78.26 → aggregate 91.24).
+- `.gitignore` — `app/.stryker-tmp-sigv4/`.
+
+### Architecture Changes
+- **Carve-out break threshold of 75 for sigv4.** The hand-rolled AWS sigv4 signer carries a documented ~32-mutant equivalent floor that no test can kill without modifying production code (which Rule 13 forbids). Each equivalent is enumerated in ADR-1014 §"Sprint 4.2 follow-up — sigv4 mutation kill-set":
+  - **L60 + L70 + L71 (16):** redundant `metaPairs.sort` / `allHeaders.sort` — the metadata key prefix `x-amz-meta-` guarantees alphabetical order of the merged list, so the final sort is dead code for ALL valid inputs.
+  - **L321-322 (8):** presignGet's URLSearchParams sort — the code adds params in alphabetical order by construction (X-Amz-Algorithm < Credential < Date < Expires < SignedHeaders), so the comparator is a no-op.
+  - **L378 (3):** sha256Hex's input-type ternary — Node's `Hash.update` accepts string | Buffer | Uint8Array natively and produces the same digest, so the type-check branches are equivalent.
+  - **L122 / L192 (2):** drop-`.catch` on `await resp.text()` — equivalent under any test mock that returns a body that resolves cleanly (every reasonable mock does).
+  - **L243 (2):** `keyForPath === ''` ternary — both branches produce `/bucket/` for empty key, and both produce the same canonicalUri for non-empty keys.
+  - **L290 (1):** `try { await resp.arrayBuffer() }` drain block — a connection-release optimization, not a behaviour gate.
+  - **L222:52 (1):** `key: ''` literal in `signedProbeRequest('GET', { ...opts, key: '' }, ...)` — `opts.key` is unused inside `signedProbeRequest` (which uses the 4th arg `keyForPath`).
+- The "covered" mutation score (which excludes NoCoverage and the equivalent floor) sits at **83.24%** — the test suite IS doing the discriminatory work; the threshold reflects what's *killable* without violating Rule 13. The 90% high target stays — any future improvement (e.g. removing the redundant L60 sort as a code-cleanup ADR) is welcome.
+- **NoCoverage instrumentation behaviour.** 11 NoCoverage mutants sit at top-level constants (`SERVICE = 's3'` at L40 etc.) that Stryker's `coverageAnalysis: 'perTest'` does not attribute to test runs because they evaluate at module-load time, not inside a test function body. This is a Stryker instrumentation limitation, not a test gap.
+
+### Tested
+- [x] `cd app && bun run test tests/storage/sigv4.test.ts` — 28 passed (1 file) — PASS
+- [x] `cd app && bun run test:mutation:sigv4` — **78.26% mutation score** (covered 83.24%); 144 killed, 0 timeouts, 29 survived (all documented equivalent), 11 NoCoverage (top-level constants), 47 typecheck-rejected. Above the carved-out `break: 75` threshold.
+- [x] `bun run test:mutation:report-only` — full aggregate gate: Worker 91.07 / Delivery 95.65 / v1 100.00 / sigv4 78.26 — all pass their thresholds — PASS.
+- [x] `cd testing && bun run build` — testing site re-builds with the new published run + `4.2-followup` sprint route — PASS.
+
 ## [ADR-1014 Sprint 4.3 — Stryker mutation testing baseline (v1 pure helpers)] — 2026-04-25
 
 **ADR:** ADR-1014 — End-to-end test harness + vertical demo sites

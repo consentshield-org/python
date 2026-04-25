@@ -5496,3 +5496,24 @@
 | 07:59 | Edited docs/changelogs/CHANGELOG-schema.md | modified body() | ~665 |
 | 07:59 | Edited docs/reviews/2026-04-25-marketing-claims-vs-reality-review.md | modified Claim() | ~680 |
 | 07:59 | Edited docs/ADRs/ADR-1003-processor-posture-and-healthcare-unlock.md | modified body() | ~244 |
+| 07:59 | Session end: 116 writes across 49 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 64 reads | ~429735 tok |
+| 08:00 | Edited scripts/capture-sigv4-vectors.ts | modified vectorProbe() | ~631 |
+| 08:00 | Session end: 117 writes across 49 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 64 reads | ~430366 tok |
+| 08:00 | Edited app/tests/storage/sigv4.test.ts | added optional chaining | ~541 |
+| 08:01 | Edited app/tests/storage/sigv4.test.ts | expanded (+70 lines) | ~876 |
+| 08:04 | Edited scripts/capture-sigv4-vectors.ts | expanded (+12 lines) | ~249 |
+| 08:04 | Edited app/tests/storage/sigv4.test.ts | added optional chaining | ~585 |
+| 08:05 | Edited app/tests/storage/sigv4.test.ts | added optional chaining | ~414 |
+| 08:05 | Edited app/tests/storage/sigv4.test.ts | added error handling | ~391 |
+| 08:05 | Edited app/tests/storage/sigv4.test.ts | added error handling | ~340 |
+| 08:10 | Edited app/tests/storage/sigv4.test.ts | expanded (+6 lines) | ~302 |
+| 08:13 | Edited app/stryker.sigv4.conf.mjs | added error handling | ~479 |
+| 08:13 | Edited scripts/run-mutation-suite.ts | inline fix | ~16 |
+| 08:13 | Edited scripts/run-mutation-suite.ts | expanded (+13 lines) | ~222 |
+| 08:13 | Edited testing/src/data/runs.ts | added error handling | ~891 |
+| 08:14 | Edited testing/src/data/types.ts | 2→2 lines | ~38 |
+| 08:14 | Edited docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md | inline fix | ~246 |
+| 08:14 | Edited docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md | inline fix | ~105 |
+| 08:16 | Edited docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md | added error handling | ~2293 |
+| 08:16 | Edited docs/ADRs/ADR-index.md | added error handling | ~346 |
+| 08:17 | Edited docs/changelogs/CHANGELOG-api.md | added error handling | ~1440 |

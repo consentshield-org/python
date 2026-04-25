@@ -40,7 +40,7 @@ export interface RunTally {
  */
 export interface ModuleMutationScore {
   /** Stable id the aggregate driver writes; matches scripts/run-mutation-suite.ts. */
-  id: 'worker' | 'delivery' | 'v1'
+  id: 'worker' | 'delivery' | 'v1' | 'sigv4'
   /** Human-readable label rendered in the run-detail page. */
   label: string
   /** Mutation score 0-100 as a number (one decimal place). */

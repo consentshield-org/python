@@ -11,7 +11,8 @@
     "lint": "eslint src/",
     "test": "vitest run",
     "test:mutation:delivery": "stryker run stryker.delivery.conf.mjs",
-    "test:mutation:v1": "stryker run stryker.v1.conf.mjs"
+    "test:mutation:v1": "stryker run stryker.v1.conf.mjs",
+    "test:mutation:sigv4": "stryker run stryker.sigv4.conf.mjs"
   },
   "dependencies": {
     "@consentshield/compliance": "workspace:*",

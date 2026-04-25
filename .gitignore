@@ -59,6 +59,7 @@ app/reports/
 app/.stryker-tmp/
 app/.stryker-tmp-delivery/
 app/.stryker-tmp-v1/
+app/.stryker-tmp-sigv4/
 .stryker-tmp/
 reports/mutation/
 

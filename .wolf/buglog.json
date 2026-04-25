@@ -14453,15 +14453,15 @@
       "error_message": "Null/undefined access in ",
       "file": "app/tests/storage/sigv4.test.ts",
       "root_cause": "Property access on potentially null/undefined value",
-      "fix": "Added null safety (optional chaining or null check)",
+      "fix": "Added null safety (optional chaining or null check) | Also: it('probeHeadObject sends the pinned Authorization header fo; const fetchMock = vi.fn<typeof fetch>() | Also: it('probeGetObject sends the pinned Authorization header (GE; const fetchMock = vi.fn<typeof fetch>() | Also: it('putObject actually writes the metadata pairs onto the re; // Defends against an L110 mutant that empties the for-loop ",
       "tags": [
         "auto-detected",
         "null-safety",
         "ts"
       ],
       "related_bugs": [],
-      "occurrences": 1,
-      "last_seen": "2026-04-25T02:27:11.055Z"
+      "occurrences": 4,
+      "last_seen": "2026-04-25T02:35:00.507Z"
     },
     {
       "id": "bug-901",
@@ -14494,6 +14494,134 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-04-25T02:29:42.674Z"
+    },
+    {
+      "id": "bug-903",
+      "timestamp": "2026-04-25T02:31:17.647Z",
+      "error_message": "Missing await",
+      "file": "app/tests/storage/sigv4.test.ts",
+      "root_cause": "Async call without await — returned Promise instead of value",
+      "fix": "Added await to async call",
+      "tags": [
+        "auto-detected",
+        "async-fix",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T02:31:17.647Z"
+    },
+    {
+      "id": "bug-904",
+      "timestamp": "2026-04-25T02:35:13.617Z",
+      "error_message": "Missing error handling in unknown",
+      "file": "app/tests/storage/sigv4.test.ts",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block | Also: // 500 → throws with body excerpt (defends L192 mutant that ; // .catch on resp.text() AND the message-body string mutants",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-04-25T02:35:25.042Z"
+    },
+    {
+      "id": "bug-905",
+      "timestamp": "2026-04-25T02:43:00.526Z",
+      "error_message": "Missing error handling in unknown",
+      "file": "app/stryker.sigv4.conf.mjs",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T02:43:00.526Z"
+    },
+    {
+      "id": "bug-906",
+      "timestamp": "2026-04-25T02:43:50.474Z",
+      "error_message": "Missing error handling in unknown",
+      "file": "testing/src/data/runs.ts",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T02:43:50.474Z"
+    },
+    {
+      "id": "bug-907",
+      "timestamp": "2026-04-25T02:44:39.888Z",
+      "error_message": "Incorrect value in code",
+      "file": "docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md",
+      "root_cause": "Had `hmac.ts`",
+      "fix": "Changed to `[x]`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T02:44:39.888Z"
+    },
+    {
+      "id": "bug-908",
+      "timestamp": "2026-04-25T02:46:03.997Z",
+      "error_message": "Missing error handling in body",
+      "file": "docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T02:46:03.997Z"
+    },
+    {
+      "id": "bug-909",
+      "timestamp": "2026-04-25T02:46:32.312Z",
+      "error_message": "Missing error handling in unknown",
+      "file": "docs/ADRs/ADR-index.md",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T02:46:32.312Z"
+    },
+    {
+      "id": "bug-910",
+      "timestamp": "2026-04-25T02:47:23.927Z",
+      "error_message": "Missing error handling in body",
+      "file": "docs/changelogs/CHANGELOG-api.md",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T02:47:23.927Z"
     }
   ]
 }

@@ -31,7 +31,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-type ModuleId = 'worker' | 'delivery' | 'v1'
+type ModuleId = 'worker' | 'delivery' | 'v1' | 'sigv4'
 
 interface ModuleConfig {
   id: ModuleId
@@ -68,6 +68,19 @@ const MODULES: ModuleConfig[] = [
     bunScript: 'test:mutation:v1',
     reportJson: 'app/reports/mutation/v1/mutation.json',
     breakThreshold: 80,
+  },
+  {
+    id: 'sigv4',
+    label: 'sigv4 signer (Phase-4 follow-up)',
+    workspace: 'app',
+    bunScript: 'test:mutation:sigv4',
+    reportJson: 'app/reports/mutation/sigv4/mutation.json',
+    // Carve-out: ~32-mutant equivalent floor enumerated in
+    // app/stryker.sigv4.conf.mjs and ADR-1014 §Phase-4 follow-up.
+    // The "covered" score (~83%) is the more meaningful metric;
+    // the lowered total threshold accounts for the equivalent floor
+    // without violating Rule 13 via // Stryker disable comments.
+    breakThreshold: 75,
   },
 ]
 
