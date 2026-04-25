@@ -53,11 +53,15 @@ export async function latestConsentEvent(
   event_type: string
   origin_verified: string
   created_at: string
+  /** ADR-1014 Sprint 3.2 — opt-in pipeline trace identifier. */
+  trace_id: string | null
 } | null> {
   const client = getAdminClient()
   const { data, error } = await client
     .from('consent_events')
-    .select('id, org_id, property_id, banner_id, event_type, origin_verified, created_at')
+    .select(
+      'id, org_id, property_id, banner_id, event_type, origin_verified, created_at, trace_id'
+    )
     .eq('property_id', propertyId)
     .gte('created_at', sinceIso)
     .order('created_at', { ascending: false })

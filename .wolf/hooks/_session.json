@@ -93,8 +93,8 @@
       "first_read": "2026-04-25T01:22:20.394Z"
     },
     "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/changelogs/CHANGELOG-worker.md": {
-      "count": 1,
-      "tokens": 6025,
+      "count": 2,
+      "tokens": 7257,
       "first_read": "2026-04-25T01:23:23.340Z"
     },
     "/Users/sudhindra/projects/aiSpirit/consent-sheild/tests/rls/sectoral-template-apply.test.ts": {
@@ -123,8 +123,8 @@
       "first_read": "2026-04-25T01:31:38.364Z"
     },
     "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/changelogs/CHANGELOG-schema.md": {
-      "count": 2,
-      "tokens": 53354,
+      "count": 3,
+      "tokens": 53942,
       "first_read": "2026-04-25T01:31:54.569Z"
     },
     "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/src/lib/storage/sigv4.ts": {
@@ -133,8 +133,8 @@
       "first_read": "2026-04-25T01:32:06.017Z"
     },
     "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md": {
-      "count": 4,
-      "tokens": 24407,
+      "count": 5,
+      "tokens": 28590,
       "first_read": "2026-04-25T01:33:19.374Z"
     },
     "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/tests/storage/sigv4.test.ts": {
@@ -321,6 +321,31 @@
       "count": 1,
       "tokens": 1437,
       "first_read": "2026-04-25T02:28:15.152Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/supabase/migrations/20260413000004_buffer_tables.sql": {
+      "count": 1,
+      "tokens": 2639,
+      "first_read": "2026-04-25T02:49:17.414Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/worker/src/events.ts": {
+      "count": 7,
+      "tokens": 3561,
+      "first_read": "2026-04-25T02:49:36.143Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/tests/e2e/worker-consent-event.spec.ts": {
+      "count": 2,
+      "tokens": 820,
+      "first_read": "2026-04-25T02:54:19.306Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/tests/e2e/utils/fixtures.ts": {
+      "count": 1,
+      "tokens": 1036,
+      "first_read": "2026-04-25T02:54:53.393Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/tests/e2e/utils/supabase-admin.ts": {
+      "count": 1,
+      "tokens": 656,
+      "first_read": "2026-04-25T02:55:10.951Z"
     }
   },
   "files_written": [
@@ -1133,6 +1158,168 @@
       "action": "edit",
       "tokens": 1543,
       "at": "2026-04-25T02:47:23.924Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/supabase/migrations/20260804000058_adr1014_s32_consent_events_trace_id.sql",
+      "action": "create",
+      "tokens": 801,
+      "at": "2026-04-25T02:50:13.837Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/worker/src/events.ts",
+      "action": "edit",
+      "tokens": 654,
+      "at": "2026-04-25T02:50:46.250Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/worker/src/events.ts",
+      "action": "edit",
+      "tokens": 11,
+      "at": "2026-04-25T02:51:01.130Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/worker/src/events.ts",
+      "action": "edit",
+      "tokens": 129,
+      "at": "2026-04-25T02:51:25.770Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/worker/src/events.ts",
+      "action": "edit",
+      "tokens": 24,
+      "at": "2026-04-25T02:51:37.539Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/worker/src/events.ts",
+      "action": "edit",
+      "tokens": 92,
+      "at": "2026-04-25T02:51:45.221Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/worker/src/events.ts",
+      "action": "edit",
+      "tokens": 36,
+      "at": "2026-04-25T02:51:50.864Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/worker/src/events.ts",
+      "action": "edit",
+      "tokens": 25,
+      "at": "2026-04-25T02:51:57.417Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/worker/src/events.ts",
+      "action": "edit",
+      "tokens": 37,
+      "at": "2026-04-25T02:52:09.641Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/worker/src/events.ts",
+      "action": "edit",
+      "tokens": 20,
+      "at": "2026-04-25T02:52:19.069Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/worker/src/events.ts",
+      "action": "edit",
+      "tokens": 84,
+      "at": "2026-04-25T02:52:44.744Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/worker/src/events.ts",
+      "action": "edit",
+      "tokens": 168,
+      "at": "2026-04-25T02:52:54.170Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/worker/src/events.ts",
+      "action": "edit",
+      "tokens": 208,
+      "at": "2026-04-25T02:53:01.872Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/worker/src/events.ts",
+      "action": "edit",
+      "tokens": 115,
+      "at": "2026-04-25T02:53:12.519Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/worker/tests/trace-id.test.ts",
+      "action": "create",
+      "tokens": 784,
+      "at": "2026-04-25T02:53:42.196Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/tests/e2e/utils/fixtures.ts",
+      "action": "edit",
+      "tokens": 184,
+      "at": "2026-04-25T02:55:06.353Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/tests/e2e/utils/supabase-admin.ts",
+      "action": "edit",
+      "tokens": 247,
+      "at": "2026-04-25T02:55:19.567Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/tests/e2e/worker-consent-event.spec.ts",
+      "action": "edit",
+      "tokens": 66,
+      "at": "2026-04-25T02:55:29.728Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/tests/e2e/worker-consent-event.spec.ts",
+      "action": "edit",
+      "tokens": 206,
+      "at": "2026-04-25T02:55:48.671Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/tests/e2e/worker-consent-event.spec.ts",
+      "action": "edit",
+      "tokens": 132,
+      "at": "2026-04-25T02:55:55.803Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md",
+      "action": "edit",
+      "tokens": 946,
+      "at": "2026-04-25T02:57:37.475Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md",
+      "action": "edit",
+      "tokens": 32,
+      "at": "2026-04-25T02:57:43.143Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md",
+      "action": "edit",
+      "tokens": 69,
+      "at": "2026-04-25T02:57:53.275Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md",
+      "action": "edit",
+      "tokens": 86,
+      "at": "2026-04-25T02:58:02.272Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-index.md",
+      "action": "edit",
+      "tokens": 685,
+      "at": "2026-04-25T02:58:35.082Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/changelogs/CHANGELOG-schema.md",
+      "action": "edit",
+      "tokens": 729,
+      "at": "2026-04-25T02:59:04.133Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/changelogs/CHANGELOG-worker.md",
+      "action": "edit",
+      "tokens": 1279,
+      "at": "2026-04-25T02:59:42.706Z"
     }
   ],
   "edit_counts": {
@@ -1144,14 +1331,14 @@
     ".gitignore": 4,
     "docs/runbooks/adr-1003-phase-1-operator-actions.md": 2,
     "supabase/migrations/20260804000056_adr1003_s41_healthcare_template_seed.sql": 1,
-    "docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md": 14,
+    "docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md": 18,
     "docs/customer-docs/healthcare-onboarding.md": 1,
     "admin/src/app/(operator)/templates/[templateId]/page.tsx": 5,
-    "docs/ADRs/ADR-index.md": 7,
-    "docs/changelogs/CHANGELOG-worker.md": 1,
+    "docs/ADRs/ADR-index.md": 8,
+    "docs/changelogs/CHANGELOG-worker.md": 2,
     "tests/integration/healthcare-template.test.ts": 1,
     "docs/ADRs/ADR-1003-processor-posture-and-healthcare-unlock.md": 3,
-    "docs/changelogs/CHANGELOG-schema.md": 2,
+    "docs/changelogs/CHANGELOG-schema.md": 3,
     "docs/reviews/2026-04-25-marketing-claims-vs-reality-review.md": 18,
     "app/package.json": 4,
     "app/stryker.delivery.conf.mjs": 3,
@@ -1187,11 +1374,17 @@
     "scripts/capture-sigv4-vectors.ts": 3,
     "app/tests/storage/sigv4.test.ts": 9,
     "app/stryker.sigv4.conf.mjs": 2,
-    "app/tsconfig.stryker.sigv4.json": 1
+    "app/tsconfig.stryker.sigv4.json": 1,
+    "supabase/migrations/20260804000058_adr1014_s32_consent_events_trace_id.sql": 1,
+    "worker/src/events.ts": 13,
+    "worker/tests/trace-id.test.ts": 1,
+    "tests/e2e/utils/fixtures.ts": 1,
+    "tests/e2e/utils/supabase-admin.ts": 1,
+    "tests/e2e/worker-consent-event.spec.ts": 3
   },
-  "anatomy_hits": 59,
+  "anatomy_hits": 64,
   "anatomy_misses": 5,
-  "repeated_reads_warned": 29,
+  "repeated_reads_warned": 39,
   "cerebrum_warnings": 0,
   "stop_count": 31
 }

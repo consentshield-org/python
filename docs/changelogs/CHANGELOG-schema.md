@@ -2,6 +2,28 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-1014 Sprint 3.2 closeout — consent_events.trace_id column] — 2026-04-25
+
+**ADR:** ADR-1014 — End-to-end test harness + vertical demo sites
+**Sprint:** Phase 3, Sprint 3.2 (closeout — flips `[~]` → `[x]`, ADR-1014 closes at 24/24)
+
+### Added
+- Migration `20260804000058_adr1014_s32_consent_events_trace_id.sql` — adds nullable `trace_id text` column to `public.consent_events` + partial index `idx_consent_events_trace_id ON public.consent_events (trace_id) WHERE trace_id IS NOT NULL`. Closes the only remaining ADR-1014 partial: Sprint 3.2's "Banner → Worker HMAC → buffer → delivery → R2" pipeline test had no way to correlate a single event across the four hops because the buffer table didn't carry a trace identifier.
+- Migration includes the Section-9-style verification block (DO $$ ... raise exception if column or index missing $$) so a botched migration fails loudly at apply time rather than silently leaving the schema half-rewired.
+
+### Properties
+- **Nullable + opt-in.** Pre-trace-id rows stay valid (no backfill needed). Future producers that don't set `X-CS-Trace-Id` land NULL.
+- **Free-form text.** No UUID/ULID format check at the DB layer — partner harnesses send their own correlation ids (ULIDs / UUIDs / OpenTelemetry trace ids); the column accepts whatever they send. The Worker enforces a 64-char clamp + 16-char hex generation as a safety net.
+- **Partial-index pattern.** Only WHERE trace_id IS NOT NULL — matches the existing `delivered_at` indexes on this table; keeps the unindexed bulk of pre-trace-id history out of the index pages.
+- **No RLS change required.** consent_events RLS already filters on org_id / property_id; adding a column doesn't change visibility.
+- **No grant change required.** cs_worker already has INSERT on consent_events; the new column inherits the grant.
+
+### Tested
+- [x] Migration syntax — `alter table add column if not exists` + `create index if not exists` is idempotent + safe to re-apply.
+- [x] Verification DO-block guards against schema drift on apply.
+- [x] Worker-side INSERT flow: `worker/src/events.ts` `insertConsentEventSql` extended to include `trace_id` in the column list + values; `bunx tsc --noEmit` in `worker/` is clean.
+- [x] Worker mutation gate stays at 91.07% — the new code is in `events.ts` which is outside the Sprint 4.1 mutate scope (which targets `hmac.ts` + `validateOrigin`/`rejectOrigin` only).
+
 ## [ADR-1003 Sprint 1.4 follow-up — get_storage_mode as SECURITY DEFINER] — 2026-04-25
 
 **ADR:** ADR-1003 — Processor Posture + Healthcare Category Unlock

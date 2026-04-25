@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-25T02:47:23.917Z
-> Files: 1452 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-25T02:59:42.699Z
+> Files: 1454 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../tmp/
 
@@ -1416,7 +1416,7 @@
 - `ADR-1011-revoked-key-tombstone.md` — ADR-1011: Revoked-key tombstone — rotate+revoke plaintexts return 410 (~1088 tok)
 - `ADR-1012-v1-dx-gap-fixes.md` — ADR-1012: v1 API — day-1 DX gap fixes (~2561 tok)
 - `ADR-1013-cs-orchestrator-direct-postgres.md` — ADR-1013: `cs_orchestrator` direct-Postgres migration (Next.js runtime) (~2726 tok)
-- `ADR-1014-e2e-test-harness-and-vertical-demos.md` — ADR-1014: End-to-end test harness + vertical demo sites (partner-evidence grade) (~28590 tok)
+- `ADR-1014-e2e-test-harness-and-vertical-demos.md` — ADR-1014: End-to-end test harness + vertical demo sites (partner-evidence grade) (~28895 tok)
 - `ADR-1015-v1-api-integration-tests-and-developer-docs.md` — ADR-1015: v1 API integration tests + customer developer documentation (~7655 tok)
 - `ADR-1016-v1-orphan-scope-read-endpoints.md` — ADR-1016: v1 API — close the orphan `read:audit`, `read:security`, `read:score` scopes (~1836 tok)
 - `ADR-1017-admin-ops-readiness-flags.md` — ADR-1017: Admin ops-readiness flags — surface external blockers in the operator console (~1656 tok)
@@ -1430,7 +1430,7 @@
 - `ADR-1025-customer-storage-auto-provisioning.md` — ADR-1025: Customer storage auto-provisioning — hybrid managed R2 default + BYOK escape hatch (~13370 tok)
 - `ADR-1026-drop-hyperdrive-direct-supavisor.md` — ADR-1026: Rewind ADR-1010 Phase 3 — Worker connects directly to Supavisor; drop Hyperdrive binding (~5467 tok)
 - `ADR-1027-admin-account-awareness.md` — ADR-1027: Admin Account-Awareness Pass (~8082 tok)
-- `ADR-index.md` — ADR Index (~7702 tok)
+- `ADR-index.md` — ADR Index (~7978 tok)
 - `ADR-template.md` — ADR-NNNN: Title (~423 tok)
 - `adr-workflow.md` — ADR Workflow Rules (~557 tok)
 
@@ -1460,8 +1460,8 @@
 - `CHANGELOG-edge-functions.md` — Changelog — Edge Functions (~4251 tok)
 - `CHANGELOG-infra.md` — Changelog — Infrastructure (~24742 tok)
 - `CHANGELOG-marketing.md` — Changelog — Marketing (~14957 tok)
-- `CHANGELOG-schema.md` — Changelog — Schema (~53942 tok)
-- `CHANGELOG-worker.md` — Changelog — Worker (~7257 tok)
+- `CHANGELOG-schema.md` — Changelog — Schema (~54541 tok)
+- `CHANGELOG-worker.md` — Changelog — Worker (~8343 tok)
 
 ## docs/customer-docs/
 
@@ -2360,6 +2360,7 @@
 - `20260804000054_adr1003_s14_rpc_consent_record_mode_fence.sql` — ADR-1003 Sprint 1.4 — rpc_consent_record storage_mode fence + Mode B (~5214 tok)
 - `20260804000056_adr1003_s41_healthcare_template_seed.sql` — ADR-1003 Sprint 4.1 — Healthcare sectoral template seed (G-042). (~4764 tok)
 - `20260804000057_adr1003_s14_get_storage_mode_security_definer.sql` — ADR-1003 Sprint 1.4 follow-up — re-publish public.get_storage_mode as (~683 tok)
+- `20260804000058_adr1014_s32_consent_events_trace_id.sql` — ADR-1014 Sprint 3.2 closeout — consent_events.trace_id column. (~748 tok)
 
 ## supabase/seed/
 
@@ -2548,7 +2549,7 @@
 - `tsconfig.json` — TypeScript configuration (~66 tok)
 - `worker-consent-event-origin-mismatch.spec.ts` — Paired negative for worker-consent-event.spec.ts — ADR-1014 Sprint 3.2. (~1592 tok)
 - `worker-consent-event-tampered.spec.ts` — Paired negative for worker-consent-event.spec.ts. See specs/worker-consent-event.md (~812 tok)
-- `worker-consent-event.spec.ts` — API routes: POST (1 endpoints) (~820 tok)
+- `worker-consent-event.spec.ts` — API routes: POST (1 endpoints) (~1079 tok)
 
 ## tests/e2e/controls/
 
@@ -2580,10 +2581,10 @@
 - `evidence-reporter.ts` — ADR-1014 Sprint 1.4 — Playwright reporter that packages each run into a (~1283 tok)
 - `evidence-seal.ts` — Seal format (written by evidence.ts finalize()): (~1151 tok)
 - `evidence.ts` — Write a single in-memory attachment to the run's attachments/ folder. (~1996 tok)
-- `fixtures.ts` — Sprint 1.1 baseline fixtures + Sprint 1.2 vertical fixtures. (~1036 tok)
+- `fixtures.ts` — Sprint 1.1 baseline fixtures + Sprint 1.2 vertical fixtures. (~1135 tok)
 - `hmac.ts` — Mirrors worker/src/hmac.ts exactly. If this file drifts from the Worker (~826 tok)
 - `static-server.ts` — Minimal static server for the test-sites/ demo vertical pages. Avoids (~797 tok)
-- `supabase-admin.ts` — Convenience: count rows in consent_events for a property since a cutoff. (~656 tok)
+- `supabase-admin.ts` — Convenience: count rows in consent_events for a property since a cutoff. (~688 tok)
 - `trace-id.ts` — Per-test trace ID. Every HTTP request, browser page, DB row, R2 object, and (~377 tok)
 - `worker-harness.ts` — Kills the spawned process if one was started; no-op if using WORKER_URL. (~920 tok)
 
@@ -2679,7 +2680,7 @@
 - `banner.ts` — API routes: GET (2 endpoints) (~4599 tok)
 - `blocked-ip.ts` — Convert a dotted-quad IPv4 string ("198.51.100.0") to a 32-bit (~1056 tok)
 - `db.ts` — Open a fresh postgres.js client for one Worker request. (~1150 tok)
-- `events.ts` — API routes: GET (2 endpoints) (~2888 tok)
+- `events.ts` — ADR-1014 Sprint 3.2 — derive an opt-in opaque trace identifier. (~3681 tok)
 - `hmac.ts` — HMAC-SHA256 utilities — Web Crypto API only, zero dependencies (~457 tok)
 - `index.ts` — ADR-1010 Phase 3 — Hyperdrive binding shape. Cloudflare injects this (~1375 tok)
 - `observations.ts` — Exports handleObservation (~2436 tok)
@@ -2702,3 +2703,4 @@
 
 - `hmac.test.ts` — ORG: sign (~2338 tok)
 - `origin.test.ts` — API routes: GET (1 endpoints) (~1788 tok)
+- `trace-id.test.ts` — ADR-1014 Sprint 3.2 — trace-id derivation unit coverage. (~784 tok)

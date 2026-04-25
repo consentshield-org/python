@@ -25,7 +25,50 @@ const VALID_EVENT_TYPES = [
   'banner_dismissed',
 ]
 
+// ADR-1014 Sprint 3.2 — trace-id round-trip headers. Both keys are
+// always set in CORS_HEADERS_WITH_TRACE so the browser sees the value
+// even on a CORS-fenced response (the actual response uses
+// withTraceId() which extends CORS_HEADERS).
 const CORS_HEADERS = { 'Access-Control-Allow-Origin': '*' }
+const TRACE_ID_HEADER = 'X-CS-Trace-Id'
+// Allow the browser to read the trace-id off cross-origin responses.
+const TRACE_EXPOSE_HEADERS = { 'Access-Control-Expose-Headers': TRACE_ID_HEADER }
+
+/**
+ * ADR-1014 Sprint 3.2 — derive an opt-in opaque trace identifier.
+ *
+ * If the caller supplies `X-CS-Trace-Id` we trust + propagate it (after
+ * trimming + length-bounding to 64 chars to keep junk out of the index).
+ * Otherwise we generate a 16-char hex id — short enough to read in
+ * a CLI tally line, long enough that random collisions across a single
+ * org's daily volume are vanishing (2^64 ≈ 1.8e19 keyspace).
+ *
+ * The Worker MUST NOT validate format beyond length: partner harnesses
+ * send ULIDs, UUIDs, OpenTelemetry trace ids, or whatever they wire
+ * through their own infra. The column is text-typed for that reason.
+ */
+function deriveTraceId(request: Request): string {
+  const inbound = request.headers.get(TRACE_ID_HEADER)
+  if (inbound) {
+    const trimmed = inbound.trim()
+    if (trimmed) return trimmed.slice(0, 64)
+  }
+  // crypto.randomUUID is bound on Workers + Node 20 LTS + recent browsers;
+  // collapse to 16 hex chars for the generated form.
+  return crypto.randomUUID().replace(/-/g, '').slice(0, 16)
+}
+
+function withTraceId(traceId: string, init?: ResponseInit): ResponseInit {
+  return {
+    ...init,
+    headers: {
+      ...CORS_HEADERS,
+      ...TRACE_EXPOSE_HEADERS,
+      [TRACE_ID_HEADER]: traceId,
+      ...(init?.headers as Record<string, string> | undefined),
+    },
+  }
+}
 
 export async function handleConsentEvent(
   request: Request,
@@ -33,33 +76,38 @@ export async function handleConsentEvent(
   ctx: ExecutionContext,
   sql: Sql | null,
 ): Promise<Response> {
+  // Derive the trace id BEFORE any early return so even a 400/403/404
+  // exit echoes a trace id for harness correlation. Generated trace
+  // ids are not persisted on those exit paths (no row written), but
+  // the harness can still log + grep on them.
+  const traceId = deriveTraceId(request)
   let body: ConsentEventPayload
 
   try {
     body = (await request.json()) as ConsentEventPayload
   } catch {
-    return new Response('Invalid JSON', { status: 400, headers: CORS_HEADERS })
+    return new Response('Invalid JSON', withTraceId(traceId, { status: 400 }))
   }
 
   // Payload validation
   if (!body.org_id || !body.property_id || !body.banner_id || !body.event_type) {
-    return new Response('Missing required fields: org_id, property_id, banner_id, event_type', {
-      status: 400,
-      headers: CORS_HEADERS,
-    })
+    return new Response(
+      'Missing required fields: org_id, property_id, banner_id, event_type',
+      withTraceId(traceId, { status: 400 }),
+    )
   }
 
   if (!VALID_EVENT_TYPES.includes(body.event_type)) {
-    return new Response(`Invalid event_type. Must be one of: ${VALID_EVENT_TYPES.join(', ')}`, {
-      status: 400,
-      headers: CORS_HEADERS,
-    })
+    return new Response(
+      `Invalid event_type. Must be one of: ${VALID_EVENT_TYPES.join(', ')}`,
+      withTraceId(traceId, { status: 400 }),
+    )
   }
 
   // Step 1: Origin validation
   const propConfig = await getPropertyConfig(body.property_id, env, sql)
   if (!propConfig) {
-    return new Response('Unknown property', { status: 404, headers: CORS_HEADERS })
+    return new Response('Unknown property', withTraceId(traceId, { status: 404 }))
   }
 
   const originResult = validateOrigin(request, propConfig.allowed_origins)
@@ -73,7 +121,11 @@ export async function handleConsentEvent(
         upstream_error: `origin_mismatch: ${originResult.origin}`,
       }),
     )
-    return rejectOrigin(originResult.origin)
+    // rejectOrigin() builds its own Response — clone its body and merge
+    // our trace-id header so the harness still gets the correlation id
+    // on rejected origins.
+    const rejection = rejectOrigin(originResult.origin)
+    return new Response(rejection.body, withTraceId(traceId, { status: rejection.status }))
   }
 
   // Step 2: Authentication. Two accepted modes:
@@ -95,7 +147,10 @@ export async function handleConsentEvent(
           upstream_error: `hmac_timestamp_drift: ${body.timestamp}`,
         }),
       )
-      return new Response('Timestamp expired (±5 minutes)', { status: 403, headers: CORS_HEADERS })
+      return new Response(
+        'Timestamp expired (±5 minutes)',
+        withTraceId(traceId, { status: 403 }),
+      )
     }
 
     let hmacValid = await verifyHMAC(
@@ -129,7 +184,7 @@ export async function handleConsentEvent(
           upstream_error: 'hmac_signature_mismatch',
         }),
       )
-      return new Response('Invalid signature', { status: 403, headers: CORS_HEADERS })
+      return new Response('Invalid signature', withTraceId(traceId, { status: 403 }))
     }
     originVerified = 'hmac-verified'
   } else {
@@ -143,10 +198,10 @@ export async function handleConsentEvent(
           upstream_error: 'origin_missing: unsigned request without Origin/Referer',
         }),
       )
-      return new Response('Origin required for unsigned events', {
-        status: 403,
-        headers: CORS_HEADERS,
-      })
+      return new Response(
+        'Origin required for unsigned events',
+        withTraceId(traceId, { status: 403 }),
+      )
     }
     originVerified = 'origin-only'
   }
@@ -170,6 +225,9 @@ export async function handleConsentEvent(
     ip_truncated: ipTruncated,
     user_agent_hash: uaHash,
     origin_verified: originVerified,
+    // ADR-1014 Sprint 3.2 — opt-in trace correlation, persisted for
+    // banner → Worker → buffer → delivery → R2 hop stitching.
+    trace_id: traceId,
   }
 
   // Step 4: Write path depends on the org's storage_mode.
@@ -215,7 +273,7 @@ export async function handleConsentEvent(
           }
         }),
       )
-      return new Response(null, { status: 202, headers: CORS_HEADERS })
+      return new Response(null, withTraceId(traceId, { status: 202 }))
     }
   }
 
@@ -239,8 +297,11 @@ export async function handleConsentEvent(
     )
   }
 
-  return new Response(null, { status: 202, headers: CORS_HEADERS })
+  return new Response(null, withTraceId(traceId, { status: 202 }))
 }
+
+// Exported for unit-test reachability — worker/tests/trace-id.test.ts.
+export const __testing = { deriveTraceId, TRACE_ID_HEADER, withTraceId }
 
 type WriteResult = { ok: true } | { ok: false; status: number; error: string }
 
@@ -254,7 +315,8 @@ async function insertConsentEventSql(
         org_id, property_id, banner_id, banner_version,
         session_fingerprint, event_type,
         purposes_accepted, purposes_rejected,
-        ip_truncated, user_agent_hash, origin_verified
+        ip_truncated, user_agent_hash, origin_verified,
+        trace_id
       ) values (
         ${event.org_id}::uuid,
         ${event.property_id}::uuid,
@@ -266,7 +328,8 @@ async function insertConsentEventSql(
         ${sql.json(event.purposes_rejected)},
         ${event.ip_truncated},
         ${event.user_agent_hash},
-        ${event.origin_verified}
+        ${event.origin_verified},
+        ${event.trace_id}
       )
     `
     return { ok: true }
@@ -311,4 +374,6 @@ interface ConsentEventRow {
   ip_truncated: string
   user_agent_hash: string
   origin_verified: 'origin-only' | 'hmac-verified'
+  /** ADR-1014 Sprint 3.2 — opt-in trace correlation. */
+  trace_id: string
 }

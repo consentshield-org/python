@@ -5517,3 +5517,30 @@
 | 08:16 | Edited docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md | added error handling | ~2293 |
 | 08:16 | Edited docs/ADRs/ADR-index.md | added error handling | ~346 |
 | 08:17 | Edited docs/changelogs/CHANGELOG-api.md | added error handling | ~1440 |
+| 08:20 | Created supabase/migrations/20260804000058_adr1014_s32_consent_events_trace_id.sql | — | ~748 |
+| 08:20 | Edited worker/src/events.ts | added optional chaining | ~654 |
+| 08:21 | Edited worker/src/events.ts | inline fix | ~11 |
+| 08:21 | Edited worker/src/events.ts | modified if() | ~129 |
+| 08:21 | Edited worker/src/events.ts | inline fix | ~24 |
+| 08:21 | Edited worker/src/events.ts | 1→5 lines | ~92 |
+| 08:21 | Edited worker/src/events.ts | 1→4 lines | ~36 |
+| 08:21 | Edited worker/src/events.ts | inline fix | ~25 |
+| 08:22 | Edited worker/src/events.ts | 4→4 lines | ~37 |
+| 08:22 | Edited worker/src/events.ts | inline fix | ~20 |
+| 08:22 | Edited worker/src/events.ts | 4→7 lines | ~84 |
+| 08:22 | Edited worker/src/events.ts | 13→16 lines | ~168 |
+| 08:23 | Edited worker/src/events.ts | 20→22 lines | ~208 |
+| 08:23 | Edited worker/src/events.ts | 13→15 lines | ~115 |
+| 08:23 | Created worker/tests/trace-id.test.ts | — | ~784 |
+| 08:25 | Edited tests/e2e/utils/fixtures.ts | 8→13 lines | ~184 |
+| 08:25 | Edited tests/e2e/utils/supabase-admin.ts | modified latestConsentEvent() | ~247 |
+| 08:25 | Edited tests/e2e/worker-consent-event.spec.ts | 5→6 lines | ~66 |
+| 08:25 | Edited tests/e2e/worker-consent-event.spec.ts | modified 5() | ~206 |
+| 08:25 | Edited tests/e2e/worker-consent-event.spec.ts | added nullish coalescing | ~132 |
+| 08:27 | Edited docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md | 12→8 lines | ~883 |
+| 08:27 | Edited docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md | 4→4 lines | ~30 |
+| 08:27 | Edited docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md | inline fix | ~64 |
+| 08:28 | Edited docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md | inline fix | ~80 |
+| 08:28 | Edited docs/ADRs/ADR-index.md | inline fix | ~640 |
+| 08:29 | Edited docs/changelogs/CHANGELOG-schema.md | expanded (+22 lines) | ~680 |
+| 08:29 | Edited docs/changelogs/CHANGELOG-worker.md | expanded (+29 lines) | ~1194 |

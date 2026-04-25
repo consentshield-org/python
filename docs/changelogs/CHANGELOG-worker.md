@@ -2,6 +2,35 @@
 
 Cloudflare Worker changes.
 
+## [ADR-1014 Sprint 3.2 closeout — X-CS-Trace-Id round-trip in events.ts] — 2026-04-25
+
+**ADR:** ADR-1014 — End-to-end test harness + vertical demo sites
+**Sprint:** Phase 3, Sprint 3.2 (closeout — flips `[~]` → `[x]`, ADR-1014 closes at 24/24)
+
+### Added
+- `worker/src/events.ts` `deriveTraceId(request)` — pure synchronous helper. Reads `X-CS-Trace-Id` from the inbound request (trim + 64-char clamp) or generates a 16-char hex trace id via `crypto.randomUUID().replace(/-/g, '').slice(0, 16)` when absent / blank / whitespace-only. Trusts caller-supplied ids verbatim because partner harnesses send their own correlation ids (ULIDs / UUIDs / OpenTelemetry trace ids).
+- `worker/src/events.ts` `withTraceId(traceId, init)` — small helper that merges `CORS_HEADERS` + `Access-Control-Expose-Headers: X-CS-Trace-Id` + the trace-id header into the supplied `ResponseInit`. Every Response in `handleConsentEvent` now uses this helper so even early-return error paths (400 / 403 / 404) echo a trace id for harness correlation.
+- `worker/src/events.ts` exports `__testing = { deriveTraceId, TRACE_ID_HEADER, withTraceId }` for unit-test reachability.
+- `worker/tests/trace-id.test.ts` (8 cases) — `deriveTraceId` propagate / trim / clamp-to-64-chars / generate-on-missing / generate-on-empty / generate-on-whitespace / freshness (no leaked state across invocations) / ULID-style input.
+
+### Changed
+- `worker/src/events.ts` — every Response now carries the trace-id header. `handleConsentEvent` derives the trace id at the top, threads it through every `new Response(...)` via `withTraceId(...)`. The `rejectOrigin()` helper return is wrapped (clones the body, merges trace headers).
+- `worker/src/events.ts` `insertConsentEventSql` — INSERT statement extended with `trace_id` column + `${event.trace_id}` value. `ConsentEventRow` interface adds `trace_id: string`.
+- `tests/e2e/utils/fixtures.ts` `tracedRequest` — now sets BOTH `X-Request-Id` (transport-layer convention) AND `X-CS-Trace-Id` (ADR-1014 Sprint 3.2 — pipeline correlation that the Worker writes onto the consent_events row + echoes back in the response header) on every outbound call.
+- `tests/e2e/utils/supabase-admin.ts` `latestConsentEvent` — return type extended with `trace_id: string | null`; SELECT widened to include the new column.
+- `tests/e2e/worker-consent-event.spec.ts` — extended with three new assertions: (a) Proof 1.5: response header `X-CS-Trace-Id` echoes the inbound trace id (the test's assigned `traceId` from the fixture), (b) Proof 4: the buffer row's `trace_id` column matches the inbound id, (c) inline failure messages include the raw response headers / observed trace_id so debugging is one log read away.
+
+### Architecture Changes
+- **Trace-id derivation policy.** The Worker MUST trust caller-supplied trace ids (after trimming + clamping to 64 chars) rather than overwrite them. The `text`-typed column accepts any of (ULID / UUID / OpenTelemetry / arbitrary partner format) without DB-layer validation. The Worker generates a 16-char hex form when no inbound id is present so every consent_events row carries a non-null trace id — short enough to read in a CLI tally line, long enough that random collisions across a single org's daily volume are vanishing (2^64 ≈ 1.8e19 keyspace).
+- **Early-return responses also echo the trace id.** `deriveTraceId(request)` runs BEFORE any payload-validation early return. Even a 400 (missing fields), 403 (HMAC drift / origin mismatch), or 404 (unknown property) exit echoes a trace id for harness correlation. Generated trace ids on failed requests are NOT persisted (no row written) but the harness can still grep on them in client-side logs.
+- **`Access-Control-Expose-Headers`** wired so cross-origin browsers can read `X-CS-Trace-Id` off the response — without it, the browser would suppress the custom header on a CORS-fenced response and the harness couldn't see it from a banner-side fetch.
+
+### Tested
+- [x] `cd worker && bun run test` — 57 passed (3 files, +8 cases for trace-id) — PASS
+- [x] `cd worker && bunx tsc --noEmit` — clean — PASS
+- [x] `cd worker && bun run test:mutation` — Worker mutation score stays at 91.07% (the new code in events.ts is outside the Sprint 4.1 mutate scope) — PASS
+- [x] `cd tests/e2e && bunx tsc --noEmit` — clean after fixture + supabase-admin + spec edits — PASS
+
 ## [ADR-1014 Sprint 4.1 — Stryker mutation testing baseline (Worker)] — 2026-04-25
 
 **ADR:** ADR-1014 — End-to-end test harness + vertical demo sites

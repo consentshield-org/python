@@ -92,9 +92,14 @@ export const test = base.extend<E2eFixtures>({
   },
 
   // A request context that stamps every outbound call with the trace id.
+  // Both `X-Request-Id` (transport-layer convention) and `X-CS-Trace-Id`
+  // (ADR-1014 Sprint 3.2 — pipeline correlation that the Worker writes
+  // onto the consent_events row + echoes back in the response header)
+  // are set so the test harness can stitch banner → Worker → buffer →
+  // delivery → R2 hops by trace id.
   tracedRequest: async ({ playwright, traceId: tid }, use) => {
     const ctx = await playwright.request.newContext({
-      extraHTTPHeaders: { 'X-Request-Id': tid }
+      extraHTTPHeaders: { 'X-Request-Id': tid, 'X-CS-Trace-Id': tid }
     })
     await use(ctx)
     await ctx.dispose()

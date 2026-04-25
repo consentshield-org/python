@@ -14622,6 +14622,86 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-04-25T02:47:23.927Z"
+    },
+    {
+      "id": "bug-911",
+      "timestamp": "2026-04-25T02:50:46.252Z",
+      "error_message": "Null/undefined access in ",
+      "file": "worker/src/events.ts",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check)",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T02:50:46.252Z"
+    },
+    {
+      "id": "bug-912",
+      "timestamp": "2026-04-25T02:51:37.542Z",
+      "error_message": "Wrong return value",
+      "file": "worker/src/events.ts",
+      "root_cause": "Was returning: new Response('Unknown property', { status: 404, he",
+      "fix": "Now returns: new Response('Unknown property', withTraceId(trace",
+      "tags": [
+        "auto-detected",
+        "return-value",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 7,
+      "last_seen": "2026-04-25T02:52:44.746Z"
+    },
+    {
+      "id": "bug-913",
+      "timestamp": "2026-04-25T02:55:55.805Z",
+      "error_message": "Null/undefined access in ",
+      "file": "tests/e2e/worker-consent-event.spec.ts",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check)",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T02:55:55.805Z"
+    },
+    {
+      "id": "bug-914",
+      "timestamp": "2026-04-25T02:57:37.478Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md",
+      "root_cause": "9 lines replaced/restructured",
+      "fix": "Rewrote 12→8 lines (9 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T02:57:37.478Z"
+    },
+    {
+      "id": "bug-915",
+      "timestamp": "2026-04-25T02:57:53.277Z",
+      "error_message": "Incorrect value in code",
+      "file": "docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md",
+      "root_cause": "Had `[~]`",
+      "fix": "Changed to `X-CS-Trace-Id`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T02:57:53.277Z"
     }
   ]
 }
