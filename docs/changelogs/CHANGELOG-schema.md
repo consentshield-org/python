@@ -2,6 +2,36 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-1003 Sprint 5.1 R1 — sandbox org provisioning] — 2026-04-25
+
+**ADR:** ADR-1003 — Processor Posture + Healthcare Category Unlock
+**Sprint:** Phase 5, Sprint 5.1 (round 1 of 3)
+**Migration:** `20260804000059_adr1003_s51_sandbox_orgs.sql`
+
+### Added
+- `public.organisations.sandbox boolean not null default false` + partial index `organisations_sandbox_idx where sandbox = true`. Spec amendment vs the ADR's original `accounts.sandbox` placement: putting the flag on the org keeps the ADR-0047 single-account-per-identity invariant intact and lets a user's one account hold both prod and sandbox orgs (Stripe / Razorpay test-mode pattern).
+- `public.is_sandbox_org(uuid) returns boolean` — SECURITY DEFINER (same pattern as migration 57 for `get_storage_mode`: scoped roles can't read `public.organisations` directly without tripping the RLS policy that touches schema `auth`). Granted to cs_api / cs_orchestrator / cs_delivery / cs_admin.
+- `public.rpc_provision_sandbox_org(p_name text, p_template_code text default null) returns jsonb` — authenticated SECURITY DEFINER. Caller must be `account_owner` (raises 42501 / `not_an_account_owner` otherwise). Inserts the new org with `sandbox=true`, name-suffixes ` (sandbox)` unless the caller already tagged it, adds the caller as `org_admin`, optionally applies a sectoral template via the new `apply_sectoral_template_for_org` sibling. Audit-logs `sandbox_org.provisioned`. Returns `{ok, org_id, account_id, sandbox, template_applied?, storage_mode}`.
+- `public.apply_sectoral_template_for_org(p_org_id uuid, p_template_code text) returns jsonb` — SECURITY DEFINER. Mirror of `public.apply_sectoral_template` but takes an explicit `p_org_id` instead of reading `current_org_id()` from the caller's JWT. Used by `rpc_provision_sandbox_org` because the freshly-provisioned org isn't on the caller's session yet. Same Sprint 4.1 storage-mode gate (raises P0004 on mismatch).
+
+### Changed
+- `public.rpc_api_key_create(uuid, uuid, text[], text, text)` re-published with a sandbox branch:
+  - Target org `sandbox=true` → plaintext gains `cs_test_` prefix (not `cs_live_`); `rate_tier` is forced to `'sandbox'` regardless of the caller's argument.
+  - Caller passes `rate_tier='sandbox'` against a non-sandbox org (or account-scoped key) → raises `22023 / sandbox rate_tier requires a sandbox org`.
+  - Audit log payload now records `{name, scopes, rate_tier, sandbox}`.
+  - Existing grants preserved by `CREATE OR REPLACE`.
+
+### Consequences
+- A sandbox org is structurally distinguishable end-to-end: at the org level (`sandbox=true`), at the API-key level (`cs_test_*` prefix + `'sandbox'` rate_tier), and via the `is_sandbox_org()` helper for downstream gates (rate-limit, compliance-score exclusion, export-manifest marker — all R2).
+- Plan-gating is bypassed by design — the RPC inserts directly without consulting `plans.max_organisations`. Sandbox orgs are free.
+- Account-scoped API keys (`p_org_id is null`) cannot be sandbox; the live-vs-test distinction needs an org. The RPC raises if a caller asks otherwise.
+- Customer-side `applyTemplate` (`/dashboard/template`) and the onboarding wizard remain unchanged — they call the JWT-driven `public.apply_sectoral_template`. The sibling `apply_sectoral_template_for_org` is internal-use only (no `authenticated` grant); only the validated `rpc_provision_sandbox_org` invokes it.
+
+### Tested
+- Integration — `tests/integration/sandbox-provisioning.test.ts` — 3 cases: provision-as-owner happy path (org row + sandbox flag + name suffix + membership row + cs_test_ key issuance with forced sandbox rate_tier); refuse-sandbox-tier-on-prod-org; non-owner refusal with errcode 42501.
+- Local `cd app && bun run lint && bun run build` — clean.
+- Live: migration 59 pushed via `bunx supabase db push` (slot 58 collided with Terminal B's `adr1014_s32_consent_events_trace_id`).
+
 ## [ADR-1014 Sprint 3.2 closeout — consent_events.trace_id column] — 2026-04-25
 
 **ADR:** ADR-1014 — End-to-end test harness + vertical demo sites

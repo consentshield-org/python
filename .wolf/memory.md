@@ -5544,3 +5544,43 @@
 | 08:28 | Edited docs/ADRs/ADR-index.md | inline fix | ~640 |
 | 08:29 | Edited docs/changelogs/CHANGELOG-schema.md | expanded (+22 lines) | ~680 |
 | 08:29 | Edited docs/changelogs/CHANGELOG-worker.md | expanded (+29 lines) | ~1194 |
+| 08:30 | Session end: 162 writes across 55 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 69 reads | ~466675 tok |
+| 08:40 | Session end: 162 writes across 55 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 69 reads | ~466675 tok |
+| 09:04 | Edited docs/reviews/2026-04-25-marketing-claims-vs-reality-review.md | modified Claim() | ~1880 |
+| 09:04 | Session end: 163 writes across 55 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 69 reads | ~468689 tok |
+| 09:07 | Session end: 163 writes across 55 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 69 reads | ~468860 tok |
+| 09:09 | Session end: 163 writes across 55 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 72 reads | ~483792 tok |
+| 09:10 | Edited docs/reviews/2026-04-25-marketing-claims-vs-reality-review.md | modified Claim() | ~1626 |
+| 09:11 | Edited docs/ADRs/ADR-1006-developer-experience-and-openapi.md | modified routes() | ~730 |
+| 09:11 | Session end: 165 writes across 56 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 75 reads | ~495175 tok |
+| 09:12 | Created packages/node-client/package.json | — | ~356 |
+| 09:12 | Created packages/node-client/tsconfig.json | — | ~76 |
+| 09:12 | Created packages/node-client/vitest.config.ts | — | ~57 |
+| 09:12 | Created supabase/migrations/20260804000058_adr1003_s51_sandbox_orgs.sql | — | ~5116 |
+| 09:12 | Created packages/node-client/src/errors.ts | — | ~1332 |
+| 09:13 | Edited supabase/migrations/20260804000058_adr1003_s51_sandbox_orgs.sql | 14→14 lines | ~120 |
+| 09:13 | Edited supabase/migrations/20260804000058_adr1003_s51_sandbox_orgs.sql | 14→14 lines | ~121 |
+| 09:13 | Created packages/node-client/src/http.ts | — | ~2378 |
+| 09:13 | Edited supabase/migrations/20260804000058_adr1003_s51_sandbox_orgs.sql | reduced (-7 lines) | ~273 |
+| 09:14 | Created packages/node-client/src/client.ts | — | ~1497 |
+| 09:14 | Created packages/node-client/src/index.ts | — | ~178 |
+| 09:15 | Edited app/src/components/dashboard-nav.tsx | 1→2 lines | ~35 |
+| 09:15 | Created packages/node-client/tests/client.test.ts | — | ~1466 |
+| 09:15 | Edited docs/reviews/2026-04-25-marketing-claims-vs-reality-review.md | modified Claim() | ~1759 |
+| 09:15 | Created app/src/app/(dashboard)/dashboard/sandbox/actions.ts | — | ~457 |
+| 09:16 | Session end: 180 writes across 65 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 76 reads | ~511778 tok |
+| 09:16 | Created app/src/app/(dashboard)/dashboard/sandbox/page.tsx | — | ~1520 |
+| 09:16 | Created packages/node-client/tests/http.test.ts | — | ~3268 |
+| 09:16 | Created app/src/app/(dashboard)/dashboard/sandbox/provision-form.tsx | — | ~1217 |
+| 09:16 | Created packages/node-client/tests/errors.test.ts | — | ~877 |
+| 09:17 | Created tests/integration/sandbox-provisioning.test.ts | — | ~1461 |
+| 09:17 | Edited docs/reviews/2026-04-25-marketing-claims-vs-reality-review.md | modified Claim() | ~1132 |
+| 09:18 | Edited packages/node-client/src/errors.ts | modified constructor() | ~115 |
+| 09:18 | Edited packages/node-client/tests/errors.test.ts | expanded (+8 lines) | ~187 |
+| 09:18 | Session end: 188 writes across 69 files (vitest.config.ts, hmac.test.ts, origin.test.ts, package.json, stryker.conf.mjs) | 76 reads | ~521636 tok |
+| 09:18 | Edited packages/node-client/tests/http.test.ts | expanded (+7 lines) | ~510 |
+| 09:18 | Edited docs/ADRs/ADR-1003-processor-posture-and-healthcare-unlock.md | modified 25() | ~818 |
+| 09:18 | Edited packages/node-client/tests/client.test.ts | 22→25 lines | ~279 |
+| 09:19 | Edited docs/changelogs/CHANGELOG-schema.md | expanded (+30 lines) | ~1073 |
+| 09:19 | Edited docs/changelogs/CHANGELOG-dashboard.md | expanded (+19 lines) | ~589 |
+| 09:19 | Created packages/node-client/README.md | — | ~853 |

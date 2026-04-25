@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-25T02:59:42.699Z
-> Files: 1454 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-25T03:49:45.976Z
+> Files: 1470 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../tmp/
 
@@ -808,6 +808,12 @@
 
 - `page.tsx` — RightsRequestDetailPage — renders table (~5598 tok)
 
+## app/src/app/(dashboard)/dashboard/sandbox/
+
+- `actions.ts` — Exports ProvisionResult, provisionSandboxOrg (~457 tok)
+- `page.tsx` — ADR-1003 Sprint 5.1 — sandbox self-serve page. (~1520 tok)
+- `provision-form.tsx` — KNOWN_TEMPLATE_HINTS — renders form (~1217 tok)
+
 ## app/src/app/(dashboard)/dashboard/settings/account/
 
 - `actions.ts` — Exports updateOrgIndustry (~161 tok)
@@ -1132,7 +1138,7 @@
 
 ## app/src/components/
 
-- `dashboard-nav.tsx` — navItems (~856 tok)
+- `dashboard-nav.tsx` — navItems (~871 tok)
 - `otp-boxes.tsx` — OtpBoxes (~345 tok)
 - `suspended-banner.tsx` — ADR-0029 Sprint 4.1 + 2026-04-20 follow-up — customer-side suspension banner. (~804 tok)
 
@@ -1405,10 +1411,10 @@
 - `ADR-0501-marketing-site-scaffold.md` — ADR-0501 — ConsentShield marketing site (`marketing/`) (~6079 tok)
 - `ADR-1001-truth-in-marketing-and-public-api-foundation.md` — ADR-1001: Truth-in-Marketing + Public API Foundation (~5650 tok)
 - `ADR-1002-dpdp-section6-runtime-enforcement.md` — ADR-1002: DPDP §6 Runtime Enforcement — Verify, Record, Artefact Ops, Deletion API (~7030 tok)
-- `ADR-1003-processor-posture-and-healthcare-unlock.md` — ADR-1003: Processor Posture + Healthcare Category Unlock (~9280 tok)
+- `ADR-1003-processor-posture-and-healthcare-unlock.md` — ADR-1003: Processor Posture + Healthcare Category Unlock (~9756 tok)
 - `ADR-1004-statutory-retention-material-change-silent-failure.md` — ADR-1004: Statutory Retention + Material-Change Re-consent + Silent-Failure Detection (~7531 tok)
 - `ADR-1005-operations-maturity.md` — ADR-1005: Operations Maturity — Webhook Reference, Support Model, Status Page, Multi-channel Alerts, (~7076 tok)
-- `ADR-1006-developer-experience-and-openapi.md` — ADR-1006: Developer Experience — Client Libraries + OpenAPI Spec + CI Drift Check (~2658 tok)
+- `ADR-1006-developer-experience-and-openapi.md` — ADR-1006: Developer Experience — Client Libraries + OpenAPI Spec + CI Drift Check (~3252 tok)
 - `ADR-1007-connector-ecosystem-expansion.md` — ADR-1007: Connector Ecosystem Expansion + Platform Plugins (~2738 tok)
 - `ADR-1008-scale-audit-polish-and-p3-hardening.md` — ADR-1008: Scale + Audit Polish + P3 Hardening (~3065 tok)
 - `ADR-1009-v1-api-role-hardening.md` — ADR-1009: v1 API role hardening — remove service-role shortcut, adopt `cs_api` as designed (~5564 tok)
@@ -1455,12 +1461,12 @@
 ## docs/changelogs/
 
 - `CHANGELOG-api.md` — Changelog — API (~40034 tok)
-- `CHANGELOG-dashboard.md` — Changelog — Dashboard (~28720 tok)
+- `CHANGELOG-dashboard.md` — Changelog — Dashboard (~29233 tok)
 - `CHANGELOG-docs.md` — Changelog — Documentation (~13701 tok)
 - `CHANGELOG-edge-functions.md` — Changelog — Edge Functions (~4251 tok)
 - `CHANGELOG-infra.md` — Changelog — Infrastructure (~24742 tok)
 - `CHANGELOG-marketing.md` — Changelog — Marketing (~14957 tok)
-- `CHANGELOG-schema.md` — Changelog — Schema (~54541 tok)
+- `CHANGELOG-schema.md` — Changelog — Schema (~55511 tok)
 - `CHANGELOG-worker.md` — Changelog — Worker (~8343 tok)
 
 ## docs/customer-docs/
@@ -1529,7 +1535,7 @@
 - `2026-04-18-comprehensive-project-review.md` — ConsentShield — Comprehensive Review as of 2026-04-18 (~3553 tok)
 - `2026-04-20-api-key-security-review.md` — Security Review — API Key Surface (ADR-1001 Sprint 3.1) (~1833 tok)
 - `2026-04-21-v1-api-gap-audit.md` — v1 API Gap Audit — 2026-04-21 (~2913 tok)
-- `2026-04-25-marketing-claims-vs-reality-review.md` — Marketing claims vs. reality review (~17378 tok)
+- `2026-04-25-marketing-claims-vs-reality-review.md` — Marketing claims vs. reality review (~23092 tok)
 
 ## docs/runbooks/
 
@@ -1806,6 +1812,26 @@
 ## packages/encryption/src/
 
 - `index.ts` (~16 tok)
+
+## packages/node-client/
+
+- `package.json` — Node.js package manifest (~356 tok)
+- `README.md` — Project documentation (~800 tok)
+- `tsconfig.json` — TypeScript configuration (~76 tok)
+- `vitest.config.ts` — /*.test.ts'], (~57 tok)
+
+## packages/node-client/src/
+
+- `client.ts` — Configuration for a `ConsentShieldClient` instance. (~1497 tok)
+- `errors.ts` — RFC 7807 problem-document body shape — matches `app/src/lib/api/auth.ts` (~1382 tok)
+- `http.ts` — Subset of the global fetch signature we depend on — sufficient for stubs. (~2378 tok)
+- `index.ts` — ADR-1006 Phase 1 — `@consentshield/node` public surface. (~178 tok)
+
+## packages/node-client/tests/
+
+- `client.test.ts` — ADR-1006 Phase 1 Sprint 1.1 — ConsentShieldClient constructor + defaults. (~1506 tok)
+- `errors.test.ts` — ADR-1006 Phase 1 Sprint 1.1 — error class hierarchy. (~933 tok)
+- `http.test.ts` — ADR-1006 Phase 1 Sprint 1.1 — HTTP transport behaviour. (~3343 tok)
 
 ## packages/shared-types/
 
@@ -2360,6 +2386,7 @@
 - `20260804000054_adr1003_s14_rpc_consent_record_mode_fence.sql` — ADR-1003 Sprint 1.4 — rpc_consent_record storage_mode fence + Mode B (~5214 tok)
 - `20260804000056_adr1003_s41_healthcare_template_seed.sql` — ADR-1003 Sprint 4.1 — Healthcare sectoral template seed (G-042). (~4764 tok)
 - `20260804000057_adr1003_s14_get_storage_mode_security_definer.sql` — ADR-1003 Sprint 1.4 follow-up — re-publish public.get_storage_mode as (~683 tok)
+- `20260804000058_adr1003_s51_sandbox_orgs.sql` — ADR-1003 Sprint 5.1 — sandbox org provisioning (G-046), round 1 of 3. (~5049 tok)
 - `20260804000058_adr1014_s32_consent_events_trace_id.sql` — ADR-1014 Sprint 3.2 closeout — consent_events.trace_id column. (~748 tok)
 
 ## supabase/seed/
@@ -2618,6 +2645,7 @@
 - `retention-exemptions.test.ts` — ADR-1004 Phase 1 — regulatory exemptions engine integration tests. (~2474 tok)
 - `rights-api.test.ts` — ADR-1005 Sprint 5.1 — /v1/rights/requests integration tests. (~2842 tok)
 - `rights-request-public.test.ts` — ADR-1014 Phase 3 Sprint 3.3 — public rights-request RPC contract test. (~3841 tok)
+- `sandbox-provisioning.test.ts` — ADR-1003 Sprint 5.1 Round 1 — sandbox provisioning + sandbox API key. (~1461 tok)
 - `score-api.test.ts` — ADR-1016 Sprint 1.3 — /v1/score integration tests. (~734 tok)
 - `security-scans-api.test.ts` — ADR-1016 Sprint 1.2 — /v1/security/scans integration tests. (~1491 tok)
 - `signup-intake.test.ts` — ADR-0058 Sprint 1.5 (deferred) → ADR-1014 Phase 3 Sprint 3.1. (~2689 tok)

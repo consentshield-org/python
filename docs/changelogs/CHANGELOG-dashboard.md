@@ -2,6 +2,25 @@
 
 Next.js UI changes.
 
+## [ADR-1003 Sprint 5.1 R1 — sandbox provisioning page] — 2026-04-25
+
+**ADR:** ADR-1003 — Processor Posture + Healthcare Category Unlock
+**Sprint:** Phase 5, Sprint 5.1 (round 1 of 3)
+
+### Customer app
+- `app/src/app/(dashboard)/dashboard/sandbox/page.tsx` — server component. Lists the caller's existing sandbox orgs (RLS-scoped query filtered on `sandbox=true`); rendering each org's name, UUID, storage_mode, applied sectoral template (when present), and creation date. account_owner sees the provisioning form; non-owners see a read-only message naming the right escalation path.
+- `app/src/app/(dashboard)/dashboard/sandbox/actions.ts` — `provisionSandboxOrg` Server Action wraps `public.rpc_provision_sandbox_org`. Surfaces `error.code` (e.g. `P0004`) verbatim — gives the user a specific signal rather than a generic 500.
+- `app/src/app/(dashboard)/dashboard/sandbox/provision-form.tsx` — client component. Name + optional template select (BFSI Starter / Healthcare Starter, with a P0004 caveat for healthcare since a fresh sandbox starts in `standard` storage_mode and would need an admin flip first). useTransition for pending state; surfaces success / failure inline.
+- `app/src/components/dashboard-nav.tsx` — adds the `/dashboard/sandbox` entry to the customer nav.
+
+### Rationale
+Sprint 5.1 R1 ships the foundation: customers can provision a sandbox org, get a `cs_test_*` API key, and start exercising the API end-to-end without affecting prod data, plan limits, or billing. The `cs_test_*` prefix and forced `sandbox` rate_tier are enforced at the DB layer (`rpc_api_key_create` re-published) — the UI doesn't have to police any of it. R2 + R3 layer in the test-principal endpoint, compliance-score exclusion, export marker, and the "sandbox mode" banner.
+
+### Tested
+- `cd app && bun run lint && bun run build` — clean (route registered as `ƒ /dashboard/sandbox`).
+- Integration — `tests/integration/sandbox-provisioning.test.ts` — 3/3 PASS via cs_orchestrator pool.
+- Manual click-through deferred to operator validation post-deploy.
+
 ## [ADR-1003 Sprint 4.1 — Healthcare template storage-mode + connector-defaults on admin detail] — 2026-04-25
 
 **ADR:** ADR-1003 — Processor Posture + Healthcare Category Unlock

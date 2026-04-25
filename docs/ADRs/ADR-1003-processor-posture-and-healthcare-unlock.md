@@ -284,23 +284,28 @@ Also closes the secondary gap flagged in Terminal A's handoff: the Sprint 1.3 br
 
 #### Sprint 5.1: Sandbox self-serve flow
 
-**Estimated effort:** 3 days
+**Estimated effort:** 3 days. Shipped in three rounds (R1: foundation, R2: API surface + exclusions, R3: UX + docs).
+
+**Spec amendment 2026-04-25 (R1):** flag placement moved from `accounts.sandbox` (original spec) to `organisations.sandbox`. The original spec pre-dated full reconciliation with ADR-0047's single-account-per-identity invariant — a user can only be in one account, so a separate sandbox account is not a valid path. Putting the flag on the org keeps a user's one account and lets sandbox + prod orgs coexist (the Stripe / Razorpay test-mode pattern).
 
 **Deliverables:**
-- [ ] Migration adding `accounts.sandbox boolean default false`
-- [ ] `/dashboard/sandbox` page with "Provision sandbox org" button
-- [ ] Server action creates `organisations` row with `id='org_test_<nanoid>'`, applies selected sector template, skips plan-gating checks, does not create billing rows
-- [ ] Rate-tier override: all `/api/v1/*` calls from a sandbox org use a 1000/hr sandbox tier regardless of account plan
-- [ ] Test data principal generator: `POST /api/v1/_sandbox/test-principals` returns `{ identifier: "cs_test_principal_<seq>" }` for integration-test scaffolding (sandbox orgs only)
-- [ ] Dashboard banner "Sandbox mode — not for production data" visible on every sandbox surface
-- [ ] `docs/customer-docs/sandbox.md`
+- [x] **R1** Migration `20260804000059_adr1003_s51_sandbox_orgs.sql` — `organisations.sandbox boolean default false` + partial index, `public.is_sandbox_org(uuid)` helper (SECURITY DEFINER per migration-57 pattern), `public.rpc_provision_sandbox_org(p_name, p_template_code)` (authenticated account_owner only; creates org + membership + optional template apply + audit row), `public.apply_sectoral_template_for_org(p_org_id, p_template_code)` sibling of the current_org_id-driven helper that takes an explicit org_id (because a freshly-provisioned org isn't on the caller's JWT), and re-published `public.rpc_api_key_create` with a sandbox branch (target org sandbox=true → forces `cs_test_*` prefix + `rate_tier='sandbox'` regardless of caller argument; refuses sandbox rate_tier on non-sandbox org).
+- [x] **R1** `/dashboard/sandbox` page (`app/src/app/(dashboard)/dashboard/sandbox/page.tsx`) — lists caller's sandbox orgs + provisioning form. `app/src/app/(dashboard)/dashboard/sandbox/actions.ts` server action wraps `rpc_provision_sandbox_org`; `provision-form.tsx` renders the form, exposes BFSI Starter + Healthcare Starter as the template hints (with the P0004 caveat for healthcare). Sidebar nav adds the route.
+- [ ] **R2** Test-principal endpoint `POST /api/v1/_sandbox/test-principals` returns `{ identifier: "cs_test_principal_<seq>" }`.
+- [ ] **R2** Compliance-score endpoint excludes sandbox orgs from cross-customer aggregates.
+- [ ] **R2** Export manifest marks sandbox-org exports with `{ sandbox: true }`.
+- [ ] **R3** Dashboard banner "Sandbox mode — not for production data" on every sandbox-org surface.
+- [ ] **R3** `docs/customer-docs/sandbox.md`.
 
 **Testing plan:**
-- [ ] Provision sandbox → org created in < 5 s → API key mintable → `/v1/_ping` succeeds
-- [ ] Sandbox org exports marked `{ sandbox: true }` in manifest
-- [ ] Compliance score endpoint excludes sandbox orgs from any cross-customer metric
+- [x] **R1** `tests/integration/sandbox-provisioning.test.ts` — 3 cases:
+  - `rpc_provision_sandbox_org` as account_owner → creates org with sandbox=true, suffixed name, caller as org_admin; subsequent `rpc_api_key_create` issues `cs_test_*` plaintext + rate_tier='sandbox' even when caller passed `'starter'`.
+  - Same RPC against a non-sandbox org with `rate_tier='sandbox'` raises with the expected message.
+  - Non-account-owner caller is rejected with `42501 / not_an_account_owner`.
+- [ ] **R2** Sandbox org exports marked `{ sandbox: true }` in manifest.
+- [ ] **R2** Compliance score endpoint excludes sandbox orgs.
 
-**Status:** `[ ] planned`
+**Status:** `[~] in progress (R1 shipped 2026-04-25; R2 + R3 pending)`
 
 ---
 

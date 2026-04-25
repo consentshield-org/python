@@ -29,6 +29,7 @@ const navItems = [
   { href: '/dashboard/settings/api-keys', label: 'API keys' },
   { href: '/dashboard/settings/notifications', label: 'Notification channels' },
   { href: '/dashboard/settings/billing', label: 'Billing settings' },
+  { href: '/dashboard/sandbox', label: 'Sandbox' },
 ]
 
 export function DashboardNav() {
