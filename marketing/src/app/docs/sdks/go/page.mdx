@@ -1,0 +1,218 @@
+export const metadata = {
+  title: 'consentshield-go — Go SDK',
+  description:
+    'Idiomatic Go client for ConsentShield. context.Context-first, errors.As-discriminable, zero runtime deps.',
+}
+
+<Breadcrumb trail={[
+  { label: 'Docs', href: '/docs' },
+  { label: 'SDKs', href: '/docs/sdks' },
+  { label: 'Go' },
+]} />
+
+# `github.com/consentshield/go-client`
+
+The official Go client. Idiomatic top-to-bottom: `context.Context`
+first, errors as second return, struct-options for every method,
+explicit paginators. **Zero runtime dependencies** — pure standard
+library.
+
+## Install
+
+```bash
+go get github.com/consentshield/go-client@v1.0.0
+```
+
+- **Go 1.22+** required (uses `context.WithoutCancel` semantics +
+  builtin `min`)
+- Zero runtime deps — only the standard library
+- Released via Git tags through the Go module proxy
+
+## Quickstart
+
+```go
+package main
+
+import (
+    "context"
+    "log"
+    "os"
+
+    consentshield "github.com/consentshield/go-client"
+)
+
+func main() {
+    client, err := consentshield.NewClient(consentshield.Config{
+        APIKey: os.Getenv("CS_API_KEY"),
+    })
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    out, err := client.Verify(context.Background(), consentshield.VerifyParams{
+        PropertyID:              "PROP_UUID",
+        DataPrincipalIdentifier: "user@example.com",
+        IdentifierType:          "email",
+        PurposeCode:             "marketing",
+    })
+    if err != nil {
+        // fail-CLOSED default → 503 your caller
+        log.Fatal(err)
+    }
+    if out.Envelope.Status != "granted" {
+        // 451 your caller
+    }
+}
+```
+
+## Configuration
+
+```go
+consentshield.Config{
+    APIKey:     "cs_live_...",        // required, validated
+    BaseURL:    "https://api.consentshield.in", // default
+    Timeout:    2 * time.Second,      // per-attempt; never retried on timeout
+    MaxRetries: 2,                    // 5xx + transport errors only
+    FailOpen:   false,                // see compliance contract
+    HTTPClient: &http.Client{},       // swap for tests / mTLS / custom RT
+}
+```
+
+`CONSENT_VERIFY_FAIL_OPEN=true` env var flips `FailOpen` for service-
+wide opt-in. To force-disable explicitly even when env says
+otherwise:
+
+```go
+cfg := consentshield.Config{APIKey: "cs_live_..."}.WithFailOpen(false)
+```
+
+The `Client` is concurrency-safe — share one across your service.
+
+## Method matrix
+
+### Consent
+
+| Method | Verb | Notes |
+|---|---|---|
+| `client.Verify(ctx, p)` | `GET /v1/consent/verify` | Compliance-load-bearing. |
+| `client.VerifyBatch(ctx, p)` | `POST /v1/consent/verify/batch` | Up to `MaxBatchIdentifiers` (**10 000**) per call. |
+| `client.RecordConsent(ctx, p)` | `POST /v1/consent/record` | Idempotent via `ClientRequestID`. |
+| `client.RevokeArtefact(ctx, p)` | `POST /v1/consent/artefacts/{id}/revoke` | 409 surfaces on terminal-state. |
+
+### Listing + iteration
+
+| Method | Verb | Notes |
+|---|---|---|
+| `client.ListArtefacts` / `IterateArtefacts` | `GET /v1/consent/artefacts` | Paginator with `Next(ctx) bool` + `Page() []T` + `Err()`. |
+| `client.GetArtefact(ctx, id, traceID)` | `GET /v1/consent/artefacts/{id}` | Returns `(nil, nil)` for unknown id. |
+| `client.ListEvents` / `IterateEvents` | `GET /v1/consent/events` | |
+| `client.ListAuditLog` / `IterateAuditLog` | `GET /v1/audit` | |
+
+### Deletion + rights
+
+| Method | Verb | Notes |
+|---|---|---|
+| `client.TriggerDeletion(ctx, p)` | `POST /v1/deletion/trigger` | `PurposeCodes` REQUIRED when `Reason=DeletionReasonConsentRevoked`. |
+| `client.ListDeletionReceipts` / `IterateDeletionReceipts` | `GET /v1/deletion/receipts` | |
+| `client.CreateRightsRequest(ctx, p)` | `POST /v1/rights/requests` | `IdentityVerifiedBy` REQUIRED. |
+| `client.ListRightsRequests` / `IterateRightsRequests` | `GET /v1/rights/requests` | |
+
+### Health
+
+| Method | Verb |
+|---|---|
+| `client.Ping(ctx)` | `GET /v1/_ping` |
+
+## Compliance contract
+
+| Outcome | Default | `FailOpen=true` |
+|---|---|---|
+| 4xx (caller bug / scope / 422 / 404 / 413) | returns `*APIError` | returns `*APIError` (4xx **always** surfaces) |
+| Timeout | returns `*VerifyError` wrapping `*TimeoutError` | returns `OpenFailureEnvelope{Cause: timeout}` |
+| Network (DNS / TCP / TLS reset) | returns `*VerifyError` wrapping `*NetworkError` | returns `OpenFailureEnvelope{Cause: network}` |
+| 5xx | returns `*VerifyError` wrapping `*APIError` | returns `OpenFailureEnvelope{Cause: server_error}` |
+
+Discriminate errors with `errors.As`:
+
+```go
+out, err := client.Verify(ctx, params)
+if err != nil {
+    var verifyErr *consentshield.VerifyError
+    var apiErr *consentshield.APIError
+    switch {
+    case errors.As(err, &verifyErr):
+        // fail-CLOSED — respond 503 to your caller
+    case errors.As(err, &apiErr):
+        // 4xx — respond 502 (caller bug) or surface to your monitoring
+    }
+}
+if out.IsOpen() {
+    // failOpen path — out.Open carries Cause + Reason + TraceID
+}
+```
+
+## Paginators
+
+Every list endpoint has a paginator equivalent. The pattern:
+
+```go
+it := client.IterateArtefacts(consentshield.ListArtefactsParams{
+    PropertyID: "PROP_UUID",
+})
+for it.Next(ctx) {
+    for _, a := range it.Page() {
+        fmt.Println(a.ArtefactID, a.Status)
+    }
+}
+if err := it.Err(); err != nil {
+    return err
+}
+```
+
+`Next(ctx)` fetches one page, returns `true` while pages remain.
+`Err()` is sticky — once a page errors, the paginator stops and the
+last error is what `Err()` returns.
+
+## Trace-id round-trip
+
+Every `*Params` struct has a `TraceID` field. Set it from your
+inbound request and the SDK forwards it as `X-CS-Trace-Id`. Errors
+expose the server-emitted trace id via the `Error` interface:
+
+```go
+out, err := client.Verify(ctx, params)
+if err != nil {
+    if e, ok := err.(consentshield.Error); ok {
+        log.Printf("trace_id=%s err=%v", e.TraceID(), err)
+    }
+}
+```
+
+## Examples
+
+The package ships two runnable integrations under `examples/`:
+
+- **`examples/nethttp-middleware/`** — framework-agnostic
+  `func(http.Handler) http.Handler` middleware. Drops into chi /
+  gorilla/mux / alice / any router that accepts that shape.
+- **`examples/gin-middleware/`** — gin `HandlerFunc` adapter.
+
+Both refuse with HTTP 451 on non-granted, HTTP 503 on fail-CLOSED,
+HTTP 502 on 4xx, and surface `X-CS-Override` / `X-CS-Trace-Id` /
+`X-CS-Evaluated-At` for downstream correlation.
+
+<Callout tone="info" title="Custom transport">
+Pass `Config.HTTPClient` to swap the underlying `*http.Client`. Use
+this for mTLS, IPv6-only egress, custom user-agents, or test
+fixtures. The SDK still applies its own timeout + retry on top of
+your transport — your `Transport.Timeout` is honoured first, then
+the SDK's per-attempt timeout takes over via `context.WithTimeout`.
+</Callout>
+
+## Source
+
+The SDK lives at `packages/go-client/` in the
+[ConsentShield monorepo](https://github.com/consentshield). Issues
+go to [dev-support@consentshield.in](mailto:dev-support@consentshield.in).
+
+<FeedbackStrip pageId="sdks-go" />

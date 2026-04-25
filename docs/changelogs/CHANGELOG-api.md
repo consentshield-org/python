@@ -2,6 +2,47 @@
 
 API route changes.
 
+## [ADR-1006 Phase 4 Sprint 4.2 — Go SDK + marketing /docs/sdks pages (Phase 4 closes; Java abandoned)] — 2026-04-25
+
+**ADR:** ADR-1006 — Developer Experience: Client Libraries + OpenAPI + CI Drift Check
+**Sprint:** Phase 4, Sprint 4.2 (Go SDK; Sprint 4.1 Java abandoned per scope amendment)
+
+### Added
+
+#### Go SDK — `github.com/consentshield/go-client`
+- **`packages/go-client/go.mod`** — module `github.com/consentshield/go-client`, `go 1.22`. Zero runtime deps — pure standard library.
+- **`packages/go-client/consentshield.go`** — package documentation + `Version` constant. The compliance contract is captured in the package doc so `go doc` surfaces it on the package overview page.
+- **`packages/go-client/client.go`** — `Client` struct (concurrency-safe), `NewClient(cfg)` validating constructor, `Config.WithFailOpen(...)` builder for explicit fail-open control (always wins over env).
+- **`packages/go-client/errors.go`** — five-class hierarchy: `Error` interface (returns `TraceID()`), `*APIError` (status + RFC 7807 `*ProblemJSON`), `*NetworkError` (transport-level wrap, `Unwrap()`-able), `*TimeoutError` (per-attempt timeout, never retried), `*VerifyError` (compliance-critical wrap, `Unwrap()`-able). `IsAPIError(err)` + `IsVerifyError(err)` convenience predicates.
+- **`packages/go-client/types.go`** — wire-format structs with snake_case `json` tags verbatim from the server: `VerifyEnvelope`, `VerifyBatchEnvelope`, `VerifyBatchResultRow`, `OpenFailureEnvelope` (with `Cause` discriminator: `OpenCauseTimeout` / `OpenCauseNetwork` / `OpenCauseServerError`), `RecordEnvelope`, `RecordedArtefact`, `RevokeEnvelope`, `ArtefactListItem` / `ArtefactListEnvelope` / `ArtefactDetail` / `ArtefactRevocation`, `EventListItem` / `EventListEnvelope`, `DeletionTriggerEnvelope` / `DeletionReceiptRow` / `DeletionReceiptsEnvelope`, `RightsRequestCreatedEnvelope` / `RightsRequestItem` / `RightsRequestListEnvelope`, `AuditLogItem` / `AuditLogEnvelope`. `VerifyOutcome` + `VerifyBatchOutcome` discriminated unions with `IsOpen()` predicate.
+- **`packages/go-client/http.go`** — retry-aware HTTP transport. `Config` (APIKey, BaseURL, Timeout, MaxRetries, FailOpen, HTTPClient), `resolveConfig` validates + applies defaults (`cs_live_` prefix, positive Timeout, non-negative MaxRetries, env override for FailOpen). `transport.do(ctx, *httpRequest)` runs up to `MaxRetries+1` attempts with exponential backoff (100/400/1600 ms). NEVER retries 4xx (caller bug). NEVER retries timeouts (compounds latency past compliance budget). 5xx + transport-level errors retried. Per-attempt timeout via `context.WithTimeout`. `X-CS-Trace-Id` round-trip (request header + response header → `Error.TraceID()`). RFC 7807 problem-document parsing onto `*APIError.Problem`.
+- **`packages/go-client/verify.go`** — `Verify(ctx, p VerifyParams)` and `VerifyBatch(ctx, p VerifyBatchParams)` enforce the **non-negotiable compliance contract**: `requireStr` validation BEFORE network; `MaxBatchIdentifiers=10000` boundary check (server cap), empty batch rejected, non-empty entry validation; 4xx ALWAYS surfaces (regardless of `FailOpen`), 5xx/network/timeout + `FailOpen=false` returns `*VerifyError` wrapping the cause, `FailOpen=true` builds `OpenFailureEnvelope` with the right `Cause` discriminator + cascaded trace-id. `decideVerifyFailure` + `buildOpenEnvelope` + `traceIDOf` are the shared compliance-decision helpers.
+- **`packages/go-client/consent.go`** — `Ping`, `RecordConsent` (idempotent via `ClientRequestID`; rejects empty/invalid `PurposeDefinitionIDs` / `RejectedPurposeDefinitionIDs`), `RevokeArtefact` (URL-encoded path so `/`/`#`/`&`/`?` survive; 409 surfaces on terminal-state).
+- **`packages/go-client/artefacts.go`** — `ListArtefacts` + `IterateArtefacts` (returns `*ArtefactPaginator` with `Next(ctx) bool` / `Page() []ArtefactListItem` / `Err() error`); `GetArtefact(ctx, id, traceID)` returns `(nil, nil)` for unknown id (server emits JSON `null` body).
+- **`packages/go-client/events.go`** — `ListEvents` + `IterateEvents` paginator.
+- **`packages/go-client/deletion.go`** — `TriggerDeletion` (gates `PurposeCodes` REQUIRED when `Reason=DeletionReasonConsentRevoked`; deletion-reason constants exposed: `DeletionReasonConsentRevoked`, `…RightsRequest`, `…AccountClosed`, `…RetentionExpiry`, `…OperatorAction`); `ListDeletionReceipts` + `IterateDeletionReceipts` paginator.
+- **`packages/go-client/rights.go`** — `CreateRightsRequest` (gates `IdentityVerifiedBy` REQUIRED; rights-request-type constants exposed: `RightsRequestTypeAccess`, `…Correction`, `…Erasure`, `…Portability`); `ListRightsRequests` + `IterateRightsRequests` paginator.
+- **`packages/go-client/audit.go`** — `ListAuditLog` + `IterateAuditLog` paginator.
+- **Tests (`client_test.go` + `coverage_test.go`):** ~25 test functions covering: constructor validation (cs_live_ prefix, defaults, base-url trim, env override, explicit-wins-over-env), Ping happy-path, transport retries (5xx then succeeds, retry exhaustion, 4xx-never-retries sweep across 400/401/403/404/410/422), trace-id round-trip on success + error, fail-CLOSED default, fail-OPEN returns envelope, 4xx ALWAYS surfaces even when FailOpen, network-error fail-OPEN cause discrimination, timeout-never-retries (per-attempt timeout via context.WithTimeout), VerifyBatch boundary at MaxBatchIdentifiers + empty + invalid-entry validation, RecordConsent body shape + invalid-entry validation, RevokeArtefact URL encoding (RawPath), TriggerDeletion happy path with full optional set + PurposeCodes-required-on-consent-revoked gate, CreateRightsRequest happy path + IdentityVerifiedBy-required gate, GetArtefact null body returns nil, every paginator type walks pages + propagates 4xx as Err(), every list endpoint's query() composition, error-string surfaces for all five classes (Error/Unwrap/TraceID), VerifyOutcome+VerifyBatchOutcome IsOpen zero-value branches. Coverage **87.8%** of statements.
+- **`packages/go-client/examples/nethttp-middleware/`** — framework-agnostic `Wrap(client, Options) func(http.Handler) http.Handler` middleware with `FromContext(ctx)` accessor for the verify outcome. Drops into chi / gorilla/mux / alice / any router consuming the standard middleware shape. Standalone demo `main.go` (`go:build ignore`) listens on :4040.
+- **`packages/go-client/examples/gin-middleware/`** — `ConsentRequired(client, Options) gin.HandlerFunc` adapter. The package is `go:build ignore`-tagged so the SDK's `go test ./...` doesn't try to compile the gin import — operator vendors it into a separate module to run.
+- **`packages/go-client/README.md`** — quickstart + 14-method matrix + compliance contract + idiomatic-Go notes (context-first, errors.As discrimination, paginator pattern, custom transport).
+- **`packages/go-client/PUBLISHING.md`** — first Go module operator runbook in the repo. Pre-flight (`go vet` + `go test -race -cover` + `gofmt -l . == empty`), version bump (`Version` constant in `consentshield.go` MUST match the git tag), tag conventions (sub-dir-relative when SDK isn't at repo root), `proxy.golang.org` verification, scratch-venv smoke install, recovery from a bad tag, v2+ module-path-suffix convention (`/v2` suffix), security checklist.
+- **`packages/go-client/LICENSE.md`** — proprietary text per CLAUDE.md authorship rules.
+
+### Architecture Changes
+- **Phase 4 scope amendment 2026-04-25 — Java abandoned.** The original Phase 4 had two sprints: 4.1 Java (Maven Central) + 4.2 Go. Java was dropped because (a) BFSI customer demand has not surfaced yet, (b) the Java publish flow (Sonatype OSSRH onboarding + GPG signing + jakarta.* vs javax.* fork bookkeeping) is materially heavier than npm/PyPI/go-proxy, and (c) the OpenAPI spec at `marketing/public/openapi.yaml` is sufficient for Java callers to generate a client today. A native Java SDK can be picked up under a future ADR if Tier-1 BFSI adoption demands it.
+- **The Go SDK closes the SDK matrix for ADR-1006.** Three official SDKs ship at v1.0.0: Node (`@consentshield/node`), Python (`consentshield`), Go (`github.com/consentshield/go-client`). All three carry the same compliance contract (4xx ALWAYS errors, fail-CLOSED default, fail-OPEN env override, on-fail-open audit-trail callback in Node + Python, `errors.As`-discriminable in Go), the same trace-id round-trip (`X-CS-Trace-Id`), the same VerifyBatch boundary (10 000 identifiers, client-gated before network), and the same set of `OpenFailureCause` discriminators (`timeout` / `network` / `server_error`).
+- **First Go module in the repo.** The SDK is the first Go production code in `packages/`. The repo's existing infrastructure (TypeScript + Python + Bun workspace) is unchanged; the Go module lives outside the Bun workspace and is built/tested via `go test ./...` from `packages/go-client/`.
+
+### Tested
+- [x] `go vet ./...` — PASS (no warnings)
+- [x] `go test -count=1 -cover ./...` — PASS, **coverage 87.8%** (over the ≥80% gate)
+- [x] `gofmt -l .` — empty
+- [x] `go build ./...` from a clean clone — PASS
+- [x] Compliance-contract sweeps verified end-to-end (see test file inventory above)
+- [x] Marketing-site `bun run build` — PASS, includes `/docs/sdks`, `/docs/sdks/node`, `/docs/sdks/python`, `/docs/sdks/go` in the route table
+
 ## [ADR-1006 Phase 2 Sprint 2.2 — Python SDK integration examples + build artefacts + PUBLISHING runbook (Phase 2 closes)] — 2026-04-25
 
 **ADR:** ADR-1006 — Developer Experience: Client Libraries + OpenAPI + CI Drift Check

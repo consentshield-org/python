@@ -37,6 +37,9 @@ export const DOCS_NAV: NavGroup[] = [
       { label: 'Authentication', href: '/docs/authentication' },
       { label: 'Rate limits & quotas', href: '/docs/rate-limits' },
       { label: 'SDK availability', href: '/docs/sdks' },
+      { label: 'Node.js (@consentshield/node)', href: '/docs/sdks/node', nested: true, subheading: 'SDKs' },
+      { label: 'Python (consentshield)', href: '/docs/sdks/python', nested: true },
+      { label: 'Go (consentshield-go)', href: '/docs/sdks/go', nested: true },
     ],
   },
   {

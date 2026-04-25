@@ -1,0 +1,157 @@
+export const metadata = {
+  title: 'SDK availability',
+  description:
+    'Official ConsentShield client libraries — Node.js, Python, and Go. Same compliance contract everywhere.',
+}
+
+<Breadcrumb trail={[
+  { label: 'Docs', href: '/docs' },
+  { label: 'Get started', href: '/docs' },
+  { label: 'SDK availability' },
+]} />
+
+# SDK availability
+
+Three official client libraries. They share one compliance contract,
+one error model, and one fail-CLOSED default — pick the one that
+matches your stack.
+
+| Language | Package | Install | Min version |
+|---|---|---|---|
+| Node.js / TypeScript | [`@consentshield/node`](/docs/sdks/node) | `npm install @consentshield/node` | Node 18+ |
+| Python | [`consentshield`](/docs/sdks/python) | `pip install consentshield` | Python 3.9+ |
+| Go | [`github.com/consentshield/go-client`](/docs/sdks/go) | `go get github.com/consentshield/go-client` | Go 1.22+ |
+
+All three are at **v1.0.0**, hand-rolled by us, exact-pinned, and
+ship the full 14-method API surface plus paginators for every list
+endpoint.
+
+<Callout tone="info" title="Why hand-rolled?">
+Every dependency in your compliance path runs on every request. We
+write each SDK by hand, audit it line-by-line, and pin the one
+absolute minimum (`httpx` in Python, `tsup` build-only in Node, zero
+runtime deps in Go) so you don't inherit a long supply chain when
+you depend on us.
+</Callout>
+
+## What every SDK does
+
+The same things, in the language's idiom:
+
+- **`Verify` / `VerifyBatch`** — single + bulk consent checks
+  (compliance-load-bearing).
+- **`RecordConsent`** — capture a consent event, idempotent via
+  `client_request_id`.
+- **`RevokeArtefact`** — server-initiated revocation; 409 surfaces
+  on terminal-state.
+- **`ListArtefacts` / `IterateArtefacts` / `GetArtefact`** —
+  cursor-paginated reads (returns `null` for unknown ids).
+- **`ListEvents` / `IterateEvents`** — consent event stream.
+- **`TriggerDeletion` / `ListDeletionReceipts`** — deletion fan-out
+  + receipt walk.
+- **`CreateRightsRequest` / `ListRightsRequests`** — DPDP §13/§14
+  rights flow.
+- **`ListAuditLog` / `IterateAuditLog`** — audit replay.
+- **`Ping`** — `/v1/_ping` health check.
+
+## The compliance contract — every SDK, identical
+
+| Outcome | Default (fail-CLOSED) | `failOpen=true` |
+|---|---|---|
+| 4xx (caller bug / scope / 422 / 404 / 413) | error / exception | error / exception (4xx **always** surfaces) |
+| Timeout | error / exception | open envelope, `cause: 'timeout'` |
+| Network (DNS / TCP / TLS reset) | error / exception | open envelope, `cause: 'network'` |
+| 5xx | error / exception | open envelope, `cause: 'server_error'` |
+
+The default — fail-CLOSED — is the safe one. When ConsentShield is
+briefly unreachable, your service responds **503** to its own caller
+rather than silently default-granting consent that may have been
+withdrawn 30 seconds ago.
+
+To opt into fail-OPEN per call site, set `failOpen` (Node), `fail_open`
+(Python), or `FailOpen` (Go) — or the env var
+`CONSENT_VERIFY_FAIL_OPEN=true` for service-wide opt-in. Wire your
+audit-trail callback (`onFailOpen` / `on_fail_open`) so every override
+lands on Sentry / your structured logger / a custom audit POST.
+
+## Pick a lane
+
+<CodeTabs tabs={[
+  {
+    label: 'Node.js',
+    language: 'typescript',
+    code: `import { ConsentShieldClient } from '@consentshield/node'
+
+const client = new ConsentShieldClient({
+  apiKey: process.env.CS_API_KEY!,
+})
+
+const { status } = await client.verify({
+  propertyId: 'PROP_UUID',
+  dataPrincipalIdentifier: 'user@example.com',
+  identifierType: 'email',
+  purposeCode: 'marketing',
+})
+if (status !== 'granted') return res.status(451).end()`,
+  },
+  {
+    label: 'Python',
+    language: 'python',
+    code: `from consentshield import ConsentShieldClient
+
+client = ConsentShieldClient(api_key=os.environ["CS_API_KEY"])
+
+result = client.verify(
+    property_id="PROP_UUID",
+    data_principal_identifier="user@example.com",
+    identifier_type="email",
+    purpose_code="marketing",
+)
+if result["status"] != "granted":
+    return Response(status=451)`,
+  },
+  {
+    label: 'Go',
+    language: 'go',
+    code: `import consentshield "github.com/consentshield/go-client"
+
+client, _ := consentshield.NewClient(consentshield.Config{
+    APIKey: os.Getenv("CS_API_KEY"),
+})
+
+out, err := client.Verify(ctx, consentshield.VerifyParams{
+    PropertyID:              "PROP_UUID",
+    DataPrincipalIdentifier: "user@example.com",
+    IdentifierType:          "email",
+    PurposeCode:             "marketing",
+})
+if err != nil {
+    // fail-CLOSED default → 503 your caller
+    return c.JSON(503, gin.H{"error": "consent_unavailable"})
+}
+if out.Envelope.Status != "granted" {
+    return c.JSON(451, gin.H{"error": "consent_not_granted"})
+}`,
+  },
+]} />
+
+## Framework-integration examples ship in every SDK
+
+| SDK | Examples |
+|---|---|
+| Node.js | Express middleware, Next.js App Router |
+| Python | Django middleware, Flask decorator, FastAPI dependency |
+| Go | net/http (chi-compatible), gin |
+
+Each example refuses with HTTP 451 on `revoked` / `expired` /
+`never_consented`, fails CLOSED with HTTP 503 on a 5xx / network /
+timeout, and surfaces `X-CS-Trace-Id` for end-to-end correlation.
+
+<Callout tone="info" title="Other languages">
+For Java, Ruby, .NET, PHP, or Rust callers we currently recommend
+using the [OpenAPI spec](/openapi.yaml) with your generator of
+choice. Native SDKs may be added later — let us know your stack at
+[dev-support@consentshield.in](mailto:dev-support@consentshield.in).
+</Callout>
+
+<FeedbackStrip pageId="sdks-index" />

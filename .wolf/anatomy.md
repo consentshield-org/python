@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-25T07:53:20.485Z
-> Files: 1556 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-25T08:35:23.898Z
+> Files: 1584 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../tmp/
 
@@ -231,7 +231,7 @@
 
 ## ./
 
-- `.gitignore` — Git ignore rules (~539 tok)
+- `.gitignore` — Git ignore rules (~582 tok)
 - `.prettierrc` (~29 tok)
 - `.secrets` — Supabase (~972 tok)
 - `CLAUDE.md` — OpenWolf (~6199 tok)
@@ -1424,7 +1424,7 @@
 - `ADR-1003-processor-posture-and-healthcare-unlock.md` — ADR-1003: Processor Posture + Healthcare Category Unlock (~10912 tok)
 - `ADR-1004-statutory-retention-material-change-silent-failure.md` — ADR-1004: Statutory Retention + Material-Change Re-consent + Silent-Failure Detection (~7531 tok)
 - `ADR-1005-operations-maturity.md` — ADR-1005: Operations Maturity — Webhook Reference, Support Model, Status Page, Multi-channel Alerts, (~7076 tok)
-- `ADR-1006-developer-experience-and-openapi.md` — ADR-1006: Developer Experience — Client Libraries + OpenAPI Spec + CI Drift Check (~10253 tok)
+- `ADR-1006-developer-experience-and-openapi.md` — ADR-1006: Developer Experience — Client Libraries + OpenAPI Spec + CI Drift Check (~11372 tok)
 - `ADR-1007-connector-ecosystem-expansion.md` — ADR-1007: Connector Ecosystem Expansion + Platform Plugins (~2738 tok)
 - `ADR-1008-scale-audit-polish-and-p3-hardening.md` — ADR-1008: Scale + Audit Polish + P3 Hardening (~3065 tok)
 - `ADR-1009-v1-api-role-hardening.md` — ADR-1009: v1 API role hardening — remove service-role shortcut, adopt `cs_api` as designed (~5564 tok)
@@ -1436,7 +1436,7 @@
 - `ADR-1015-v1-api-integration-tests-and-developer-docs.md` — ADR-1015: v1 API integration tests + customer developer documentation (~7655 tok)
 - `ADR-1016-v1-orphan-scope-read-endpoints.md` — ADR-1016: v1 API — close the orphan `read:audit`, `read:security`, `read:score` scopes (~1836 tok)
 - `ADR-1017-admin-ops-readiness-flags.md` — ADR-1017: Admin ops-readiness flags — surface external blockers in the operator console (~1656 tok)
-- `ADR-1018-self-hosted-status-page.md` — ADR-1018: Self-hosted status page on admin + public surfaces (~2962 tok)
+- `ADR-1018-self-hosted-status-page.md` — ADR-1018: Status page — Phase 1 self-hosted (superseded), Phase 2 Better Stack integration (~6795 tok)
 - `ADR-1019-deliver-consent-events-edge-function.md` — ADR-1019: `deliver-consent-events` — the missing R2 export path (~8296 tok)
 - `ADR-1020-multilingual-support-per-meity-brd.md` — ADR-1020: Multilingual support per MeitY BRD §4.1.1 (umbrella) — 7 langs Phase 1, 15 Phase 4 (Q+1) (~3200 tok)
 - `ADR-1020-multilingual-support-per-meity-brd.md` — ADR-1020: Multilingual support per MeitY BRD §4.1.1 (umbrella) (~4269 tok)
@@ -1446,7 +1446,7 @@
 - `ADR-1025-customer-storage-auto-provisioning.md` — ADR-1025: Customer storage auto-provisioning — hybrid managed R2 default + BYOK escape hatch (~13370 tok)
 - `ADR-1026-drop-hyperdrive-direct-supavisor.md` — ADR-1026: Rewind ADR-1010 Phase 3 — Worker connects directly to Supavisor; drop Hyperdrive binding (~5467 tok)
 - `ADR-1027-admin-account-awareness.md` — ADR-1027: Admin Account-Awareness Pass (~8082 tok)
-- `ADR-index.md` — ADR Index (~10227 tok)
+- `ADR-index.md` — ADR Index (~10641 tok)
 - `ADR-template.md` — ADR-NNNN: Title (~423 tok)
 - `adr-workflow.md` — ADR Workflow Rules (~557 tok)
 
@@ -1474,9 +1474,9 @@
 
 ## docs/changelogs/
 
-- `CHANGELOG-api.md` — Changelog — API (~50126 tok)
+- `CHANGELOG-api.md` — Changelog — API (~52436 tok)
 - `CHANGELOG-dashboard.md` — Changelog — Dashboard (~29589 tok)
-- `CHANGELOG-docs.md` — Changelog — Documentation (~14619 tok)
+- `CHANGELOG-docs.md` — Changelog — Documentation (~15707 tok)
 - `CHANGELOG-edge-functions.md` — Changelog — Edge Functions (~4251 tok)
 - `CHANGELOG-infra.md` — Changelog — Infrastructure (~25637 tok)
 - `CHANGELOG-marketing.md` — Changelog — Marketing (~17784 tok)
@@ -1556,11 +1556,12 @@
 - `2026-04-18-comprehensive-project-review.md` — ConsentShield — Comprehensive Review as of 2026-04-18 (~3553 tok)
 - `2026-04-20-api-key-security-review.md` — Security Review — API Key Surface (ADR-1001 Sprint 3.1) (~1833 tok)
 - `2026-04-21-v1-api-gap-audit.md` — v1 API Gap Audit — 2026-04-21 (~2913 tok)
-- `2026-04-25-marketing-claims-vs-reality-review.md` — Marketing claims vs. reality review (~28486 tok)
+- `2026-04-25-marketing-claims-vs-reality-review.md` — Marketing claims vs. reality review (~29473 tok)
 
 ## docs/runbooks/
 
 - `adr-1003-phase-1-operator-actions.md` — ADR-1003 Phase 1 — operator actions (~1794 tok)
+- `adr-1018-phase-2-better-stack-sprint-2-1.md` — Runbook — ADR-1018 Phase 2 Sprint 2.1: Better Stack account + token (~1777 tok)
 - `ai-provider-setup.md` — Runbook — AI Translation Provider Setup (Sarvam + Vercel AI Gateway) (~2210 tok)
 - `notification-channel-accounts.md` — Notification channel account setup — Slack / Teams / Discord / PagerDuty (~1889 tok)
 - `ops-readiness-flags.md` — Ops Readiness Flags — operator runbook (~1594 tok)
@@ -1649,8 +1650,8 @@
 
 ## marketing/src/app/docs/_data/
 
-- `nav.ts` — HTTP method pill for API-reference entries; undefined elsewhere. (~1491 tok)
-- `search-index.ts` — Group label (appears as a muted header in the palette). (~2358 tok)
+- `nav.ts` — HTTP method pill for API-reference entries; undefined elsewhere. (~1569 tok)
+- `search-index.ts` — Group label (appears as a muted header in the palette). (~2557 tok)
 
 ## marketing/src/app/docs/_styles/
 
@@ -1740,6 +1741,22 @@
 ## marketing/src/app/docs/rate-limits/
 
 - `page.mdx` — Rate limits & quotas (~1810 tok)
+
+## marketing/src/app/docs/sdks/
+
+- `page.mdx` — SDK availability (~1477 tok)
+
+## marketing/src/app/docs/sdks/go/
+
+- `page.mdx` — `github.com/consentshield/go-client` (~1848 tok)
+
+## marketing/src/app/docs/sdks/node/
+
+- `page.mdx` — `@consentshield/node` (~1676 tok)
+
+## marketing/src/app/docs/sdks/python/
+
+- `page.mdx` — `consentshield` (~1821 tok)
 
 ## marketing/src/app/docs/status/
 
@@ -1869,6 +1886,38 @@
 ## packages/encryption/src/
 
 - `index.ts` (~16 tok)
+
+## packages/go-client/
+
+- `artefacts.go` — Struct: ListArtefactsParams (~1030 tok)
+- `audit.go` — Struct: ListAuditLogParams (~519 tok)
+- `client_test.go` — TestNewClient_RequiresLivePrefix, TestNewClient_DefaultsApplied, TestNewClient_BaseURLTrailingSlashT (~4867 tok)
+- `client.go` — Struct: Client (~302 tok)
+- `consent.go` — Struct: PingEnvelope (~1306 tok)
+- `consentshield.go` — is the official Go client library for the (~404 tok)
+- `coverage_test.go` — TestErrorStringSurfaces, TestVerifyOutcome_IsOpenZeroValue, TestPaginatorErrorOnHTTPFailure, TestLis (~3712 tok)
+- `deletion.go` — Struct: TriggerDeletionParams (~1286 tok)
+- `errors.go` — Interface: Error (~845 tok)
+- `events.go` — Struct: ListEventsParams (~583 tok)
+- `go.mod` — Go module definition (~14 tok)
+- `http.go` — Struct: Config (~1826 tok)
+- `LICENSE.md` — ConsentShield Go Client — License (~349 tok)
+- `PUBLISHING.md` — PUBLISHING — `github.com/consentshield/go-client` (~711 tok)
+- `README.md` — Project documentation (~1364 tok)
+- `rights.go` — Struct: CreateRightsRequestParams (~1190 tok)
+- `types.go` — Struct: VerifyEnvelope (~2544 tok)
+- `verify.go` — Struct: VerifyParams (~1590 tok)
+
+## packages/go-client/examples/gin-middleware/
+
+- `middleware.go` — adapts the Wrap middleware shape to gin's (~778 tok)
+- `README.md` — Project documentation (~408 tok)
+
+## packages/go-client/examples/nethttp-middleware/
+
+- `main.go` — Standalone net/http demo. Build + run: (~373 tok)
+- `middleware.go` — shows how to gate any net/http handler (~1060 tok)
+- `README.md` — Project documentation (~303 tok)
 
 ## packages/node-client/
 
@@ -2798,13 +2847,13 @@
 
 ## tests/load/
 
-- `invariant-probe.ts` — ADR-1003 Sprint 3.2 — buffer-row invariant probe. (~1209 tok)
+- `invariant-probe.ts` — ADR-1003 Sprint 3.2 — buffer-row invariant probe. (~1275 tok)
 - `README.md` — Project documentation (~1582 tok)
-- `run.sh` — ADR-1003 Sprint 3.2 — orchestrator: starts the invariant probe, runs (~814 tok)
+- `run.sh` — ADR-1003 Sprint 3.2 — orchestrator: starts the invariant probe, runs (~866 tok)
 
 ## tests/load/k6/
 
-- `zero-storage-mode-a.js` — ADR-1003 Sprint 3.2 — Mode A (Worker /v1/events) load scenario. (~1640 tok)
+- `zero-storage-mode-a.js` — ADR-1003 Sprint 3.2 — Mode A (Worker /v1/events) load scenario. (~1643 tok)
 - `zero-storage-mode-b.js` — ADR-1003 Sprint 3.2 — Mode B (POST /api/v1/consent/record) load scenario. (~1582 tok)
 
 ## tests/rbac/

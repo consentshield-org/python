@@ -1,0 +1,205 @@
+export const metadata = {
+  title: 'consentshield — Python SDK',
+  description:
+    'Sync + async ConsentShield SDK for Python. httpx-backed; 100% method parity with the Node SDK.',
+}
+
+<Breadcrumb trail={[
+  { label: 'Docs', href: '/docs' },
+  { label: 'SDKs', href: '/docs/sdks' },
+  { label: 'Python' },
+]} />
+
+# `consentshield`
+
+The official Python client. Two clients in one package — sync
+`ConsentShieldClient` for Django / Flask / scripts, async
+`AsyncConsentShieldClient` for FastAPI / asyncio services. Same
+method surface, same compliance contract.
+
+## Install
+
+```bash
+pip install consentshield
+# or with extras
+pip install 'consentshield[test]'   # pytest + coverage
+pip install 'consentshield[dev]'    # mypy + ruff
+```
+
+- **Python 3.9+** required (3.9 / 3.10 / 3.11 / 3.12 / 3.13 tested)
+- Single runtime dep: `httpx >=0.27,<1.0`
+- Ships **PEP 561** `py.typed` marker — `mypy --strict` clean
+
+## Quickstart — sync
+
+```python
+import os
+from consentshield import ConsentShieldClient
+
+client = ConsentShieldClient(api_key=os.environ["CS_API_KEY"])
+
+result = client.verify(
+    property_id="PROP_UUID",
+    data_principal_identifier="user@example.com",
+    identifier_type="email",
+    purpose_code="marketing",
+)
+if result["status"] != "granted":
+    # 451 your caller
+    ...
+```
+
+## Quickstart — async
+
+```python
+import asyncio
+import os
+from consentshield import AsyncConsentShieldClient
+
+async def main() -> None:
+    async with AsyncConsentShieldClient(api_key=os.environ["CS_API_KEY"]) as client:
+        result = await client.verify(
+            property_id="PROP_UUID",
+            data_principal_identifier="user@example.com",
+            identifier_type="email",
+            purpose_code="marketing",
+        )
+        print(result["status"])
+
+asyncio.run(main())
+```
+
+## Configuration
+
+```python
+ConsentShieldClient(
+    api_key="cs_live_...",          # required — `cs_live_` prefix validated
+    base_url="https://api.consentshield.in",  # default
+    timeout_ms=2000,                # per-attempt; never retried on timeout
+    max_retries=2,                  # 5xx + transport errors only
+    fail_open=False,                # see compliance contract
+    on_fail_open=None,              # callable, default: logging.warning
+)
+```
+
+`CONSENT_VERIFY_FAIL_OPEN=true` env var flips `fail_open` for
+service-wide opt-in. The async client takes the same kwargs.
+
+## Method matrix
+
+100% parity between sync + async — every method below has both
+`client.verify(...)` (sync) and `await async_client.verify(...)`
+(async) forms.
+
+### Consent
+
+| Method | Verb | Notes |
+|---|---|---|
+| `verify(...)` | `GET /v1/consent/verify` | Compliance-load-bearing. |
+| `verify_batch(...)` | `POST /v1/consent/verify/batch` | Up to **10 000** identifiers per call (client-gated). |
+| `record_consent(...)` | `POST /v1/consent/record` | Idempotent via `client_request_id`. |
+| `revoke_artefact(...)` | `POST /v1/consent/artefacts/{id}/revoke` | 409 surfaces on terminal-state. |
+
+### Listing + iteration
+
+| Method | Verb | Notes |
+|---|---|---|
+| `list_artefacts` / `iterate_artefacts` | `GET /v1/consent/artefacts` | Iterator walks every page (sync = generator, async = async iterator). |
+| `get_artefact(id)` | `GET /v1/consent/artefacts/{id}` | Returns `None` for unknown id. |
+| `list_events` / `iterate_events` | `GET /v1/consent/events` | |
+| `list_audit_log` / `iterate_audit_log` | `GET /v1/audit` | |
+
+### Deletion + rights
+
+| Method | Verb | Notes |
+|---|---|---|
+| `trigger_deletion(...)` | `POST /v1/deletion/trigger` | `purpose_codes` REQUIRED when `reason='consent_revoked'`. |
+| `list_deletion_receipts` / `iterate_deletion_receipts` | `GET /v1/deletion/receipts` | |
+| `create_rights_request(...)` | `POST /v1/rights/requests` | `identity_verified_by` REQUIRED. |
+| `list_rights_requests` / `iterate_rights_requests` | `GET /v1/rights/requests` | |
+
+### Health
+
+| Method | Verb |
+|---|---|
+| `ping()` | `GET /v1/_ping` |
+
+## Compliance contract
+
+| Outcome | Default | `fail_open=True` |
+|---|---|---|
+| 4xx (caller bug / scope / 422 / 404 / 413) | raises `ConsentShieldApiError` | raises `ConsentShieldApiError` (4xx **always** raises) |
+| Timeout | raises `ConsentVerifyError` wrapping `ConsentShieldTimeoutError` | returns `OpenFailureEnvelope`, `cause='timeout'` |
+| Network | raises `ConsentVerifyError` wrapping `ConsentShieldNetworkError` | returns `OpenFailureEnvelope`, `cause='network'` |
+| 5xx | raises `ConsentVerifyError` wrapping `ConsentShieldApiError` | returns `OpenFailureEnvelope`, `cause='server_error'` |
+
+Use `is_open_failure(result)` as an ergonomic type guard:
+
+```python
+from consentshield import is_open_failure
+
+result = client.verify(...)
+if is_open_failure(result):
+    # fail_open path — audit-trail wired via on_fail_open
+    return next_handler()
+if result["status"] != "granted":
+    return Response(status=451)
+```
+
+## Audit-trail wiring (`on_fail_open`)
+
+Every fail-OPEN override fires `on_fail_open` exactly once. Default
+implementation: `logging.warning(...)` with structured key/value
+pairs. Wire to Sentry / structured logger / a custom audit POST.
+
+```python
+def audit_failure(envelope, ctx):
+    sentry_sdk.capture_message(
+        "consent.fail_open",
+        level="warning",
+        extras={"method": ctx["method"], "envelope": envelope},
+    )
+
+client = ConsentShieldClient(
+    api_key=os.environ["CS_API_KEY"],
+    fail_open=True,
+    on_fail_open=audit_failure,
+)
+```
+
+The async client's callback may be `def` OR `async def` — coroutine
+returns are scheduled fire-and-forget on the running event loop.
+Sync throws + async rejections both swallowed with stderr log;
+they NEVER break the verify call site.
+
+## Examples
+
+The package ships three runnable integrations under `examples/`:
+
+- **`examples/django-middleware/`** — `ConsentMiddleware` reading
+  `settings.CONSENTSHIELD` for per-route purpose declarations.
+- **`examples/flask-decorator/`** — `@consent_required(client, ...)`
+  wrapping any view.
+- **`examples/fastapi-dependency/`** — async
+  `Depends(consent_dependency(client, ...))` using
+  `AsyncConsentShieldClient` natively (no thread-pool bridge).
+
+Each example refuses with HTTP 451 on non-granted, HTTP 503 on
+fail-CLOSED, HTTP 502 on 4xx, and surfaces `X-CS-Override` /
+`X-CS-Trace-Id` / `X-CS-Evaluated-At` headers for downstream
+correlation.
+
+<Callout tone="info" title="Type safety">
+The package ships a PEP 561 `py.typed` marker. Wire-format types
+are TypedDicts with snake_case fields verbatim from the server.
+`mypy --strict` and `pyright --strict` both pass clean against the
+public API.
+</Callout>
+
+## Source
+
+The SDK lives at `packages/python-client/` in the
+[ConsentShield monorepo](https://github.com/consentshield). Issues
+go to [dev-support@consentshield.in](mailto:dev-support@consentshield.in).
+
+<FeedbackStrip pageId="sdks-python" />

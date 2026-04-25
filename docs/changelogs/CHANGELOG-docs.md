@@ -2,6 +2,30 @@
 
 Documentation changes.
 
+## [ADR-1006 Phase 4 Sprint 4.2 — marketing /docs/sdks pages (fix 404)] — 2026-04-25
+
+**ADR:** ADR-1006 — Developer Experience: Client Libraries + OpenAPI + CI Drift Check
+**Sprint:** Phase 4, Sprint 4.2 (Go SDK ships in CHANGELOG-api; this entry covers the marketing-site documentation that ships in the same commit)
+
+### Added
+- **`marketing/src/app/docs/sdks/page.mdx`** — index page (the `/docs/sdks` 404 fix). Install matrix for the three official SDKs (Node / Python / Go) with `npm install`, `pip install`, `go get` snippets; "what every SDK does" method overview; the unified compliance contract table (default vs `failOpen=true` × four outcome rows); cross-SDK quickstart in CodeTabs (Node/Python/Go on the same verify call); pointer to the framework-integration examples in each SDK; pointer to the OpenAPI spec for callers in other languages.
+- **`marketing/src/app/docs/sdks/node/page.mdx`** — `@consentshield/node` landing page. Install (`npm` / `pnpm` / `yarn` / `bun`) + Node 18+ note + dual ESM/CJS + `sideEffects: false`. Quickstart, configuration knobs, full method matrix grouped by concern (consent, listing+iteration, deletion+rights, health), compliance contract with TS-specific error class names, `isOpenFailure` type-guard usage, `onFailOpen` audit-trail wiring with Sentry example, trace-id round-trip with `instanceof ConsentShieldError`, examples reference (Express + Next.js).
+- **`marketing/src/app/docs/sdks/python/page.mdx`** — `consentshield` (PyPI) landing page. Install + extras (`[test]` / `[dev]`) + Python 3.9+ note + `httpx` runtime dep + PEP 561 `py.typed` marker. Sync + async quickstarts (with `async with` context manager), configuration knobs, method matrix (sync = generator iterators, async = async iterators), compliance contract with Python-specific exception class names, `is_open_failure` type-guard usage, `on_fail_open` callback (sync + async-coroutine support documented), examples reference (Django middleware + Flask decorator + FastAPI dependency).
+- **`marketing/src/app/docs/sdks/go/page.mdx`** — `github.com/consentshield/go-client` landing page. Install + Go 1.22+ note + zero-runtime-deps emphasis + Go-module-proxy release model. Quickstart, configuration knobs, full method matrix, compliance contract with `errors.As`-discrimination snippet, paginator pattern (`Next(ctx) bool` + `Page() []T` + `Err() error`), trace-id round-trip via `Error` interface, `Config.HTTPClient` swap for tests / mTLS / custom transport, examples reference (net/http + gin).
+
+### Changed
+- **`marketing/src/app/docs/_data/nav.ts`** — three new sub-entries beneath "SDK availability" (`/docs/sdks/node`, `/docs/sdks/python`, `/docs/sdks/go`) with the `nested` flag + an "SDKs" subheading; renders one level indented in the docs sidebar.
+- **`marketing/src/app/docs/_data/search-index.ts`** — `/docs/sdks` description corrected from "Node / Python / Java / Go client libraries" to "Node / Python / Go client libraries — overview + install matrix" (Java was dropped per ADR-1006 scope amendment 2026-04-25). New DESCRIPTIONS entries for the three per-SDK pages with stack-specific keywords (`express`, `nextjs`, `django`, `flask`, `fastapi`, `gin`, `chi`, `net/http`, etc.) so Cmd-K finds them on framework-name searches.
+
+### Architecture changes
+- **`/docs/sdks` was a 404 before this sprint.** The sidebar entry existed (added in ADR-1015) but the matching MDX page did not. Sprint 4.2 closes the loop: every sidebar link on the docs site now resolves to a live page (verified by `bun run build` listing `/docs/sdks`, `/docs/sdks/node`, `/docs/sdks/python`, `/docs/sdks/go` in the dynamic route table).
+- **Marketing copy realignment for the dropped Java SDK.** Both nav.ts and search-index.ts referenced "Java" as a published SDK. Sprint 4.2 (which formally abandons Sprint 4.1 Java per the scope amendment) corrects every customer-facing surface to the three actually-shipped languages.
+
+### Tested
+- [x] `cd marketing && bun run build` — PASS, route table includes `/docs/sdks`, `/docs/sdks/node`, `/docs/sdks/python`, `/docs/sdks/go`
+- [x] `cd marketing && bun run lint` — PASS (no new warnings; the two pre-existing warnings in unrelated files remain)
+- [x] All four new MDX pages render with the standard `<Breadcrumb>` + `<Callout>` + `<CodeTabs>` + `<FeedbackStrip>` shell from `mdx-components.tsx`
+
 ## [ADR-1003 Sprint 3.2 — zero-storage feature matrix + benchmark template] — 2026-04-25
 
 **ADR:** ADR-1003 — Processor Posture + Healthcare Category Unlock

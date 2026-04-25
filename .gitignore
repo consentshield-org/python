@@ -91,6 +91,12 @@ packages/python-client/.ruff_cache/
 **/__pycache__/
 **/*.pyc
 
+# Go — coverage + build artefacts
+packages/go-client/coverage.out
+packages/go-client/coverage.html
+packages/go-client/*.test
+packages/go-client/vendor/
+
 # TypeScript
 *.tsbuildinfo
 
@@ -114,3 +120,4 @@ session-context/
 
 # sed -i.bak leftovers
 *.bak
+.env.load

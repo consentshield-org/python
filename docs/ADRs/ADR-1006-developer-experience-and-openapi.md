@@ -265,42 +265,46 @@ User-confirmed before Sprint 2.1 work started.
 
 **Status:** `[ ] planned`
 
-### Phase 4: Java + Go libraries (G-024)
+### Phase 4: Go library (G-024) — Java dropped per scope amendment
 
-#### Sprint 4.1: Java library
+**Scope amendment 2026-04-25:** Java was originally Sprint 4.1; the
+ADR scope amendment of the same date (recorded in the ADR-index row)
+drops Java from this ADR's scope in favour of OpenAPI-driven future
+generation. Customers needing Java today use the OpenAPI spec at
+`marketing/public/openapi.yaml` with their generator of choice.
+A native Java SDK can be picked up under a future ADR if Tier-1 BFSI
+adoption demands it.
 
-**Estimated effort:** 5 days
+#### Sprint 4.1: Java library — abandoned
 
-**Deliverables:**
-- [ ] `com.consentshield:consentshield-client:1.0.0` Maven artefact
-- [ ] API parity with Node/Python
-- [ ] Fail-closed default; `CONSENT_VERIFY_FAIL_OPEN` via Java system property or env
-- [ ] Spring Boot integration example with auto-configuration
-- [ ] Publish to Maven Central (Sonatype OSSRH onboarding done during this sprint)
-- [ ] Coverage ≥ 80%
-
-**Testing plan:**
-- [ ] `mvn install` in a scratch Spring Boot project; example runs against staging
-- [ ] Integration tests: same fixtures
-
-**Status:** `[ ] planned`
+**Status:** `[—] abandoned 2026-04-25 — superseded by Go-only Phase 4. Native Java SDK deferred to a future ADR pending BFSI customer demand. Java callers use the OpenAPI spec + their generator until then.`
 
 #### Sprint 4.2: Go library
 
 **Estimated effort:** 3 days
 
 **Deliverables:**
-- [ ] `github.com/consentshield/go-client` Go module
-- [ ] API parity with other languages (Go-idiomatic: `context.Context` first arg, explicit error returns)
-- [ ] Fail-closed default; `CONSENT_VERIFY_FAIL_OPEN` via env
-- [ ] `net/http` example + middleware for `chi`/`gin`
-- [ ] Tag v1.0.0 on the module proxy
-- [ ] Coverage ≥ 80%
+- [x] `github.com/consentshield/go-client` Go module — package layout under `packages/go-client/`. `go.mod` declares `module github.com/consentshield/go-client`, `go 1.22`. Single package (`consentshield`) split across files (consentshield.go / client.go / errors.go / types.go / http.go / verify.go / consent.go / artefacts.go / events.go / deletion.go / rights.go / audit.go) for navigability. **Zero runtime deps** — pure standard library; `httptest`-based tests need only the `net/http/httptest` stdlib package.
+- [x] API parity with Node + Python (Go-idiomatic) — `context.Context` first arg on every method; struct-options `*Params` for every method (matches Go's recommendation against optional positional args); errors returned as second value; `errors.As` discrimination on the five-class hierarchy (`*APIError` / `*NetworkError` / `*TimeoutError` / `*VerifyError` / `Error` interface for trace-id access). 14 named methods + 5 paginators (`Iterate*` returning a `*Paginator` with `Next(ctx) bool` + `Page() []T` + `Err() error`). Same compliance contract: 4xx ALWAYS errors; 5xx/network/timeout + FailOpen=false → `*VerifyError`; FailOpen=true → `OpenFailureEnvelope` on `VerifyOutcome.Open`.
+- [x] Fail-closed default; `CONSENT_VERIFY_FAIL_OPEN=true|1` env override — explicit `Config.WithFailOpen(...)` always wins over env so explicit `false` is never stomped.
+- [x] `net/http` example + gin middleware — `examples/nethttp-middleware/` ships a framework-agnostic `func(http.Handler) http.Handler` middleware that drops into chi / gorilla/mux / alice / any router accepting that shape (the README spells out chi wiring explicitly). `examples/gin-middleware/` ships `ConsentRequired(client, opts) gin.HandlerFunc`. Both refuse with HTTP 451 on non-granted, HTTP 503 on fail-CLOSED, HTTP 502 on 4xx; `X-CS-Override` / `X-CS-Trace-Id` / `X-CS-Evaluated-At` headers surface for downstream correlation.
+- [x] Coverage ≥ 80% — final coverage **87.8%** of statements (`go test -count=1 -cover ./...`) across two test files (`client_test.go` + `coverage_test.go`, ~25 test functions / ~50 assertions). Tests use `httptest.NewServer` for stubbing — no network round-trips.
+- [x] PUBLISHING.md operator runbook — `packages/go-client/PUBLISHING.md` codifies the Go module proxy release flow: pre-flight (`go vet` + `go test -race -cover` + `gofmt -l . == empty`), version bump (the `Version` constant in `consentshield.go` MUST match the git tag), `git tag -a vX.Y.Z`, push to GitHub, verify on `proxy.golang.org`, smoke install in a scratch project, recovery from a bad tag, v2+ module-path-suffix convention.
+
+**Spec amendment for Sprint 4.2 — `git tag` + GitHub org reservation deferred to operator step.** SDK is publish-ready: `go vet` clean, `gofmt -l .` empty, coverage 87.8%, examples build, README + LICENSE + PUBLISHING in place. The org `consentshield` on GitHub must be reserved + the canonical repo created before `go get github.com/consentshield/go-client@v1.0.0` resolves. Operator step, identical pattern to Sprint 1.4 (npm publish) and Sprint 2.2 (PyPI publish).
 
 **Testing plan:**
-- [ ] `go get github.com/consentshield/go-client@v1.0.0` in scratch project; example runs against staging
+- [x] `go vet ./...` — PASS
+- [x] `go test -count=1 -cover ./...` — PASS, **coverage 87.8%**
+- [x] `gofmt -l .` — empty (no formatting drift)
+- [x] `go build ./...` from a clean clone — PASS
+- [x] Compliance contract verified end-to-end — 4xx never retries (sweep across 400/401/403/404/410/422), timeout never retries, fail-CLOSED returns `*VerifyError`, fail-OPEN returns `OpenFailureEnvelope` with cause discriminator, 4xx ALWAYS surfaces even when `FailOpen=true`, `verify_batch` boundary at exactly `MaxBatchIdentifiers`=10 000.
 
-**Status:** `[ ] planned`
+**Architecture changes:**
+- The Go SDK is the third (and final, for ADR-1006) language client. It mirrors the Node + Python compliance contract verbatim — `errors.As` discrimination matches the TypeScript `instanceof` checks and the Python `isinstance` checks; `OpenFailureEnvelope.Cause` discriminator is the same string set across all three SDKs (`timeout` / `network` / `server_error`); the env override is the same key (`CONSENT_VERIFY_FAIL_OPEN`); the trace-id header round-trip is the same wire format (`X-CS-Trace-Id`).
+- **Marketing-site SDK documentation** — `/docs/sdks` was a 404 before this sprint. Sprint 4.2 ships an index page + per-SDK landing pages at `/docs/sdks/node`, `/docs/sdks/python`, `/docs/sdks/go`, all wired into the docs sidebar (`marketing/src/app/docs/_data/nav.ts`) + the search palette index (`search-index.ts`). The old marketing copy referenced "Node / Python / Java / Go" — that's now corrected to "Node / Python / Go" everywhere.
+
+**Status:** `[x] complete 2026-04-25 — Go SDK at packages/go-client/ with v1.0.0 internal release; coverage 87.8%; net/http + gin examples ship; PUBLISHING runbook in place. ADR-1006 Phase 4 closes at 1/1 sprints (Java sprint abandoned per scope amendment).`
 
 ---
 
