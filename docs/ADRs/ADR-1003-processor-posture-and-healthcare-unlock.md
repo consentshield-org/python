@@ -156,9 +156,9 @@ Also closes the secondary gap flagged in Terminal A's handoff: the Sprint 1.3 br
 - [x] Integration — `tests/integration/zero-storage-invariant.test.ts` Mode B suite: seed api_key for zero org, call `recordConsent` with identifier, assert 0 buffer rows + 2 index rows + rows carry salted-sha256 identifier_hash + identifier_type='email'. Idempotent-replay case: second call with same `client_request_id` returns `idempotent_replay=true` + same deterministic artefact_ids.
 - [x] `bun run lint` + `bun run build` + `cd worker && bunx tsc --noEmit` — all clean (app lint + check-no-service-role; next build 48/48 routes; worker tsc silent).
 - [x] Full local vitest sweep across `delivery` / `worker` / `storage` / `consent` — 245/245 PASS.
-- [ ] Live: operator pushes migration 54 + runs the extended invariant test against live DB. Pending operator.
+- [x] Live: operator pushed migration 54 (2026-04-25). Live run of the integration test surfaced a latent permissions gap — `recordConsent`'s cs_api pre-flight `select public.get_storage_mode(orgId)` ran the plain-SQL function body in cs_api's context, tripping the organisations RLS policy → `permission denied for schema auth`. Closed by migration 57 (`get_storage_mode` re-published SECURITY DEFINER), test-setup hardened (storage_mode flip via service-client since Sprint 1.1 revoked direct UPDATE from cs_orchestrator), and Mode B assertion narrowed (`identifier_hash IS NOT NULL` so Sprint 1.3's cumulative Mode A rows don't count against the expected-2 total). 5/5 integration tests PASS against live DB with `--reporter=verbose`.
 
-**Status:** `[x] complete (code + unit tests + integration test; live verification pending operator migration push).`
+**Status:** `[x] complete (code + unit tests + integration test + live verification — Sprint 4.1 Phase 1 operator runbook ran on 2026-04-25; migration 57 follow-up shipped).`
 
 ### Phase 2: BYOS credential validation (G-006)
 

@@ -1,14 +1,35 @@
 # ADR-1003 Phase 1 — operator actions
 
-One-shot operator checklist after migrations 50–55 land. Follow steps in order.
+One-shot operator checklist after migrations 50–57 land. Follow steps in order.
 
-## 1. Vault seed (Supabase SQL editor)
+**2026-04-25 execution status**
+
+| Step | State | Notes |
+|---|---|---|
+| 1 — Vault seed (+ cs_delivery password rotation) | ✅ Done | Ran one consolidated block in SQL editor |
+| 2 — Worker wrangler secrets | ✅ Done | `WORKER_BRIDGE_SECRET` + `ZERO_STORAGE_BRIDGE_URL` |
+| 3 — Vercel env vars (production + preview + development) | ✅ Done | `WORKER_BRIDGE_SECRET` × 3 + `SUPABASE_CS_DELIVERY_DATABASE_URL` × 3 |
+| 4 — Mirror into `app/.env.local` | ✅ Done | |
+| 5a — Storage-mode KV sync | ⏳ | Requires admin SQL-editor action |
+| 5b — Mode A invariant | ⏳ | Requires live banner flow on a zero_storage org |
+| 5c — Mode B invariant | ⏳ | Requires live api_key POST to `/v1/consent/record` |
+| 5d — Hot-row TTL refresh | ⏳ | Run the single `select public.refresh_zero_storage_index_hot_rows();` in SQL editor |
+| 5e — Integration suite | ✅ Done | 5/5 PASS locally (Mode A 1.3 + Mode B 1.4) after migration 57 published `get_storage_mode` as SECURITY DEFINER |
+
+## 1. Vault seed + cs_delivery password rotation (Supabase SQL editor)
 
 Run as `postgres`/service-role in the Supabase SQL editor (Project → SQL).
-The block is idempotent — safe to re-run.
+The block is idempotent for the Vault section; the `alter role` can be re-run
+safely but **will rotate the password each time** — only run once per rotation
+cycle, and keep the password recorded for the DSN.
 
 ```sql
--- Vault seed for ADR-1003 (storage_mode KV sync) + ADR-1019 (delivery dispatch)
+-- (1) ADR-1019 Sprint 1.1 carry-over: rotate cs_delivery password from placeholder
+-- (Pick a fresh 32-byte hex per rotation; example below is the 2026-04-25 value —
+--  replace at each subsequent rotation.)
+alter role cs_delivery with password '<32-byte-hex>';
+
+-- (2) Vault seed for ADR-1003 (storage_mode KV sync) + ADR-1019 (delivery dispatch)
 -- Bearer reuses cs_provision_storage_secret (already seeded by ADR-1025).
 
 do $$

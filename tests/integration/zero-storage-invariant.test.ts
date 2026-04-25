@@ -153,11 +153,14 @@ beforeAll(async () => {
   standardBannerId = seededStandard.bannerId
 
   // Seed export_configurations + flip storage_mode for the zero org.
-  // We do this through the cs_orchestrator pool so the encrypted
-  // credential round-trips through the same pgcrypto helper the
-  // bridge will exercise. UPDATE on storage_mode bypasses the
-  // admin-gated RPC because the gate requires platform_operator
-  // auth — that gate has its own tests; here we set up state.
+  // The encrypted-credential round-trip goes through the cs_orchestrator
+  // pool so it exercises the same pgcrypto helper the bridge uses.
+  // The storage_mode flip goes through the service client (not raw SQL)
+  // because ADR-1003 Sprint 1.1 revoked direct UPDATE on
+  // public.organisations.storage_mode from cs_orchestrator — the single
+  // write surface is admin.set_organisation_storage_mode, which requires
+  // platform_operator auth. The gate has its own tests; here we set up
+  // state via service-role bypass.
   const postgres = await ipostgres()
   const sql = postgres(CS_ORCH_DSN!, {
     prepare: false,
@@ -191,7 +194,11 @@ beforeAll(async () => {
       throw new Error(`seed export_configurations: ${cfgErr.message}`)
     }
 
-    await sql`update public.organisations set storage_mode = 'zero_storage' where id = ${zeroOrg.orgId}`
+    const { error: modeErr } = await admin
+      .from('organisations')
+      .update({ storage_mode: 'zero_storage' })
+      .eq('id', zeroOrg.orgId)
+    if (modeErr) throw new Error(`flip storage_mode: ${modeErr.message}`)
   } finally {
     await sql.end()
   }
@@ -439,12 +446,16 @@ skipModeB('ADR-1003 Sprint 1.4 — Mode B zero-storage invariant', () => {
     }
 
     // consent_artefact_index holds two rows with identifier_hash set
-    // (distinguishing Mode B from the Mode A NULL case).
+    // (distinguishing Mode B from the Mode A NULL case). Filter by
+    // identifier_hash IS NOT NULL so we don't see Sprint 1.3's bulk
+    // bridge-event rows (which use Mode A NULL identifier_hash) on the
+    // same org.
     const { data: idxRows, error: idxErr } = await admin
       .from('consent_artefact_index')
       .select('artefact_id, identifier_hash, identifier_type, purpose_code')
       .eq('org_id', zeroOrg!.orgId)
       .in('purpose_code', PURPOSE_CODES as unknown as string[])
+      .not('identifier_hash', 'is', null)
     expect(idxErr).toBeNull()
     expect(idxRows).toHaveLength(2)
     for (const row of idxRows!) {

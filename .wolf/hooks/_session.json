@@ -28,8 +28,8 @@
       "first_read": "2026-04-25T01:15:19.940Z"
     },
     "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-1003-processor-posture-and-healthcare-unlock.md": {
-      "count": 3,
-      "tokens": 8766,
+      "count": 4,
+      "tokens": 9109,
       "first_read": "2026-04-25T01:16:47.332Z"
     },
     "/Users/sudhindra/projects/aiSpirit/consent-sheild/supabase/migrations/20260417000002_admin_sectoral_templates.sql": {
@@ -123,12 +123,12 @@
       "first_read": "2026-04-25T01:31:38.364Z"
     },
     "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/changelogs/CHANGELOG-schema.md": {
-      "count": 1,
-      "tokens": 52508,
+      "count": 2,
+      "tokens": 53354,
       "first_read": "2026-04-25T01:31:54.569Z"
     },
     "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/src/lib/storage/sigv4.ts": {
-      "count": 2,
+      "count": 3,
       "tokens": 3802,
       "first_read": "2026-04-25T01:32:06.017Z"
     },
@@ -138,8 +138,8 @@
       "first_read": "2026-04-25T01:33:19.374Z"
     },
     "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/tests/storage/sigv4.test.ts": {
-      "count": 1,
-      "tokens": 2033,
+      "count": 4,
+      "tokens": 2185,
       "first_read": "2026-04-25T01:34:21.273Z"
     },
     "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/package.json": {
@@ -276,6 +276,51 @@
       "count": 1,
       "tokens": 14515,
       "first_read": "2026-04-25T02:17:32.893Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/tests/integration/zero-storage-invariant.test.ts": {
+      "count": 3,
+      "tokens": 5344,
+      "first_read": "2026-04-25T02:19:43.694Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/src/lib/consent/record.ts": {
+      "count": 3,
+      "tokens": 2412,
+      "first_read": "2026-04-25T02:21:20.047Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/supabase/migrations/20260801000004_api_key_binding_mutations.sql": {
+      "count": 1,
+      "tokens": 5115,
+      "first_read": "2026-04-25T02:22:12.236Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/supabase/migrations/20260804000054_adr1003_s14_rpc_consent_record_mode_fence.sql": {
+      "count": 2,
+      "tokens": 5214,
+      "first_read": "2026-04-25T02:23:04.827Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/supabase/migrations/20260804000050_adr1003_s11_storage_mode_resolver.sql": {
+      "count": 1,
+      "tokens": 3613,
+      "first_read": "2026-04-25T02:23:21.227Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/supabase/migrations/20260701000001_consent_artefact_index_identifier.sql": {
+      "count": 1,
+      "tokens": 0,
+      "first_read": "2026-04-25T02:23:28.798Z"
+    },
+    "/Users/sudhindra/.claude/projects/-Users-sudhindra-projects-aiSpirit-consent-sheild/memory/MEMORY.md": {
+      "count": 1,
+      "tokens": 0,
+      "first_read": "2026-04-25T02:24:06.957Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/supabase/migrations/20260413000007_rls_operational.sql": {
+      "count": 1,
+      "tokens": 1704,
+      "first_read": "2026-04-25T02:24:14.815Z"
+    },
+    "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/runbooks/adr-1003-phase-1-operator-actions.md": {
+      "count": 1,
+      "tokens": 1437,
+      "first_read": "2026-04-25T02:28:15.152Z"
     }
   },
   "files_written": [
@@ -824,6 +869,156 @@
       "action": "edit",
       "tokens": 567,
       "at": "2026-04-25T02:17:52.100Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/reviews/2026-04-25-marketing-claims-vs-reality-review.md",
+      "action": "edit",
+      "tokens": 1912,
+      "at": "2026-04-25T02:19:51.345Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/tests/integration/zero-storage-invariant.test.ts",
+      "action": "edit",
+      "tokens": 171,
+      "at": "2026-04-25T02:20:03.249Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/tests/integration/zero-storage-invariant.test.ts",
+      "action": "edit",
+      "tokens": 64,
+      "at": "2026-04-25T02:20:07.163Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/tests/integration/zero-storage-invariant.test.ts",
+      "action": "edit",
+      "tokens": 98,
+      "at": "2026-04-25T02:21:35.205Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/reviews/2026-04-25-marketing-claims-vs-reality-review.md",
+      "action": "edit",
+      "tokens": 991,
+      "at": "2026-04-25T02:22:54.460Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/.claude/session-handoff.md",
+      "action": "create",
+      "tokens": 4134,
+      "at": "2026-04-25T02:22:57.379Z"
+    },
+    {
+      "file": "/Users/sudhindra/.claude/projects/-Users-sudhindra-projects-aiSpirit-consent-sheild/memory/project_adr1014_phase4_done.md",
+      "action": "create",
+      "tokens": 553,
+      "at": "2026-04-25T02:23:25.545Z"
+    },
+    {
+      "file": "/Users/sudhindra/.claude/projects/-Users-sudhindra-projects-aiSpirit-consent-sheild/memory/feedback_stryker_pattern.md",
+      "action": "create",
+      "tokens": 1275,
+      "at": "2026-04-25T02:24:01.890Z"
+    },
+    {
+      "file": "/Users/sudhindra/.claude/projects/-Users-sudhindra-projects-aiSpirit-consent-sheild/memory/MEMORY.md",
+      "action": "edit",
+      "tokens": 187,
+      "at": "2026-04-25T02:24:17.763Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/supabase/migrations/20260804000057_adr1003_s14_get_storage_mode_security_definer.sql",
+      "action": "create",
+      "tokens": 732,
+      "at": "2026-04-25T02:24:54.384Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/reviews/2026-04-25-marketing-claims-vs-reality-review.md",
+      "action": "edit",
+      "tokens": 598,
+      "at": "2026-04-25T02:24:58.172Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/scripts/capture-sigv4-vectors.ts",
+      "action": "create",
+      "tokens": 2657,
+      "at": "2026-04-25T02:25:42.931Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/tests/storage/sigv4.test.ts",
+      "action": "edit",
+      "tokens": 376,
+      "at": "2026-04-25T02:26:14.543Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/reviews/2026-04-25-marketing-claims-vs-reality-review.md",
+      "action": "edit",
+      "tokens": 897,
+      "at": "2026-04-25T02:26:14.567Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/tests/integration/zero-storage-invariant.test.ts",
+      "action": "edit",
+      "tokens": 193,
+      "at": "2026-04-25T02:26:32.125Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/tests/integration/zero-storage-invariant.test.ts",
+      "action": "edit",
+      "tokens": 79,
+      "at": "2026-04-25T02:26:38.200Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/tests/storage/sigv4.test.ts",
+      "action": "edit",
+      "tokens": 1948,
+      "at": "2026-04-25T02:27:11.053Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/stryker.sigv4.conf.mjs",
+      "action": "create",
+      "tokens": 737,
+      "at": "2026-04-25T02:27:44.245Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/tsconfig.stryker.sigv4.json",
+      "action": "create",
+      "tokens": 69,
+      "at": "2026-04-25T02:27:49.101Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/app/package.json",
+      "action": "edit",
+      "tokens": 56,
+      "at": "2026-04-25T02:27:54.753Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/.gitignore",
+      "action": "edit",
+      "tokens": 13,
+      "at": "2026-04-25T02:28:00.073Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/runbooks/adr-1003-phase-1-operator-actions.md",
+      "action": "edit",
+      "tokens": 718,
+      "at": "2026-04-25T02:28:35.591Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/changelogs/CHANGELOG-schema.md",
+      "action": "edit",
+      "tokens": 712,
+      "at": "2026-04-25T02:29:17.364Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/reviews/2026-04-25-marketing-claims-vs-reality-review.md",
+      "action": "edit",
+      "tokens": 729,
+      "at": "2026-04-25T02:29:24.845Z"
+    },
+    {
+      "file": "/Users/sudhindra/projects/aiSpirit/consent-sheild/docs/ADRs/ADR-1003-processor-posture-and-healthcare-unlock.md",
+      "action": "edit",
+      "tokens": 261,
+      "at": "2026-04-25T02:29:42.671Z"
     }
   ],
   "edit_counts": {
@@ -832,8 +1027,8 @@
     "worker/tests/origin.test.ts": 2,
     "worker/package.json": 1,
     "worker/stryker.conf.mjs": 3,
-    ".gitignore": 3,
-    "docs/runbooks/adr-1003-phase-1-operator-actions.md": 1,
+    ".gitignore": 4,
+    "docs/runbooks/adr-1003-phase-1-operator-actions.md": 2,
     "supabase/migrations/20260804000056_adr1003_s41_healthcare_template_seed.sql": 1,
     "docs/ADRs/ADR-1014-e2e-test-harness-and-vertical-demos.md": 11,
     "docs/customer-docs/healthcare-onboarding.md": 1,
@@ -841,10 +1036,10 @@
     "docs/ADRs/ADR-index.md": 6,
     "docs/changelogs/CHANGELOG-worker.md": 1,
     "tests/integration/healthcare-template.test.ts": 1,
-    "docs/ADRs/ADR-1003-processor-posture-and-healthcare-unlock.md": 2,
-    "docs/changelogs/CHANGELOG-schema.md": 1,
-    "docs/reviews/2026-04-25-marketing-claims-vs-reality-review.md": 13,
-    "app/package.json": 3,
+    "docs/ADRs/ADR-1003-processor-posture-and-healthcare-unlock.md": 3,
+    "docs/changelogs/CHANGELOG-schema.md": 2,
+    "docs/reviews/2026-04-25-marketing-claims-vs-reality-review.md": 18,
+    "app/package.json": 4,
     "app/stryker.delivery.conf.mjs": 3,
     "app/tsconfig.stryker.json": 2,
     "docs/changelogs/CHANGELOG-docs.md": 1,
@@ -868,11 +1063,21 @@
     "marketing/src/app/docs/_data/search-index.ts": 1,
     "marketing/src/app/docs/test-verification/mutation-testing/page.mdx": 1,
     "docs/changelogs/CHANGELOG-infra.md": 1,
-    "docs/changelogs/CHANGELOG-marketing.md": 1
+    "docs/changelogs/CHANGELOG-marketing.md": 1,
+    "tests/integration/zero-storage-invariant.test.ts": 5,
+    ".claude/session-handoff.md": 1,
+    "../../../.claude/projects/-Users-sudhindra-projects-aiSpirit-consent-sheild/memory/project_adr1014_phase4_done.md": 1,
+    "../../../.claude/projects/-Users-sudhindra-projects-aiSpirit-consent-sheild/memory/feedback_stryker_pattern.md": 1,
+    "../../../.claude/projects/-Users-sudhindra-projects-aiSpirit-consent-sheild/memory/MEMORY.md": 1,
+    "supabase/migrations/20260804000057_adr1003_s14_get_storage_mode_security_definer.sql": 1,
+    "scripts/capture-sigv4-vectors.ts": 1,
+    "app/tests/storage/sigv4.test.ts": 2,
+    "app/stryker.sigv4.conf.mjs": 1,
+    "app/tsconfig.stryker.sigv4.json": 1
   },
-  "anatomy_hits": 52,
-  "anatomy_misses": 3,
-  "repeated_reads_warned": 15,
+  "anatomy_hits": 59,
+  "anatomy_misses": 5,
+  "repeated_reads_warned": 26,
   "cerebrum_warnings": 0,
-  "stop_count": 24
+  "stop_count": 29
 }

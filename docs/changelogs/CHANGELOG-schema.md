@@ -2,6 +2,27 @@
 
 Database migrations, RLS policies, roles.
 
+## [ADR-1003 Sprint 1.4 follow-up — get_storage_mode as SECURITY DEFINER] — 2026-04-25
+
+**ADR:** ADR-1003 — Processor Posture + Healthcare Category Unlock
+**Sprint:** Phase 1, Sprint 1.4 (follow-up)
+**Migration:** `20260804000057_adr1003_s14_get_storage_mode_security_definer.sql`
+
+### Changed
+- `public.get_storage_mode(uuid)` re-published as SECURITY DEFINER (was plain `language sql stable`). Body unchanged; still reads a single row from `public.organisations` and returns `storage_mode`. Grants preserved (cs_api / cs_orchestrator / cs_delivery / cs_admin EXECUTE).
+
+### Consequences
+- `recordConsent` (`app/src/lib/consent/record.ts`) does a pre-flight `select public.get_storage_mode(orgId)` on cs_api BEFORE branching to the zero-storage prepare RPC. With the old plain-SQL function body, that `select from public.organisations` ran in cs_api's context and triggered the organisations RLS policy; the policy's `current_org_id()` transitively references schema `auth`, which cs_api has no USAGE on (Supabase auth-schema lockdown, see `feedback_no_auth_uid_in_scoped_rpcs` memory). Result: the recordConsent Mode B path failed with 42501 "permission denied for schema auth" before the mode branch ever ran — classified by the Node helper as `api_key_binding`. SECURITY DEFINER runs the body as postgres (owner, bypassrls, has auth USAGE) and resolves the issue.
+- Tested via the Sprint 1.4 integration suite (`tests/integration/zero-storage-invariant.test.ts`): Mode B tests were silently passing under the Sprint 1.4 unit-test harness (which stubs `csApi`) but failing against the live DB. The follow-up migration + test-setup corrections (storage_mode flip via service-client, identifier_hash-NOT-NULL filter to exclude Mode A's cumulative rows from the count assertion) now deliver 5/5 PASS.
+
+### Tested
+- Integration — `bun run test:rls -- tests/integration/zero-storage-invariant.test.ts --reporter=verbose` — **5/5 PASS** (3 Sprint 1.3 Mode A + 2 Sprint 1.4 Mode B, confirming the Mode B suite is not silently skipped).
+- Live: migration 57 pushed via `bunx supabase db push`.
+
+### Architecture note
+
+`get_storage_mode` is the first scoped-role callable in the ADR-1003 Phase 1 set that reads `public.organisations` directly. Future additions in this pattern should default to SECURITY DEFINER rather than plain SQL, for the same reason.
+
 ## [ADR-1003 Sprint 4.1 — Healthcare Starter sectoral template] — 2026-04-25
 
 **ADR:** ADR-1003 — Processor Posture + Healthcare Category Unlock

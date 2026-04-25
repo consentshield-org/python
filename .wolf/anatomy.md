@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-25T02:17:52.092Z
-> Files: 1446 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-25T02:29:42.663Z
+> Files: 1452 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../tmp/
 
@@ -42,18 +42,20 @@
 - `feedback_prose_over_multichoice.md` (~475 tok)
 - `feedback_session_fingerprint_server_only.md` (~694 tok)
 - `feedback_share_narrowly_not_broadly.md` (~1004 tok)
+- `feedback_stryker_pattern.md` — Declares has (~1129 tok)
 - `feedback_supabase_aal_not_in_app_metadata.md` — Declares currentAal (~516 tok)
 - `feedback_supabase_default_function_grants.md` — Declares that (~419 tok)
 - `feedback_v2_backlog_pattern.md` (~479 tok)
 - `feedback_vitest_serial_for_supabase_auth.md` (~502 tok)
 - `feedback_wireframes_before_adrs.md` (~784 tok)
-- `MEMORY.md` (~2156 tok)
+- `MEMORY.md` (~2274 tok)
 - `project_admin_platform_2026-04-16.md` — What IS implemented as of 2026-04-16 (~1994 tok)
 - `project_admin_platform_2026-04-17.md` — What IS implemented as of 2026-04-17 (~2346 tok)
 - `project_admin_platform_2026-04-18.md` — State as of 2026-04-18 (~609 tok)
 - `project_adr0045_sprint12_done.md` — Shipped in commit 764952b (~596 tok)
 - `project_adr0047_done.md` — Commits (~783 tok)
 - `project_adr0050_proposed.md` (~1215 tok)
+- `project_adr1014_phase4_done.md` (~497 tok)
 - `project_adr1020_multilingual_plan.md` (~817 tok)
 - `project_customer_segment_enterprise.md` — The customer (~546 tok)
 - `project_dev_only_no_prod.md` (~347 tok)
@@ -229,7 +231,7 @@
 
 ## ./
 
-- `.gitignore` — Git ignore rules (~342 tok)
+- `.gitignore` — Git ignore rules (~348 tok)
 - `.prettierrc` (~29 tok)
 - `.secrets` — Supabase (~972 tok)
 - `CLAUDE.md` — OpenWolf (~6199 tok)
@@ -244,7 +246,7 @@
 ## .claude/
 
 - `session-handoff-terminal-a.md` — Session handoff — 2026-04-25 (Terminal A — ADR-1003 Sprint 4.1 + Phase 1 operator actions) (~4412 tok)
-- `session-handoff.md` — Session handoff — 2026-04-25 (Terminal B — ADR-1014 Phase 5 closeout) (~5883 tok)
+- `session-handoff.md` — Session handoff — 2026-04-25 (Terminal B — ADR-1014 Phase 4 closeout) (~3617 tok)
 
 ## .github/ISSUE_TEMPLATE/
 
@@ -657,11 +659,13 @@
 ## app/
 
 - `next.config.ts` — Declares NOINDEX_VALUE (~148 tok)
-- `package.json` — Node.js package manifest (~440 tok)
+- `package.json` — Node.js package manifest (~459 tok)
 - `stryker.delivery.conf.mjs` — ADR-1014 Phase 4 Sprint 4.2 — Stryker mutation testing for the (~1078 tok)
+- `stryker.sigv4.conf.mjs` — ADR-1014 Phase-4 follow-up — Stryker mutation testing for the (~688 tok)
 - `stryker.v1.conf.mjs` — /route.ts) (~943 tok)
 - `tsconfig.json` — TypeScript configuration (~117 tok)
 - `tsconfig.stryker.json` (~93 tok)
+- `tsconfig.stryker.sigv4.json` (~69 tok)
 - `tsconfig.stryker.v1.json` (~116 tok)
 - `vercel.json` (~33 tok)
 
@@ -1313,7 +1317,7 @@
 - `provision-org.test.ts` — ADR-1025 Phase 2 Sprint 2.1 — unit tests for provision-org.ts. (~3018 tok)
 - `retention-cleanup.test.ts` — ADR-1025 Phase 4 Sprint 4.1 — retention-cleanup tests. (~1746 tok)
 - `rotate-org.test.ts` — ADR-1025 Phase 4 Sprint 4.1 — rotate-org tests. (~1718 tok)
-- `sigv4.test.ts` — ADR-0040 Sprint 1.1 + ADR-1003 Sprint 2.1 — sigv4 primitive tests. (~2033 tok)
+- `sigv4.test.ts` — ADR-0040 Sprint 1.1 + ADR-1003 Sprint 2.1 + ADR-1014 Phase 4 follow-up (~4066 tok)
 - `validate.test.ts` — ADR-1003 Sprint 2.1 — scope-down probe orchestration tests. (~1926 tok)
 - `verify.test.ts` — ADR-1025 Phase 1 Sprint 1.3 — unit tests for the verification probe. (~2780 tok)
 
@@ -1401,7 +1405,7 @@
 - `ADR-0501-marketing-site-scaffold.md` — ADR-0501 — ConsentShield marketing site (`marketing/`) (~6079 tok)
 - `ADR-1001-truth-in-marketing-and-public-api-foundation.md` — ADR-1001: Truth-in-Marketing + Public API Foundation (~5650 tok)
 - `ADR-1002-dpdp-section6-runtime-enforcement.md` — ADR-1002: DPDP §6 Runtime Enforcement — Verify, Record, Artefact Ops, Deletion API (~7030 tok)
-- `ADR-1003-processor-posture-and-healthcare-unlock.md` — ADR-1003: Processor Posture + Healthcare Category Unlock (~9109 tok)
+- `ADR-1003-processor-posture-and-healthcare-unlock.md` — ADR-1003: Processor Posture + Healthcare Category Unlock (~9280 tok)
 - `ADR-1004-statutory-retention-material-change-silent-failure.md` — ADR-1004: Statutory Retention + Material-Change Re-consent + Silent-Failure Detection (~7531 tok)
 - `ADR-1005-operations-maturity.md` — ADR-1005: Operations Maturity — Webhook Reference, Support Model, Status Page, Multi-channel Alerts, (~7076 tok)
 - `ADR-1006-developer-experience-and-openapi.md` — ADR-1006: Developer Experience — Client Libraries + OpenAPI Spec + CI Drift Check (~2658 tok)
@@ -1456,7 +1460,7 @@
 - `CHANGELOG-edge-functions.md` — Changelog — Edge Functions (~4251 tok)
 - `CHANGELOG-infra.md` — Changelog — Infrastructure (~24742 tok)
 - `CHANGELOG-marketing.md` — Changelog — Marketing (~14957 tok)
-- `CHANGELOG-schema.md` — Changelog — Schema (~53354 tok)
+- `CHANGELOG-schema.md` — Changelog — Schema (~53942 tok)
 - `CHANGELOG-worker.md` — Changelog — Worker (~7257 tok)
 
 ## docs/customer-docs/
@@ -1525,11 +1529,11 @@
 - `2026-04-18-comprehensive-project-review.md` — ConsentShield — Comprehensive Review as of 2026-04-18 (~3553 tok)
 - `2026-04-20-api-key-security-review.md` — Security Review — API Key Surface (ADR-1001 Sprint 3.1) (~1833 tok)
 - `2026-04-21-v1-api-gap-audit.md` — v1 API Gap Audit — 2026-04-21 (~2913 tok)
-- `2026-04-25-marketing-claims-vs-reality-review.md` — Marketing claims vs. reality review (~13127 tok)
+- `2026-04-25-marketing-claims-vs-reality-review.md` — Marketing claims vs. reality review (~17378 tok)
 
 ## docs/runbooks/
 
-- `adr-1003-phase-1-operator-actions.md` — ADR-1003 Phase 1 — operator actions (~1437 tok)
+- `adr-1003-phase-1-operator-actions.md` — ADR-1003 Phase 1 — operator actions (~1794 tok)
 - `ai-provider-setup.md` — Runbook — AI Translation Provider Setup (Sarvam + Vercel AI Gateway) (~2210 tok)
 - `notification-channel-accounts.md` — Notification channel account setup — Slack / Teams / Discord / PagerDuty (~1889 tok)
 - `ops-readiness-flags.md` — Ops Readiness Flags — operator runbook (~1594 tok)
@@ -1821,6 +1825,7 @@
 - `adr-1019-sprint-11-backfill.sql` — ADR-1019 Sprint 1.1 — pre-delivery backfill. (~620 tok)
 - `adr-1019-sprint-11-grants-audit.sql` — ADR-1019 Sprint 1.1 — cs_delivery grants audit. (~857 tok)
 - `bootstrap-admin.ts` — ADR-0027 Sprint 4.1 — admin bootstrap one-shot. (~1746 tok)
+- `capture-sigv4-vectors.ts` — ADR-1014 Phase-4 follow-up — generate pinned sigv4 test vectors. (~2657 tok)
 - `check-env-isolation.ts` — ADR-0026 Sprint 4.1 — env-var isolation guard. (~1068 tok)
 - `check-no-admin-imports-in-app.ts` — ADR-0026 Sprint 4.1 — cross-import guard: app/ must not reference admin/. (~989 tok)
 - `check-no-customer-imports-in-admin.ts` — ADR-0026 Sprint 4.1 — cross-import guard: admin/ must not reference app/. (~910 tok)
@@ -2354,6 +2359,7 @@
 - `20260804000053_adr1003_s31_hot_row_refresh.sql` — ADR-1003 Sprint 3.1 — zero-storage hot-row TTL refresh. (~4012 tok)
 - `20260804000054_adr1003_s14_rpc_consent_record_mode_fence.sql` — ADR-1003 Sprint 1.4 — rpc_consent_record storage_mode fence + Mode B (~5214 tok)
 - `20260804000056_adr1003_s41_healthcare_template_seed.sql` — ADR-1003 Sprint 4.1 — Healthcare sectoral template seed (G-042). (~4764 tok)
+- `20260804000057_adr1003_s14_get_storage_mode_security_definer.sql` — ADR-1003 Sprint 1.4 follow-up — re-publish public.get_storage_mode as (~683 tok)
 
 ## supabase/seed/
 
@@ -2618,7 +2624,7 @@
 - `worker-hyperdrive-reads.test.ts` — ADR-1010 Phase 3 Sprint 3.1 — integration test for the Hyperdrive (~1731 tok)
 - `worker-hyperdrive-writes.test.ts` — ADR-1010 Phase 3 Sprint 3.2 — integration test for the Hyperdrive (~2157 tok)
 - `zero-storage-hot-row-refresh.test.ts` — ADR-1003 Sprint 3.1 — hot-row TTL refresh integration test. (~2294 tok)
-- `zero-storage-invariant.test.ts` — ADR-1003 Sprint 1.3 + 1.4 — zero-storage end-to-end invariant (Mode A + Mode B). (~6600 tok)
+- `zero-storage-invariant.test.ts` — ADR-1003 Sprint 1.3 — zero-storage end-to-end invariant. (~5385 tok)
 
 ## tests/rbac/
 
