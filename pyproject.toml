@@ -8,7 +8,8 @@ version = "1.0.0"
 description = "Official Python client for the ConsentShield DPDP compliance API. Fail-closed by default; 2-second request timeout; trace-id correlated."
 readme = "README.md"
 requires-python = ">=3.9"
-license = { file = "LICENSE.md" }
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
 authors = [
     { name = "Sudhindra Anegondhi", email = "a.d.sudhindra@gmail.com" },
 ]
@@ -41,9 +42,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://consentshield.in/docs"
-Repository = "https://github.com/aiSpirit-systems/consentshield"
-Issues = "https://github.com/aiSpirit-systems/consentshield/issues"
+Homepage = "https://consentshield.in/docs/sdks/python"
+Repository = "https://github.com/SAnegondhi/consentshield-python"
+Issues = "https://github.com/SAnegondhi/consentshield-python/issues"
 
 [project.optional-dependencies]
 test = [

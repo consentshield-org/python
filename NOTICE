@@ -1,0 +1,22 @@
+consentshield — official Python client for the ConsentShield DPDP
+compliance API.
+
+Copyright 2026 Sudhindra Anegondhi.
+
+Licensed under the Apache License, Version 2.0. See LICENSE for the
+full text. The Apache 2.0 grant covers only the source code in this
+package.
+
+The names "ConsentShield", "ConsentShield platform", and the
+ConsentShield logo are trademarks of Sudhindra Anegondhi and are NOT
+licensed by this Apache 2.0 grant. See Section 6 of the License for
+the trademark carve-out.
+
+You may use these marks only to truthfully describe your service's
+integration with the ConsentShield platform — for example, "powered
+by ConsentShield" or "uses the ConsentShield API". You may not use
+the marks in a product name, domain, package name, or marketing
+material that suggests sponsorship, endorsement, or affiliation
+without prior written permission from the copyright holder.
+
+Contact: a.d.sudhindra@gmail.com
