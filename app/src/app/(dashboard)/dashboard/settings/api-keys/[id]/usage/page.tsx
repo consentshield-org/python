@@ -124,7 +124,7 @@ export default async function ApiKeyUsagePage({ params }: { params: Promise<{ id
         {usage.length === 0 ? (
           <p className="py-8 text-center text-sm text-gray-400">
             No requests recorded yet. Call{' '}
-            <code className="rounded bg-gray-100 px-1 font-mono text-xs">GET /api/v1/_ping</code>{' '}
+            <code className="rounded bg-gray-100 px-1 font-mono text-xs">GET /v1/_ping</code>{' '}
             with this key to see usage here.
           </p>
         ) : (

@@ -147,7 +147,7 @@ describe('ADR-1001 Sprint 3.1 — API key end-to-end smoke', () => {
       p_key_id:     keyId,
       p_org_id:     org.orgId,
       p_account_id: org.accountId,
-      p_route:      '/api/v1/_ping',
+      p_route:      '/api/v1/ping',
       p_method:     'GET',
       p_status:     200,
       p_latency:    12,

@@ -43,8 +43,14 @@ export async function proxy(request: NextRequest) {
   let pathname = originalPath
   let rewriteToApi: URL | null = null
   if (isApiHost) {
+    // The public path the SDKs + OpenAPI spec advertise is /_ping
+    // (with the leading underscore — Next.js convention is to expose
+    // health endpoints with a `_` prefix). The on-disk App Router
+    // folder cannot start with `_` (private-folder convention skips
+    // routing), so the route lives at /api/v1/ping/route.ts and we
+    // map both the bare /_ping and the /v1/_ping shorthand to it.
     if (originalPath === '/_ping' || originalPath === '/v1/_ping') {
-      pathname = '/api/v1/_ping'
+      pathname = '/api/v1/ping'
     } else if (originalPath.startsWith('/v1/')) {
       pathname = '/api' + originalPath // /v1/foo → /api/v1/foo
     } else if (!originalPath.startsWith('/api/v1/')) {
