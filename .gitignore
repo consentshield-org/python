@@ -130,3 +130,9 @@ tests/load/output/
 
 # ADR-1028 Sprint 1.2 — Maven build artefacts (Java SDK)
 packages/java-client/**/target/
+
+# ADR-1028 Sprint 2.1 — .NET build artefacts
+packages/dotnet-client/**/bin/
+packages/dotnet-client/**/obj/
+packages/dotnet-client/artifacts/
+packages/dotnet-client/**/TestResults/

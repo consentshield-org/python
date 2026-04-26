@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>ConsentShield.Client.AspNetCore</AssemblyName>
+    <RootNamespace>ConsentShield.Client.AspNetCore</RootNamespace>
+    <PackageId>ConsentShield.Client.AspNetCore</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Sudhindra Anegondhi</Authors>
+    <Company>ConsentShield</Company>
+    <Title>ConsentShield ASP.NET Core integration</Title>
+    <Description>
+      Compliance-contract wrapper around ConsentShield.Client + ASP.NET Core
+      dependency injection extension. AddConsentShield() registers a typed
+      HttpClient via IHttpClientFactory with a retry DelegatingHandler.
+    </Description>
+    <Copyright>Copyright (c) 2026 Sudhindra Anegondhi</Copyright>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/SAnegondhi/consentshield-dotnet.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageProjectUrl>https://github.com/SAnegondhi/consentshield-dotnet</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>consentshield;dpdp;consent;compliance;sdk;aspnetcore</PackageTags>
+    <Nullable>enable</Nullable>
+    <LangVersion>12</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\generated\src\ConsentShield.Client\ConsentShield.Client.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="8.0.0" />
+  </ItemGroup>
+
+</Project>

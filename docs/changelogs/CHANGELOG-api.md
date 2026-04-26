@@ -2,6 +2,32 @@
 
 API route changes.
 
+## [ADR-1028 Phase 2 Sprint 2.1 — .NET SDK ASP.NET Core integration] — 2026-04-26
+
+**ADR:** ADR-1028 — Generated server-side SDKs (Java + .NET + PHP)
+**Sprint:** Phase 2, Sprint 2.1
+
+### Added
+- **`packages/dotnet-client/ConsentShield.sln`** — solution with the generated `ConsentShield.Client` project, the wrapper `ConsentShield.Client.AspNetCore` project, and its xUnit test project. Per-project GUIDs locked.
+- **`packages/dotnet-client/wrapper/ConsentShield.Client.AspNetCore/`** — separate NuGet package `ConsentShield.Client.AspNetCore` v1.0.0:
+  - `ServiceCollectionExtensions.AddConsentShield(IConfiguration, sectionName="ConsentShield")` and `AddConsentShield(Action<ConsentShieldOptions>)`. Both wire an `IHttpClientFactory` named client (`"ConsentShield"`) with Bearer auth, per-attempt timeout, and `RetryHandler` as a `DelegatingHandler`. `IOptions.Validate(...)` + `ValidateOnStart` rejects missing/malformed API keys at startup.
+  - `RetryHandler : DelegatingHandler` — 100/400/1600 ms backoff, never retries 4xx. Per-attempt `TaskCanceledException` (HttpClient timeout) translated to `ConsentShieldTimeoutException`; caller cancellation propagates as the original exception via `when (cancellationToken.IsCancellationRequested)` guard.
+  - Three-class exception hierarchy on `ConsentShieldException`: `ConsentShieldApiException` (4xx surface; carries `Status`/`Type`/`Title`/`Detail`/`Instance`/`TraceId`/`Extensions`), `ConsentShieldTimeoutException` (never retried), `ConsentVerifyException` with `VerifyFailureCause` enum (ServerError / Timeout / Network).
+  - `ConsentShieldOptions` — `ApiKey` / `BaseUrl` / `Timeout` / `MaxRetries` / `FailOpen` with sensible defaults.
+- **`packages/dotnet-client/examples/AspNetCoreMarketingGate/`** — runnable ASP.NET Core 8 minimal-API app demonstrating the marketing-gate outcome contract (202 / 451 / 502 / 503).
+- **`packages/dotnet-client/PUBLISHING.md`** — NuGet operator runbook: account + scoped API key (`ConsentShield.*` glob), namespace reservation, `dotnet pack` + `dotnet nuget push` order (raw client before wrapper, so the indexer resolves the dependency), smoke install in scratch project, recovery from a bad release (unlist + bump; deletion only within grace window), v2+ release model, optional code-signing path for enterprise feeds with strict signing policy.
+- **`packages/dotnet-client/LICENSE`** (Apache-2.0) + **`NOTICE`** (trademark carve-out) + **`README.md`**.
+
+### Architecture changes
+- **NuGet dual-package shape: `ConsentShield.Client` (raw) + `ConsentShield.Client.AspNetCore` (DI-aware wrapper).** Mirrors the `Microsoft.Extensions.*` convention. Non-ASP.NET callers can take the raw client without DI machinery; ASP.NET Core callers get DI + retry + Bearer auth wired by `services.AddConsentShield(...)`.
+- **Bearer auth lives on the HttpClient's `DefaultRequestHeaders`** (set in the `AddHttpClient` configurator), not on the generated `Configuration.AccessToken`. Simpler resolution + plays nicely with `IHttpClientFactory`'s recycled clients.
+
+### Tested
+- [x] `docker run … mcr.microsoft.com/dotnet/sdk:8.0 dotnet test ConsentShield.sln -c Release` — BUILD succeeded, all three projects compiled (treat-warnings-as-errors enabled on the wrapper project), 27/27 tests pass, 0 failures, 0 skipped.
+- [x] Compliance-contract sweep (10 RetryHandlerTests): 4xx never retries across 400/401/403/404/410/422 (xUnit `[Theory]`); 5xx retries until success; 5xx exhausts retries then surfaces; transport `HttpRequestException` retries then succeeds on attempt #3; transport exhausts retries then throws; per-attempt `TaskCanceledException` translated to `ConsentShieldTimeoutException`; user `CancellationToken.Cancel()` propagates as `TaskCanceledException`; max-retries=0 means one attempt; invalid `MaxRetries` (-1, 99) → `ArgumentOutOfRangeException`.
+- [x] DI extension (7 ServiceCollectionExtensionsTests): missing `ApiKey` fails `OptionsValidationException`; non-`cs_live_` prefix fails validation; named `IHttpClientFactory` client resolves with correct `BaseAddress` and `Authorization: Bearer cs_live_*`; `IConfiguration` overload binds all five properties; `UtilityApi` registered; null arg rejected; defaults sensible.
+- [x] Exception hierarchy (5 ExceptionTests): all fields round-trip; null extensions tolerated; cause/inner exception preserved; enum values parseable.
+
 ## [ADR-1028 Phase 1 Sprint 1.2 — Java SDK Spring Boot starter] — 2026-04-26
 
 **ADR:** ADR-1028 — Generated server-side SDKs (Java + .NET + PHP)
