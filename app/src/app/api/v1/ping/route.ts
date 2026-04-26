@@ -27,7 +27,13 @@ export async function GET() {
   }
 
   const latency = t0 ? Date.now() - t0 : 0
-  logApiRequest(context, '/api/v1/_ping', 'GET', 200, latency)
+  // Log the public-facing path callers actually use, not the on-disk
+  // route — makes api_request_log searches match what customers see.
+  logApiRequest(context, '/v1/_ping', 'GET', 200, latency)
 
-  return NextResponse.json(body)
+  const res = NextResponse.json(body)
+  // Echo the inbound trace id so SDK callers can correlate end-to-end.
+  const traceId = hdrs.get('x-cs-trace-id')
+  if (traceId) res.headers.set('x-cs-trace-id', traceId)
+  return res
 }
