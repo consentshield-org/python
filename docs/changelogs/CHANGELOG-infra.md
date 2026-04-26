@@ -2,6 +2,50 @@
 
 Vercel, Cloudflare, Supabase config changes.
 
+## [ADR-1018 Phase 2 vendor pivot — Better Stack abandoned, self-hosted Uptime Kuma adopted] — 2026-04-26
+
+**ADR:** ADR-1018 — Status page (Phase 1 in-app superseded; Phase 2 Better Stack abandoned; Phase 2 now self-hosted Uptime Kuma)
+**Operator runbook:** `docs/runbooks/adr-1018-phase-2-uptime-kuma.md` (replaces deleted `adr-1018-phase-2-better-stack-sprint-2-1.md`)
+
+### Changed
+
+- ADR-1018 Phase 2 vendor pivoted from Better Stack to self-hosted Uptime Kuma on Railway (`asia-southeast1`).
+- Operator stood up Uptime Kuma at `https://status.consentshield.in` (DNS repointed from the Phase-1 `cname.vercel-dns.com` → app-Vercel alias to Railway's edge).
+- `KUMA_API_KEY` provisioned in repo-root `.secrets` (gitignored). Used for `/metrics` Prometheus scrape (Basic auth, password-only) and per-monitor push-URL bearers. **Not** a control-plane key — Kuma's REST surface is dashboard-only for monitor management.
+
+### Removed (Better Stack teardown)
+
+- BS monitors `4326425`, `4326426`, `4326427`, `4326428` deleted via `DELETE /api/v2/monitors/{id}` — 204 each.
+- BS status page resource `245019` deleted via `DELETE /api/v2/status-pages/245019` — 204.
+- `BETTERSTACK_API_TOKEN` env var removed from `consentshield-marketing` Vercel project Production + Preview scopes via `bunx vercel env rm` (latest CLI for prod, v39 for preview per the v52-preview-bug memory).
+- `docs/runbooks/adr-1018-phase-2-better-stack-sprint-2-1.md` deleted (superseded by `adr-1018-phase-2-uptime-kuma.md`).
+- BS account on `info@consentshield.in` left dormant ($0/mo free tier; pre-existing operator-created paused monitor `4325807` retained — not Sprint-2.x work).
+
+### Why
+
+- Better Stack free tier silently dropped `custom_domain`, `subscribable`, and `password_enabled` on create. The recorded launch-time tier upgrade was the gate; tier-upgrade trajectory was cost-noisy for the audience size.
+- Uptime Kuma is open source, no monitor cap, no cadence floor, no paywall on subscribers / custom domain / password protection. Operator already runs Kuma on Railway with no incremental SaaS spend.
+- `marketing/src/app/docs/status/page.mdx` claims (multi-region 30-second probes, subscriber notifications, custom domain) all become honestly satisfiable with Kuma; the post-upgrade-aspirational framing of the previous changelog entry is no longer needed.
+- The compliance-perimeter argument that pushed Phase 1 toward in-app was already partially eroded (status-page renders brand + aggregate uptime, not customer data); Kuma satisfies both *external* and *self-hosted* constraints simultaneously, which neither BS nor Phase 1 could.
+
+### Architecture
+
+- `docs/architecture/consentshield-definitive-architecture.md` Appendix E rewritten — Phase 2 description now reflects Uptime Kuma posture (Railway hosting, Kuma push monitors / HTTP-pull mix, native subscriber notifications + RSS, brand-domain rendering).
+- `docs/architecture/consentshield-complete-schema-design.md` §13 unchanged — Phase 2 is a pure public-surface vendor pivot (now self-hosted-elsewhere); the Phase-1 internal-readout `status_*` tables retain their role.
+
+### Tested
+
+- [x] BS API `DELETE` calls returned 204 for all five resource teardowns.
+- [x] `bunx vercel env ls` confirms `BETTERSTACK_API_TOKEN` removed from both prod and preview.
+- [x] `/usr/bin/curl https://status.consentshield.in/metrics -u ":${KUMA_API_KEY}"` returns Prometheus-format text (`monitor_status` / `monitor_response_time` / `monitor_cert_*` / `process_*` gauges).
+- [x] `/usr/bin/curl -sI https://status.consentshield.in/` returns 302 redirect to `/dashboard` (Kuma's default root behaviour).
+- [ ] Sprint 2.2 path-A monitors (4 HTTP-pull) — operator-pending; runbook `docs/runbooks/adr-1018-phase-2-uptime-kuma.md` Sprint 2.2 walks the steps.
+- [ ] Sprint 2.3 status page configured + custom domain bound — operator-pending.
+
+### Pre-release gate (revised)
+
+External distribution of `status.consentshield.in` holds until **Sprints 2.2 + 2.3 + 2.4 complete on Kuma**. The previous "tier upgrade + Sprints 2.4 → 2.6" gate is retired — there is no tier upgrade to wait on. The DNS cutover sub-deliverable is already done.
+
 ## [ADR-1018 Phase 2 Sprint 2.2 path-A + Sprint 2.4 reconnaissance — Better Stack monitors + status-page resource] — 2026-04-25
 
 **ADR:** ADR-1018 — Status page (Phase 1 self-hosted superseded; Phase 2 Better Stack)

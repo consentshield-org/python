@@ -1,27 +1,49 @@
-# ADR-1018: Status page — Phase 1 self-hosted (superseded), Phase 2 Better Stack integration
+# ADR-1018: Status page — Phase 1 in-app (superseded), Phase 2 self-hosted Uptime Kuma at status.consentshield.in
 
-**Status:** In Progress (Phase 1 Completed and superseded; Phase 2 Proposed)
-**Date proposed:** 2026-04-22 (Phase 1) · 2026-04-25 (Phase 2 supersession)
+**Status:** In Progress (Phase 1 Completed and superseded; Phase 2 In Progress)
+**Date proposed:** 2026-04-22 (Phase 1) · 2026-04-25 (Phase 2 supersession; Better Stack approach) · **2026-04-26 (Phase 2 vendor pivot to self-hosted Uptime Kuma)**
 **Phase 1 completed:** 2026-04-23
+**Phase 2 vendor pivot completed:** 2026-04-26 — Better Stack account dormant; resources torn down; replaced by self-hosted Uptime Kuma at `status.consentshield.in` (Railway-hosted).
 **Supersedes (in part):** ADR-1005 Phase 4 Sprint 4.1/4.2 (StatusPage.io provisioning)
 **Related:** ADR-1017 (admin ops-readiness surface) · marketing-claims review 2026-04-25 Issue 18
 
 ---
 
-## Supersession note (2026-04-25)
+## Supersession notes
 
-Phase 1 (self-hosted status page on admin + customer-app `/status`) was scoped, built, and live by 2026-04-23. The marketing-claims review on 2026-04-25 (`docs/reviews/2026-04-25-marketing-claims-vs-reality-review.md` Issue 18) re-examined the public-facing claims that point at `status.consentshield.in` — *"real-time platform health, uptime metrics, and incident history"* with seven monitored surfaces, per-surface uptime targets, and *"probed every 30 seconds from three geographic regions"* — and concluded the self-hosted Phase 1 implementation does not meet that wireframe today and would require non-trivial work to do so (multi-region probes, subscriber email/RSS/webhook notifications, uptime-history rollups, incident-comms templating, etc.).
+### 2026-04-25 — Phase 1 (in-app self-hosted) → Phase 2 (third-party SaaS)
 
-Reversal of Phase 1's "no SaaS vendor" stance is deliberate. The self-hosted approach was the right v1 ship to retire ADR-1005's StatusPage.io scope; Phase 2 trades that for a vendor-managed surface that already does the work the marketing copy promises. Reasons to flip:
+Phase 1 (self-hosted status page on admin + customer-app `/status`) was scoped, built, and live by 2026-04-23. The marketing-claims review on 2026-04-25 (`docs/reviews/2026-04-25-marketing-claims-vs-reality-review.md` Issue 18) re-examined the public-facing claims that point at `status.consentshield.in` — *"real-time platform health, uptime metrics, and incident history"* with seven monitored surfaces, per-surface uptime targets, and *"probed every 30 seconds from three geographic regions"* — and concluded the in-app Phase 1 implementation did not meet that wireframe today and would require non-trivial work to do so (multi-region probes, subscriber email/RSS/webhook notifications, uptime-history rollups, incident-comms templating, etc.).
 
-- The compliance-perimeter argument that drove Phase 1's self-host stance is weaker than it first read — the public status page renders **brand and aggregate uptime numbers**, not customer data; nothing privacy-sensitive lives in `status_*` tables. The marketing wireframe is the binding spec; the data classification is benign.
-- BFSI / large-corporate procurement reads "Better Stack on `status.consentshield.in`" as a stronger trust signal than an in-product status route — the third-party ingestion path is what protects against "the platform telling us about its own outage."
-- Multi-region synthetic probes from a SaaS vendor are an order of magnitude cheaper to operate than building region-spread synthetic-probe infrastructure ourselves. The opportunity cost of building those primitives in-house (rather than buying them) is not justified for the audience size.
-- The Vercel password-protection rejection at $150/mo (which drove ADR-0502's in-house OTP gate) is a **different** category of decision. That was about gating access to consentshield.in's marketing content; the cost was unjustified for a confidential preview. Better Stack costs are on a different scale and produce a customer-facing trust artefact.
+Phase 2 was therefore proposed to lift the public surface to a vendor-managed page. Reasons recorded at the time:
 
-**Phase 1 disposition.** The self-hosted Phase 1 stays running for now; it stops being the **primary** uptime surface once Phase 2 ships. Sprint 2.7 (decommissioning) lays out which subsystems retire in place and which migrate. No data migration — `status_*` tables are buffer / observation surfaces and are not customer-facing canonical records.
+- The compliance-perimeter argument was weak — the public status page renders brand + aggregate uptime, not customer data.
+- BFSI / large-corporate procurement reads a third-party page as a stronger trust signal than an in-product status route.
+- Buying multi-region synthetic probes is order-of-magnitude cheaper than building them in-house.
 
-**ADR-1300 retirement.** The marketing-claims review 2026-04-25 Issue 18 originally proposed an `ADR-1300` series for the Better Stack work. That series is **withdrawn**; this ADR-1018 absorbs it. Single ADR for "the public status page," with Phase 1 (self-hosted) and Phase 2 (Better Stack) as sequential phases of the same artefact. Avoids the open-ranges proliferation problem the review's "Pending corrections" trailer flagged.
+### 2026-04-26 — Phase 2 vendor pivot: Better Stack → self-hosted Uptime Kuma
+
+Better Stack was originally selected for Phase 2 because its hosted SaaS surface satisfied the wireframe spec without us building the multi-region probe primitive. Sprint 2.1 created the BS account; Sprint 2.2 path-A created four monitors; Sprint 2.4 reconnaissance created the BS status page resource. The blocker that surfaced: free-tier silently drops `custom_domain`, `subscribable`, and `password_enabled`, and the BS marketing copy spec required all three. The launch-time tier upgrade was the recorded gate.
+
+Operator decision 2026-04-26: drop Better Stack entirely; self-host **Uptime Kuma** at `status.consentshield.in`. Reasoning:
+
+- **No SaaS spend at any tier.** Kuma is open-source; the only cost is the hosting (Railway, ~$5/mo or free under the existing Railway allowance).
+- **No artificial limits.** Kuma has no monitor cap, no cadence floor, no paywall on subscribers / custom domain / password protection.
+- **Custom domain works on day one.** `status.consentshield.in` already serves the Kuma instance.
+- **Operator already runs it.** Railway-hosted Kuma instance is up, dashboard reachable, `KUMA_API_KEY` provisioned in `.secrets`. Lower friction than ongoing BS workspace management.
+- **Compliance perimeter trade-off accepted.** The 2026-04-25 reasoning that pushed toward a third-party page (BFSI procurement reads "third party" as trust signal) is partially eroded by the Phase-1 supersession argument anyway: the public status page renders brand + aggregate uptime, not customer data. A self-hosted Kuma reads exactly like a vendor-hosted page to a procurement reviewer; the trust signal lives in the **brand-domain + clean rendering**, not in the underlying SaaS.
+
+**Better Stack teardown record (2026-04-26):**
+
+- BS monitors `4326425`, `4326426`, `4326427`, `4326428` deleted via `DELETE /api/v2/monitors/{id}` (returned 204 each).
+- BS status page resource `245019` deleted via `DELETE /api/v2/status-pages/245019` (204).
+- Pre-existing operator-created paused monitor `4325807` left in place (not Sprint-2.x work; harmless).
+- `BETTERSTACK_API_TOKEN` removed from `consentshield-marketing` Vercel project Production + Preview scopes.
+- BS account on `info@consentshield.in` left dormant ($0/mo free tier; no reason to close immediately).
+
+**Phase 1 disposition (unchanged from 2026-04-25 framing).** The customer-app `/status` route + admin panel + pg_cron probes + `status_*` tables stay running as **internal operator readout** for in-perimeter triage when Kuma itself is degraded. The host-based redirect in `app/src/app/page.tsx` that mapped `status.consentshield.in` → `/status` is now dead code (DNS no longer points at the `app` Vercel project for that hostname); Sprint 2.7 cleanup retires it.
+
+**ADR-1300 retirement (unchanged from 2026-04-25 framing).** The marketing-claims review's proposed `ADR-1300` series stays withdrawn; this ADR-1018 absorbs both the BS-investigation-and-retirement record and the Kuma-adoption plan as a single coherent ADR.
 
 ---
 
@@ -127,173 +149,179 @@ The trade-off was the load-bearing reason to flip Phase 2 to Better Stack (Super
 
 ---
 
-## Phase 2 — Better Stack integration (Proposed 2026-04-25)
+## Phase 2 — Self-hosted Uptime Kuma at `status.consentshield.in` (In Progress 2026-04-26)
 
 ### Context
 
-Phase 1 shipped a working self-hosted status page but the Phase-1 wireframe doesn't satisfy the marketing-claims review's Issue-18 spec (multi-region 30-second probes, per-surface uptime targets, subscriber notifications, incident-comms post-mortems, public 90-day rolling history with per-component availability). Building those primitives in-house adds ~3–4 weeks of work for surface that isn't a product wedge. Better Stack (formerly Better Uptime + Better Logs / Logtail) ships every primitive the marketing copy promises and integrates in days — see the Supersession note for the full reasoning.
+Phase 1 (in-app self-hosted) didn't meet the marketing wireframe; Better Stack was selected on 2026-04-25 as the SaaS replacement; on 2026-04-26 the operator pivoted to **self-hosted Uptime Kuma** on Railway after the BS free-tier blockers (custom domain, subscribers, password protection all paid-tier-gated) and the price-vs-value calculation made BS unattractive. See the Supersession notes above for the full reasoning trail.
+
+Uptime Kuma is an open-source uptime monitor + status page in one. Operator runs it on Railway (asia-southeast1; ~$5/mo or under existing Railway allowance). No artificial limits on monitor count, cadence floor, subscribers, custom domain, or password protection — all features Kuma exposes by default. The Kuma dashboard is the management surface; `status.consentshield.in/<status-page-slug>` is the public surface; `/api/push/<token>` is the per-monitor heartbeat ingest URL; `/metrics` is the Prometheus-format scrape target authenticated with `KUMA_API_KEY` as the HTTP Basic password.
 
 ### Decision (Phase 2)
 
-1. **External status surface** — `status.consentshield.in` cuts over from the Vercel-aliased self-hosted page to the Better Stack hosted public status page. The Better Stack page renders ConsentShield branding (custom domain + colours + logo) so the third-party-vendor framing stays implicit, not loud.
-2. **Seven monitors** mirroring the existing `marketing/src/app/docs/status/page.mdx` ParamTable (REST API v1, Worker event ingestion, Rights-request portal, Dashboard, Admin console, Deletion-connector dispatch, Notification dispatch). Cadences and targets per the marketing copy: 30-second from EU + US + APAC for the v1 REST API and Worker; 1-minute for the Dashboard; per-minute synthetic for Rights-request portal; internal heartbeat for Admin console; queue-depth/latency heartbeat for Deletion-connector and Notification dispatch.
-3. **Incident-comms templates** — sev1 / sev2 / sev3 incident severity, statuses `investigating` → `identified` → `monitoring` → `resolved`. Post-mortems for sev1 incidents publish within 14 business days; auto-link from the resolved incident card.
-4. **SLA surface alignment** — per-surface uptime targets currently rendered in the marketing copy (REST API 99.9%/mo, Worker 99.99%/mo, Dashboard 99.5%/mo) are honoured by Better Stack monitors; if the live measured value drops below the marketing target for any month, the status page surfaces the actual measured number rather than the marketing aspiration.
-5. **Subscriber notifications** — public subscribe form on the status page; channels: email (via Better Stack's native sender + Resend fallback for India-bound delivery), RSS, webhook. Customers self-serve subscription per-component.
-6. **Phase 1 disposition** — admin status panel + customer-app `/status` route + pg_cron probes stay running as **internal operator readouts**. They no longer power the public surface; they act as a redundant in-perimeter view that's useful when Better Stack itself is degraded (rare; their availability is order-of-magnitude better than ours).
-7. **No new ADR series** — Phase 2 lands inside this ADR-1018 rather than a new ADR-1300 series. The marketing-claims review's `1300–1399` band reservation is withdrawn.
+1. **Public status surface** — `status.consentshield.in` now serves Uptime Kuma directly (Railway-hosted; DNS already pointed at Kuma's edge as of 2026-04-26). No Vercel alias, no third-party CDN in the path.
+2. **Seven monitors** mirroring the existing `marketing/src/app/docs/status/page.mdx` ParamTable (REST API v1, Worker event ingestion, Rights-request portal, Dashboard, Admin console, Deletion-connector dispatch, Notification dispatch). Mix of HTTP-pull monitors (anything that exposes an unauthenticated probe URL) and **push** monitors (any subsystem that's better instrumented to emit a heartbeat than to be probed externally — Worker after each successful HMAC-verified write, Edge Function after each successful sweep, etc.). Kuma exposes both monitor types with no extra cost.
+3. **Status-page configuration** — branded ConsentShield status page in Kuma with the seven monitors grouped by area (Public API · Customer App · Operator surfaces · Background pipelines). Custom domain configured (`status.consentshield.in`). Password-free public read. Subscriber form enabled (email; Slack/webhook integration as Phase 2.6).
+4. **Incident-comms templates** — Kuma's native incident system: sev1 / sev2 / sev3 severity, `investigating` → `identified` → `monitoring` → `resolved` lifecycle. Post-mortems for sev1 / sev2 published within 14 business days. Operator posts incidents from the Kuma dashboard.
+5. **SLA surface alignment** — Kuma's native per-monitor uptime tracking honours the marketing-copy targets (REST API 99.9%/mo, Worker 99.99%/mo, Dashboard 99.5%/mo). If a target is repeatedly missed, marketing copy at `marketing/src/app/docs/status/page.mdx` rewrites down to the achievable number (per the "no aspirational claims" review discipline).
+6. **Subscriber notifications** — Kuma supports email out of the box (SMTP config; reuse Resend SMTP credentials). Slack / Discord / webhook notification channels configured per monitor or globally. RSS feed exposed at `status.consentshield.in/api/rss/<status-page-slug>` natively.
+7. **Phase 1 disposition** — customer-app `/status` route + admin status panel + pg_cron probes + `status_*` tables stay running as **internal operator readouts** for in-perimeter triage. The host-based redirect in `app/src/app/page.tsx` that mapped `status.consentshield.in` → `/status` is now dead code (DNS no longer routes there); Sprint 2.7 cleanup retires it.
+8. **No new ADR series** — Phase 2 lands inside this ADR-1018 (unchanged from the 2026-04-25 framing). The retired `ADR-1300` reservation stays withdrawn.
 
 ### Consequences (Phase 2)
 
-- **Cost:** Better Stack pricing is per-monitor / per-incident-channel; 7 monitors + email/SMS subscriber notifications + Slack incident integration sits in the low-three-figures-per-month band. Documented in the charter sprint when the operator picks the plan tier.
-- **Stronger trust artefact:** the BFSI / large-corporate buyer reads "Better Stack on `status.consentshield.in`" as more credible than an in-product status route — the third-party ingestion path is the safety against "the platform telling us about its own outage."
-- **Marketing copy at `marketing/src/app/docs/status/page.mdx`** continues to render unchanged; Better Stack's surface is the canonical truth it points at. No `/docs/status` rewrite needed beyond removing wording that no longer applies (e.g., the "hosted outside our primary infrastructure" line is now literally true).
-- **Phase 1 internal-readout cost** stays at zero — pg_cron + Edge Function are already running and serve as a backup view.
-- **Reversibility:** if Better Stack proves too expensive or insufficient, the Phase 1 internal route still works and can be re-promoted to primary by reversing Sprint 2.6's DNS cutover.
+- **Cost:** Kuma is open source; only the Railway hosting cost (low-single-digit USD/month or under the existing Railway allowance). Compared to BS's tier-upgrade trajectory ($30+/mo at the tier that exposed the wireframe-spec features), this is order-of-magnitude cheaper.
+- **No paywall friction.** Custom domain works on day one; no "tier upgrade gate" delaying Sprints 2.4–2.6. Pre-release blocker on `status.consentshield.in` distribution is now keyed on Sprint 2.2 monitor configuration + Sprint 2.3 status-page config — not on a tier-upgrade event.
+- **Operator manages monitor inventory in the Kuma dashboard.** Kuma's REST API is dashboard-shaped (the `KUMA_API_KEY` is a metrics-scrape + push-URL token, not a control plane), so monitor creation is human-driven through the UI, not a scriptable provisioning step. For a 7-monitor inventory at our audience size, this is acceptable.
+- **`KUMA_API_KEY` lives in `.secrets`** (gitignored). Used for: (a) `/metrics` Prometheus scraping when we wire that into a future operator dashboard, (b) push monitor URLs that are themselves long-lived bearers (each push URL contains its own per-monitor token).
+- **Marketing copy at `marketing/src/app/docs/status/page.mdx`** continues to render unchanged. Kuma satisfies every claim the wireframe makes; the line *"hosted outside our primary infrastructure so the page stays reachable when the API itself is degraded"* is **literally true** — Kuma runs on Railway in `asia-southeast1`, not on the `consentshield-marketing` / `consentshield` / `consentshield-admin` Vercel projects.
+- **Phase 1 internal-readout cost** stays at zero — pg_cron + Edge Function continue to run; the in-app `/status` route is still anon-readable from the customer app at `app.consentshield.in/status`.
+- **Reversibility:** if Kuma proves insufficient (e.g., we need multi-region external probes that Kuma can't run from a single Railway region), the Phase 1 internal route still works and can be re-promoted to primary by repointing DNS at the `app` Vercel project. Or we re-enter the BS conversation with a known cost.
 
 ### Implementation Plan
 
-#### Sprint 2.1 — Charter, plan tier selection, account creation
+#### Sprint 2.1 — Kuma instance up + DNS + secret in place
+
+**Deliverables (landed 2026-04-26):**
+- [x] Operator deployed Uptime Kuma on Railway (`asia-southeast1`). Dashboard reachable at `https://status.consentshield.in/dashboard`.
+- [x] DNS for `status.consentshield.in` repointed at the Railway-hosted Kuma instance (replaces the Phase 1 alias to the `app` Vercel project).
+- [x] Operator-created Kuma admin login; API key generated in dashboard → Settings.
+- [x] `KUMA_API_KEY` saved to repo-root `.secrets` (gitignored). Used for `/metrics` Basic-auth scrape + future operator-side observability wiring.
+
+**Better Stack teardown (also landed 2026-04-26):**
+- [x] BS monitors `4326425`, `4326426`, `4326427`, `4326428` deleted via `DELETE /api/v2/monitors/{id}` (204 each).
+- [x] BS status page resource `245019` deleted via `DELETE /api/v2/status-pages/245019` (204).
+- [x] `BETTERSTACK_API_TOKEN` env var removed from `consentshield-marketing` Vercel project Production + Preview scopes.
+- [x] BS account on `info@consentshield.in` left dormant (free tier, $0/mo; close manually whenever convenient).
+- [x] Operator runbook `docs/runbooks/adr-1018-phase-2-better-stack-sprint-2-1.md` deleted (superseded by `docs/runbooks/adr-1018-phase-2-uptime-kuma.md`).
+
+**Operator runbook (Kuma):** `docs/runbooks/adr-1018-phase-2-uptime-kuma.md` (Sprint 2.2 onward — monitor matrix, status-page config, notification channels).
+
+#### Sprint 2.2 — Monitor matrix configured (Kuma)
+
+Path-A scope: HTTP-pull monitors against already-live unauthenticated surfaces. The remaining wireframe monitors split into seven sub-sprints (2.2.1 → 2.2.7), each unblocked when its target surface or heartbeat instrumentation lands.
+
+Kuma-shaped notes:
+- **Monitor management is dashboard-only.** Kuma's REST surface is metrics-scrape + push-URL only; control-plane operations (create / list / edit / delete monitors, status pages, notification channels) live in the dashboard. The seven monitors land via the operator runbook `docs/runbooks/adr-1018-phase-2-uptime-kuma.md`.
+- **Push monitors** (a.k.a. heartbeat monitors) — Kuma generates a unique ingest URL per push monitor: `https://status.consentshield.in/api/push/<token>?status=up&msg=&ping=`. Caller pings it on each successful operation; Kuma alerts when no ping received for the configured interval. This is the cheapest way to monitor the Worker / Edge / Notification subsystems where building an external probe is harder than emitting a single fetch from inside the application code.
+- **HTTP-pull monitors** — standard "GET URL every N seconds, expect 200" against unauthenticated endpoints.
+
+**Path-A monitors (HTTP-pull; create in Kuma dashboard):**
+
+| Name | URL | Cadence | Maps to wireframe |
+|---|---|---|---|
+| Customer App — `/api/health` | `https://app.consentshield.in/api/health` | 60s | partial cover for Dashboard + REST API v1 |
+| Supabase Edge — `/functions/v1/health` | `https://xlqiakmkdjycfiioslgs.supabase.co/functions/v1/health` | 60s | partial cover for Edge Functions surface |
+| Marketing gate — `/gate` | `https://consentshield.in/gate` | 60s | covers the marketing surface |
+| Customer App — `/login` | `https://app.consentshield.in/login` | 60s | partial cover for Dashboard surface |
+
+Cadences: Kuma has no paywall on cadence; 60s is comfortable. Single-region (Railway `asia-southeast1`) — multi-region requires a second Kuma instance or a paid third-party (deferred to "if-and-when launch demands").
 
 **Deliverables:**
-- [x] Operator created Better Stack account, owned by `info@consentshield.in`. Completed 2026-04-25.
-- [x] Plan tier selected: **Free / $0/mo**. Founder direction (2026-04-25): stay on free tier through pre-launch; upgrade at the moment we open external distribution of `status.consentshield.in`. Marketing copy at `marketing/src/app/docs/status/page.mdx` stays as the post-upgrade target spec; aspirational-but-not-misleading because the page itself is gated behind the marketing OTP gate (ADR-0502) until launch.
-- [x] Cost recorded: $0/mo while on free tier; Sprint 2.5 launch-gate triggers the upgrade decision (likely the Hobbyist or Team tier, whichever exposes 30-second multi-region + custom domain + email/RSS/webhook subscribers).
-- [x] API token generated, named `consentshield-marketing-prod`, account-level scope.
-- [x] Token stored in `vercel env` for the `consentshield-marketing` project as `BETTERSTACK_API_TOKEN` on **Production + Preview** scopes. Verified via `bunx vercel@latest env ls`.
-
-**Operator runbook:** `docs/runbooks/adr-1018-phase-2-better-stack-sprint-2-1.md`.
-
-### Free-tier vs marketing-copy reconciliation note
-
-The marketing copy promises 30-second multi-region cadence, custom domain, and email/RSS/webhook subscribers — none of which BS free typically exposes. Sprint 2.2 below will configure what free actually allows (likely 3-minute single-region monitors); Sprints 2.4 + 2.5 + 2.6 are **gated on an upgrade-at-launch operator decision**. Pre-release blocker on external distribution of `status.consentshield.in` therefore now reads *"upgrade tier + complete Sprints 2.4 → 2.6"* rather than *"complete Sprint 2.4 DNS cutover"* alone.
-
-The marketing copy stays untouched in the meantime because:
-1. It's the post-upgrade target spec (no honesty gap once we ship).
-2. The `/docs/status` page is itself behind the ADR-0502 marketing-site OTP gate — a confidential-preview reader who hits the claims is also under invitation, not a member of the public who'd be misled by aspirational copy.
-
-#### Sprint 2.2 — Monitor matrix configured
-
-Path-A scope (free tier, no code changes required) — **landed 2026-04-25**. The seven wireframe-driven monitors are split into a path-A "create today" subset that probes already-live unauthenticated surfaces, and seven follow-up sub-sprints (2.2.1 → 2.2.7) that bring the wireframe monitors online as the underlying surfaces / heartbeat instrumentation / tier upgrades unblock them.
-
-**Path-A monitors created via BS API (curl POST to `https://uptime.betterstack.com/api/v2/monitors`):**
-
-| BS ID | pronounceable_name | URL | Cadence | Maps to wireframe |
-|---|---|---|---|---|
-| 4326425 | Customer App — `/api/health` | `https://app.consentshield.in/api/health` | 180s | partial cover for Dashboard + REST API v1 |
-| 4326426 | Supabase Edge — `/functions/v1/health` | `https://xlqiakmkdjycfiioslgs.supabase.co/functions/v1/health` | 180s | partial cover for Edge Functions surface |
-| 4326427 | Marketing gate — `/gate` | `https://consentshield.in/gate` | 300s | new — covers the marketing surface itself |
-| 4326428 | Customer App — `/login` | `https://app.consentshield.in/login` | 180s | partial cover for Dashboard surface |
-
-Free-tier observations: `check_frequency=180` accepted (3-min); `regions: null` (single region, presumably US); `email: true` enabled at create time. The pre-existing operator-created paused monitor on `https://consentshield.in` (BS id 4325807) is left in place untouched.
-
-**Deliverables:**
-- [x] Path-A four monitors created and listed in the table above.
-- [x] BS monitor IDs recorded in this ADR; ChangeLog entry appended.
-
-**Path-A acceptance:**
-- [ ] All four monitors transition from `pending` → `up` within ~5 minutes of creation. (Verifiable by the operator hitting the BS dashboard or `curl https://uptime.betterstack.com/api/v2/monitors -H 'Authorization: Bearer …'`.)
+- [ ] Operator creates the four HTTP-pull monitors above in the Kuma dashboard. Records the resulting Kuma monitor IDs in `docs/runbooks/adr-1018-phase-2-uptime-kuma.md` Sprint 2.2 section.
+- [ ] All four monitors transition from `Pending` → `Up` within one cadence cycle.
+- [ ] Kuma `Tags` applied: `area:public-api`, `area:edge`, `area:marketing`, `area:dashboard` for the four monitors respectively. Powers the status-page grouping in Sprint 2.3.
 
 **Seven follow-up sub-sprints — each one unblocks a wireframe-true monitor:**
 
 ##### Sprint 2.2.1 — REST API v1 monitor
 
-- **Unblock trigger:** customer app exposes an unauthenticated liveness endpoint on the `/v1/*` URL space — either `/v1/_ping` patched to short-circuit before the Bearer middleware, or a sibling `/v1/health` route added. The api.consentshield.in DNS + host-conditional rewrite already landed; only the auth-on-`_ping` posture remains. Customer-app code change (Terminal A's territory).
-- **BS monitor to add when unblocked:** GET `https://api.consentshield.in/v1/_ping` (or `/v1/health`), 180s cadence, expect 200.
-- **Cadence note:** 30-second multi-region cadence per the marketing wireframe is paid-tier only; deliverable bumps cadence accordingly post-launch upgrade.
+- **Unblock trigger:** customer app exposes an unauthenticated liveness endpoint on the `/v1/*` URL space — either `/v1/_ping` patched to short-circuit before the Bearer middleware, or a sibling `/v1/health` route added. The api.consentshield.in DNS + host-conditional rewrite already landed (2026-04-25); only the auth-on-`_ping` posture remains. Customer-app code change (Terminal A's territory).
+- **Kuma monitor to add when unblocked:** HTTP-pull monitor against `https://api.consentshield.in/v1/_ping` (or `/v1/health`), 60s cadence, expect 200.
 
 ##### Sprint 2.2.2 — Worker event ingestion monitor
 
-- **Unblock trigger:** Worker code wires a heartbeat ping to BS on each successful HMAC-verified write (cheaper + safer than asking BS to construct an HMAC-signed POST).
-- **Implementation:** create a BS heartbeat resource via `POST /api/v2/heartbeats`; capture the heartbeat URL; Worker pings it from `worker/src/events.ts` + `worker/src/observations.ts` after the buffer write succeeds. Worker dependency surface unchanged (single `fetch` call to a BS-supplied URL — Rule 16 carve-out not triggered).
-- **BS monitor to add:** heartbeat with expected interval matching the natural Worker traffic; alert on missing pings for N minutes.
+- **Unblock trigger:** Worker code wires a heartbeat ping to a Kuma push URL on each successful HMAC-verified write (cheaper + safer than asking Kuma to construct an HMAC-signed POST from outside).
+- **Implementation:** operator creates a push monitor in the Kuma dashboard named "Worker — event ingestion"; captures the per-monitor push URL `https://status.consentshield.in/api/push/<token>?status=up&msg=&ping=`; that URL is added to the Worker as a wrangler secret `KUMA_HEARTBEAT_WORKER_EVENTS`; `worker/src/events.ts` + `worker/src/observations.ts` add a single fire-and-forget `fetch()` to the URL after the buffer write succeeds. Rule 16 carve-out not triggered (single fetch, no new dep).
+- **Heartbeat interval:** match natural Worker traffic; alert when no ping received for `expected_interval × 2` (configured in the Kuma push monitor).
 
 ##### Sprint 2.2.3 — Rights-request portal monitor
 
 - **Unblock trigger:** the public rights-request portal goes live at `app.consentshield.in/rights` (or its actual route once shipped) and returns 200 with the Turnstile widget. Today the path returns 404.
-- **BS monitor to add when unblocked:** GET on the rights-portal URL with `keyword` match on a Turnstile-presence string; 5-min cadence.
+- **Kuma monitor to add when unblocked:** HTTP-pull on the rights-portal URL with `Keyword` match on a Turnstile-presence string; 5-min cadence.
 
 ##### Sprint 2.2.4 — Dashboard auth'd probe
 
-- **Unblock trigger:** Better Stack tier upgrade (Playwright synthetic-monitor type is paid-tier only). The Sprint 2.5 launch-time upgrade is the natural trigger.
-- **BS monitor to add when unblocked:** Playwright script that signs in with a test-account + AAL2 OTP fixture, navigates to `/dashboard`, asserts DEPA-panel render, asserts billing-page read; 1-min cadence.
+- **Unblock trigger:** decision on whether Kuma's Playwright-style auth probe (recently added to upstream Kuma) is enabled on the operator's instance. If the deployed Kuma version supports authenticated synthetic monitors, no third-party tier upgrade is needed; the deliverable is purely operator configuration.
+- **Kuma monitor to add when unblocked:** Authenticated synthetic that signs in with a test-account + AAL2 OTP fixture, navigates to `/dashboard`, asserts DEPA-panel render, asserts billing-page read; 1-min cadence.
+- **Fallback if Kuma version lacks Playwright support:** keep Sprint 2.2's `/login` HTTP-pull as the Dashboard proxy; defer authenticated probing to Kuma upgrade or Phase 3 enhancement.
 
 ##### Sprint 2.2.5 — Admin console monitor
 
-- **Unblock trigger:** Admin-proxy code adds a heartbeat ping to a BS heartbeat URL on every authed admin request (or on a per-minute internal cron — whichever is cheaper). Admin code change (Terminal A's or future operator-platform sprint).
-- **BS monitor to add:** heartbeat resource via `POST /api/v2/heartbeats`; surfaces binary up/down only — no admin-route names leaked into BS config.
+- **Unblock trigger:** Admin-proxy code adds a heartbeat ping to a Kuma push URL on every authed admin request (or on a per-minute internal cron — whichever is cheaper). Admin code change.
+- **Kuma monitor to add:** push monitor with the URL stored as wrangler-secret-equivalent in the admin Vercel project env (`KUMA_HEARTBEAT_ADMIN_HEALTH`). Surfaces binary up/down only — no admin-route names exposed.
 
 ##### Sprint 2.2.6 — Deletion-connector dispatch monitor
 
-- **Unblock trigger:** `supabase/functions/process-artefact-revocation/index.ts` adds a heartbeat ping to a BS heartbeat URL on each successful sweep that produced ≥ 1 receipt. Edge Function code change (Terminal A's territory).
-- **BS monitor to add:** heartbeat resource; alert when no ping received for 30 min (covers the natural cadence of the safety-net pg_cron).
+- **Unblock trigger:** `supabase/functions/process-artefact-revocation/index.ts` adds a heartbeat ping to a Kuma push URL on each successful sweep that produced ≥ 1 receipt. Edge Function code change (Terminal A's territory).
+- **Kuma monitor to add:** push monitor; alert when no ping received for 30 min (covers the natural cadence of the safety-net pg_cron). Push URL stored as Supabase Edge Function secret `KUMA_HEARTBEAT_DELETION_DISPATCH`.
 
 ##### Sprint 2.2.7 — Notification dispatch monitor
 
-- **Unblock trigger:** Resend delivery health + custom-webhook adapter health both ping a BS heartbeat URL on successful dispatch. Customer-app or Edge Function code change.
-- **BS monitor to add:** heartbeat resource; alert when no ping received within the configured threshold.
+- **Unblock trigger:** Resend delivery health + custom-webhook adapter health both ping a Kuma push URL on successful dispatch. Customer-app or Edge Function code change.
+- **Kuma monitor to add:** push monitor `KUMA_HEARTBEAT_NOTIFICATION_DISPATCH`; alert when no ping received within the configured threshold.
 
 ##### Sub-sprint sequencing note
 
-2.2.1 is the cheapest (single unauthenticated route on the customer app). 2.2.2 / 2.2.5 / 2.2.6 / 2.2.7 are all "add a heartbeat ping from N" — minimal Worker / Edge / app-code changes; can run in parallel as their owning code surfaces are touched. 2.2.3 waits on a route that hasn't been authored yet. 2.2.4 waits on the launch-time tier upgrade.
+2.2.1 is the cheapest (single unauthenticated route on the customer app). 2.2.2 / 2.2.5 / 2.2.6 / 2.2.7 are all "add a heartbeat ping from N" — minimal Worker / Edge / app-code changes; can run in parallel as their owning code surfaces are touched. 2.2.3 waits on a route that hasn't been authored yet. 2.2.4 depends on the deployed Kuma version's Playwright support (no third-party gate any more).
 
-#### Sprint 2.3 — Incident-comms templates + post-mortem flow
+#### Sprint 2.3 — Status page configuration + incident-comms templates
 
 **Deliverables:**
-- [ ] Incident severity matrix in Better Stack — sev1 (full outage / data-path down), sev2 (degraded / partial), sev3 (advisory / planned).
-- [ ] Template library — `investigating` / `identified` / `monitoring` / `resolved` per severity; ConsentShield brand voice; aligns with the marketing copy's wording on `marketing/src/app/docs/status/page.mdx`.
-- [ ] Post-mortem publishing rule — sev1 / sev2 published within 14 business days; auto-linked from resolved incident card.
-- [ ] SLA-credit calculator surface — links to ADR-0806 (enterprise SLA surface from the `0800` Enterprise-platform series, when that ships).
+- [ ] Kuma status page resource created via dashboard. Slug: `consentshield`. Custom domain: `status.consentshield.in` (already DNS-pointed; Kuma takes ownership).
+- [ ] Branding — ConsentShield logo, brand palette (navy / teal accents), title `ConsentShield Status`, footer link to `https://consentshield.in`.
+- [ ] Monitor groups: **Public API** (REST API v1, Worker event ingestion), **Customer App** (Dashboard, Rights-request portal), **Operator** (Admin console), **Background pipelines** (Deletion-connector dispatch, Notification dispatch).
+- [ ] Incident severity matrix configured in Kuma — sev1 (full outage / data-path down), sev2 (degraded / partial), sev3 (advisory / planned).
+- [ ] Template library for incident updates — `investigating` / `identified` / `monitoring` / `resolved` per severity; ConsentShield brand voice; aligns with the marketing copy's wording on `marketing/src/app/docs/status/page.mdx`.
+- [ ] Post-mortem publishing rule documented — sev1 / sev2 published within 14 business days; linked from resolved incident.
+- [ ] SLA-credit calculator surface — placeholder; links forward to ADR-0806 (enterprise SLA surface from the `0800` Enterprise-platform series, when that ships).
 
-#### Sprint 2.4 — DNS cutover from Phase-1 self-hosted to Better Stack
+#### Sprint 2.4 — Custom domain + first public-facing render
 
-**Reconnaissance landed 2026-04-25:**
-- [x] Better Stack status page resource created via `POST /api/v2/status-pages`. Resource id **`245019`**, subdomain `consentshield`. Live at **`https://consentshield.betteruptime.com`** (the BS-assigned URL on free tier).
-- [x] Free-tier blocker confirmed: `custom_domain` cannot be set on free tier — the field is silently dropped when included in the create payload. `subscribable` and `password_enabled` are blocked the same way (both required for the wireframe-spec subscriber notifications + private incident posts). Tier upgrade is the gate for all three.
+**Status:** DNS cutover **done** as part of operator's 2026-04-26 work; this sprint covers the remaining configuration.
 
-**Cutover deliverables (gated on tier upgrade in Sprint 2.5):**
-- [ ] Tier upgraded; custom domain configured in BS — `custom_domain: "status.consentshield.in"` patched onto status page resource `245019`. ConsentShield logo + brand palette uploaded (paid feature).
-- [ ] DNS CNAME `status.consentshield.in` flipped from `cname.vercel-dns.com` (Phase 1) to Better Stack's status-page CNAME target (BS provides the target after `custom_domain` patch).
-- [ ] Vercel domain alias removed from the `app` project: `bunx vercel domains rm status.consentshield.in --scope sanegondhis-projects`.
-- [ ] Host-based redirect in `app/src/app/page.tsx` (Phase 1 Sprint 1.5) left in place but now unreachable — Sprint 2.7 cleanup will remove it.
-- [ ] TLS verified: `curl -I https://status.consentshield.in` → `200` from Better Stack's CDN; ConsentShield-branded page renders.
+**Deliverables:**
+- [x] DNS for `status.consentshield.in` pointed at the Kuma instance on Railway (operator action 2026-04-26).
+- [ ] Custom-domain field configured inside Kuma → Status Page settings → `status.consentshield.in`. (Kuma serves the public status page on the custom domain.)
+- [ ] TLS verified: `curl -I https://status.consentshield.in/<status-page-slug>` → `200`; ConsentShield-branded page renders.
+- [ ] Phase-1 cleanup deferred to Sprint 2.7: host-based redirect in `app/src/app/page.tsx`, Vercel domain alias on `app` project — both are dead code now that DNS routes elsewhere; sweep happens in 2.7.
 
 #### Sprint 2.5 — Uptime-target alignment + auto-degrade
 
 **Deliverables:**
-- [ ] Per-monitor SLA targets configured in Better Stack to match the marketing copy: REST API 99.9%/mo, Worker ingestion 99.99%/mo, Dashboard 99.5%/mo.
-- [ ] Acceptance criterion enforced on the public surface: if the live measured value drops below the marketing target for any month, the status-page rolling-90-day numbers are the source of truth (Better Stack does this natively; verify the rendering).
+- [ ] Per-monitor uptime targets configured / annotated in Kuma to match the marketing copy: REST API 99.9%/mo, Worker ingestion 99.99%/mo, Dashboard 99.5%/mo. Kuma surfaces measured uptime per monitor on the status page natively; the targets become operator-side reference numbers in the runbook rather than hard-enforced thresholds.
+- [ ] Acceptance criterion: if the live measured value drops below the marketing target for any month, the status-page rolling-90-day numbers are the source of truth (no aspirational rendering).
 - [ ] Marketing-side reconciliation: if a target is repeatedly missed for two consecutive months, the marketing copy at `marketing/src/app/docs/status/page.mdx` is rewritten down to the achievable number (per the "no aspirational claims" review discipline). Open a follow-up issue when triggered.
 
 #### Sprint 2.6 — Subscriber notifications
 
 **Deliverables:**
-- [ ] Public subscribe form on the Better Stack status page — channels: email, RSS, webhook.
-- [ ] Email sender — Better Stack native; `noreply@consentshield.in` verified as additional sender via Resend fallback (per `reference_email_deliverability` memory) for India-bound deliverability.
-- [ ] RSS feed verified — `https://status.consentshield.in/feed.xml` (or Better Stack's path) consumable by standard readers.
-- [ ] Webhook payload contract documented in `marketing/src/app/docs/status/page.mdx` as a follow-up.
+- [ ] Email subscriber form enabled on the Kuma status page. SMTP config in Kuma → Settings → Notifications → Email; reuse Resend's SMTP credentials (`smtp.resend.com:465`, username `resend`, password = the same `RESEND_API_KEY` already on the customer app + admin app).
+- [ ] Slack notification channel configured in Kuma → Settings → Notifications → Slack; OAuth into the ConsentShield Slack workspace; default channel `#consentshield-status` (create if absent). Map sev1 + sev2 to Slack; sev3 stays email-only.
+- [ ] RSS feed verified — Kuma exposes `/api/rss/<status-page-slug>` natively; consumable by standard readers from `https://status.consentshield.in/api/rss/<slug>`.
+- [ ] Webhook channel configured for any partner customer who wants raw incident events; payload shape documented in `marketing/src/app/docs/status/page.mdx` as a follow-up.
 
-#### Sprint 2.7 — Phase 1 disposition
+#### Sprint 2.7 — Phase 1 disposition + dead-code sweep
 
-Self-hosted Phase 1 stays running as an internal operator readout. This sprint records the long-term plan rather than retiring the code:
+Self-hosted Phase 1 stays running as an internal operator readout. The Kuma instance is now the public surface, so the Phase-1 routing path that exposed `/status` via the customer-app deploy is dead code that can be retired:
 
 **Disposition:**
-- [ ] **Keep running:** `public.status_subsystems` / `status_checks` / `status_incidents` tables; `run-status-probes` Edge Function on pg_cron `*/5 * * * *`; admin status panel at `/admin/(operator)/status`; customer-app `/status` route. These remain useful as an in-perimeter readout for operator triage.
-- [ ] **Remove:** the host-based redirect in `app/src/app/page.tsx` that maps `status.consentshield.in` → `/status` — that host now points at Better Stack so the redirect is dead code. Replace with `// host=status.consentshield.in is served by Better Stack — see ADR-1018 Phase 2.` comment.
-- [ ] **Vercel domain alias:** `bunx vercel domains rm status.consentshield.in` from the `app` Vercel project (Sprint 2.4 deliverable; reaffirmed here).
-- [ ] **Marketing copy:** the line *"hosted outside our primary infrastructure so the page stays reachable when the API itself is degraded"* in `marketing/src/app/docs/status/page.mdx` was true in Phase 1 only by virtue of being on a different Vercel project, and is **literally true** under Phase 2 (Better Stack runs entirely outside our infrastructure). Leave the line; possibly soften the qualifier when the rest of `/docs/status` is reviewed.
-- [ ] **Internal-only re-purposing:** an admin operator can still post a private incident in the Phase-1 admin panel for internal-only tracking (e.g., a maintenance window not yet ready for public communication). The `/admin/(operator)/status` panel remains the right tool for that. Better Stack publishes only what an operator publishes there.
+- [ ] **Keep running:** `public.status_subsystems` / `status_checks` / `status_incidents` tables; `run-status-probes` Edge Function on pg_cron `*/5 * * * *`; admin status panel at `/admin/(operator)/status`; customer-app `/status` route accessible at `app.consentshield.in/status` (now no longer aliased through `status.consentshield.in`). These remain useful as an in-perimeter readout for operator triage.
+- [ ] **Remove dead code:** the host-based redirect in `app/src/app/page.tsx` that maps `host === 'status.consentshield.in'` → `/status` — that hostname now resolves to Kuma's edge, not Vercel, so the redirect can never fire. Replace with `// host=status.consentshield.in is served by Uptime Kuma — see ADR-1018 Phase 2.` comment.
+- [ ] **Vercel domain alias:** `bunx vercel domains rm status.consentshield.in --scope sanegondhis-projects` on the `app` Vercel project. The Phase 1 alias is no longer claimed in DNS but Vercel may still hold the binding internally; remove for cleanliness.
+- [ ] **Marketing copy:** the line *"hosted outside our primary infrastructure so the page stays reachable when the API itself is degraded"* in `marketing/src/app/docs/status/page.mdx` is **literally true** under Phase 2 (Kuma runs on Railway, entirely outside the `consentshield-marketing` / `consentshield` / `consentshield-admin` Vercel projects). Leave as-is.
+- [ ] **Internal-only re-purposing:** an admin operator can still post a private incident in the Phase-1 admin panel for internal-only tracking (e.g., a maintenance window not yet ready for public communication). The `/admin/(operator)/status` panel remains the right tool for that. Kuma publishes only what an operator publishes there.
 
-#### Sprint 2.8 — Marketing copy alignment
+#### Sprint 2.8 — Marketing copy alignment + Issue 18 closeout
 
 **Deliverables:**
-- [ ] Audit `marketing/src/app/docs/status/page.mdx` against the Better Stack monitor matrix — confirm every claim resolves to a configured Better Stack monitor.
-- [ ] Confirm the marketing-claims review Issue 18 is fully resolved.
+- [ ] Audit `marketing/src/app/docs/status/page.mdx` against the Kuma monitor matrix — confirm every claim resolves to a configured Kuma monitor or is honestly downgraded.
+- [ ] Confirm the marketing-claims review Issue 18 is fully resolved against the Kuma deployment.
 - [ ] Update the marketing-claims review's "Pending corrections" trailer with a "Resolved" status pointing at this ADR.
 
 ### Pre-release gate (Phase 2)
 
-External distribution of any link to `status.consentshield.in` holds until **Sprint 2.4 (DNS cutover)** completes. Sprints 2.5–2.8 can follow without blocking external distribution but are pre-launch blockers for the Issue-18 acceptance criterion (uptime-target alignment + subscriber notifications + copy alignment).
+External distribution of any link to `status.consentshield.in` holds until **Sprints 2.2 + 2.3 + 2.4 (monitors + status page config + custom domain)** complete. Sprints 2.5–2.8 can follow without blocking external distribution but are pre-launch blockers for the Issue-18 acceptance criterion (uptime-target alignment + subscriber notifications + copy alignment). The DNS cutover sub-deliverable is already done (operator action 2026-04-26).
 
 ---
 
