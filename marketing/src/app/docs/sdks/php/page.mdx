@@ -1,0 +1,87 @@
+export const metadata = {
+  title: 'consentshield/sdk — PHP SDK',
+  description:
+    'PHP 8.1+ client + Laravel/Symfony integration for ConsentShield. Guzzle 7 PSR-18, Apache 2.0.',
+}
+
+<Breadcrumb trail={[
+  { label: 'Docs', href: '/docs' },
+  { label: 'SDKs', href: '/docs/sdks' },
+  { label: 'PHP' },
+]} />
+
+# `consentshield/sdk`
+
+Two Composer packages on Packagist:
+
+- **`consentshield/consentshield` 1.0.0** — raw client (OpenAPI-Generator output, Guzzle 7). For non-framework callers.
+- **`consentshield/sdk` 1.0.0** — `ConsentShieldClient::create()` factory + Guzzle retry middleware + exception hierarchy + Laravel/Symfony examples. Depends on the raw client.
+
+<Callout tone="info" title="Tier 2 — generated from OpenAPI">
+The raw PHP client is generated from the [public OpenAPI spec](https://api.consentshield.in/openapi.yaml) via `openapi-generator-cli@v7.10.0`. The compliance contract (retry, fail-CLOSED, exception hierarchy) lives in the hand-written wrapper layer.
+</Callout>
+
+## Install
+
+```bash
+composer require consentshield/sdk:^1.0
+```
+
+- **PHP 8.1+** required (uses readonly properties + backed enums)
+- Guzzle 7 PSR-18 client for HTTP transport
+- Laravel 11+ and Symfony 7+ for the bundled framework examples
+
+## Quickstart
+
+```php
+use ConsentShield\Sdk\ConsentShieldClient;
+use ConsentShield\Sdk\Exception\ConsentShieldApiException;
+
+$client = ConsentShieldClient::create(getenv('CONSENTSHIELD_API_KEY'));
+
+try {
+    // verify call goes here
+    $client->utility()->ping();
+    // continue
+} catch (ConsentShieldApiException $e) {
+    http_response_code(502);
+    echo json_encode(['detail' => $e->getDetail()]);
+} catch (\Throwable $e) {
+    if ($client->isFailOpen()) {
+        // continue with X-CS-Open: true header
+    } else {
+        http_response_code(503);
+        echo json_encode(['error' => 'consent_check_failed']);
+    }
+}
+```
+
+## Compliance contract
+
+| Outcome | Default (fail-CLOSED) | `failOpen=true` |
+|---|---|---|
+| 4xx response | `ConsentShieldApiException` (always surfaces) | same |
+| Per-attempt timeout | `ConsentShieldTimeoutException` (never retried) | same |
+| 5xx + transport (after retries exhausted) | `ConsentVerifyException` with `VerifyFailureCause` | open outcome with cause set |
+
+`X-CS-Trace-Id` round-trips on every call. `$exception->getTraceId()` returns the server-side trace id when available.
+
+cURL `errno=28` (timeout) is detected on the rejected promise branch and rethrown as `ConsentShieldTimeoutException` without consuming retry budget.
+
+## Framework examples
+
+```bash
+# Laravel 11 — drop-in middleware
+cp packages/php-client/examples/laravel-middleware/* into your Laravel app
+
+# Symfony 7 — controller + services.yaml factory
+cp packages/php-client/examples/symfony-controller/* into your Symfony app
+```
+
+Both examples surface 451 / 502 / 503 per the outcome contract above and respect `failOpen` for soft-degraded service.
+
+## Source
+
+Apache 2.0. <https://github.com/SAnegondhi/consentshield-php>
+
+<FeedbackStrip pageId="sdks-php" />

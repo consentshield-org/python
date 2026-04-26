@@ -1,0 +1,105 @@
+export const metadata = {
+  title: 'consentshield-java — Java SDK',
+  description:
+    'Spring Boot starter + raw Java client for ConsentShield. JDK 11+, OkHttp 4.12, Apache 2.0.',
+}
+
+<Breadcrumb trail={[
+  { label: 'Docs', href: '/docs' },
+  { label: 'SDKs', href: '/docs/sdks' },
+  { label: 'Java' },
+]} />
+
+# `consentshield-java-spring-boot-starter`
+
+Two artefacts on Maven Central:
+
+- **`com.consentshield:consentshield-java:1.0.0`** — raw client (OpenAPI-Generator output, OkHttp + Gson). For non-Spring callers.
+- **`com.consentshield:consentshield-java-spring-boot-starter:1.0.0`** — Spring Boot 3 auto-config + retry interceptor + exception hierarchy. Depends transitively on the raw client. Spring deps are `<optional>true</optional>` — non-Spring callers can take this artefact too without pulling Spring transitively.
+
+<Callout tone="info" title="Tier 2 — generated from OpenAPI">
+The raw Java client is generated from the [public OpenAPI spec](https://api.consentshield.in/openapi.yaml) via `openapi-generator-cli@v7.10.0`. The compliance contract (retry, fail-CLOSED, exception hierarchy) lives in the hand-written Spring Boot starter wrapper layer.
+</Callout>
+
+## Install
+
+```xml
+<dependency>
+  <groupId>com.consentshield</groupId>
+  <artifactId>consentshield-java-spring-boot-starter</artifactId>
+  <version>1.0.0</version>
+</dependency>
+```
+
+- **JDK 11+** required (build target; runtime works on 11 / 17 / 21)
+- Spring Boot **3.x** for auto-configuration (optional)
+- Released via Maven Central with Sonatype Central staging
+
+## Configuration (Spring Boot)
+
+```yaml
+# application.yml
+consentshield:
+  api-key: ${CONSENTSHIELD_API_KEY}
+  base-url: https://api.consentshield.in/v1
+  timeout: 2s
+  max-retries: 3
+  fail-open: false
+```
+
+## Quickstart
+
+```java
+@RestController
+public class Marketing {
+    private final ConsentShieldClient client;
+
+    public Marketing(ConsentShieldClient client) {
+        this.client = client;
+    }
+
+    @PostMapping("/api/marketing/send")
+    public ResponseEntity<?> send(@RequestBody Body body) {
+        try {
+            // verify call against ConsentApi goes here
+            return ResponseEntity.accepted().build();
+        } catch (ConsentShieldApiException e) {
+            return ResponseEntity.status(502).body(Map.of("detail", e.getDetail()));
+        } catch (RuntimeException e) {
+            // fail-CLOSED default → 503
+            return ResponseEntity.status(503).body(Map.of("error", "consent_check_failed"));
+        }
+    }
+}
+```
+
+Without Spring Boot:
+
+```java
+ConsentShieldClient client = ConsentShieldClient.builder()
+    .apiKey(System.getenv("CONSENTSHIELD_API_KEY"))
+    .build();
+PingResponse ping = new UtilityApi(client.api()).ping();
+```
+
+## Compliance contract
+
+| Outcome | Default (fail-CLOSED) | `consentshield.fail-open: true` |
+|---|---|---|
+| 4xx response | `ConsentShieldApiException` (always surfaces) | same |
+| Per-attempt timeout | `ConsentShieldTimeoutException` (never retried) | same |
+| 5xx + transport (after retries exhausted) | `ConsentVerifyException` with `FailureCause` | `ConsentVerifyOutcome.isOpen() == true` |
+
+`X-CS-Trace-Id` round-trips on every call. `exception.getTraceId()` returns the server-side trace id when available.
+
+Retry budget: 3 retries on 5xx + transport with 100 / 400 / 1600 ms backoff. Per-attempt timeout 2 s (configurable via `consentshield.timeout`).
+
+## Examples
+
+The Maven module ships a runnable Spring Boot 3 marketing-gate example — see [`examples/spring-boot-marketing-gate/`](https://github.com/SAnegondhi/consentshield-java/tree/main/examples/spring-boot-marketing-gate) in the repo.
+
+## Source
+
+Apache 2.0. <https://github.com/SAnegondhi/consentshield-java>
+
+<FeedbackStrip pageId="sdks-java" />

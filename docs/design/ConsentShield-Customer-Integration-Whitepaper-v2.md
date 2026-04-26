@@ -406,7 +406,9 @@ The verification endpoint has three failure modes, and the customer's integratio
 | `status: revoked`, `expired`, or `never_consented` | Do not proceed; log the suppression with the reason code | Normal path; the log is the audit trail |
 | API unreachable (timeout, 5xx, network error) | Do not proceed; log the failure; alert ops | **Fail-closed on consent verification is the correct DPDP posture** |
 
-ConsentShield's client libraries (Node.js, Python, Java, Go — delivered under the Pro and Enterprise tiers) ship with a default 2-second timeout and fail-closed behaviour. This is deliberate. A customer who chooses to override this — for example, *"if ConsentShield is down, default to granted so our business doesn't stop"* — is making an explicit compliance trade-off, and we require them to configure that override with a named flag (`CONSENT_VERIFY_FAIL_OPEN = true`) that appears in their audit export. The decision is visible.
+ConsentShield's client libraries — six server-side languages across two tiers, all delivered under the Pro and Enterprise tiers — ship with a default 2-second timeout and fail-closed behaviour. **Tier 1 (hand-rolled, line-audited):** Node.js, Python, Go (ADR-1006, shipped 2026-04-25 / 2026-04-26). **Tier 2 (OpenAPI-generated, framework-friendly wrappers):** Java (Spring Boot starter), .NET (ASP.NET Core integration), PHP (Laravel + Symfony examples) (ADR-1028, shipped 2026-04-26). Mobile (Swift / Kotlin) follows a different security model — no `cs_live_*` keys client-side — and is deferred to a future ADR gated on the ABDM mobile launch trigger.
+
+The fail-closed default is deliberate. A customer who chooses to override this — for example, *"if ConsentShield is down, default to granted so our business doesn't stop"* — is making an explicit compliance trade-off, and we require them to configure that override with a named flag (`CONSENT_VERIFY_FAIL_OPEN = true`) that appears in their audit export. The decision is visible.
 
 ### 5.5 Caching and Freshness
 

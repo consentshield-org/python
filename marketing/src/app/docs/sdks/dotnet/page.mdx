@@ -1,0 +1,107 @@
+export const metadata = {
+  title: 'ConsentShield.Client.AspNetCore — .NET SDK',
+  description:
+    'ASP.NET Core integration + raw .NET 8 client for ConsentShield. IHttpClientFactory + DelegatingHandler retry, Apache 2.0.',
+}
+
+<Breadcrumb trail={[
+  { label: 'Docs', href: '/docs' },
+  { label: 'SDKs', href: '/docs/sdks' },
+  { label: '.NET' },
+]} />
+
+# `ConsentShield.Client.AspNetCore`
+
+Two NuGet packages:
+
+- **`ConsentShield.Client` 1.0.0** — raw client (OpenAPI-Generator output, `System.Net.Http`). For non-DI callers.
+- **`ConsentShield.Client.AspNetCore` 1.0.0** — `IServiceCollection.AddConsentShield(...)` + `IHttpClientFactory` named client + `DelegatingHandler` retry + exception hierarchy. Depends on the raw client.
+
+<Callout tone="info" title="Tier 2 — generated from OpenAPI">
+The raw .NET client is generated from the [public OpenAPI spec](https://api.consentshield.in/openapi.yaml) via `openapi-generator-cli@v7.10.0`. The compliance contract (retry, fail-CLOSED, exception hierarchy) lives in the hand-written ASP.NET Core integration wrapper layer.
+</Callout>
+
+## Install
+
+```bash
+dotnet add package ConsentShield.Client.AspNetCore --version 1.0.0
+```
+
+- **.NET 8.0 LTS** required
+- ASP.NET Core for DI (optional but recommended)
+
+## Configuration
+
+```jsonc
+// appsettings.json
+{
+  "ConsentShield": {
+    "ApiKey": "cs_live_...",
+    "BaseUrl": "https://api.consentshield.in/v1",
+    "Timeout": "00:00:02",
+    "MaxRetries": 3,
+    "FailOpen": false
+  }
+}
+```
+
+## Quickstart
+
+```csharp
+var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddConsentShield(builder.Configuration);
+
+var app = builder.Build();
+
+app.MapPost("/api/marketing/send", async (UtilityApi api) =>
+{
+    try
+    {
+        // verify call against ConsentApi goes here
+        return Results.Accepted();
+    }
+    catch (ConsentShieldApiException ex)
+    {
+        return Results.Json(new { detail = ex.Detail }, statusCode: 502);
+    }
+    catch (Exception)
+    {
+        // fail-CLOSED default → 503
+        return Results.Json(new { error = "consent_check_failed" }, statusCode: 503);
+    }
+});
+
+app.Run();
+```
+
+The inline overload binds without `IConfiguration`:
+
+```csharp
+builder.Services.AddConsentShield(o =>
+{
+    o.ApiKey = Environment.GetEnvironmentVariable("CONSENTSHIELD_API_KEY");
+    o.FailOpen = false;
+});
+```
+
+## Compliance contract
+
+| Outcome | Default (fail-CLOSED) | `FailOpen=true` |
+|---|---|---|
+| 4xx response | `ConsentShieldApiException` (always surfaces) | same |
+| Per-attempt timeout | `ConsentShieldTimeoutException` (never retried) | same |
+| 5xx + transport (after retries exhausted) | `ConsentVerifyException` with `VerifyFailureCause` | open outcome with cause set |
+
+User-cancellation (your `CancellationToken.Cancel()`) propagates as `TaskCanceledException` — the SDK only translates HttpClient-internal timeouts to `ConsentShieldTimeoutException`.
+
+`X-CS-Trace-Id` round-trips on every call. `exception.TraceId` returns the server-side trace id when available.
+
+## Examples
+
+The repo ships a runnable ASP.NET Core 8 minimal-API marketing-gate example — see [`examples/AspNetCoreMarketingGate/`](https://github.com/SAnegondhi/consentshield-dotnet/tree/main/examples/AspNetCoreMarketingGate).
+
+## Source
+
+Apache 2.0. <https://github.com/SAnegondhi/consentshield-dotnet>
+
+<FeedbackStrip pageId="sdks-dotnet" />

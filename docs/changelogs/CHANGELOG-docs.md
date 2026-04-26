@@ -2,6 +2,24 @@
 
 Documentation changes.
 
+## [ADR-1028 Phase 4 Sprint 4.1 — /docs/sdks/* rollup + architecture §SDK posture + whitepaper §5.4 amendment] — 2026-04-26
+
+**ADR:** ADR-1028 — Generated server-side SDKs (Java + .NET + PHP)
+**Sprint:** Phase 4, Sprint 4.1 — closes ADR-1028 code-side.
+
+### Added
+- **`marketing/src/app/docs/sdks/{java,dotnet,php}/page.mdx`** — three new per-SDK landing pages with install snippet, configuration, quickstart, compliance contract table, framework-example pointer, source link. Same MDX shape as the existing Tier-1 pages (Breadcrumb + FeedbackStrip + tables + code blocks).
+- **`docs/architecture/consentshield-definitive-architecture.md`** — new **Appendix F — SDK posture** section codifying the three-tier split (Tier 1 hand-rolled / Tier 2 generated / Tier 3 mobile deferred), the build-gated regeneration pipelines (whitepaper Appendix A pure-Node + customer-app prebuild; Tier-2 SDKs Docker + CI), and the compliance contract identity across all six SDKs.
+
+### Changed
+- **`marketing/src/app/docs/sdks/page.mdx`** — install matrix split into Tier 1 (3 rows: Node / Python / Go) and Tier 2 (3 rows: Java / .NET / PHP). Tier-2 section header carries a `(generated)` badge with hover-text linking to the public OpenAPI spec. Framework-integration table grows from 3 to 6 rows. "Other languages" callout updated from "use the spec for Java / Ruby / .NET / PHP / Rust" to "Ruby / Rust" only (Java / .NET / PHP now native). Mobile callout points at the deferred ADR.
+- **`marketing/src/app/docs/_data/nav.ts`** — sidebar grows three nested entries beneath "SDKs" subheading (Java / .NET / PHP).
+- **`marketing/src/app/docs/_data/search-index.ts`** — `/docs/sdks` description rewritten ("Six SDKs across two tiers — Node/Python/Go hand-rolled + Java/.NET/PHP generated"). Three new per-SDK entries with stack-specific keywords (`spring boot`, `maven central`, `okhttp`, `aspnetcore`, `nuget`, `ihttpclientfactory`, `laravel`, `symfony`, `composer`, `packagist`, `guzzle`, `psr-18`).
+- **`docs/design/ConsentShield-Customer-Integration-Whitepaper-v2.md`** §5.4 — prose updated from "Node.js, Python, Java, Go" to explicit two-tier split (Tier 1 hand-rolled Node/Python/Go shipped via ADR-1006, Tier 2 generated Java/.NET/PHP shipped via ADR-1028), plus mobile deferral note pointing at the future ADR. The fail-CLOSED rationale paragraph is preserved.
+
+### Architecture changes
+- **ADR-1028 code-side closed** — sprints 1.1 / 1.2 / 2.1 / 3.1 / 4.1 shipped 2026-04-26. Publishing sprints (1.3 Maven Central, 2.2 NuGet, 3.2 Packagist) carried forward as operator follow-ups; the engineering work is done. Speakeasy / Stainless / Fern bake-off **deferred to Q3/Q4 2026** unless marketing escalates.
+
 ## [ADR-1003 Sprint 3.2 — benchmark report populated from first live run] — 2026-04-26
 
 **ADR:** ADR-1003 — Processor Posture + Healthcare Category Unlock

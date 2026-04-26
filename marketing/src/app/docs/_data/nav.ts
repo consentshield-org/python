@@ -40,6 +40,9 @@ export const DOCS_NAV: NavGroup[] = [
       { label: 'Node.js (@consentshield/node)', href: '/docs/sdks/node', nested: true, subheading: 'SDKs' },
       { label: 'Python (consentshield)', href: '/docs/sdks/python', nested: true },
       { label: 'Go (consentshield-go)', href: '/docs/sdks/go', nested: true },
+      { label: 'Java (Spring Boot)', href: '/docs/sdks/java', nested: true },
+      { label: '.NET (ASP.NET Core)', href: '/docs/sdks/dotnet', nested: true },
+      { label: 'PHP (Laravel / Symfony)', href: '/docs/sdks/php', nested: true },
     ],
   },
   {

@@ -1284,3 +1284,50 @@ Pivots the public surface from in-product `/status` route (Phase 1) to a dedicat
 | Heartbeat secrets | Per push-monitor URLs of the form `https://status.consentshield.in/api/push/<token>?status=up&msg=&ping=` are stored as runtime secrets on the workspace that emits the heartbeat: wrangler secret on the Worker (`KUMA_HEARTBEAT_WORKER_EVENTS`), Vercel env on the admin project (`KUMA_HEARTBEAT_ADMIN_HEALTH`), Supabase Edge Function secret (`KUMA_HEARTBEAT_DELETION_DISPATCH`), etc. Operator runbook `docs/runbooks/adr-1018-phase-2-uptime-kuma.md` records each. |
 
 The pre-release blocker on external distribution of `status.consentshield.in` reads *"complete ADR-1018 Phase 2 Sprints 2.2 (path-A monitors) + 2.3 (status page config) + 2.4 (custom domain)"* — DNS sub-deliverable already done as part of operator's 2026-04-26 setup. Sprints 2.5–2.8 follow without blocking external distribution; they're pre-launch blockers for the Issue-18 acceptance criterion.
+
+## Appendix F — SDK posture (post-ADR-1006 + ADR-1028)
+
+ConsentShield ships official client libraries in **six server-side languages** across two tiers, plus a deferred mobile tier. The split is codified in ADR-1028 §Context.
+
+### Tier 1 — hand-rolled, compliance-load-bearing
+
+| Language | Coordinate | Build-time deps | Runtime deps |
+|---|---|---|---|
+| Node.js / TypeScript | `@consentshield/node@1.0.0` (npm) | tsup | none |
+| Python | `consentshield@1.0.0` (PyPI) | hatch | `httpx` |
+| Go | `github.com/SAnegondhi/consentshield-go@v1.0.0` | go mod | none |
+
+Hand-written, line-audited, exact-pinned. ~2 000 LOC per SDK. ADR-1006 closed at 9/9 sprints (2026-04-25 / 2026-04-26).
+
+### Tier 2 — OpenAPI-generated, framework-friendly
+
+| Language | Coordinate | Generator | Wrapper artefact |
+|---|---|---|---|
+| Java | `com.consentshield:consentshield-java@1.0.0` (Maven Central) | `openapitools/openapi-generator-cli@v7.10.0` | `com.consentshield:consentshield-java-spring-boot-starter@1.0.0` |
+| .NET | `ConsentShield.Client@1.0.0` (NuGet) | same | `ConsentShield.Client.AspNetCore@1.0.0` |
+| PHP | `consentshield/consentshield@1.0.0` (Packagist) | same | `consentshield/sdk@1.0.0` |
+
+Raw client is regenerated from `app/public/openapi.yaml`. The compliance-load-bearing layer (retry middleware, fail-CLOSED, exception hierarchy) is hand-written in the wrapper artefact — identical regardless of generator. ADR-1028 Phases 1–3 closed (2026-04-26); publishing sprints (Sprint 1.3 Maven Central, 2.2 NuGet, 3.2 Packagist) deferred to operator action. Speakeasy / Stainless / Fern bake-off **deferred to Q3/Q4 2026** unless marketing escalates a procurement-blocking signal sooner — see `docs/reviews/2026-04-26-tier2-generator-evaluation.md`.
+
+### Tier 3 — mobile (deferred)
+
+Swift + Kotlin SDKs are deferred to a future ADR. The mobile security model is fundamentally different (no `cs_live_*` keys client-side; the SDK renders banners + captures events, the customer's *backend* is the actual ConsentShield caller). Trigger condition: ABDM mobile launch.
+
+### Build-gated regeneration
+
+The OpenAPI spec at `app/public/openapi.yaml` is the input to **two** regeneration pipelines:
+
+1. **Whitepaper Appendix A** (ADR-1006 Phase 3 Sprint 3.1) — runs in `cd app && bun run build` prebuild via `scripts/regenerate-whitepaper-appendix.ts --check`. Pure Node.js; works on Vercel.
+2. **Tier-2 SDKs** (ADR-1028 Sprint 1.1) — runs in CI via `.github/workflows/tier2-sdk-drift.yml` calling `bun run check:tier2-sdks`. Requires Docker (the openapi-generator-cli image), so it cannot run on Vercel build hosts; CI is the authoritative gate.
+
+Both fail closed: any spec change without a corresponding regen of the downstream artefacts blocks merge.
+
+### Compliance contract — every SDK, identical
+
+| Outcome | Default (fail-CLOSED) | `failOpen=true` |
+|---|---|---|
+| 4xx response | typed exception (always surfaces) | same — 4xx is never folded into fail-OPEN |
+| Per-attempt timeout | typed timeout exception (NEVER retried) | same — burning retries on more timeouts just delays failure |
+| 5xx + transport (after retries exhausted) | compliance-critical wrap with `cause` discriminator | open outcome with `cause` set |
+
+Retry budget: 3 retries on 5xx + transport with 100 / 400 / 1600 ms exponential backoff. Per-attempt timeout 2 s. `X-CS-Trace-Id` round-trips on every call. `CONSENT_VERIFY_FAIL_OPEN` env var override exists in every SDK with the explicit-setter precedence rule (constructor / option / config wins over env).

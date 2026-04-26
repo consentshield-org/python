@@ -1,7 +1,7 @@
 export const metadata = {
   title: 'SDK availability',
   description:
-    'Official ConsentShield client libraries — Node.js, Python, and Go. Same compliance contract everywhere.',
+    'Official ConsentShield client libraries — Node, Python, Go (hand-rolled) plus Java, .NET, PHP (OpenAPI-generated). Same compliance contract everywhere.',
 }
 
 <Breadcrumb trail={[
@@ -12,9 +12,13 @@ export const metadata = {
 
 # SDK availability
 
-Three official client libraries. They share one compliance contract,
-one error model, and one fail-CLOSED default — pick the one that
-matches your stack.
+Six official client libraries across two tiers. They share one
+compliance contract, one error model, and one fail-CLOSED default —
+pick the one that matches your stack.
+
+## Tier 1 — hand-rolled
+
+Line-audited, exact-pinned, written by us against the v1 API directly.
 
 | Language | Package | Install | Min version |
 |---|---|---|---|
@@ -22,19 +26,29 @@ matches your stack.
 | Python | [`consentshield`](/docs/sdks/python) | `pip install consentshield` | Python 3.9+ |
 | Go | [`github.com/SAnegondhi/consentshield-go`](/docs/sdks/go) | `go get github.com/SAnegondhi/consentshield-go` | Go 1.22+ |
 
-All three are at **v1.0.0**, hand-rolled by us, exact-pinned, and
-ship the full 14-method API surface plus paginators for every list
-endpoint. **Licensed under Apache 2.0** — fork, embed, ship in
-commercial products, no per-seat fees on the SDK itself. The
-"ConsentShield" name and logo are reserved as trademarks; see the
-`NOTICE` file in each repo for the carve-out.
+## Tier 2 — generated from OpenAPI <span title="Generated from the public OpenAPI spec at api.consentshield.in/openapi.yaml — same compliance contract, hand-written framework wrappers" style={{fontSize:'0.8em',opacity:0.7}}>(generated)</span>
 
-<Callout tone="info" title="Why hand-rolled?">
-Every dependency in your compliance path runs on every request. We
+OpenAPI-Generator output from the [public spec](https://api.consentshield.in/openapi.yaml), with hand-written framework wrappers (Spring Boot starter / ASP.NET Core DI / Laravel + Symfony) layering the same fail-CLOSED retry contract on top.
+
+| Language | Package | Install | Min version |
+|---|---|---|---|
+| Java (Spring Boot) | [`consentshield-java-spring-boot-starter`](/docs/sdks/java) | Maven `com.consentshield:consentshield-java-spring-boot-starter:1.0.0` | JDK 11+ |
+| .NET (ASP.NET Core) | [`ConsentShield.Client.AspNetCore`](/docs/sdks/dotnet) | `dotnet add package ConsentShield.Client.AspNetCore` | .NET 8.0 LTS |
+| PHP (Laravel / Symfony) | [`consentshield/sdk`](/docs/sdks/php) | `composer require consentshield/sdk` | PHP 8.1+ |
+
+All six are at **v1.0.0**, **licensed under Apache 2.0** — fork, embed, ship in commercial products, no per-seat fees on the SDK itself. The "ConsentShield" name and logo are reserved as trademarks; see the `NOTICE` file in each repo for the carve-out.
+
+<Callout tone="info" title="Why hand-rolled vs generated?">
+Tier 1 (Node / Python / Go) carries the compliance audit load — we
 write each SDK by hand, audit it line-by-line, and pin the one
-absolute minimum (`httpx` in Python, `tsup` build-only in Node, zero
-runtime deps in Go) so you don't inherit a long supply chain when
-you depend on us.
+absolute minimum dep (httpx in Python, tsup build-only in Node, zero
+runtime deps in Go). Tier 2 (Java / .NET / PHP) is OpenAPI-Generator
+output — backend integrators expect generated SDKs (every major API
+vendor ships them that way), and the compliance-load-bearing parts
+(retry middleware, fail-CLOSED, exception hierarchy) live in the
+hand-written wrapper layer that's identical regardless of generator.
+Mobile (Swift / Kotlin) is a separate ADR — different security model
+entirely.
 </Callout>
 
 ## What every SDK does
@@ -145,15 +159,20 @@ if out.Envelope.Status != "granted" {
 | Node.js | Express middleware, Next.js App Router |
 | Python | Django middleware, Flask decorator, FastAPI dependency |
 | Go | net/http (chi-compatible), gin |
+| Java | Spring Boot 3 marketing gate (auto-configured `ConsentShieldClient` bean) |
+| .NET | ASP.NET Core 8 minimal-API marketing gate (`AddConsentShield(IConfiguration)`) |
+| PHP | Laravel 11 middleware, Symfony 7 controller |
 
 Each example refuses with HTTP 451 on `revoked` / `expired` /
 `never_consented`, fails CLOSED with HTTP 503 on a 5xx / network /
 timeout, and surfaces `X-CS-Trace-Id` for end-to-end correlation.
 
 <Callout tone="info" title="Other languages">
-For Java, Ruby, .NET, PHP, or Rust callers we currently recommend
-using the [OpenAPI spec](/openapi.yaml) with your generator of
-choice. Native SDKs may be added later — let us know your stack at
+For Ruby or Rust callers we recommend using the
+[public OpenAPI spec](https://api.consentshield.in/openapi.yaml) with
+your generator of choice. Mobile SDKs (Swift / Kotlin) follow a
+different security model and ship under a separate roadmap; tell us
+your stack at
 [dev-support@consentshield.in](mailto:dev-support@consentshield.in).
 </Callout>
 
