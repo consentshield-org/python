@@ -43,8 +43,8 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://consentshield.in/docs/sdks/python"
-Repository = "https://github.com/SAnegondhi/consentshield-python"
-Issues = "https://github.com/SAnegondhi/consentshield-python/issues"
+Repository = "https://github.com/consentshield-org/python"
+Issues = "https://github.com/consentshield-org/python/issues"
 
 [project.optional-dependencies]
 test = [
